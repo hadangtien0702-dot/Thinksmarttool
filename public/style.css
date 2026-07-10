@@ -1121,3 +1121,71 @@ aside {
   animation: highlightFlash 1.5s ease-out;
   border-radius: 8px;
 }
+
+/* ==========================================================================
+   SALES WORKFLOW ADDITIONS
+   ========================================================================== */
+
+/* Header buttons row */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Footer: allow 5 export buttons to wrap into 2 rows */
+.sidebar-actions-footer {
+  flex-wrap: wrap;
+}
+
+.sidebar-actions-footer .btn {
+  flex: 1 1 30%;
+  min-width: 110px;
+}
+
+/* Dropdown selects reuse the text input look */
+select.text-input-field {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239b8fc0' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 32px;
+}
+
+select.text-input-field option {
+  background-color: var(--bg-panel);
+  color: var(--text-primary);
+}
+
+/* Master template warning banner */
+.template-warning {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fbd38d;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+
+.template-warning b {
+  color: var(--color-warning);
+}
+
+/* Agent preset buttons inside group 3 */
+.agent-preset-bar {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px dashed var(--border-color);
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.agent-preset-bar .btn {
+  flex: 1;
+  font-size: 11.5px;
+  white-space: nowrap;
+}

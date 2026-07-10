@@ -5,3 +5,11 @@ Thumbs.db
 File Final/
 .env
 .env.local
+
+# Client proposals contain customer info - keep out of public repo
+Clients/
+
+# Temp files
+syntax-check.txt
+push-log.txt
+push-to-github.bat

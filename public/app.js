@@ -25,6 +25,58 @@ const ZOOM_SPEED = 0.08;
 const MIN_ZOOM = 0.05;
 const MAX_ZOOM = 8.0;
 
+// Master templates live in this folder and must never be overwritten
+const MASTER_FOLDER = 'file final';
+
+function isMasterFile(file) {
+  return !!(file && file.folder && file.folder.toLowerCase().startsWith(MASTER_FOLDER));
+}
+
+// Dropdown data for client info fields
+const GENDERS = ['Male', 'Female'];
+
+const RATE_CLASSES = [
+  'Preferred Plus',
+  'Preferred Non-Tobacco',
+  'Standard Plus',
+  'Standard Non-Tobacco',
+  'Preferred Tobacco',
+  'Standard Tobacco'
+];
+
+const US_STATES = [
+  'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
+  'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa',
+  'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan',
+  'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire',
+  'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio',
+  'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota',
+  'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia',
+  'Wisconsin', 'Wyoming'
+];
+
+// Apply a new text value to both the working SVG doc element and the rendered canvas copy
+function applyTextValue(el, editorId, newValue) {
+  el.textContent = newValue;
+  const renderedBox = dom.canvasWrapper.querySelector('svg');
+  if (renderedBox) {
+    const canvasEl = renderedBox.querySelector(`[data-editor-id="${editorId}"]`);
+    if (canvasEl) canvasEl.textContent = newValue;
+  }
+}
+
+// Format "$1234.5" / "1,000,000" → "$1,234.50" / "$1,000,000". Returns null if not a number.
+function formatCurrencyValue(raw) {
+  const cleaned = String(raw).trim().replace(/[$,\s]/g, '');
+  if (cleaned === '' || isNaN(Number(cleaned))) return null;
+  const num = Number(cleaned);
+  const hasDecimals = Math.abs(num % 1) > 0.000001;
+  return '$' + num.toLocaleString('en-US', {
+    minimumFractionDigits: hasDecimals ? 2 : 0,
+    maximumFractionDigits: 2
+  });
+}
+
 // --- DOM ELEMENTS CACHE ---
 const dom = {
   treeContainer: document.getElementById('tree-container'),
@@ -62,6 +114,9 @@ const dom = {
   btnCopyCode: document.getElementById('btn-copy-code'),
   btnDownloadSvg: document.getElementById('btn-download-svg'),
   btnExportPng: document.getElementById('btn-export-png'),
+  btnCopyPng: document.getElementById('btn-copy-png'),
+  btnExportPdf: document.getElementById('btn-export-pdf'),
+  btnNewProposal: document.getElementById('btn-new-proposal'),
   
   // Texts Tab
   textsList: document.getElementById('texts-list'),
@@ -132,14 +187,17 @@ async function loadSvgContent(fileInfo) {
         }
       });
       
-      // Update UI title
-      dom.activeFileTitle.textContent = fileInfo.name;
-      dom.btnSaveTop.disabled = false;
-      
+      // Update UI title (mark master templates, and lock their Save button)
+      const isMaster = isMasterFile(fileInfo);
+      dom.activeFileTitle.textContent = isMaster ? `${fileInfo.name} — MẪU GỐC` : fileInfo.name;
+      dom.btnSaveTop.disabled = isMaster;
+
       // Enable export buttons
       dom.btnCopyCode.disabled = false;
       dom.btnDownloadSvg.disabled = false;
       dom.btnExportPng.disabled = false;
+      if (dom.btnCopyPng) dom.btnCopyPng.disabled = false;
+      if (dom.btnExportPdf) dom.btnExportPdf.disabled = false;
       
       // Setup Canvas
       renderSvgOnCanvas();
@@ -165,7 +223,12 @@ async function loadSvgContent(fileInfo) {
 
 async function saveSvgToServer() {
   if (!appState.activeFile || !appState.activeSvgDoc) return;
-  
+
+  if (isMasterFile(appState.activeFile)) {
+    alert('Đây là file MẪU GỐC, không thể ghi đè.\n\nHãy bấm "Tạo Proposal Mới" để tạo bản sao cho khách hàng — mọi chỉnh sửa bạn vừa làm sẽ được mang sang bản sao đó.');
+    return;
+  }
+
   updateStatus('Đang lưu thay đổi lên máy chủ...');
   const serializer = new XMLSerializer();
   const content = serializer.serializeToString(appState.activeSvgDoc);
@@ -208,6 +271,50 @@ async function saveSvgToServer() {
     }
   } catch (error) {
     alert(`Lỗi đường truyền mạng: ${error.message}`);
+  }
+}
+
+// Create a new client proposal by cloning the currently open template (with any live edits)
+async function createNewProposal() {
+  if (!appState.activeFile || !appState.activeSvgDoc) {
+    alert('Hãy chọn một bản mẫu (IUL hoặc Term Life) ở cột bên trái trước.');
+    return;
+  }
+
+  const clientName = prompt('Nhập tên khách hàng cho proposal mới:');
+  if (!clientName || !clientName.trim()) return;
+
+  updateStatus('Đang tạo proposal mới...');
+  const serializer = new XMLSerializer();
+  const content = serializer.serializeToString(appState.activeSvgDoc);
+
+  try {
+    const response = await fetch('/api/svgs/clone', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        templatePath: appState.activeFile.path,
+        clientName: clientName.trim(),
+        content: content
+      })
+    });
+    const data = await response.json();
+
+    if (!data.success) {
+      alert(`Không thể tạo proposal: ${data.error}`);
+      return;
+    }
+
+    // Refresh the tree and open the newly created client file
+    await fetchSvgsList();
+    const newFile = appState.svgsList.find(f => f.path === data.path);
+    if (newFile) {
+      await loadSvgContent(newFile);
+      renderFileTree();
+    }
+    updateStatus(`Đã tạo proposal mới: ${data.name}`);
+  } catch (error) {
+    alert(`Lỗi khi tạo proposal: ${error.message}`);
   }
 }
 
@@ -621,6 +728,14 @@ function populateTextsEditor() {
     textSearchInput.value = '';
   }
   
+  // Warn when editing a master template
+  if (isMasterFile(appState.activeFile)) {
+    const warnEl = document.createElement('div');
+    warnEl.className = 'template-warning';
+    warnEl.innerHTML = 'Đây là <b>MẪU GỐC</b> — không thể lưu đè. Bấm <b>"Tạo Proposal Mới"</b> ở góc trên bên phải để tạo bản riêng cho khách hàng (các chỉnh sửa hiện tại sẽ được mang sang).';
+    dom.textsList.appendChild(warnEl);
+  }
+
   // Fetch text elements with data-editor-id (pre-assigned on load)
   const textElements = Array.from(svgEl.querySelectorAll('[data-editor-id]'));
   
@@ -811,27 +926,45 @@ function populateTextsEditor() {
       else if (id === 'client-gender') displayName = 'Giới tính';
       else if (id === 'client-state') displayName = 'Tiểu bang';
       
+      // Gender / Rate Class / State use dropdowns to prevent typos on client-facing proposals
+      const dropdownOptions = id === 'client-gender' ? GENDERS
+        : id === 'client-rate' ? RATE_CLASSES
+        : id === 'client-state' ? US_STATES
+        : null;
+
       const itemBlock = document.createElement('div');
       itemBlock.className = 'text-edit-block';
-      itemBlock.innerHTML = `
-        <div class="text-meta">
-          <span class="text-id">${displayName}</span>
-          <span class="text-font-info">Size: ${fontSize}</span>
-        </div>
-        <textarea class="text-input-field" rows="1" data-editor-id="${editorId}">${textContent}</textarea>
-      `;
-      
-      const textarea = itemBlock.querySelector('.text-input-field');
-      textarea.addEventListener('input', (e) => {
-        const newValue = e.target.value;
-        el.textContent = newValue;
-        const renderedBox = dom.canvasWrapper.querySelector('svg');
-        if (renderedBox) {
-          const canvasEl = renderedBox.querySelector(`[data-editor-id="${editorId}"]`);
-          if (canvasEl) canvasEl.textContent = newValue;
-        }
-      });
-      
+
+      if (dropdownOptions) {
+        const opts = dropdownOptions.includes(textContent)
+          ? dropdownOptions
+          : [textContent, ...dropdownOptions];
+        itemBlock.innerHTML = `
+          <div class="text-meta">
+            <span class="text-id">${displayName}</span>
+          </div>
+          <select class="text-input-field select-field" data-editor-id="${editorId}">
+            ${opts.map(o => `<option value="${o}"${o === textContent ? ' selected' : ''}>${o}</option>`).join('')}
+          </select>
+        `;
+        const select = itemBlock.querySelector('select');
+        select.addEventListener('change', (e) => {
+          applyTextValue(el, editorId, e.target.value);
+        });
+      } else {
+        itemBlock.innerHTML = `
+          <div class="text-meta">
+            <span class="text-id">${displayName}</span>
+            <span class="text-font-info">Size: ${fontSize}</span>
+          </div>
+          <textarea class="text-input-field" rows="1" data-editor-id="${editorId}">${textContent}</textarea>
+        `;
+        const textarea = itemBlock.querySelector('.text-input-field');
+        textarea.addEventListener('input', (e) => {
+          applyTextValue(el, editorId, e.target.value);
+        });
+      }
+
       clientBlocks[id] = itemBlock;
     }
     
@@ -963,15 +1096,17 @@ function populateTextsEditor() {
     
     const textarea = itemBlock.querySelector('.text-input-field');
     textarea.addEventListener('input', (e) => {
-      const newValue = e.target.value;
-      item.el.textContent = newValue;
-      const renderedBox = dom.canvasWrapper.querySelector('svg');
-      if (renderedBox) {
-        const canvasEl = renderedBox.querySelector(`[data-editor-id="${item.editorId}"]`);
-        if (canvasEl) canvasEl.textContent = newValue;
+      applyTextValue(item.el, item.editorId, e.target.value);
+    });
+    // Auto-format money on blur: "1000000" → "$1,000,000"
+    textarea.addEventListener('blur', (e) => {
+      const formatted = formatCurrencyValue(e.target.value);
+      if (formatted !== null && formatted !== e.target.value) {
+        e.target.value = formatted;
+        applyTextValue(item.el, item.editorId, formatted);
       }
     });
-    
+
     planContainer.appendChild(itemBlock);
   });
   
@@ -984,6 +1119,63 @@ function populateTextsEditor() {
   }
   if (agentContainer.children.length === 0) {
     agentContainer.innerHTML = '<div class="no-data">Không có chữ ở phần này.</div>';
+  } else {
+    // Agent preset controls: save current agent info as default / fill saved info
+    const presetBar = document.createElement('div');
+    presetBar.className = 'agent-preset-bar';
+    presetBar.innerHTML = `
+      <button class="btn btn-secondary btn-sm" id="btn-save-agent-preset" title="Lưu tên & SĐT đại lý hiện tại làm mặc định trên máy này">Lưu làm mặc định</button>
+      <button class="btn btn-secondary btn-sm" id="btn-apply-agent-preset" title="Điền lại thông tin đại lý đã lưu">Điền thông tin đã lưu</button>
+    `;
+    agentGroup.appendChild(presetBar);
+    presetBar.querySelector('#btn-save-agent-preset').addEventListener('click', saveAgentPreset);
+    presetBar.querySelector('#btn-apply-agent-preset').addEventListener('click', applyAgentPreset);
+  }
+}
+
+// --- AGENT PRESET (saved in browser localStorage) ---
+function collectAgentFields() {
+  const result = {};
+  document.querySelectorAll('#group-agent .text-edit-block').forEach(block => {
+    const labelEl = block.querySelector('.text-id');
+    const input = block.querySelector('.text-input-field');
+    if (labelEl && input) result[labelEl.textContent] = input;
+  });
+  return result;
+}
+
+function saveAgentPreset() {
+  const fields = collectAgentFields();
+  const preset = {};
+  Object.keys(fields).forEach(key => { preset[key] = fields[key].value; });
+  if (Object.keys(preset).length === 0) {
+    updateStatus('Không có thông tin đại lý để lưu.');
+    return;
+  }
+  localStorage.setItem('agentPreset', JSON.stringify(preset));
+  updateStatus('Đã lưu thông tin đại lý làm mặc định trên máy này.');
+}
+
+function applyAgentPreset() {
+  const saved = localStorage.getItem('agentPreset');
+  if (!saved) {
+    updateStatus('Chưa có thông tin đại lý nào được lưu. Hãy điền rồi bấm "Lưu làm mặc định" trước.');
+    return;
+  }
+  try {
+    const preset = JSON.parse(saved);
+    const fields = collectAgentFields();
+    let applied = 0;
+    Object.keys(preset).forEach(key => {
+      if (fields[key] && preset[key]) {
+        fields[key].value = preset[key];
+        fields[key].dispatchEvent(new Event('input', { bubbles: false }));
+        applied++;
+      }
+    });
+    updateStatus(applied > 0 ? 'Đã điền thông tin đại lý đã lưu.' : 'Không khớp được trường nào để điền.');
+  } catch (e) {
+    updateStatus('Dữ liệu đại lý đã lưu bị lỗi.');
   }
 }
 
@@ -1182,18 +1374,28 @@ function downloadSvgFile() {
   updateStatus(`Đã tải xuống file SVG: ${appState.activeFile.name}`);
 }
 
-function exportToPng() {
-  if (!appState.activeFile || !appState.activeSvgDoc) return;
-  
-  updateStatus('Đang xuất ảnh PNG...');
-  
+// Build export filename from the client name inside the SVG: "Proposal - Tran Van A"
+function getProposalBaseName() {
+  let clientName = '';
+  if (appState.activeSvgDoc) {
+    const nameEl = appState.activeSvgDoc.documentElement.querySelector('#client-name');
+    if (nameEl) clientName = nameEl.textContent.trim();
+  }
+  if (clientName) return `Proposal - ${clientName}`;
+  return appState.activeFile ? appState.activeFile.name.replace(/\.svg$/i, '') : 'Proposal';
+}
+
+// Shared renderer: draws the active SVG onto a 2x canvas, then calls onReady(canvas)
+function renderSvgToCanvas(onReady, bgOverride) {
+  if (!appState.activeSvgDoc) return;
+
   const svgEl = appState.activeSvgDoc.documentElement;
-  
+
   // Extract width/height
   let width = parseFloat(svgEl.getAttribute('width'));
   let height = parseFloat(svgEl.getAttribute('height'));
   const viewBox = svgEl.getAttribute('viewBox');
-  
+
   if (viewBox) {
     const parts = viewBox.split(/\s+/).map(parseFloat);
     if (parts.length === 4) {
@@ -1205,62 +1407,126 @@ function exportToPng() {
       }
     }
   }
-  
+
   if (isNaN(width) || isNaN(height)) {
     width = 1200; // Resolution standard fallback
     height = 900;
   }
-  
+
   // Multiply for high-res rendering (retina export vibe: 2x)
   const scaleFactor = 2;
   const exportWidth = width * scaleFactor;
   const exportHeight = height * scaleFactor;
-  
+
   const serializer = new XMLSerializer();
   const svgString = serializer.serializeToString(appState.activeSvgDoc);
-  
-  // Safe base64 blob encoding for the image loader
+
   const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
   const url = URL.createObjectURL(blob);
-  
+
   const img = new Image();
   img.onload = () => {
     const canvas = document.createElement('canvas');
     canvas.width = exportWidth;
     canvas.height = exportHeight;
     const ctx = canvas.getContext('2d');
-    
-    // Draw background color if selected in canvas presets
-    if (appState.canvasBgColor !== 'transparent') {
-      ctx.fillStyle = appState.canvasBgColor;
+
+    // Background: explicit override (e.g. white for PDF) or the selected canvas preset
+    const bg = bgOverride || appState.canvasBgColor;
+    if (bg && bg !== 'transparent') {
+      ctx.fillStyle = bg;
       ctx.fillRect(0, 0, exportWidth, exportHeight);
     }
-    
-    // Draw SVG onto Canvas
+
     ctx.drawImage(img, 0, 0, exportWidth, exportHeight);
-    
-    // Trigger download
+    URL.revokeObjectURL(url);
+    onReady(canvas);
+  };
+
+  img.onerror = (err) => {
+    alert('Không thể chuyển đổi SVG sang ảnh. Có thể có fonts hoặc liên kết ngoài không hợp lệ.');
+    console.error(err);
+  };
+
+  img.src = url;
+}
+
+function flashButton(btn, text) {
+  if (!btn) return;
+  const prev = btn.innerHTML;
+  btn.innerHTML = text;
+  setTimeout(() => { btn.innerHTML = prev; }, 2000);
+}
+
+function exportToPng() {
+  if (!appState.activeFile || !appState.activeSvgDoc) return;
+
+  updateStatus('Đang xuất ảnh PNG...');
+  renderSvgToCanvas((canvas) => {
     const pngUrl = canvas.toDataURL('image/png');
     const link = document.createElement('a');
     link.href = pngUrl;
-    
-    // Change extension to png
-    const pngName = appState.activeFile.name.replace(/\.svg$/i, '.png');
+
+    const pngName = `${getProposalBaseName()}.png`;
     link.download = pngName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
-    URL.revokeObjectURL(url);
+
     updateStatus(`Đã xuất và tải xuống ảnh PNG: ${pngName}`);
-  };
-  
-  img.onerror = (err) => {
-    alert('Không thể chuyển đổi SVG sang PNG. Có thể có fonts hoặc liên kết ngoài không hợp lệ.');
-    console.error(err);
-  };
-  
-  img.src = url;
+  });
+}
+
+// Copy the rendered proposal image straight to the clipboard (paste into Messenger/Zalo)
+function copyPngToClipboard() {
+  if (!appState.activeSvgDoc) return;
+
+  updateStatus('Đang tạo ảnh để copy...');
+  renderSvgToCanvas((canvas) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        alert('Không tạo được ảnh để copy.');
+        return;
+      }
+      navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(() => {
+        updateStatus('Đã copy ảnh — dán (Ctrl+V) vào Messenger/Zalo/Email để gửi khách.');
+        flashButton(dom.btnCopyPng, '✓ Đã Copy!');
+      }).catch(err => {
+        alert('Không thể copy ảnh vào clipboard: ' + err);
+      });
+    }, 'image/png');
+  });
+}
+
+// Export proposal as a PDF (white background) via jsPDF
+function exportToPdf() {
+  if (!appState.activeSvgDoc) return;
+
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    alert('Thư viện PDF chưa tải xong (cần internet). Vui lòng thử lại sau vài giây.');
+    return;
+  }
+
+  updateStatus('Đang xuất PDF...');
+  renderSvgToCanvas((canvas) => {
+    const { jsPDF } = window.jspdf;
+    // Canvas is rendered at 2x; PDF page uses the SVG's natural size
+    const pageW = canvas.width / 2;
+    const pageH = canvas.height / 2;
+
+    const pdf = new jsPDF({
+      orientation: pageW > pageH ? 'landscape' : 'portrait',
+      unit: 'px',
+      format: [pageW, pageH],
+      hotfixes: ['px_scaling']
+    });
+
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pageW, pageH);
+
+    const pdfName = `${getProposalBaseName()}.pdf`;
+    pdf.save(pdfName);
+    updateStatus(`Đã xuất PDF: ${pdfName}`);
+  }, '#ffffff');
 }
 
 // --- UTILITIES & SYSTEM EVENT BINDINGS ---
@@ -1437,6 +1703,11 @@ function initEventListeners() {
   if (dom.btnCopyCode) dom.btnCopyCode.addEventListener('click', copySvgCode);
   if (dom.btnDownloadSvg) dom.btnDownloadSvg.addEventListener('click', downloadSvgFile);
   if (dom.btnExportPng) dom.btnExportPng.addEventListener('click', exportToPng);
+  if (dom.btnCopyPng) dom.btnCopyPng.addEventListener('click', copyPngToClipboard);
+  if (dom.btnExportPdf) dom.btnExportPdf.addEventListener('click', exportToPdf);
+
+  // New proposal button
+  if (dom.btnNewProposal) dom.btnNewProposal.addEventListener('click', createNewProposal);
 
   // Click-to-Edit Visual Inspector mapping
   if (dom.canvasWrapper) {
