@@ -5,6 +5,7 @@
 
 // --- STATE MANAGEMENT ---
 let appState = {
+  mode: 'server', // 'server' = local Express backend | 'static' = deployed (Vercel), browser-only
   svgsList: [],
   activeFile: null,
   activeSvgDoc: null, // Parsed DOM of active SVG
@@ -141,8 +142,10 @@ async function fetchSvgsList() {
   updateStatus('Đang quét thư mục chứa file thiết kế...');
   try {
     const response = await fetch('/api/svgs');
+    if (!response.ok) throw new Error('API không khả dụng');
     const data = await response.json();
     if (data.success) {
+      appState.mode = 'server';
       appState.svgsList = data.svgs;
       renderFileTree();
       updateStatus(`Đã tải ${data.svgs.length} thiết kế.`);
@@ -150,19 +153,102 @@ async function fetchSvgsList() {
       showErrorState(data.error);
     }
   } catch (error) {
-    showErrorState(error.message);
+    // No backend (e.g. deployed on Vercel) → static mode: bundled templates + proposals saved in this browser
+    try {
+      await fetchStaticList();
+    } catch (e2) {
+      showErrorState(e2.message);
+    }
   }
+}
+
+// --- STATIC (DEPLOYED) MODE: bundled templates + browser-saved proposals ---
+async function fetchStaticList() {
+  appState.mode = 'static';
+  const resp = await fetch('templates/manifest.json');
+  if (!resp.ok) throw new Error('Không tải được danh sách mẫu (templates/manifest.json).');
+  const manifest = await resp.json();
+
+  const list = manifest.map(t => ({
+    name: t.name,
+    path: `templates/${t.file}`,
+    category: t.category,
+    folder: 'File Final',
+    size: 0,
+    mtime: null
+  }));
+
+  getLocalProposals().forEach(rec => {
+    list.push({
+      name: `${rec.clientName} - ${String(rec.templateName || '').replace(/\.svg$/i, '')}.svg`,
+      path: `local:${rec.id}`,
+      category: rec.category,
+      folder: 'Proposal của tôi (máy này)',
+      size: 0,
+      mtime: rec.mtime,
+      localId: rec.id
+    });
+  });
+
+  appState.svgsList = list;
+  renderFileTree();
+  updateStatus(`Chế độ online: ${manifest.length} mẫu + ${getLocalProposals().length} proposal lưu trên máy này.`);
+}
+
+// Browser storage for client proposals (static mode). Only edited text values are stored — very light.
+function getLocalProposals() {
+  try {
+    return JSON.parse(localStorage.getItem('localProposals') || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+
+function setLocalProposals(arr) {
+  localStorage.setItem('localProposals', JSON.stringify(arr));
+}
+
+function getLocalProposal(id) {
+  return getLocalProposals().find(r => String(r.id) === String(id));
+}
+
+// Snapshot all editable text values of the active document, keyed by data-editor-id
+function collectEditedFields() {
+  const fields = {};
+  if (!appState.activeSvgDoc) return fields;
+  appState.activeSvgDoc.documentElement.querySelectorAll('[data-editor-id]').forEach(el => {
+    fields[el.getAttribute('data-editor-id')] = el.textContent;
+  });
+  return fields;
 }
 
 async function loadSvgContent(fileInfo) {
   updateStatus(`Đang tải thiết kế ${fileInfo.name}...`);
   try {
-    const response = await fetch(`/api/svgs/content?path=${encodeURIComponent(fileInfo.path)}`);
-    const data = await response.json();
-    
-    if (data.success) {
+    let content = null;
+    let localRecord = null;
+
+    if (String(fileInfo.path).startsWith('local:')) {
+      // Proposal saved in this browser: load its template, edits are re-applied below
+      localRecord = getLocalProposal(String(fileInfo.path).slice(6));
+      if (!localRecord) throw new Error('Không tìm thấy proposal đã lưu trên máy này.');
+      const resp = await fetch(localRecord.templatePath);
+      if (!resp.ok) throw new Error('Không tải được file mẫu gốc.');
+      content = await resp.text();
+    } else if (appState.mode === 'static') {
+      const resp = await fetch(fileInfo.path);
+      if (!resp.ok) throw new Error('Không tải được file thiết kế.');
+      content = await resp.text();
+    } else {
+      const response = await fetch(`/api/svgs/content?path=${encodeURIComponent(fileInfo.path)}`);
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error);
+      content = data.content;
+    }
+
+    {
       appState.activeFile = fileInfo;
-      appState.activeSvgDoc = new DOMParser().parseFromString(data.content, 'image/svg+xml');
+      appState.activeSvgDoc = new DOMParser().parseFromString(content, 'image/svg+xml');
       
       // Check for parser errors
       const parserError = appState.activeSvgDoc.querySelector('parsererror');
@@ -186,7 +272,15 @@ async function loadSvgContent(fileInfo) {
           textEl.setAttribute('data-editor-id', `edit-text-${editorIdCounter++}`);
         }
       });
-      
+
+      // Re-apply edits saved in this browser (static mode proposals)
+      if (localRecord && localRecord.fields) {
+        Object.keys(localRecord.fields).forEach(eid => {
+          const target = svgEl.querySelector(`[data-editor-id="${eid}"]`);
+          if (target) target.textContent = localRecord.fields[eid];
+        });
+      }
+
       // Update UI title (mark master templates, and lock their Save button)
       const isMaster = isMasterFile(fileInfo);
       dom.activeFileTitle.textContent = isMaster ? `${fileInfo.name} — MẪU GỐC` : fileInfo.name;
@@ -212,12 +306,10 @@ async function loadSvgContent(fileInfo) {
       // Tag canvas SVG text elements that are editable (after sidebar inputs exist)
       tagEditableCanvasElements();
       
-      updateStatus(`Đang mở: ${fileInfo.path}`);
-    } else {
-      alert(`Lỗi khi mở file: ${data.error}`);
+      updateStatus(`Đang mở: ${fileInfo.name}`);
     }
   } catch (error) {
-    alert(`Lỗi phân tích file SVG: ${error.message}`);
+    alert(`Lỗi khi mở file thiết kế: ${error.message}`);
   }
 }
 
@@ -226,6 +318,26 @@ async function saveSvgToServer() {
 
   if (isMasterFile(appState.activeFile)) {
     alert('Đây là file MẪU GỐC, không thể ghi đè.\n\nHãy bấm "Tạo Proposal Mới" để tạo bản sao cho khách hàng — mọi chỉnh sửa bạn vừa làm sẽ được mang sang bản sao đó.');
+    return;
+  }
+
+  // Static mode (deployed): save the edited text values into this browser's storage
+  if (appState.mode === 'static') {
+    if (!String(appState.activeFile.path).startsWith('local:')) {
+      alert('Hãy bấm "Tạo Proposal Mới" để tạo bản cho khách trước khi lưu.');
+      return;
+    }
+    const all = getLocalProposals();
+    const rec = all.find(r => String(r.id) === String(appState.activeFile.path).slice(6));
+    if (!rec) {
+      alert('Không tìm thấy proposal này trên máy.');
+      return;
+    }
+    rec.fields = collectEditedFields();
+    rec.mtime = new Date().toISOString();
+    setLocalProposals(all);
+    flashButton(dom.btnSaveTop, '✓ Đã Lưu!');
+    updateStatus(`Đã lưu proposal vào trình duyệt này: ${appState.activeFile.name}`);
     return;
   }
 
@@ -283,6 +395,45 @@ async function createNewProposal() {
 
   const clientName = prompt('Nhập tên khách hàng cho proposal mới:');
   if (!clientName || !clientName.trim()) return;
+
+  // Static mode (deployed): create the proposal in this browser's storage
+  if (appState.mode === 'static') {
+    let templatePath, templateName, category;
+    if (String(appState.activeFile.path).startsWith('local:')) {
+      const src = getLocalProposal(String(appState.activeFile.path).slice(6));
+      if (!src) {
+        alert('Không tìm thấy mẫu gốc của proposal này.');
+        return;
+      }
+      templatePath = src.templatePath;
+      templateName = src.templateName;
+      category = src.category;
+    } else {
+      templatePath = appState.activeFile.path;
+      templateName = appState.activeFile.name;
+      category = appState.activeFile.category;
+    }
+
+    const all = getLocalProposals();
+    const rec = {
+      id: Date.now(),
+      clientName: clientName.trim(),
+      templatePath: templatePath,
+      templateName: templateName,
+      category: category,
+      fields: collectEditedFields(),
+      mtime: new Date().toISOString()
+    };
+    all.push(rec);
+    setLocalProposals(all);
+
+    await fetchStaticList();
+    const newFile = appState.svgsList.find(f => f.path === `local:${rec.id}`);
+    if (newFile) await loadSvgContent(newFile);
+    renderFileTree();
+    updateStatus(`Đã tạo proposal mới (lưu trên máy này): ${rec.clientName}`);
+    return;
+  }
 
   updateStatus('Đang tạo proposal mới...');
   const serializer = new XMLSerializer();
@@ -403,15 +554,26 @@ function renderFileTree() {
           </svg>
         </span>
         <span class="tree-file-name" title="${file.name}">${file.name}</span>
+        ${file.localId ? '<span class="tree-file-delete" title="Xóa proposal này khỏi máy">✕</span>' : ''}
       `;
-      
+
       fileEl.addEventListener('click', () => {
         // Toggle active styling
         document.querySelectorAll('.tree-file-item').forEach(el => el.classList.remove('active'));
         fileEl.classList.add('active');
-        
+
         loadSvgContent(file);
       });
+
+      const delBtn = fileEl.querySelector('.tree-file-delete');
+      if (delBtn) {
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (!confirm(`Xóa proposal "${file.name}" khỏi máy này?`)) return;
+          setLocalProposals(getLocalProposals().filter(r => String(r.id) !== String(file.localId)));
+          fetchStaticList();
+        });
+      }
       
       contentEl.appendChild(fileEl);
     });
