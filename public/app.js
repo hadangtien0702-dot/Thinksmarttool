@@ -1,0 +1,1484 @@
+/**
+ * THINKSMART SVG STUDIO - CLIENT APPLICATION LOGIC
+ * Features: Folder Tree, Figma Zoom/Pan, DOM Parser Editor (Texts, Colors, XML Code), Exports.
+ */
+
+// --- STATE MANAGEMENT ---
+let appState = {
+  svgsList: [],
+  activeFile: null,
+  activeSvgDoc: null, // Parsed DOM of active SVG
+  zoom: 1.0,
+  panX: 0,
+  panY: 0,
+  isPanning: false,
+  startX: 0,
+  startY: 0,
+  canvasBgColor: 'transparent',
+  selectedCategory: 'all',
+  searchQuery: '',
+  isSpacePressed: false
+};
+
+// --- CONSTANTS ---
+const ZOOM_SPEED = 0.08;
+const MIN_ZOOM = 0.05;
+const MAX_ZOOM = 8.0;
+
+// --- DOM ELEMENTS CACHE ---
+const dom = {
+  treeContainer: document.getElementById('tree-container'),
+  fileCount: document.getElementById('file-count'),
+  searchInput: document.getElementById('search-input'),
+  categoryPills: document.querySelectorAll('.category-pills .pill'),
+  
+  canvasContainer: document.getElementById('canvas-container'),
+  canvasWrapper: document.getElementById('canvas-wrapper'),
+  noSelection: document.getElementById('no-selection'),
+  
+  zoomValue: document.getElementById('zoom-value'),
+  btnZoomIn: document.getElementById('btn-zoom-in'),
+  btnZoomOut: document.getElementById('btn-zoom-out'),
+  btnZoomFit: document.getElementById('btn-zoom-fit'),
+  btnToggleGrid: document.getElementById('btn-toggle-grid'),
+  presetBtns: document.querySelectorAll('.preset-btn'),
+  
+  activeFileTitle: document.getElementById('active-file-title'),
+  btnSaveTop: document.getElementById('btn-save-top'),
+  
+  // Right Sidebar Tab Links & Panes
+  tabLinks: document.querySelectorAll('.tab-link'),
+  tabPanes: document.querySelectorAll('.tab-pane'),
+  
+  // Inspector Tab
+  metaName: document.getElementById('meta-name'),
+  metaPath: document.getElementById('meta-path'),
+  metaCategory: document.getElementById('meta-category'),
+  metaSize: document.getElementById('meta-size'),
+  metaDimensions: document.getElementById('meta-dimensions'),
+  metaTextCount: document.getElementById('meta-text-count'),
+  metaColorCount: document.getElementById('meta-color-count'),
+  
+  btnCopyCode: document.getElementById('btn-copy-code'),
+  btnDownloadSvg: document.getElementById('btn-download-svg'),
+  btnExportPng: document.getElementById('btn-export-png'),
+  
+  // Texts Tab
+  textsList: document.getElementById('texts-list'),
+  
+  // Colors Tab
+  colorsList: document.getElementById('colors-list'),
+  
+
+  
+  statusLeft: document.getElementById('status-left'),
+  statusRight: document.getElementById('status-right')
+};
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+  initEventListeners();
+  fetchSvgsList();
+});
+
+// --- API CLIENT CALLS ---
+async function fetchSvgsList() {
+  updateStatus('Đang quét thư mục chứa file thiết kế...');
+  try {
+    const response = await fetch('/api/svgs');
+    const data = await response.json();
+    if (data.success) {
+      appState.svgsList = data.svgs;
+      renderFileTree();
+      updateStatus(`Đã tải ${data.svgs.length} thiết kế.`);
+    } else {
+      showErrorState(data.error);
+    }
+  } catch (error) {
+    showErrorState(error.message);
+  }
+}
+
+async function loadSvgContent(fileInfo) {
+  updateStatus(`Đang tải thiết kế ${fileInfo.name}...`);
+  try {
+    const response = await fetch(`/api/svgs/content?path=${encodeURIComponent(fileInfo.path)}`);
+    const data = await response.json();
+    
+    if (data.success) {
+      appState.activeFile = fileInfo;
+      appState.activeSvgDoc = new DOMParser().parseFromString(data.content, 'image/svg+xml');
+      
+      // Check for parser errors
+      const parserError = appState.activeSvgDoc.querySelector('parsererror');
+      if (parserError) {
+        throw new Error('Mã nguồn SVG bị lỗi cú pháp XML.');
+      }
+      
+      const svgEl = appState.activeSvgDoc.documentElement;
+      
+      // Optimize text layout by stripping absolute inline x offsets from same-line tspans
+      optimizeSvgTexts(svgEl);
+      
+      // Assign data-editor-id to all text elements in the parsed SVG document to ensure robust mapping
+      const rawTextNodes = svgEl.querySelectorAll('text');
+      let editorIdCounter = 1;
+      rawTextNodes.forEach(textEl => {
+        const tspans = Array.from(textEl.querySelectorAll('tspan'));
+        const hasDirectText = Array.from(textEl.childNodes).some(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '');
+        
+        if (tspans.length > 0 || hasDirectText) {
+          textEl.setAttribute('data-editor-id', `edit-text-${editorIdCounter++}`);
+        }
+      });
+      
+      // Update UI title
+      dom.activeFileTitle.textContent = fileInfo.name;
+      dom.btnSaveTop.disabled = false;
+      
+      // Enable export buttons
+      dom.btnCopyCode.disabled = false;
+      dom.btnDownloadSvg.disabled = false;
+      dom.btnExportPng.disabled = false;
+      
+      // Setup Canvas
+      renderSvgOnCanvas();
+      resetPan();
+      zoomToFit();
+      
+      // Update Inspector Panels
+      updateInspectorDetails();
+      populateTextsEditor();
+      populateColorsEditor();
+      
+      // Tag canvas SVG text elements that are editable (after sidebar inputs exist)
+      tagEditableCanvasElements();
+      
+      updateStatus(`Đang mở: ${fileInfo.path}`);
+    } else {
+      alert(`Lỗi khi mở file: ${data.error}`);
+    }
+  } catch (error) {
+    alert(`Lỗi phân tích file SVG: ${error.message}`);
+  }
+}
+
+async function saveSvgToServer() {
+  if (!appState.activeFile || !appState.activeSvgDoc) return;
+  
+  updateStatus('Đang lưu thay đổi lên máy chủ...');
+  const serializer = new XMLSerializer();
+  const content = serializer.serializeToString(appState.activeSvgDoc);
+  
+  try {
+    const response = await fetch('/api/svgs/save', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        path: appState.activeFile.path,
+        content: content
+      })
+    });
+    const data = await response.json();
+    
+    if (data.success) {
+      // Re-update file size info in state
+      appState.activeFile.size = new Blob([content]).size;
+      updateInspectorDetails();
+      
+      const prevBtnText = dom.btnSaveTop.innerHTML;
+      dom.btnSaveTop.innerHTML = `
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        Đã Lưu!
+      `;
+      dom.btnSaveTop.style.background = 'linear-gradient(135deg, var(--color-success), #15803d)';
+      
+      setTimeout(() => {
+        dom.btnSaveTop.innerHTML = prevBtnText;
+        dom.btnSaveTop.style.background = '';
+      }, 2000);
+      
+      updateStatus(`Đã lưu file thành công: ${appState.activeFile.name}`);
+    } else {
+      alert(`Không thể lưu file: ${data.error}`);
+    }
+  } catch (error) {
+    alert(`Lỗi đường truyền mạng: ${error.message}`);
+  }
+}
+
+// --- EXPLORER & TREE RENDERING ---
+function renderFileTree() {
+  const filtered = appState.svgsList.filter(file => {
+    // Filter Category
+    if (appState.selectedCategory !== 'all' && file.category !== appState.selectedCategory) {
+      return false;
+    }
+    // Filter Search Query
+    if (appState.searchQuery) {
+      const q = appState.searchQuery.toLowerCase();
+      return file.name.toLowerCase().includes(q) || file.path.toLowerCase().includes(q);
+    }
+    return true;
+  });
+  
+  dom.fileCount.textContent = filtered.length;
+  dom.treeContainer.innerHTML = '';
+  
+  if (filtered.length === 0) {
+    dom.treeContainer.innerHTML = `
+      <div class="no-data">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
+        <span>Không tìm thấy bản vẽ nào phù hợp.</span>
+      </div>
+    `;
+    return;
+  }
+  
+  // Group files by Category/Subfolder structure
+  const foldersMap = {};
+  
+  filtered.forEach(file => {
+    const parentFolder = file.folder;
+    if (!foldersMap[parentFolder]) {
+      foldersMap[parentFolder] = [];
+    }
+    foldersMap[parentFolder].push(file);
+  });
+  
+  // Render Folders
+  Object.keys(foldersMap).sort().forEach(folderPath => {
+    const files = foldersMap[folderPath];
+    
+    const folderEl = document.createElement('div');
+    folderEl.className = 'tree-folder open'; // Open folders by default
+    
+    const headerEl = document.createElement('div');
+    headerEl.className = 'tree-folder-header';
+    headerEl.innerHTML = `
+      <span class="tree-folder-icon">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/>
+        </svg>
+      </span>
+      <span>${folderPath}</span>
+      <span class="tree-folder-arrow">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </span>
+    `;
+    
+    // Toggle expand/collapse
+    headerEl.addEventListener('click', (e) => {
+      // Prevent selection trigger on details
+      folderEl.classList.toggle('open');
+    });
+    
+    const contentEl = document.createElement('div');
+    contentEl.className = 'tree-folder-content';
+    
+    files.sort((a, b) => a.name.localeCompare(b.name)).forEach(file => {
+      const fileEl = document.createElement('div');
+      fileEl.className = `tree-file-item ${appState.activeFile && appState.activeFile.path === file.path ? 'active' : ''}`;
+      fileEl.innerHTML = `
+        <span class="tree-file-icon">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+          </svg>
+        </span>
+        <span class="tree-file-name" title="${file.name}">${file.name}</span>
+      `;
+      
+      fileEl.addEventListener('click', () => {
+        // Toggle active styling
+        document.querySelectorAll('.tree-file-item').forEach(el => el.classList.remove('active'));
+        fileEl.classList.add('active');
+        
+        loadSvgContent(file);
+      });
+      
+      contentEl.appendChild(fileEl);
+    });
+    
+    folderEl.appendChild(headerEl);
+    folderEl.appendChild(contentEl);
+    dom.treeContainer.appendChild(folderEl);
+  });
+}
+
+function showErrorState(message) {
+  dom.treeContainer.innerHTML = `
+    <div class="error-state">
+      <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="var(--color-danger)" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>Có lỗi xảy ra: ${message}</span>
+      <button class="btn btn-secondary btn-sm" onclick="fetchSvgsList()">Thử lại</button>
+    </div>
+  `;
+}
+
+// --- CANVAS RENDERING & INTERACTIVES ---
+function renderSvgOnCanvas() {
+  if (!appState.activeSvgDoc) return;
+  
+  dom.canvasWrapper.innerHTML = '';
+  
+  // Clone the node to avoid reference errors when updating
+  const svgNode = appState.activeSvgDoc.documentElement.cloneNode(true);
+  
+  const container = document.createElement('div');
+  container.className = 'rendered-svg-container';
+  container.id = 'svg-render-box';
+  container.appendChild(svgNode);
+  
+  // Extract width/height to set explicit pixel boundaries
+  let svgWidth = parseFloat(svgNode.getAttribute('width'));
+  let svgHeight = parseFloat(svgNode.getAttribute('height'));
+  const viewBox = svgNode.getAttribute('viewBox');
+  if (viewBox) {
+    const parts = viewBox.split(/\s+/).map(parseFloat);
+    if (parts.length === 4) {
+      if (isNaN(svgWidth) || svgNode.getAttribute('width').includes('mm') || svgNode.getAttribute('width').includes('%')) {
+        svgWidth = parts[2];
+      }
+      if (isNaN(svgHeight) || svgNode.getAttribute('height').includes('mm') || svgNode.getAttribute('height').includes('%')) {
+        svgHeight = parts[3];
+      }
+    }
+  }
+  
+  if (isNaN(svgWidth) || isNaN(svgHeight)) {
+    svgWidth = 800;
+    svgHeight = 600;
+  }
+  
+  // Set explicit pixel dimensions on container to avoid browser rendering layout mismatches
+  container.style.width = `${svgWidth}px`;
+  container.style.height = `${svgHeight}px`;
+  
+  // Wrap in interactive container
+  dom.canvasWrapper.appendChild(container);
+  
+  // Hide no-selection overlay
+  if (dom.noSelection) {
+    dom.noSelection.style.display = 'none';
+  }
+  
+  applyTransform();
+  
+  // Tag editable elements after textareas are populated in the sidebar
+  requestAnimationFrame(tagEditableCanvasElements);
+}
+
+
+function applyTransform() {
+  dom.canvasWrapper.style.transform = `translate(${appState.panX}px, ${appState.panY}px) scale(${appState.zoom})`;
+  dom.zoomValue.textContent = `${Math.round(appState.zoom * 100)}%`;
+}
+
+// Tag rendered SVG canvas text nodes that have a matching sidebar textarea
+function tagEditableCanvasElements() {
+  const renderedSvg = dom.canvasWrapper && dom.canvasWrapper.querySelector('svg');
+  if (!renderedSvg) return;
+  
+  // Clear existing tags first
+  renderedSvg.querySelectorAll('.svg-editable-text').forEach(el => {
+    el.classList.remove('svg-editable-text');
+  });
+  
+  const textareas = document.querySelectorAll('.text-input-field[data-editor-id]');
+  textareas.forEach(textarea => {
+    const editorId = textarea.getAttribute('data-editor-id');
+    const svgTextEl = renderedSvg.querySelector(`[data-editor-id="${editorId}"]`);
+    if (svgTextEl) {
+      svgTextEl.classList.add('svg-editable-text');
+    }
+  });
+}
+
+function resetPan() {
+  appState.zoom = 1.0;
+  appState.panX = 0;
+  appState.panY = 0;
+  applyTransform();
+}
+
+function zoomToFit() {
+  const containerRect = dom.canvasContainer.getBoundingClientRect();
+  const svgEl = dom.canvasWrapper.querySelector('svg');
+  if (!svgEl) return;
+  
+  // Extract natural dimension
+  let svgWidth = parseFloat(svgEl.getAttribute('width'));
+  let svgHeight = parseFloat(svgEl.getAttribute('height'));
+  
+  // Try viewBox if dimensions are mm/missing
+  const viewBox = svgEl.getAttribute('viewBox');
+  if (viewBox) {
+    const parts = viewBox.split(/\s+/).map(parseFloat);
+    if (parts.length === 4) {
+      if (isNaN(svgWidth) || svgEl.getAttribute('width').includes('mm') || svgEl.getAttribute('width').includes('%')) {
+        svgWidth = parts[2];
+      }
+      if (isNaN(svgHeight) || svgEl.getAttribute('height').includes('mm') || svgEl.getAttribute('height').includes('%')) {
+        svgHeight = parts[3];
+      }
+    }
+  }
+  
+  if (isNaN(svgWidth) || isNaN(svgHeight)) {
+    // Default safe fallback if metadata is corrupted
+    svgWidth = 800;
+    svgHeight = 600;
+  }
+  
+  // Account for sidebar spacing/paddings
+  const padding = 60;
+  const zoomX = (containerRect.width - padding) / svgWidth;
+  const zoomY = (containerRect.height - padding) / svgHeight;
+  
+  // Choose limiting zoom
+  const fitZoom = Math.min(zoomX, zoomY, 1.5); // Cap fit zoom at 150%
+  
+  appState.zoom = fitZoom;
+  
+  // Center SVG in workspace viewport
+  appState.panX = (containerRect.width - svgWidth * fitZoom) / 2;
+  appState.panY = (containerRect.height - svgHeight * fitZoom) / 2;
+  
+  applyTransform();
+}
+
+function handleZoom(delta, clientX, clientY) {
+  const containerRect = dom.canvasContainer.getBoundingClientRect();
+  
+  // Zoom coordinate anchor
+  const x = clientX - containerRect.left;
+  const y = clientY - containerRect.top;
+  
+  // Math calculations for centering zoom at cursor
+  const worldX = (x - appState.panX) / appState.zoom;
+  const worldY = (y - appState.panY) / appState.zoom;
+  
+  const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, appState.zoom * (1 + delta)));
+  
+  appState.zoom = newZoom;
+  appState.panX = x - worldX * newZoom;
+  appState.panY = y - worldY * newZoom;
+  
+  applyTransform();
+}
+
+// --- INSPECTOR LOGIC & TAB UPDATES ---
+function updateInspectorDetails() {
+  if (!appState.activeFile || !appState.activeSvgDoc) return;
+  
+  const file = appState.activeFile;
+  const svgEl = appState.activeSvgDoc.documentElement;
+  
+  if (dom.metaName) dom.metaName.textContent = file.name;
+  if (dom.metaPath) dom.metaPath.textContent = file.path;
+  if (dom.metaCategory) dom.metaCategory.textContent = file.category;
+  
+  // Size format
+  const sizeKb = (file.size / 1024).toFixed(1);
+  if (dom.metaSize) dom.metaSize.textContent = `${sizeKb} KB`;
+  
+  // Dimensions
+  let width = svgEl.getAttribute('width') || '-';
+  let height = svgEl.getAttribute('height') || '-';
+  const viewBox = svgEl.getAttribute('viewBox');
+  if (dom.metaDimensions) {
+    if (viewBox) {
+      dom.metaDimensions.textContent = `${width} × ${height} (viewBox: ${viewBox})`;
+    } else {
+      dom.metaDimensions.textContent = `${width} × ${height}`;
+    }
+  }
+  
+  // Stats
+  if (dom.metaTextCount) {
+    const texts = svgEl.querySelectorAll('text, tspan');
+    dom.metaTextCount.textContent = texts.length;
+  }
+  
+  if (dom.metaColorCount) {
+    // Count colors in SVG
+    const colors = extractColorsFromDoc();
+    dom.metaColorCount.textContent = Object.keys(colors).length;
+  }
+}
+
+// Helper to identify static label and paragraph texts that shouldn't be edited
+function isStaticText(text) {
+  const t = text.trim();
+  if (!t) return true;
+  
+  // Rule 1: Skip if length is too long (paragraphs / disclaimers)
+  if (t.length > 40) return true;
+  
+  // Rule 2: Skip common static labels (exact match or lowercase match)
+  const staticLabels = [
+    'presented by',
+    'agent assistant',
+    'licensed agent',
+    'ceo / licensed agent',
+    'bàn báo giá chương trình',
+    'indexd universal life',
+    'khách hàng / client',
+    'tuổi / age',
+    'giới tính / gender',
+    'xếp hạng sức khoẻ / rate class',
+    'xếp hạng sức khỏe / rate class',
+    'tiểu bang / state',
+    'tóm tắt quyền lợi & kế hoạch đóng phí',
+    'benefits summary & payment plan',
+    'quyền lợi chính / key benefits',
+    'mức bảo vệ',
+    'death & living benefits',
+    'mức đóng mỗi tháng',
+    'monthly premium',
+    'giá trị tích lũy theo thời gian / cash value growth',
+    'mức chi trả quyền lợi bệnh',
+    'living benefits payout',
+    'phí chấm dứt hợp đồng sớm',
+    'early surrender charge',
+    'cấp độ 1', 'cấp độ 2', 'cấp độ 3', 'cấp độ 4',
+    'category 1', 'category 2', 'category 3', 'category 4',
+    'dưới 25%', '25% - 50%', '50% - 75%', 'trên 75%',
+    'ảnh hưởng nhẹ', 'ảnh hưởng vừa', 'ảnh hưởng nặng', 'nghiêm trọng',
+    'chú thích:',
+    'chú thích',
+    'nhân bảo việt & kế hoạch đóng phí',
+    'bảng dưới đây minh họa các mức chi trả tương ứng.',
+    'bảng dưới đây minh họa các mức chi trả tương ứng'
+  ];
+  
+  if (staticLabels.includes(t.toLowerCase())) return true;
+  
+  // Rule 3: Skip if it is just a label starting with standard static terms
+  if (t.toLowerCase().startsWith('mức bảo vệ:') || 
+      t.toLowerCase().startsWith('giá trị tích lũy:') ||
+      t.toLowerCase().startsWith('trong giai đoạn đầu') ||
+      t.toLowerCase().startsWith('khoản phí này thường') ||
+      t.toLowerCase().startsWith('trong trường hợp mắc bệnh')) {
+    return true;
+  }
+  
+  return false;
+}
+
+// Strip absolute inline x offsets from same-line tspans to prevent diacritics overlaps & gaps on Windows
+function optimizeSvgTexts(svgEl) {
+  const texts = svgEl.querySelectorAll('text');
+  texts.forEach(textEl => {
+    const tspans = Array.from(textEl.querySelectorAll('tspan'));
+    if (tspans.length === 0) return;
+    
+    let lastY = null;
+    
+    tspans.forEach((tspan, index) => {
+      const yAttr = tspan.getAttribute('y');
+      
+      if (index === 0) {
+        if (yAttr !== null) lastY = yAttr;
+        return;
+      }
+      
+      if (yAttr !== null) {
+        if (yAttr === lastY) {
+          tspan.removeAttribute('x');
+        } else {
+          lastY = yAttr;
+        }
+      } else {
+        tspan.removeAttribute('x');
+      }
+    });
+  });
+}
+
+// --- TEXT EDITOR PANELS ---
+function populateTextsEditor() {
+  if (!appState.activeSvgDoc) return;
+  
+  dom.textsList.innerHTML = '';
+  const svgEl = appState.activeSvgDoc.documentElement;
+  
+  // Clear search field
+  const textSearchInput = document.getElementById('text-search-input');
+  if (textSearchInput) {
+    textSearchInput.value = '';
+  }
+  
+  // Fetch text elements with data-editor-id (pre-assigned on load)
+  const textElements = Array.from(svgEl.querySelectorAll('[data-editor-id]'));
+  
+  if (textElements.length === 0) {
+    dom.textsList.innerHTML = '<div class="no-data">Không tìm thấy đối tượng văn bản `<text>`.</div>';
+    return;
+  }
+  
+  // Create group containers
+  const clientGroup = document.createElement('div');
+  clientGroup.className = 'text-group';
+  clientGroup.innerHTML = `
+    <div class="text-group-title">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>1. Thông tin khách hàng</span>
+      <span class="group-arrow" style="margin-left: auto; transition: transform 0.2s ease; display: inline-flex; align-items: center;">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </span>
+    </div>
+    <div class="text-group-items" id="group-client"></div>
+  `;
+  
+  const planGroup = document.createElement('div');
+  planGroup.className = 'text-group';
+  planGroup.innerHTML = `
+    <div class="text-group-title">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span>2. Kế hoạch & Quyền lợi</span>
+      <span class="group-arrow" style="margin-left: auto; transition: transform 0.2s ease; display: inline-flex; align-items: center;">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </span>
+    </div>
+    <div class="text-group-items" id="group-plan"></div>
+  `;
+  
+  const agentGroup = document.createElement('div');
+  agentGroup.className = 'text-group';
+  agentGroup.innerHTML = `
+    <div class="text-group-title">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span>3. Thông tin đại lý & Khác</span>
+      <span class="group-arrow" style="margin-left: auto; transition: transform 0.2s ease; display: inline-flex; align-items: center;">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </span>
+    </div>
+    <div class="text-group-items" id="group-agent"></div>
+  `;
+  
+  dom.textsList.appendChild(clientGroup);
+  dom.textsList.appendChild(planGroup);
+  dom.textsList.appendChild(agentGroup);
+  
+  const clientContainer = clientGroup.querySelector('#group-client');
+  const planContainer = planGroup.querySelector('#group-plan');
+  const agentContainer = agentGroup.querySelector('#group-agent');
+  
+  // Add collapse listeners
+  [clientGroup, planGroup, agentGroup].forEach(group => {
+    const title = group.querySelector('.text-group-title');
+    const items = group.querySelector('.text-group-items');
+    const arrow = group.querySelector('.group-arrow');
+    title.style.cursor = 'pointer';
+    title.addEventListener('click', () => {
+      const isCollapsed = items.style.display === 'none';
+      if (isCollapsed) {
+        items.style.display = 'flex';
+        arrow.style.transform = '';
+      } else {
+        items.style.display = 'none';
+        arrow.style.transform = 'rotate(-90deg)';
+      }
+    });
+  });
+  
+  // Helper to tag dynamic client info elements so they persist after edits
+  function tagClientInfoElements(svgEl, textElementsList) {
+    let nameEl = svgEl.querySelector('#client-name');
+    let ageEl = svgEl.querySelector('#client-age');
+    let genderEl = svgEl.querySelector('#client-gender');
+    let rateEl = svgEl.querySelector('#client-rate');
+    let stateEl = svgEl.querySelector('#client-state');
+    
+    if (!nameEl) {
+      nameEl = textElementsList.find(el => el.textContent.trim() === 'Dinh Thi Thao Nguyen');
+      if (nameEl) nameEl.setAttribute('id', 'client-name');
+    }
+    if (!ageEl) {
+      ageEl = textElementsList.find(el => el.textContent.trim() === '43');
+      if (ageEl) ageEl.setAttribute('id', 'client-age');
+    }
+    if (!genderEl) {
+      genderEl = textElementsList.find(el => el.textContent.trim() === 'Male' || el.textContent.trim() === 'Female');
+      if (genderEl) genderEl.setAttribute('id', 'client-gender');
+    }
+    if (!rateEl) {
+      rateEl = textElementsList.find(el => el.textContent.trim() === 'Standard Non-Tobacco' || el.textContent.trim() === 'Preferred Non-Tobacco');
+      if (rateEl) rateEl.setAttribute('id', 'client-rate');
+    }
+    if (!stateEl) {
+      stateEl = textElementsList.find(el => el.textContent.trim() === 'Oklahoma');
+      if (stateEl) stateEl.setAttribute('id', 'client-state');
+    }
+  }
+
+  tagClientInfoElements(svgEl, textElements);
+
+  // Helper to calculate absolute Y position
+  function getAbsoluteY(el) {
+    let y = 0;
+    if (el.tagName.toLowerCase() === 'tspan') {
+      const tspanY = el.getAttribute('y');
+      if (tspanY) y += parseFloat(tspanY);
+    }
+    let current = el;
+    while (current && current.tagName.toLowerCase() !== 'svg') {
+      const transform = current.getAttribute('transform');
+      if (transform && transform.includes('translate')) {
+        const match = transform.match(/translate\(([^,)\s]+)[,\s]+([^,)\s]+)\)/);
+        if (match && match[2]) {
+          y += parseFloat(match[2]);
+          break;
+        }
+      }
+      if (current.tagName.toLowerCase() === 'text') {
+        const textY = current.getAttribute('y');
+        if (textY) {
+          y += parseFloat(textY);
+          break;
+        }
+      }
+      current = current.parentElement;
+    }
+    return y;
+  }
+
+  // Helper to calculate absolute X position
+  function getAbsoluteX(el) {
+    let x = 0;
+    if (el.tagName.toLowerCase() === 'tspan') {
+      const tspanX = el.getAttribute('x');
+      if (tspanX) x += parseFloat(tspanX);
+    }
+    let current = el;
+    while (current && current.tagName.toLowerCase() !== 'svg') {
+      const transform = current.getAttribute('transform');
+      if (transform && transform.includes('translate')) {
+        const match = transform.match(/translate\(([^,)\s]+)[,\s]+([^,)\s]+)\)/);
+        if (match && match[1]) {
+          x += parseFloat(match[1]);
+          break;
+        }
+      }
+      if (current.tagName.toLowerCase() === 'text') {
+        const textX = current.getAttribute('x');
+        if (textX) {
+          x += parseFloat(textX);
+          break;
+        }
+      }
+      current = current.parentElement;
+    }
+    return x;
+  }
+  
+  const clientBlocks = {};
+  const planItems = [];
+  
+  textElements.forEach((el) => {
+    const textContent = el.textContent.trim();
+    if (!textContent) return; // Skip empty elements
+    
+    const editorId = el.getAttribute('data-editor-id');
+    const id = el.getAttribute('id') || editorId;
+    
+    const absoluteY = getAbsoluteY(el);
+    const absoluteX = getAbsoluteX(el);
+    const fontSize = el.getAttribute('font-size') || el.style.fontSize || 'mặc định';
+    
+    // --- SECTION 1: Client Info (Y < 450) ---
+    if (absoluteY < 450) {
+      const isClientField = ['client-name', 'client-age', 'client-rate', 'client-gender', 'client-state'].includes(id);
+      if (!isClientField) return; // Skip all other text nodes in the top section
+      
+      let displayName = id;
+      if (id === 'client-name') displayName = 'Khách hàng';
+      else if (id === 'client-age') displayName = 'Tuổi';
+      else if (id === 'client-rate') displayName = 'Xếp hạng sức khoẻ';
+      else if (id === 'client-gender') displayName = 'Giới tính';
+      else if (id === 'client-state') displayName = 'Tiểu bang';
+      
+      const itemBlock = document.createElement('div');
+      itemBlock.className = 'text-edit-block';
+      itemBlock.innerHTML = `
+        <div class="text-meta">
+          <span class="text-id">${displayName}</span>
+          <span class="text-font-info">Size: ${fontSize}</span>
+        </div>
+        <textarea class="text-input-field" rows="1" data-editor-id="${editorId}">${textContent}</textarea>
+      `;
+      
+      const textarea = itemBlock.querySelector('.text-input-field');
+      textarea.addEventListener('input', (e) => {
+        const newValue = e.target.value;
+        el.textContent = newValue;
+        const renderedBox = dom.canvasWrapper.querySelector('svg');
+        if (renderedBox) {
+          const canvasEl = renderedBox.querySelector(`[data-editor-id="${editorId}"]`);
+          if (canvasEl) canvasEl.textContent = newValue;
+        }
+      });
+      
+      clientBlocks[id] = itemBlock;
+    }
+    
+    // --- SECTION 2: Plan & Benefits (Y >= 450 && Y < 1100) ---
+    else if (absoluteY >= 450 && absoluteY < 1100) {
+      // Only keep dollar values (except single "$")
+      if (!textContent.startsWith('$') || textContent === '$') return;
+      
+      planItems.push({ el, editorId, textContent, fontSize, absoluteX, absoluteY });
+    }
+    
+    // --- SECTION 3: Agent Info (Y >= 1100) ---
+    // Only show: Agent Assistant name/phone + Licensed Agent name/phone
+    // Agent Asst: X ≈ 36 | Licensed Agent: X ≈ 237 | CEO (excluded): X ≈ 420
+    // IUL names Y ≈ 1272, phones Y ≈ 1286 | TERMLIFE names Y ≈ 1173, phones Y ≈ 1187
+    // Bottom bars: TERMLIFE Y ≈ 1224, IUL Y ≈ 1322 → both excluded by content pattern
+    else {
+      const isAgentZone = absoluteY >= 1100; // Wide range, use content patterns to exclude bottom bar
+      const isAgentColumn = absoluteX < 400; // Excludes CEO column (X≈420)
+      
+      // Exclude bottom bar items by content (address, website, CEO phone in footer)
+      const isBottomBar = textContent.includes('thinksmartinsurance') ||
+                          textContent.includes('Brown Rd') ||
+                          textContent.includes('Lawrenceville') ||
+                          textContent === '(678) 825-3737';
+      
+      // Skip label rows
+      const isLabel = /^(Agent Assistant|Licensed Agent|CEO|PRESENTED BY)$/.test(textContent);
+      
+      // Only allow name/phone rows (short text, not static label)
+      const isPhone = /^\(\d{3}\)/.test(textContent);
+      const isName = !isPhone && textContent.length > 1 && textContent.length < 40;
+      
+      if (!isAgentZone || !isAgentColumn || isBottomBar || isLabel || (!isPhone && !isName)) return;
+      
+      // Determine display label based on X column
+      const isLeft = absoluteX < 200; // Agent Asst column (X≈36)
+      
+      let displayName;
+      if (isLeft && !isPhone) displayName = 'Tên Agent Assistant';
+      else if (isLeft && isPhone) displayName = 'SĐT Agent Assistant';
+      else if (!isLeft && !isPhone) displayName = 'Tên Licensed Agent';
+      else displayName = 'SĐT Licensed Agent';
+      
+      const itemBlock = document.createElement('div');
+      itemBlock.className = 'text-edit-block';
+      itemBlock.innerHTML = `
+        <div class="text-meta">
+          <span class="text-id">${displayName}</span>
+        </div>
+        <textarea class="text-input-field" rows="1" data-editor-id="${editorId}">${textContent}</textarea>
+      `;
+      
+      const textarea = itemBlock.querySelector('.text-input-field');
+      textarea.addEventListener('input', (e) => {
+        const newValue = e.target.value;
+        el.textContent = newValue;
+        const renderedBox = dom.canvasWrapper.querySelector('svg');
+        if (renderedBox) {
+          const canvasEl = renderedBox.querySelector(`[data-editor-id="${editorId}"]`);
+          if (canvasEl) canvasEl.textContent = newValue;
+        }
+      });
+      
+      agentContainer.appendChild(itemBlock);
+    }
+
+
+
+  });
+
+  // Sort and append Section 1:
+  const clientOrder = ['client-name', 'client-age', 'client-rate', 'client-gender', 'client-state'];
+  clientOrder.forEach(idKey => {
+    if (clientBlocks[idKey]) {
+      clientContainer.appendChild(clientBlocks[idKey]);
+    }
+  });
+
+  // Sort, label and append Section 2:
+  const isTerm = appState.activeFile && appState.activeFile.name.toLowerCase().includes('term');
+  const orderedPlanItems = [];
+  
+  if (isTerm) {
+    // Term Life: 4 fields
+    const mainBenefit = planItems.find(item => item.absoluteY < 600);
+    const premiums = planItems.filter(item => item.absoluteY >= 600)
+                              .sort((a, b) => a.absoluteX - b.absoluteX);
+                              
+    if (mainBenefit) mainBenefit.displayName = 'Mức bảo vệ (Mệnh giá)';
+    if (premiums[0]) premiums[0].displayName = 'Phí đóng 10 năm';
+    if (premiums[1]) premiums[1].displayName = 'Phí đóng 20 năm';
+    if (premiums[2]) premiums[2].displayName = 'Phí đóng 30 năm';
+    
+    if (mainBenefit) orderedPlanItems.push(mainBenefit);
+    premiums.forEach(p => orderedPlanItems.push(p));
+  } else {
+    // IUL: 6 fields
+    const mainBenefit = planItems.find(item => item.absoluteX < 100 && item.absoluteY < 550);
+    const monthlyPremium = planItems.find(item => item.absoluteX < 100 && item.absoluteY >= 550 && item.absoluteY < 650);
+    const totalPremium = planItems.find(item => item.absoluteX < 100 && item.absoluteY >= 650);
+    const chartProjections = planItems.filter(item => item.absoluteX >= 100)
+                                      .sort((a, b) => b.absoluteY - a.absoluteY); // Descending Y -> chronological order
+                                      
+    if (mainBenefit) mainBenefit.displayName = 'Mức bảo vệ (Mệnh giá)';
+    if (monthlyPremium) monthlyPremium.displayName = 'Phí đóng mỗi tháng';
+    if (totalPremium) totalPremium.displayName = 'Tổng số tiền đóng (20 năm)';
+    if (chartProjections[0]) chartProjections[0].displayName = 'Giá trị tích luỹ Tuổi 63';
+    if (chartProjections[1]) chartProjections[1].displayName = 'Giá trị tích luỹ Tuổi 67';
+    if (chartProjections[2]) chartProjections[2].displayName = 'Giá trị tích luỹ Tuổi 72';
+    
+    if (mainBenefit) orderedPlanItems.push(mainBenefit);
+    if (monthlyPremium) orderedPlanItems.push(monthlyPremium);
+    if (totalPremium) orderedPlanItems.push(totalPremium);
+    chartProjections.forEach(cp => orderedPlanItems.push(cp));
+  }
+
+  // Create and append Section 2 elements
+  orderedPlanItems.forEach(item => {
+    const itemBlock = document.createElement('div');
+    itemBlock.className = 'text-edit-block';
+    itemBlock.innerHTML = `
+      <div class="text-meta">
+        <span class="text-id">${item.displayName || 'Giá trị'}</span>
+        <span class="text-font-info">Size: ${item.fontSize}</span>
+      </div>
+      <textarea class="text-input-field" rows="1" data-editor-id="${item.editorId}">${item.textContent}</textarea>
+    `;
+    
+    const textarea = itemBlock.querySelector('.text-input-field');
+    textarea.addEventListener('input', (e) => {
+      const newValue = e.target.value;
+      item.el.textContent = newValue;
+      const renderedBox = dom.canvasWrapper.querySelector('svg');
+      if (renderedBox) {
+        const canvasEl = renderedBox.querySelector(`[data-editor-id="${item.editorId}"]`);
+        if (canvasEl) canvasEl.textContent = newValue;
+      }
+    });
+    
+    planContainer.appendChild(itemBlock);
+  });
+  
+  // Show no-data inside containers if empty
+  if (clientContainer.children.length === 0) {
+    clientContainer.innerHTML = '<div class="no-data">Không có chữ ở phần này.</div>';
+  }
+  if (planContainer.children.length === 0) {
+    planContainer.innerHTML = '<div class="no-data">Không có chữ ở phần này.</div>';
+  }
+  if (agentContainer.children.length === 0) {
+    agentContainer.innerHTML = '<div class="no-data">Không có chữ ở phần này.</div>';
+  }
+}
+
+// --- COLOR EXTRACTOR & REPLACER PANELS ---
+function extractColorsFromDoc() {
+  const colorsMap = {};
+  if (!appState.activeSvgDoc) return colorsMap;
+  
+  const svgEl = appState.activeSvgDoc.documentElement;
+  
+  // Recursively search colors in elements
+  const allElements = svgEl.querySelectorAll('*');
+  
+  allElements.forEach(el => {
+    // Check attributes: fill, stroke, stop-color
+    const attrs = ['fill', 'stroke', 'stop-color'];
+    attrs.forEach(attr => {
+      const val = el.getAttribute(attr);
+      if (val && val.startsWith('#')) {
+        const hex = val.toLowerCase().trim();
+        if (!colorsMap[hex]) colorsMap[hex] = [];
+        colorsMap[hex].push({ element: el, type: 'attribute', name: attr });
+      }
+    });
+    
+    // Check inline styles
+    const style = el.getAttribute('style');
+    if (style) {
+      // Basic regex parsing for inline styles
+      const hexMatches = style.match(/#[0-9a-fA-F]{3,8}/g);
+      if (hexMatches) {
+        hexMatches.forEach(match => {
+          const hex = match.toLowerCase().trim();
+          if (!colorsMap[hex]) colorsMap[hex] = [];
+          colorsMap[hex].push({ element: el, type: 'style' });
+        });
+      }
+    }
+  });
+  
+  return colorsMap;
+}
+
+function populateColorsEditor() {
+  if (!appState.activeSvgDoc || !dom.colorsList) return;
+  
+  dom.colorsList.innerHTML = '';
+  const colorsMap = extractColorsFromDoc();
+  const hexColors = Object.keys(colorsMap);
+  
+  if (hexColors.length === 0) {
+    dom.colorsList.innerHTML = '<div class="no-data">Không tìm thấy màu dạng HEX (#...) nào.</div>';
+    return;
+  }
+  
+  // Sort colors by luminance for beautiful grid representation
+  hexColors.sort((a, b) => {
+    // Hex to RGB representation
+    const rgbA = hexToRgb(a);
+    const rgbB = hexToRgb(b);
+    if (!rgbA || !rgbB) return 0;
+    // Luminance math formula
+    const lumA = 0.2126 * rgbA.r + 0.7152 * rgbA.g + 0.0722 * rgbA.b;
+    const lumB = 0.2126 * rgbB.r + 0.7152 * rgbB.g + 0.0722 * rgbB.b;
+    return lumB - lumA; // Dark to light
+  });
+  
+  hexColors.forEach(hex => {
+    const usages = colorsMap[hex];
+    const count = usages.length;
+    
+    const colorBlock = document.createElement('div');
+    colorBlock.className = 'color-edit-block';
+    
+    // Custom label name based on branding if matches
+    let colorName = '';
+    const uppercaseHex = hex.toUpperCase();
+    if (uppercaseHex === '#241452') colorName = 'Deep Indigo';
+    else if (uppercaseHex === '#3A1D83') colorName = 'Royal Purple';
+    else if (uppercaseHex === '#6D28D9') colorName = 'Brand Purple';
+    else if (uppercaseHex === '#8B5CF6') colorName = 'Light Purple';
+    else if (uppercaseHex === '#A78BFA') colorName = 'Lavender';
+    else if (uppercaseHex === '#C9A227') colorName = 'Gold Brand';
+    else if (uppercaseHex === '#F4D77E') colorName = 'Gold Light';
+    else if (uppercaseHex === '#FFFFFF') colorName = 'Trắng';
+    else colorName = `${count} chi tiết`;
+    
+    colorBlock.innerHTML = `
+      <div class="color-picker-wrapper">
+        <input type="color" class="color-picker-input" value="${hex}">
+      </div>
+      <div class="color-hex">${hex}</div>
+      <div class="color-tag" title="${colorName}">${colorName}</div>
+    `;
+    
+    const picker = colorBlock.querySelector('.color-picker-input');
+    
+    // Bind change event to replace color globally in SVGs
+    picker.addEventListener('input', (e) => {
+      const newHex = e.target.value.toLowerCase();
+      
+      // Update color representation inside active DOM
+      replaceColorInDoc(hex, newHex);
+      
+      // Update color code labels in editor UI itself
+      colorBlock.querySelector('.color-hex').textContent = newHex;
+      
+      // Re-render SVG on Canvas to show instant updates
+      renderSvgOnCanvas();
+    });
+    
+    // When done changing color, regenerate colors tree to update bindings
+    picker.addEventListener('change', () => {
+      populateColorsEditor();
+      updateInspectorDetails();
+    });
+    
+    dom.colorsList.appendChild(colorBlock);
+  });
+}
+
+function replaceColorInDoc(oldHex, newHex) {
+  if (!appState.activeSvgDoc) return;
+  
+  const svgEl = appState.activeSvgDoc.documentElement;
+  const allElements = svgEl.querySelectorAll('*');
+  
+  allElements.forEach(el => {
+    // 1. Check fill, stroke, stop-color attributes
+    const attrs = ['fill', 'stroke', 'stop-color'];
+    attrs.forEach(attr => {
+      const val = el.getAttribute(attr);
+      if (val && val.toLowerCase().trim() === oldHex) {
+        el.setAttribute(attr, newHex);
+      }
+    });
+    
+    // 2. Check inline style strings
+    const style = el.getAttribute('style');
+    if (style && style.toLowerCase().includes(oldHex)) {
+      // Regex replace hex strings
+      const regex = new RegExp(oldHex, 'gi');
+      const updatedStyle = style.replace(regex, newHex);
+      el.setAttribute('style', updatedStyle);
+    }
+  });
+}
+
+function hexToRgb(hex) {
+  // Supports shorthand #333 and standard #666666
+  const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+  const fullHex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : null;
+}
+
+
+
+// --- BUTTON EXPORTS ---
+function copySvgCode() {
+  if (!appState.activeSvgDoc) return;
+  
+  const serializer = new XMLSerializer();
+  const code = serializer.serializeToString(appState.activeSvgDoc);
+  
+  navigator.clipboard.writeText(code).then(() => {
+    const prevText = dom.btnCopyCode.innerHTML;
+    dom.btnCopyCode.innerHTML = '✓ Đã Copy Code!';
+    setTimeout(() => {
+      dom.btnCopyCode.innerHTML = prevText;
+    }, 2000);
+    updateStatus('Đã sao chép mã nguồn SVG vào Clipboard.');
+  }).catch(err => {
+    alert('Không thể copy code: ' + err);
+  });
+}
+
+function downloadSvgFile() {
+  if (!appState.activeFile || !appState.activeSvgDoc) return;
+  
+  const serializer = new XMLSerializer();
+  const code = serializer.serializeToString(appState.activeSvgDoc);
+  const blob = new Blob([code], { type: 'image/svg+xml;charset=utf-8' });
+  
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = appState.activeFile.name;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  updateStatus(`Đã tải xuống file SVG: ${appState.activeFile.name}`);
+}
+
+function exportToPng() {
+  if (!appState.activeFile || !appState.activeSvgDoc) return;
+  
+  updateStatus('Đang xuất ảnh PNG...');
+  
+  const svgEl = appState.activeSvgDoc.documentElement;
+  
+  // Extract width/height
+  let width = parseFloat(svgEl.getAttribute('width'));
+  let height = parseFloat(svgEl.getAttribute('height'));
+  const viewBox = svgEl.getAttribute('viewBox');
+  
+  if (viewBox) {
+    const parts = viewBox.split(/\s+/).map(parseFloat);
+    if (parts.length === 4) {
+      if (isNaN(width) || svgEl.getAttribute('width').includes('mm') || svgEl.getAttribute('width').includes('%')) {
+        width = parts[2];
+      }
+      if (isNaN(height) || svgEl.getAttribute('height').includes('mm') || svgEl.getAttribute('height').includes('%')) {
+        height = parts[3];
+      }
+    }
+  }
+  
+  if (isNaN(width) || isNaN(height)) {
+    width = 1200; // Resolution standard fallback
+    height = 900;
+  }
+  
+  // Multiply for high-res rendering (retina export vibe: 2x)
+  const scaleFactor = 2;
+  const exportWidth = width * scaleFactor;
+  const exportHeight = height * scaleFactor;
+  
+  const serializer = new XMLSerializer();
+  const svgString = serializer.serializeToString(appState.activeSvgDoc);
+  
+  // Safe base64 blob encoding for the image loader
+  const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = exportWidth;
+    canvas.height = exportHeight;
+    const ctx = canvas.getContext('2d');
+    
+    // Draw background color if selected in canvas presets
+    if (appState.canvasBgColor !== 'transparent') {
+      ctx.fillStyle = appState.canvasBgColor;
+      ctx.fillRect(0, 0, exportWidth, exportHeight);
+    }
+    
+    // Draw SVG onto Canvas
+    ctx.drawImage(img, 0, 0, exportWidth, exportHeight);
+    
+    // Trigger download
+    const pngUrl = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.href = pngUrl;
+    
+    // Change extension to png
+    const pngName = appState.activeFile.name.replace(/\.svg$/i, '.png');
+    link.download = pngName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    URL.revokeObjectURL(url);
+    updateStatus(`Đã xuất và tải xuống ảnh PNG: ${pngName}`);
+  };
+  
+  img.onerror = (err) => {
+    alert('Không thể chuyển đổi SVG sang PNG. Có thể có fonts hoặc liên kết ngoài không hợp lệ.');
+    console.error(err);
+  };
+  
+  img.src = url;
+}
+
+// --- UTILITIES & SYSTEM EVENT BINDINGS ---
+function updateStatus(message) {
+  dom.statusLeft.textContent = message;
+}
+
+function initEventListeners() {
+  // Search & Filters
+  if (dom.searchInput) {
+    dom.searchInput.addEventListener('input', (e) => {
+      appState.searchQuery = e.target.value;
+      renderFileTree();
+    });
+  }
+  
+  // Text Editor Live Search
+  const textSearchInput = document.getElementById('text-search-input');
+  if (textSearchInput) {
+    textSearchInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase().trim();
+      const groups = dom.textsList.querySelectorAll('.text-group');
+      
+      groups.forEach(group => {
+        const items = group.querySelectorAll('.text-edit-block');
+        let hasMatch = false;
+        
+        items.forEach(item => {
+          const textarea = item.querySelector('.text-input-field');
+          const textValue = textarea ? textarea.value.toLowerCase() : '';
+          const id = item.querySelector('.text-id') ? item.querySelector('.text-id').textContent.toLowerCase() : '';
+          
+          if (textValue.includes(query) || id.includes(query)) {
+            item.style.display = 'flex';
+            hasMatch = true;
+          } else {
+            item.style.display = 'none';
+          }
+        });
+        
+        if (hasMatch || query === '') {
+          group.style.display = 'block';
+        } else {
+          group.style.display = 'none';
+        }
+      });
+    });
+  }
+  
+  if (dom.categoryPills) {
+    dom.categoryPills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        dom.categoryPills.forEach(el => el.classList.remove('active'));
+        pill.classList.add('active');
+        
+        appState.selectedCategory = pill.dataset.category;
+        renderFileTree();
+      });
+    });
+  }
+  
+  // Canvas Control Bar Actions
+  if (dom.btnZoomIn) dom.btnZoomIn.addEventListener('click', () => handleZoom(ZOOM_SPEED, window.innerWidth / 2, window.innerHeight / 2));
+  if (dom.btnZoomOut) dom.btnZoomOut.addEventListener('click', () => handleZoom(-ZOOM_SPEED, window.innerWidth / 2, window.innerHeight / 2));
+  if (dom.btnZoomFit) dom.btnZoomFit.addEventListener('click', zoomToFit);
+  
+  if (dom.btnToggleGrid) {
+    dom.btnToggleGrid.addEventListener('click', () => {
+      dom.btnToggleGrid.classList.toggle('active');
+      dom.canvasContainer.classList.toggle('grid-backdrop');
+    });
+  }
+  
+  // Canvas Background Presets
+  if (dom.presetBtns) {
+    dom.presetBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        dom.presetBtns.forEach(el => el.classList.remove('active'));
+        btn.classList.add('active');
+        
+        const bgColor = btn.dataset.bg;
+        appState.canvasBgColor = bgColor;
+        
+        const renderBox = document.getElementById('svg-render-box');
+        if (renderBox) {
+          renderBox.style.backgroundColor = bgColor;
+        }
+      });
+    });
+  }
+  
+  // Zoom & Pan Mouse Wheel events
+  if (dom.canvasContainer) {
+    dom.canvasContainer.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      // Delta direction mapping
+      const delta = -e.deltaY * 0.0015;
+      handleZoom(delta, e.clientX, e.clientY);
+    }, { passive: false });
+    
+    // Panning drag-drop mouse event actions
+    dom.canvasContainer.addEventListener('mousedown', (e) => {
+      // Space key active or middle click / right click
+      if (appState.isSpacePressed || e.button === 1 || e.button === 2) {
+        e.preventDefault();
+        appState.isPanning = true;
+        appState.startX = e.clientX - appState.panX;
+        appState.startY = e.clientY - appState.panY;
+      }
+    });
+  }
+  
+  window.addEventListener('mousemove', (e) => {
+    if (appState.isPanning) {
+      appState.panX = e.clientX - appState.startX;
+      appState.panY = e.clientY - appState.startY;
+      applyTransform();
+    }
+  });
+  
+  window.addEventListener('mouseup', () => {
+    appState.isPanning = false;
+  });
+  
+  // Prevent context menu default popup on right click pan
+  if (dom.canvasContainer) {
+    dom.canvasContainer.addEventListener('contextmenu', (e) => {
+      if (appState.isSpacePressed) {
+        e.preventDefault();
+      }
+    });
+  }
+  
+  // Handle space keydown mapping for Figma-like spacebar drag
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+      // Avoid browser window auto-scroll down on space
+      e.preventDefault();
+      appState.isSpacePressed = true;
+      if (dom.canvasContainer) dom.canvasContainer.style.cursor = 'grab';
+      updateStatus('Mẹo: Nhấn kéo chuột để di chuyển canvas');
+    }
+    
+    // Zoom Hotkeys: Ctrl + / Ctrl - / Ctrl 0
+    if (e.ctrlKey && e.key === '=') {
+      e.preventDefault();
+      if (dom.btnZoomIn) dom.btnZoomIn.click();
+    }
+    if (e.ctrlKey && e.key === '-') {
+      e.preventDefault();
+      if (dom.btnZoomOut) dom.btnZoomOut.click();
+    }
+    if (e.shiftKey && e.key === '1') {
+      e.preventDefault();
+      if (dom.btnZoomFit) dom.btnZoomFit.click();
+    }
+    if (e.ctrlKey && e.key === 's') {
+      e.preventDefault();
+      if (dom.btnSaveTop && !dom.btnSaveTop.disabled) saveSvgToServer();
+    }
+  });
+  
+  window.addEventListener('keyup', (e) => {
+    if (e.code === 'Space') {
+      appState.isSpacePressed = false;
+      dom.canvasContainer.style.cursor = '';
+    }
+  });
+  
+  // Save button
+  if (dom.btnSaveTop) dom.btnSaveTop.addEventListener('click', saveSvgToServer);
+  
+  // Inspector action buttons
+  if (dom.btnCopyCode) dom.btnCopyCode.addEventListener('click', copySvgCode);
+  if (dom.btnDownloadSvg) dom.btnDownloadSvg.addEventListener('click', downloadSvgFile);
+  if (dom.btnExportPng) dom.btnExportPng.addEventListener('click', exportToPng);
+
+  // Click-to-Edit Visual Inspector mapping
+  if (dom.canvasWrapper) {
+    dom.canvasWrapper.addEventListener('click', (e) => {
+      const target = e.target.closest('.svg-editable-text');
+      if (!target) return;
+      
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const editorId = target.getAttribute('data-editor-id');
+      if (!editorId) return;
+      
+      // Find the corresponding textarea in the right sidebar
+      const textarea = document.querySelector(`.text-input-field[data-editor-id="${editorId}"]`);
+      if (!textarea) return;
+      
+      // Find the parent group section (.text-group) and expand it if collapsed
+      const groupItems = textarea.closest('.text-group-items');
+      if (groupItems && groupItems.style.display === 'none') {
+        // Find the group title and simulate a click to expand
+        const groupEl = groupItems.closest('.text-group');
+        const groupTitle = groupEl ? groupEl.querySelector('.text-group-title') : null;
+        if (groupTitle) groupTitle.click();
+      }
+      
+      // Scroll the textarea into view smoothly
+      textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      
+      // Focus the textarea and select the text
+      textarea.focus();
+      textarea.select();
+      
+      // Briefly highlight the edit block to give visual feedback
+      const editBlock = textarea.closest('.text-edit-block');
+      if (editBlock) {
+        editBlock.classList.add('highlight-flash');
+        setTimeout(() => {
+          editBlock.classList.remove('highlight-flash');
+        }, 1500);
+      }
+    });
+  }
+}
+
