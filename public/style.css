@@ -715,13 +715,10 @@ aside {
   padding: 16px;
   flex-direction: column;
   gap: 12px;
-  height: 100%;
 }
 
 .tab-pane.active {
   display: flex;
-  flex: 1;
-  min-height: 0;
 }
 
 .pane-section h3 {
@@ -827,16 +824,12 @@ aside {
   gap: 8px;
 }
 
-/* Edit Texts UI list */
+/* Edit Texts UI list — no inner scrolling, the whole inspector panel scrolls as one */
 .texts-list-container {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  flex: 1;
-  min-height: 0;
-  max-height: none;
-  overflow-y: auto;
-  padding-right: 4px;
+  overflow: visible;
 }
 
 .text-edit-block {
@@ -1061,8 +1054,6 @@ aside {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 400px;
-  overflow-y: auto;
 }
 
 /* Custom font mapping to resolve Illustrator postscript fonts on Windows */

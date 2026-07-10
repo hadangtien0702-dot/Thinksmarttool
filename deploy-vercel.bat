@@ -8,6 +8,6 @@ echo === SYNTAX CHECK ===
 node --check public\app.js && echo APP_JS_OK
 echo === GIT ===
 git add -A
-git commit -m "Static mode for Vercel: bundled templates, browser-saved proposals, delete button"
+git commit -m "Fix right sidebar: single scroll container, no overlapping nested scrolls"
 git push origin main
 echo === DONE exit code %errorlevel% ===
