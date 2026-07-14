@@ -591,21 +591,77 @@ function makeDownloadItem(item) {
   return el;
 }
 
+function preprocessLibraryItems(items) {
+  const processed = [];
+  const groups = {}; // baseName -> { jpgs: [], pdf: null }
+
+  items.forEach(it => {
+    const ext = (it.ext || '').toLowerCase();
+    // Normalize names to match "Name" and "Name (2)" to the same group
+    const baseName = it.name.replace(/\s*\(\d+\)\.jpe?g$/i, '').replace(/\.jpe?g$/i, '').replace(/\.pdf$/i, '');
+    
+    if (ext === 'jpg' || ext === 'jpeg' || ext === 'pdf') {
+      if (!groups[baseName]) {
+        groups[baseName] = { jpgs: [], pdf: null };
+      }
+      if (ext === 'pdf') {
+        groups[baseName].pdf = it;
+      } else {
+        groups[baseName].jpgs.push(it);
+      }
+    } else {
+      processed.push(it);
+    }
+  });
+
+  Object.keys(groups).forEach(baseName => {
+    const g = groups[baseName];
+    // If we have a PDF and multiple JPGs (i.e. pages of the brochure)
+    if (g.jpgs.length > 1 && g.pdf) {
+      // Sort pages alphabetically so "AIG IUL.jpg" comes before "AIG IUL (2).jpg"
+      g.jpgs.sort((a, b) => {
+        const aHasParen = a.name.includes('(');
+        const bHasParen = b.name.includes('(');
+        if (aHasParen && !bHasParen) return 1;
+        if (!aHasParen && bHasParen) return -1;
+        return a.name.localeCompare(b.name);
+      });
+
+      processed.push({
+        name: baseName,
+        path: g.pdf.path,
+        ext: 'pdf',
+        size: g.pdf.size,
+        isMultiPage: true,
+        pages: g.jpgs.map(p => p.path)
+      });
+    } else {
+      // Not a grouped multi-page brochure, return files as individual items
+      if (g.pdf) processed.push(g.pdf);
+      g.jpgs.forEach(jpg => processed.push(jpg));
+    }
+  });
+
+  return processed;
+}
+
 function renderLibrarySection(container, label, iconHTML, groupsObj, q) {
   groupsObj = groupsObj || {};
   const section = makeCollapsibleFolder(label, { extraClass: 'nav-section', iconHTML });
   let count = 0;
   Object.keys(groupsObj).sort(carrierSort).forEach(carrier => {
-    const items = (groupsObj[carrier] || []).filter(it => !q || it.name.toLowerCase().includes(q));
+    let items = (groupsObj[carrier] || []).filter(it => !q || it.name.toLowerCase().includes(q));
     if (!items.length) return;
+    
+    // Group multi-page brochures (PDF + JPEGs)
+    items = preprocessLibraryItems(items);
+
     const grp = makeCollapsibleFolder(`${escapeHtml(carrier)} <span class="nav-count">${items.length}</span>`, { extraClass: 'nav-carrier', iconHTML: NAV_ICONS.carrier });
     
     // Add click event to the carrier header to show all items
     const headerEl = grp.folder.querySelector('.tree-folder-header');
     if (headerEl) {
       headerEl.addEventListener('click', (e) => {
-        // Only trigger preview if they didn't click the arrow (which toggles)
-        // Actually, toggle happens automatically, but we can also trigger preview
         openLibraryGroup(items, carrier);
       });
     }
@@ -658,7 +714,14 @@ function showLibraryGroupPreview(items) {
     const isPdf = ext === 'pdf';
 
     let previewHTML;
-    if (isImg) {
+    if (item.isMultiPage) {
+      const coverUrl = `/api/download?path=${encodeURIComponent(item.pages[0])}&inline=1`;
+      previewHTML = `
+        <div class="library-card-preview">
+          <img src="${coverUrl}" alt="${escapeHtml(item.name)}">
+          <div style="position: absolute; top: 12px; right: 12px; background: var(--brand); color: white; padding: 4px 10px; border-radius: var(--r-xs); font-size: 10px; font-weight: 800; letter-spacing: 0.5px; box-shadow: var(--shadow-sm);">${item.pages.length} TRANG</div>
+        </div>`;
+    } else if (isImg) {
       previewHTML = `
         <div class="library-card-preview">
           <img src="${inlineUrl}" alt="${escapeHtml(item.name)}">
@@ -774,8 +837,58 @@ function openLibraryItem(item) {
   let view = document.getElementById('library-view');
   if (view) view.classList.remove('has-group');
 
-  showLibraryPreview(item);
+  if (item.isMultiPage) {
+    showLibraryMultiPagePreview(item);
+  } else {
+    showLibraryPreview(item);
+  }
   updateStatus(`Đang xem: ${item.name}`);
+}
+
+function showLibraryMultiPagePreview(item) {
+  if (dom.noSelection) dom.noSelection.style.display = 'none';
+
+  let view = document.getElementById('library-view');
+  if (!view) {
+    view = document.createElement('div');
+    view.id = 'library-view';
+    view.className = 'library-view';
+    dom.canvasContainer.appendChild(view);
+  }
+
+  view.classList.add('has-group');
+
+  const dl = `/api/download?path=${encodeURIComponent(item.path)}`;
+
+  let html = '<div class="library-view-group" style="padding-bottom: 20px;">';
+  
+  item.pages.forEach((pagePath, index) => {
+    const inlineUrl = `/api/download?path=${encodeURIComponent(pagePath)}&inline=1`;
+    html += `
+      <div class="library-item-card">
+        <div class="library-card-preview">
+          <img src="${inlineUrl}" alt="Page ${index + 1}">
+        </div>
+        <div class="library-card-info" style="padding: 12px 20px; align-items: center; justify-content: center;">
+          <div style="font-size: var(--fs-xs); color: var(--text-3); font-weight: 700; letter-spacing: 0.5px;">TRANG ${index + 1}</div>
+        </div>
+      </div>
+    `;
+  });
+
+  html += '</div>';
+  
+  // Big download bar for the whole PDF brochure
+  html += `
+    <div class="library-meta" style="margin-top: 10px; margin-bottom: 30px; padding: 0 40px; width: 100%;">
+      <div class="library-name">${escapeHtml(item.name)}</div>
+      <div class="library-sub">Tài liệu PDF trọn bộ · ${formatBytes(item.size)}</div>
+      <a class="btn btn-primary library-download" href="${dl}" download style="padding: 12px 40px; font-size: 14px; font-weight: 700;">${NAV_ICONS.download} Tải file PDF trọn bộ</a>
+    </div>
+  `;
+  
+  view.innerHTML = html;
+  view.style.display = 'flex';
 }
 
 function showLibraryPreview(item) {
