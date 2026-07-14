@@ -682,27 +682,27 @@ function preprocessLibraryItems(items) {
 
   Object.keys(groups).forEach(baseName => {
     const g = groups[baseName];
-    // If we have a PDF and multiple JPGs (i.e. pages of the brochure)
-    if (g.jpgs.length > 1 && g.pdf) {
-      // Sort pages alphabetically so "AIG IUL.jpg" comes before "AIG IUL (2).jpg"
-      g.jpgs.sort((a, b) => {
-        const aHasParen = a.name.includes('(');
-        const bHasParen = b.name.includes('(');
-        if (aHasParen && !bHasParen) return 1;
-        if (!aHasParen && bHasParen) return -1;
-        return a.name.localeCompare(b.name);
-      });
+    // Sort pages so "AIG IUL.jpg" (page 1) comes before "AIG IUL (2).jpg" (page 2)
+    g.jpgs.sort((a, b) => {
+      const aHasParen = a.name.includes('(');
+      const bHasParen = b.name.includes('(');
+      if (aHasParen && !bHasParen) return 1;
+      if (!aHasParen && bHasParen) return -1;
+      return a.name.localeCompare(b.name);
+    });
 
+    // Multiple JPG pages (with or WITHOUT a PDF) → merge into ONE multi-page brochure
+    if (g.jpgs.length > 1) {
       processed.push({
         name: baseName,
-        path: g.pdf.path,
-        ext: 'pdf',
-        size: g.pdf.size,
+        path: g.pdf ? g.pdf.path : g.jpgs[0].path,   // download target: the PDF if present, else pages
+        ext: g.pdf ? 'pdf' : (g.jpgs[0].ext || 'jpg'),
+        size: g.pdf ? g.pdf.size : g.jpgs.reduce((s, j) => s + (j.size || 0), 0),
         isMultiPage: true,
         pages: g.jpgs.map(p => p.path)
       });
     } else {
-      // Not a grouped multi-page brochure, return files as individual items
+      // Single file (one JPG or one PDF) → individual item
       if (g.pdf) processed.push(g.pdf);
       g.jpgs.forEach(jpg => processed.push(jpg));
     }
@@ -951,37 +951,60 @@ function showLibraryMultiPagePreview(item) {
 
   view.classList.add('has-group');
 
+  const isPdf = (item.ext || '').toLowerCase() === 'pdf';
   const dl = `/api/download?path=${encodeURIComponent(item.path)}`;
 
   let html = '<div class="library-view-group" style="padding-bottom: 20px;">';
-  
+
   item.pages.forEach((pagePath, index) => {
     const inlineUrl = `/api/download?path=${encodeURIComponent(pagePath)}&inline=1`;
+    const pageDl = `/api/download?path=${encodeURIComponent(pagePath)}`;
     html += `
       <div class="library-item-card">
         <div class="library-card-preview">
           <img src="${inlineUrl}" alt="Page ${index + 1}">
         </div>
-        <div class="library-card-info" style="padding: 12px 20px; align-items: center; justify-content: center;">
+        <div class="library-card-info" style="padding: 12px 20px; align-items: center; justify-content: center; gap: 8px;">
           <div style="font-size: var(--fs-xs); color: var(--text-3); font-weight: 700; letter-spacing: 0.5px;">TRANG ${index + 1}</div>
+          ${isPdf ? '' : `<a class="btn btn-secondary btn-sm" href="${pageDl}" download>${NAV_ICONS.download} Tải trang ${index + 1}</a>`}
         </div>
       </div>
     `;
   });
 
   html += '</div>';
-  
-  // Big download bar for the whole PDF brochure
+
+  // Big download bar for the whole brochure
   html += `
     <div class="library-meta" style="margin-top: 10px; margin-bottom: 30px; padding: 0 40px; width: 100%;">
       <div class="library-name">${escapeHtml(item.name)}</div>
-      <div class="library-sub">Tài liệu PDF trọn bộ · ${formatBytes(item.size)}</div>
-      <a class="btn btn-primary library-download" href="${dl}" download style="padding: 12px 40px; font-size: 14px; font-weight: 700;">${NAV_ICONS.download} Tải file PDF trọn bộ</a>
+      <div class="library-sub">${isPdf ? 'Tài liệu PDF trọn bộ' : item.pages.length + ' trang (ảnh)'} · ${formatBytes(item.size)}</div>
+      ${isPdf
+        ? `<a class="btn btn-primary library-download" href="${dl}" download style="padding: 12px 40px; font-size: 14px; font-weight: 700;">${NAV_ICONS.download} Tải file PDF trọn bộ</a>`
+        : `<button class="btn btn-primary library-download" id="btn-dl-all-pages" style="padding: 12px 40px; font-size: 14px; font-weight: 700;">${NAV_ICONS.download} Tải tất cả ${item.pages.length} trang</button>`}
     </div>
   `;
-  
+
   view.innerHTML = html;
   view.style.display = 'flex';
+
+  // For image (non-PDF) multi-page brochures: download every page on "Tải tất cả"
+  if (!isPdf) {
+    const btnAll = view.querySelector('#btn-dl-all-pages');
+    if (btnAll) {
+      btnAll.addEventListener('click', () => {
+        item.pages.forEach((pagePath, i) => {
+          setTimeout(() => {
+            const a = document.createElement('a');
+            a.href = `/api/download?path=${encodeURIComponent(pagePath)}`;
+            a.download = '';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          }, i * 400);
+        });
+        updateStatus(`Đang tải ${item.pages.length} trang...`);
+      });
+    }
+  }
 }
 
 function showLibraryPreview(item) {
