@@ -1162,8 +1162,8 @@ function zoomToFit() {
   const zoomX = (containerRect.width - padding) / svgWidth;
   const zoomY = (containerRect.height - padding) / svgHeight;
   
-  // Choose limiting zoom
-  const fitZoom = Math.min(zoomX, zoomY, 1.5); // Cap fit zoom at 150%
+  // Choose limiting zoom — fit to viewport (small designs like name cards zoom up so text is readable)
+  const fitZoom = Math.min(zoomX, zoomY, MAX_ZOOM);
   
   appState.zoom = fitZoom;
   
