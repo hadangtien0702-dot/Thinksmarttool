@@ -51,6 +51,8 @@ function getSvgFiles(dir, fileList = []) {
         category = 'IUL';
       } else if (file.toLowerCase().includes('term')) {
         category = 'Term Life';
+      } else if (relativePath.toLowerCase().includes('name card')) {
+        category = 'Name Card';
       }
       const parentFolder = path.dirname(relativePath).replace(/\\/g, '/');
       
