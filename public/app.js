@@ -1,5 +1,5 @@
 /**
- * THINKSMART SVG STUDIO - CLIENT APPLICATION LOGIC
+ * THINKSMART TOOL - CLIENT APPLICATION LOGIC
  * Features: Folder Tree, Figma Zoom/Pan, DOM Parser Editor (Texts, Colors, XML Code), Exports.
  */
 
@@ -7,6 +7,8 @@
 let appState = {
   mode: 'server', // 'server' = local Express backend | 'static' = deployed (Vercel), browser-only
   svgsList: [],
+  library: { brochure: {}, namecard: {} }, // downloadable assets grouped by carrier
+  activeLibraryPath: null,
   activeFile: null,
   activeSvgDoc: null, // Parsed DOM of active SVG
   zoom: 1.0,
@@ -27,7 +29,7 @@ const MIN_ZOOM = 0.05;
 const MAX_ZOOM = 8.0;
 
 // Master templates live in this folder and must never be overwritten
-const MASTER_FOLDER = 'file final';
+const MASTER_FOLDER = '2-templates';
 
 function isMasterFile(file) {
   return !!(file && file.folder && file.folder.toLowerCase().startsWith(MASTER_FOLDER));
@@ -112,10 +114,7 @@ const dom = {
   metaTextCount: document.getElementById('meta-text-count'),
   metaColorCount: document.getElementById('meta-color-count'),
   
-  btnCopyCode: document.getElementById('btn-copy-code'),
-  btnDownloadSvg: document.getElementById('btn-download-svg'),
-  btnExportPng: document.getElementById('btn-export-png'),
-  btnCopyPng: document.getElementById('btn-copy-png'),
+  btnExportJpeg: document.getElementById('btn-export-jpeg'),
   btnExportPdf: document.getElementById('btn-export-pdf'),
   btnNewProposal: document.getElementById('btn-new-proposal'),
   
@@ -147,6 +146,7 @@ async function fetchSvgsList() {
     if (data.success) {
       appState.mode = 'server';
       appState.svgsList = data.svgs;
+      await fetchLibrary();
       renderFileTree();
       updateStatus(`Đã tải ${data.svgs.length} thiết kế.`);
     } else {
@@ -173,7 +173,7 @@ async function fetchStaticList() {
     name: t.name,
     path: `templates/${t.file}`,
     category: t.category,
-    folder: 'File Final',
+    folder: '2-Templates',
     size: 0,
     mtime: null
   }));
@@ -281,16 +281,19 @@ async function loadSvgContent(fileInfo) {
         });
       }
 
+      // A proposal is now open → reveal the right-hand editor, clear any library preview
+      setEditorVisible(true);
+      hideLibraryPreview();
+
       // Update UI title (mark master templates, and lock their Save button)
       const isMaster = isMasterFile(fileInfo);
-      dom.activeFileTitle.textContent = isMaster ? `${fileInfo.name} — MẪU GỐC` : fileInfo.name;
+      const cleanName = fileInfo.name.replace(/\.svg$/i, '');
+      dom.activeFileTitle.textContent = isMaster ? `${cleanName} — MẪU GỐC` : cleanName;
+      dom.activeFileTitle.classList.add('is-active');
       dom.btnSaveTop.disabled = isMaster;
 
-      // Enable export buttons
-      dom.btnCopyCode.disabled = false;
-      dom.btnDownloadSvg.disabled = false;
-      dom.btnExportPng.disabled = false;
-      if (dom.btnCopyPng) dom.btnCopyPng.disabled = false;
+      // Enable export buttons (JPEG + PDF)
+      if (dom.btnExportJpeg) dom.btnExportJpeg.disabled = false;
       if (dom.btnExportPdf) dom.btnExportPdf.disabled = false;
       
       // Setup Canvas
@@ -469,119 +472,256 @@ async function createNewProposal() {
   }
 }
 
-// --- EXPLORER & TREE RENDERING ---
-function renderFileTree() {
-  const filtered = appState.svgsList.filter(file => {
-    // Filter Category
-    if (appState.selectedCategory !== 'all' && file.category !== appState.selectedCategory) {
-      return false;
-    }
-    // Filter Search Query
-    if (appState.searchQuery) {
-      const q = appState.searchQuery.toLowerCase();
-      return file.name.toLowerCase().includes(q) || file.path.toLowerCase().includes(q);
-    }
-    return true;
+// --- NAVIGATION: main tools (Proposal / Brochure / Name Card) ---
+
+// SVG icons used across the navigation
+const NAV_ICONS = {
+  proposal: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>',
+  brochure: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+  namecard: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2.2"/><line x1="13" y1="10" x2="18" y2="10"/><line x1="13" y1="14" x2="17" y2="14"/></svg>',
+  carrier: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+  file: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>',
+  fileDl: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+  arrow: '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>',
+  download: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+  bigFile: '<svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
+};
+
+const CARRIER_ORDER = ['AIG', 'NLG', 'Khách hàng', 'Chung', 'Khác'];
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function formatBytes(n) {
+  if (n == null) return '';
+  if (n < 1024) return n + ' B';
+  if (n < 1024 * 1024) return Math.round(n / 1024) + ' KB';
+  return (n / 1024 / 1024).toFixed(1) + ' MB';
+}
+
+// Determine carrier group for a proposal file (from folder or filename)
+function carrierOf(file) {
+  const f = (file.folder || '').toLowerCase();
+  const p = (file.path || '').toLowerCase();
+  const n = (file.name || '').toLowerCase();
+  if (file.localId || f.includes('client') || p.includes('4-clients') || f.includes('máy này')) return 'Khách hàng';
+  if (f.includes('aig') || n.includes('aig')) return 'AIG';
+  if (f.includes('nlg') || n.includes('nlg')) return 'NLG';
+  return 'Khác';
+}
+
+function carrierSort(a, b) {
+  const ia = CARRIER_ORDER.indexOf(a), ib = CARRIER_ORDER.indexOf(b);
+  return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib) || a.localeCompare(b);
+}
+
+// Build a collapsible folder shell → { folder, content }
+function makeCollapsibleFolder(labelHTML, { extraClass = '', open = true, iconHTML = '' } = {}) {
+  const folderEl = document.createElement('div');
+  folderEl.className = `tree-folder ${extraClass} ${open ? 'open' : ''}`.replace(/\s+/g, ' ').trim();
+
+  const headerEl = document.createElement('div');
+  headerEl.className = 'tree-folder-header';
+  headerEl.innerHTML = `
+    ${iconHTML ? `<span class="tree-folder-icon">${iconHTML}</span>` : ''}
+    <span class="tree-folder-label">${labelHTML}</span>
+    <span class="tree-folder-arrow">${NAV_ICONS.arrow}</span>
+  `;
+  headerEl.addEventListener('click', () => folderEl.classList.toggle('open'));
+
+  const contentEl = document.createElement('div');
+  contentEl.className = 'tree-folder-content';
+
+  folderEl.appendChild(headerEl);
+  folderEl.appendChild(contentEl);
+  return { folder: folderEl, content: contentEl };
+}
+
+function makeEmptyHint(msg) {
+  const d = document.createElement('div');
+  d.className = 'no-data nav-empty';
+  d.textContent = msg;
+  return d;
+}
+
+// A clickable, editable proposal item
+function makeProposalItem(file) {
+  const el = document.createElement('div');
+  const isActive = appState.activeFile && appState.activeFile.path === file.path;
+  el.className = `tree-file-item ${isActive ? 'active' : ''}`.trim();
+  const display = file.name.replace(/\.svg$/i, '');
+  el.innerHTML = `
+    <span class="tree-file-icon">${NAV_ICONS.file}</span>
+    <span class="tree-file-name" title="${escapeHtml(file.name)}">${escapeHtml(display)}</span>
+    ${file.localId ? '<span class="tree-file-delete" title="Xóa proposal này khỏi máy">✕</span>' : ''}
+  `;
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.tree-file-item').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
+    loadSvgContent(file);
   });
-  
-  dom.fileCount.textContent = filtered.length;
+  const del = el.querySelector('.tree-file-delete');
+  if (del) {
+    del.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!confirm(`Xóa proposal "${file.name}" khỏi máy này?`)) return;
+      setLocalProposals(getLocalProposals().filter(r => String(r.id) !== String(file.localId)));
+      fetchStaticList();
+    });
+  }
+  return el;
+}
+
+// A clickable, downloadable library item (brochure / name card)
+function makeDownloadItem(item) {
+  const el = document.createElement('div');
+  const isActive = appState.activeLibraryPath === item.path;
+  el.className = `tree-file-item lib-item ${isActive ? 'active' : ''}`.trim();
+  const display = item.name.replace(/\.[^.]+$/, '');
+  el.innerHTML = `
+    <span class="tree-file-icon">${NAV_ICONS.fileDl}</span>
+    <span class="tree-file-name" title="${escapeHtml(item.name)}">${escapeHtml(display)}</span>
+  `;
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.tree-file-item').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
+    openLibraryItem(item);
+  });
+  return el;
+}
+
+// Render one download-library section (Brochure / Name Card). Returns item count.
+function renderLibrarySection(container, label, iconHTML, groupsObj, q) {
+  groupsObj = groupsObj || {};
+  const section = makeCollapsibleFolder(label, { extraClass: 'nav-section', iconHTML });
+  let count = 0;
+  Object.keys(groupsObj).sort(carrierSort).forEach(carrier => {
+    const items = (groupsObj[carrier] || []).filter(it => !q || it.name.toLowerCase().includes(q));
+    if (!items.length) return;
+    const grp = makeCollapsibleFolder(`${escapeHtml(carrier)} <span class="nav-count">${items.length}</span>`, { extraClass: 'nav-carrier', iconHTML: NAV_ICONS.carrier });
+    items.sort((a, b) => a.name.localeCompare(b.name)).forEach(it => grp.content.appendChild(makeDownloadItem(it)));
+    section.content.appendChild(grp.folder);
+    count += items.length;
+  });
+  if (count === 0) {
+    section.content.appendChild(makeEmptyHint(q ? 'Không có kết quả.' : `Chưa có file. Thả file vào folder "${label}/<Hãng>/".`));
+  }
+  container.appendChild(section.folder);
+  return count;
+}
+
+function renderFileTree() {
+  const q = (appState.searchQuery || '').toLowerCase().trim();
   dom.treeContainer.innerHTML = '';
-  
-  if (filtered.length === 0) {
-    dom.treeContainer.innerHTML = `
-      <div class="no-data">
-        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/>
-        </svg>
-        <span>Không tìm thấy bản vẽ nào phù hợp.</span>
-      </div>
-    `;
+  let total = 0;
+
+  // ---------- PROPOSAL / BÁO GIÁ ----------
+  const proposals = appState.svgsList.filter(f => !q || f.name.toLowerCase().includes(q) || (f.path || '').toLowerCase().includes(q));
+  const propGroups = {};
+  proposals.forEach(f => {
+    const c = carrierOf(f);
+    (propGroups[c] = propGroups[c] || []).push(f);
+  });
+  const propSection = makeCollapsibleFolder('Proposal / Báo giá', { extraClass: 'nav-section', iconHTML: NAV_ICONS.proposal });
+  let propCount = 0;
+  Object.keys(propGroups).sort(carrierSort).forEach(carrier => {
+    const items = propGroups[carrier];
+    if (!items || !items.length) return;
+    const grp = makeCollapsibleFolder(`${escapeHtml(carrier)} <span class="nav-count">${items.length}</span>`, { extraClass: 'nav-carrier', iconHTML: NAV_ICONS.carrier });
+    items.sort((a, b) => a.name.localeCompare(b.name)).forEach(f => grp.content.appendChild(makeProposalItem(f)));
+    propSection.content.appendChild(grp.folder);
+    propCount += items.length;
+  });
+  if (propCount === 0) propSection.content.appendChild(makeEmptyHint(q ? 'Không có kết quả.' : 'Chưa có proposal.'));
+  dom.treeContainer.appendChild(propSection.folder);
+  total += propCount;
+
+  // ---------- BROCHURE ----------
+  total += renderLibrarySection(dom.treeContainer, 'Brochure', NAV_ICONS.brochure, appState.library.brochure, q);
+
+  // ---------- NAME CARD ----------
+  total += renderLibrarySection(dom.treeContainer, 'Name Card', NAV_ICONS.namecard, appState.library.namecard, q);
+
+  dom.fileCount.textContent = total;
+}
+
+// --- LIBRARY (download) helpers ---
+async function fetchLibrary() {
+  if (appState.mode !== 'server') {
+    appState.library = { brochure: {}, namecard: {} };
     return;
   }
-  
-  // Group files by Category/Subfolder structure
-  const foldersMap = {};
-  
-  filtered.forEach(file => {
-    const parentFolder = file.folder;
-    if (!foldersMap[parentFolder]) {
-      foldersMap[parentFolder] = [];
-    }
-    foldersMap[parentFolder].push(file);
-  });
-  
-  // Render Folders
-  Object.keys(foldersMap).sort().forEach(folderPath => {
-    const files = foldersMap[folderPath];
-    
-    const folderEl = document.createElement('div');
-    folderEl.className = 'tree-folder open'; // Open folders by default
-    
-    const headerEl = document.createElement('div');
-    headerEl.className = 'tree-folder-header';
-    headerEl.innerHTML = `
-      <span class="tree-folder-icon">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-          <path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/>
-        </svg>
-      </span>
-      <span>${folderPath}</span>
-      <span class="tree-folder-arrow">
-        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="9 18 15 12 9 6"></polyline>
-        </svg>
-      </span>
-    `;
-    
-    // Toggle expand/collapse
-    headerEl.addEventListener('click', (e) => {
-      // Prevent selection trigger on details
-      folderEl.classList.toggle('open');
-    });
-    
-    const contentEl = document.createElement('div');
-    contentEl.className = 'tree-folder-content';
-    
-    files.sort((a, b) => a.name.localeCompare(b.name)).forEach(file => {
-      const fileEl = document.createElement('div');
-      fileEl.className = `tree-file-item ${appState.activeFile && appState.activeFile.path === file.path ? 'active' : ''}`;
-      fileEl.innerHTML = `
-        <span class="tree-file-icon">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-            <polyline points="2 17 12 22 22 17"></polyline>
-            <polyline points="2 12 12 17 22 12"></polyline>
-          </svg>
-        </span>
-        <span class="tree-file-name" title="${file.name}">${file.name}</span>
-        ${file.localId ? '<span class="tree-file-delete" title="Xóa proposal này khỏi máy">✕</span>' : ''}
-      `;
+  try {
+    const resp = await fetch('/api/library');
+    const data = await resp.json();
+    appState.library = (data && data.success && data.library) ? data.library : { brochure: {}, namecard: {} };
+  } catch (e) {
+    appState.library = { brochure: {}, namecard: {} };
+  }
+}
 
-      fileEl.addEventListener('click', () => {
-        // Toggle active styling
-        document.querySelectorAll('.tree-file-item').forEach(el => el.classList.remove('active'));
-        fileEl.classList.add('active');
+// Show/hide the right-hand editor panel (only visible while editing a proposal)
+function setEditorVisible(visible) {
+  document.body.classList.toggle('no-editor', !visible);
+}
 
-        loadSvgContent(file);
-      });
+// Open a brochure / name card asset → preview in canvas + download button (no editor panel)
+function openLibraryItem(item) {
+  appState.activeLibraryPath = item.path;
+  appState.activeFile = null;
+  setEditorVisible(false);
 
-      const delBtn = fileEl.querySelector('.tree-file-delete');
-      if (delBtn) {
-        delBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (!confirm(`Xóa proposal "${file.name}" khỏi máy này?`)) return;
-          setLocalProposals(getLocalProposals().filter(r => String(r.id) !== String(file.localId)));
-          fetchStaticList();
-        });
-      }
-      
-      contentEl.appendChild(fileEl);
-    });
-    
-    folderEl.appendChild(headerEl);
-    folderEl.appendChild(contentEl);
-    dom.treeContainer.appendChild(folderEl);
-  });
+  dom.activeFileTitle.textContent = item.name;
+  dom.activeFileTitle.classList.add('is-active');
+  dom.btnSaveTop.disabled = true;
+
+  dom.canvasWrapper.innerHTML = '';
+  showLibraryPreview(item);
+  updateStatus(`Đang xem: ${item.name}`);
+}
+
+function showLibraryPreview(item) {
+  if (dom.noSelection) dom.noSelection.style.display = 'none';
+
+  let view = document.getElementById('library-view');
+  if (!view) {
+    view = document.createElement('div');
+    view.id = 'library-view';
+    view.className = 'library-view';
+    dom.canvasContainer.appendChild(view);
+  }
+
+  const dl = `/api/download?path=${encodeURIComponent(item.path)}`;
+  const inlineUrl = dl + '&inline=1';
+  const ext = (item.ext || '').toLowerCase();
+  const isImg = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext);
+  const isPdf = ext === 'pdf';
+
+  let previewHTML;
+  if (isImg) {
+    previewHTML = `<div class="library-thumb"><img src="${inlineUrl}" alt="${escapeHtml(item.name)}"></div>`;
+  } else if (isPdf) {
+    previewHTML = `<div class="library-thumb library-thumb-pdf"><iframe src="${inlineUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH" title="preview"></iframe></div>`;
+  } else {
+    previewHTML = `<div class="library-thumb library-thumb-file">${NAV_ICONS.bigFile}</div>`;
+  }
+
+  view.innerHTML = `
+    ${previewHTML}
+    <div class="library-meta">
+      <div class="library-name">${escapeHtml(item.name)}</div>
+      <div class="library-sub">${escapeHtml((item.ext || '').toUpperCase())} · ${formatBytes(item.size)}</div>
+      <a class="btn btn-primary library-download" href="${dl}" download>${NAV_ICONS.download} Tải về</a>
+    </div>
+  `;
+  view.style.display = 'flex';
+}
+
+function hideLibraryPreview() {
+  const view = document.getElementById('library-view');
+  if (view) view.style.display = 'none';
+  appState.activeLibraryPath = null;
 }
 
 function showErrorState(message) {
@@ -1620,23 +1760,24 @@ function flashButton(btn, text) {
   setTimeout(() => { btn.innerHTML = prev; }, 2000);
 }
 
-function exportToPng() {
+function exportToJpeg() {
   if (!appState.activeFile || !appState.activeSvgDoc) return;
 
-  updateStatus('Đang xuất ảnh PNG...');
+  updateStatus('Đang xuất ảnh JPEG...');
+  // JPEG has no transparency → render on a white background
   renderSvgToCanvas((canvas) => {
-    const pngUrl = canvas.toDataURL('image/png');
+    const jpgUrl = canvas.toDataURL('image/jpeg', 0.92);
     const link = document.createElement('a');
-    link.href = pngUrl;
+    link.href = jpgUrl;
 
-    const pngName = `${getProposalBaseName()}.png`;
-    link.download = pngName;
+    const jpgName = `${getProposalBaseName()}.jpg`;
+    link.download = jpgName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
-    updateStatus(`Đã xuất và tải xuống ảnh PNG: ${pngName}`);
-  });
+    updateStatus(`Đã xuất và tải xuống ảnh JPEG: ${jpgName}`);
+  }, '#ffffff');
 }
 
 // Copy the rendered proposal image straight to the clipboard (paste into Messenger/Zalo)
@@ -1697,6 +1838,9 @@ function updateStatus(message) {
 }
 
 function initEventListeners() {
+  // Right editor panel starts hidden — only shown when a proposal is opened
+  setEditorVisible(false);
+
   // Search & Filters
   if (dom.searchInput) {
     dom.searchInput.addEventListener('input', (e) => {
@@ -1861,11 +2005,8 @@ function initEventListeners() {
   // Save button
   if (dom.btnSaveTop) dom.btnSaveTop.addEventListener('click', saveSvgToServer);
   
-  // Inspector action buttons
-  if (dom.btnCopyCode) dom.btnCopyCode.addEventListener('click', copySvgCode);
-  if (dom.btnDownloadSvg) dom.btnDownloadSvg.addEventListener('click', downloadSvgFile);
-  if (dom.btnExportPng) dom.btnExportPng.addEventListener('click', exportToPng);
-  if (dom.btnCopyPng) dom.btnCopyPng.addEventListener('click', copyPngToClipboard);
+  // Inspector export buttons (JPEG + PDF only)
+  if (dom.btnExportJpeg) dom.btnExportJpeg.addEventListener('click', exportToJpeg);
   if (dom.btnExportPdf) dom.btnExportPdf.addEventListener('click', exportToPdf);
 
   // New proposal button

@@ -2,14 +2,26 @@ node_modules/
 .DS_Store
 Thumbs.db
 *.log
-File Final/
 .env
 .env.local
 
-# Client proposals contain customer info - keep out of public repo
-Clients/
+# Master SVG templates (heavy; served copies live in public/templates/)
+2-Templates/
 
-# Temp files
-syntax-check.txt
-push-log.txt
+# Client proposals contain customer info - keep out of public repo
+4-Clients/
+
+# Archived / superseded files - local only
+_Archive/
+
+# Downloadable library assets — large, local-server only (not used by the static Vercel build)
+Brochure/
+Name Card/
+
+# Temp / local helper files
 push-to-github.bat
+
+# Illustrator / editor temp & lock files
+*.tmp
+~ai*.tmp
+~$*

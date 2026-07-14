@@ -1,7 +1,7 @@
 {
-  "name": "proposal-svg-dashboard",
+  "name": "thinksmart-tool",
   "version": "1.0.0",
-  "description": "SVG Design Dashboard for Thinksmart Proposals",
+  "description": "Thinksmart Tool - internal tools platform (starting with the insurance proposal editor)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

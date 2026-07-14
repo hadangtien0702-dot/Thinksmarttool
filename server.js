@@ -35,8 +35,8 @@ function getSvgFiles(dir, fileList = []) {
   const files = fs.readdirSync(dir);
   
   files.forEach(file => {
-    // Skip node_modules, .git, and .gemini
-    if (['node_modules', '.git', '.gemini', 'public'].includes(file)) return;
+    // Skip node_modules, .git, .gemini, public, and archived files
+    if (['node_modules', '.git', '.gemini', 'public', '_Archive'].includes(file)) return;
     
     const filePath = path.join(dir, file);
     const stat = fs.statSync(filePath);
@@ -107,9 +107,9 @@ app.post('/api/svgs/save', (req, res) => {
     return res.status(400).json({ success: false, error: 'Đường dẫn file không hợp lệ hoặc không an toàn.' });
   }
 
-  // Protect master templates: never allow overwriting files inside "File Final"
+  // Protect master templates: never allow overwriting files inside "2-Templates"
   const normalizedRel = relativePath.replace(/\\/g, '/').toLowerCase();
-  if (normalizedRel.startsWith('file final/')) {
+  if (normalizedRel.startsWith('2-templates/')) {
     return res.status(403).json({ success: false, error: 'Đây là file MẪU GỐC, không thể ghi đè. Hãy bấm "Tạo Proposal Mới" để tạo bản sao cho khách hàng rồi chỉnh sửa trên bản sao đó.' });
   }
   
@@ -133,7 +133,7 @@ app.post('/api/svgs/save', (req, res) => {
   }
 });
 
-// API: Clone a template into a client proposal (saved in "Clients" folder)
+// API: Clone a template into a client proposal (saved in "4-Clients" folder)
 app.post('/api/svgs/clone', (req, res) => {
   const { templatePath, clientName, content } = req.body;
 
@@ -154,7 +154,7 @@ app.post('/api/svgs/clone', (req, res) => {
     const safeName = clientName.trim().replace(/[\\/:*?"<>|]/g, '').slice(0, 60);
     const baseName = path.basename(templatePath, path.extname(templatePath));
 
-    const clientsDir = path.join(WORKSPACE_DIR, 'Clients');
+    const clientsDir = path.join(WORKSPACE_DIR, '4-Clients');
     if (!fs.existsSync(clientsDir)) {
       fs.mkdirSync(clientsDir, { recursive: true });
     }
@@ -183,10 +183,102 @@ app.post('/api/svgs/clone', (req, res) => {
   }
 });
 
+// ==========================================================================
+// LIBRARY (Brochure / Name Card) — downloadable assets grouped by carrier
+// ==========================================================================
+
+// Folders (relative to workspace) that hold downloadable library assets
+const LIBRARY_SECTIONS = {
+  brochure: 'Brochure',
+  namecard: 'Name Card'
+};
+
+const DOWNLOADABLE_EXT = ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ai', '.eps', '.zip'];
+
+// Scan a section folder → { <carrier>: [ {name, path, size, ext, mtime} ] }
+function scanLibrarySection(sectionDir) {
+  const absSection = path.join(WORKSPACE_DIR, sectionDir);
+  const groups = {};
+  if (!fs.existsSync(absSection)) return groups;
+
+  function addFile(groupName, absFile, fileName) {
+    const ext = path.extname(fileName).toLowerCase();
+    if (!DOWNLOADABLE_EXT.includes(ext)) return;
+    let stat;
+    try { stat = fs.statSync(absFile); } catch (e) { return; }
+    const rel = path.relative(WORKSPACE_DIR, absFile).replace(/\\/g, '/');
+    (groups[groupName] = groups[groupName] || []).push({
+      name: fileName,
+      path: rel,
+      size: stat.size,
+      ext: ext.replace('.', ''),
+      mtime: stat.mtime
+    });
+  }
+
+  fs.readdirSync(absSection).forEach(entry => {
+    const abs = path.join(absSection, entry);
+    let stat;
+    try { stat = fs.statSync(abs); } catch (e) { return; }
+    if (stat.isDirectory()) {
+      // Carrier subfolder → its files
+      fs.readdirSync(abs).forEach(f => {
+        const absF = path.join(abs, f);
+        try { if (fs.statSync(absF).isFile()) addFile(entry, absF, f); } catch (e) {}
+      });
+    } else if (stat.isFile()) {
+      // Loose file directly in section → "Chung" group
+      addFile('Chung', abs, entry);
+    }
+  });
+  return groups;
+}
+
+// API: List downloadable library assets (brochure + name card)
+app.get('/api/library', (req, res) => {
+  try {
+    const result = {};
+    Object.keys(LIBRARY_SECTIONS).forEach(key => {
+      result[key] = scanLibrarySection(LIBRARY_SECTIONS[key]);
+    });
+    res.json({ success: true, library: result });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// API: Download / inline-preview a library asset. Restricted to library folders.
+app.get('/api/download', (req, res) => {
+  const relativePath = req.query.path;
+  const inline = req.query.inline === '1';
+
+  if (!relativePath) {
+    return res.status(400).json({ success: false, error: 'Thiếu tham số path.' });
+  }
+
+  const absolutePath = path.resolve(WORKSPACE_DIR, relativePath);
+
+  // Must stay inside workspace AND inside a whitelisted library folder
+  const allowedRoots = Object.values(LIBRARY_SECTIONS).map(d => path.resolve(WORKSPACE_DIR, d));
+  const isInside = absolutePath.startsWith(WORKSPACE_DIR);
+  const isAllowed = allowedRoots.some(root => absolutePath.startsWith(root + path.sep) || absolutePath === root);
+
+  if (!isInside || !isAllowed) {
+    return res.status(403).json({ success: false, error: 'Đường dẫn không hợp lệ hoặc không được phép.' });
+  }
+  if (!fs.existsSync(absolutePath) || !fs.statSync(absolutePath).isFile()) {
+    return res.status(404).json({ success: false, error: 'Không tìm thấy file.' });
+  }
+
+  const fileName = path.basename(absolutePath);
+  res.setHeader('Content-Disposition', `${inline ? 'inline' : 'attachment'}; filename="${encodeURIComponent(fileName)}"`);
+  res.sendFile(absolutePath);
+});
+
 // Start Server
 app.listen(PORT, () => {
   console.log(`==================================================`);
-  console.log(`SVG Design Dashboard is running at:`);
+  console.log(`Thinksmart Tool is running at:`);
   console.log(`http://localhost:${PORT}`);
   console.log(`==================================================`);
 });
