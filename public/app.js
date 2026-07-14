@@ -591,7 +591,6 @@ function makeDownloadItem(item) {
   return el;
 }
 
-// Render one download-library section (Brochure / Name Card). Returns item count.
 function renderLibrarySection(container, label, iconHTML, groupsObj, q) {
   groupsObj = groupsObj || {};
   const section = makeCollapsibleFolder(label, { extraClass: 'nav-section', iconHTML });
@@ -600,6 +599,17 @@ function renderLibrarySection(container, label, iconHTML, groupsObj, q) {
     const items = (groupsObj[carrier] || []).filter(it => !q || it.name.toLowerCase().includes(q));
     if (!items.length) return;
     const grp = makeCollapsibleFolder(`${escapeHtml(carrier)} <span class="nav-count">${items.length}</span>`, { extraClass: 'nav-carrier', iconHTML: NAV_ICONS.carrier });
+    
+    // Add click event to the carrier header to show all items
+    const headerEl = grp.folder.querySelector('.tree-folder-header');
+    if (headerEl) {
+      headerEl.addEventListener('click', (e) => {
+        // Only trigger preview if they didn't click the arrow (which toggles)
+        // Actually, toggle happens automatically, but we can also trigger preview
+        openLibraryGroup(items, carrier);
+      });
+    }
+
     items.sort((a, b) => a.name.localeCompare(b.name)).forEach(it => grp.content.appendChild(makeDownloadItem(it)));
     section.content.appendChild(grp.folder);
     count += items.length;
@@ -609,6 +619,89 @@ function renderLibrarySection(container, label, iconHTML, groupsObj, q) {
   }
   container.appendChild(section.folder);
   return count;
+}
+
+function openLibraryGroup(items, groupName) {
+  appState.activeLibraryPath = 'group:' + groupName;
+  appState.activeFile = null;
+  setEditorVisible(false);
+
+  dom.activeFileTitle.textContent = groupName + ` (${items.length} files)`;
+  dom.activeFileTitle.classList.add('is-active');
+  dom.btnSaveTop.disabled = true;
+
+  dom.canvasWrapper.innerHTML = '';
+  showLibraryGroupPreview(items);
+  updateStatus(`Đang xem nhóm: ${groupName}`);
+}
+
+function showLibraryGroupPreview(items) {
+  if (dom.noSelection) dom.noSelection.style.display = 'none';
+
+  let view = document.getElementById('library-view');
+  if (!view) {
+    view = document.createElement('div');
+    view.id = 'library-view';
+    view.className = 'library-view';
+    dom.canvasContainer.appendChild(view);
+  }
+
+  view.classList.add('has-group');
+
+  let html = '<div class="library-view-group">';
+  
+  items.forEach(item => {
+    const dl = `/api/download?path=${encodeURIComponent(item.path)}`;
+    const inlineUrl = dl + '&inline=1';
+    const ext = (item.ext || '').toLowerCase();
+    const isImg = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext);
+    const isPdf = ext === 'pdf';
+
+    let previewHTML;
+    if (isImg) {
+      previewHTML = `
+        <div class="library-card-preview">
+          <img src="${inlineUrl}" alt="${escapeHtml(item.name)}">
+        </div>`;
+    } else if (isPdf) {
+      previewHTML = `
+        <div class="library-card-preview">
+          <div class="library-card-preview-pdf">
+            <div class="pdf-icon-wrapper">
+              <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+            </div>
+            <div style="font-size: 13px; font-weight: 700; opacity: 0.9;">Tài Liệu PDF</div>
+            <div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">Click để tải về xem chi tiết</div>
+          </div>
+        </div>`;
+    } else {
+      previewHTML = `
+        <div class="library-card-preview">
+          <div class="library-thumb-file" style="display: flex; align-items: center; justify-content: center;">${NAV_ICONS.bigFile}</div>
+        </div>`;
+    }
+
+    html += `
+      <div class="library-item-card">
+        ${previewHTML}
+        <div class="library-card-info">
+          <div class="library-card-title" title="${escapeHtml(item.name)}">${escapeHtml(item.name.replace(/\.[^.]+$/, ''))}</div>
+          <div class="library-card-meta">
+            <span class="library-card-ext">${escapeHtml((item.ext || '').toUpperCase())}</span>
+            <span>·</span>
+            <span>${formatBytes(item.size)}</span>
+          </div>
+          <a class="library-card-btn" href="${dl}" download>${NAV_ICONS.download} Tải về</a>
+        </div>
+      </div>
+    `;
+  });
+
+  html += '</div>';
+  view.innerHTML = html;
 }
 
 function renderFileTree() {
@@ -677,6 +770,10 @@ function openLibraryItem(item) {
   dom.btnSaveTop.disabled = true;
 
   dom.canvasWrapper.innerHTML = '';
+  
+  let view = document.getElementById('library-view');
+  if (view) view.classList.remove('has-group');
+
   showLibraryPreview(item);
   updateStatus(`Đang xem: ${item.name}`);
 }
@@ -720,7 +817,10 @@ function showLibraryPreview(item) {
 
 function hideLibraryPreview() {
   const view = document.getElementById('library-view');
-  if (view) view.style.display = 'none';
+  if (view) {
+    view.style.display = 'none';
+    view.classList.remove('has-group');
+  }
   appState.activeLibraryPath = null;
 }
 
@@ -1257,7 +1357,6 @@ function populateTextsEditor() {
         itemBlock.innerHTML = `
           <div class="text-meta">
             <span class="text-id">${displayName}</span>
-            <span class="text-font-info">Size: ${fontSize}</span>
           </div>
           <textarea class="text-input-field" rows="1" data-editor-id="${editorId}">${textContent}</textarea>
         `;
@@ -1391,7 +1490,6 @@ function populateTextsEditor() {
     itemBlock.innerHTML = `
       <div class="text-meta">
         <span class="text-id">${item.displayName || 'Giá trị'}</span>
-        <span class="text-font-info">Size: ${item.fontSize}</span>
       </div>
       <textarea class="text-input-field" rows="1" data-editor-id="${item.editorId}">${item.textContent}</textarea>
     `;

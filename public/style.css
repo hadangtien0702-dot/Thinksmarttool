@@ -695,7 +695,7 @@ body.dark-theme .icon-btn .icon-moon { display: none; }
 .text-edit-block:focus-within .text-meta { color: var(--brand); }
 
 .text-meta { font-size: 11px; color: var(--text-3); font-weight: 600; margin-bottom: 2px; transition: color var(--dur) var(--ease); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.text-id { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-3); }
+.text-id { font-family: var(--font-sans); font-size: 12px; font-weight: 600; color: var(--text-2); letter-spacing: 0; }
 .text-font-info { font-size: 10.5px; color: var(--text-3); background: var(--surface-3); padding: 1px 6px; border-radius: var(--r-xs); }
 
 .text-input-field {
@@ -1021,3 +1021,177 @@ body.no-editor .sidebar-right { display: none; }
     scroll-behavior: auto !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+   19. LIBRARY GROUP VIEW (Multiple Brochures / Name Cards)
+   -------------------------------------------------------------------------- */
+.library-view-group {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 40px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  justify-content: center;
+  align-content: flex-start;
+}
+
+/* Ensure parent library-view is scrollable and styled correctly when group is active */
+.library-view.has-group {
+  display: block !important;
+  overflow-y: auto;
+  padding: 0;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.library-item-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-sm);
+  width: 440px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.library-item-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-strong);
+}
+
+.library-card-preview {
+  height: 580px;
+  background: var(--surface-3); /* Light grey container canvas */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-bottom: 1px solid var(--divider);
+  position: relative;
+  padding: 24px;
+}
+
+.library-card-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain; /* Preserve aspect ratio strictly */
+  background: #ffffff;
+  box-shadow: 0 10px 24px -4px rgba(17, 20, 32, 0.15), 0 4px 8px -2px rgba(17, 20, 32, 0.1);
+  border-radius: var(--r-xs);
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+
+.library-item-card:hover .library-card-preview img {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 20px 32px -8px rgba(17, 20, 32, 0.25), 0 8px 16px -4px rgba(17, 20, 32, 0.15);
+}
+
+/* Premium PDF Mockup Cover */
+.library-card-preview-pdf {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #F43F5E, #BE123C);
+  color: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 10px 24px -4px rgba(17, 20, 32, 0.15), 0 4px 8px -2px rgba(17, 20, 32, 0.1);
+  border-radius: var(--r-xs);
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+
+.library-item-card:hover .library-card-preview-pdf {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 20px 32px -8px rgba(17, 20, 32, 0.25), 0 8px 16px -4px rgba(17, 20, 32, 0.15);
+}
+
+.pdf-icon-wrapper {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: var(--r-md);
+  padding: 16px;
+  margin-bottom: 16px;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--dur) var(--ease);
+}
+
+.library-item-card:hover .pdf-icon-wrapper {
+  transform: scale(1.08) rotate(-2deg);
+}
+
+.library-card-info {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.library-card-title {
+  font-size: var(--fs-base);
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+  line-height: 1.4;
+  min-height: 2.8em; /* Ensure 2 lines alignment */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.library-card-meta {
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+  font-weight: 600;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.library-card-ext {
+  background: var(--surface-3);
+  color: var(--text-2);
+  padding: 2px 6px;
+  border-radius: var(--r-xs);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.library-card-btn {
+  margin-top: auto;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  border-radius: var(--r-md);
+  background: var(--brand-soft);
+  color: var(--brand);
+  border: 1px solid transparent;
+  transition: all var(--dur) var(--ease);
+  text-decoration: none;
+}
+
+.library-item-card:hover .library-card-btn {
+  background: var(--brand);
+  color: #FFFFFF;
+  box-shadow: var(--shadow-brand);
+}
+
