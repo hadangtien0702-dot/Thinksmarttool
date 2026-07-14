@@ -977,8 +977,6 @@ function showLibraryMultiPagePreview(item) {
   // Big download bar for the whole brochure
   html += `
     <div class="library-meta" style="margin-top: 10px; margin-bottom: 30px; padding: 0 40px; width: 100%;">
-      <div class="library-name">${escapeHtml(item.name)}</div>
-      <div class="library-sub">${isPdf ? 'Tài liệu PDF trọn bộ' : item.pages.length + ' trang (ảnh)'} · ${formatBytes(item.size)}</div>
       ${isPdf
         ? `<a class="btn btn-primary library-download" href="${dl}" download style="padding: 12px 40px; font-size: 14px; font-weight: 700;">${NAV_ICONS.download} Tải file PDF trọn bộ</a>`
         : `<button class="btn btn-primary library-download" id="btn-dl-all-pages" style="padding: 12px 40px; font-size: 14px; font-weight: 700;">${NAV_ICONS.download} Tải tất cả ${item.pages.length} trang</button>`}
@@ -1036,8 +1034,6 @@ function showLibraryPreview(item) {
   view.innerHTML = `
     ${previewHTML}
     <div class="library-meta">
-      <div class="library-name">${escapeHtml(item.name)}</div>
-      <div class="library-sub">${escapeHtml((item.ext || '').toUpperCase())} · ${formatBytes(item.size)}</div>
       <a class="btn btn-primary library-download" href="${dl}" download>${NAV_ICONS.download} Tải về</a>
     </div>
   `;
