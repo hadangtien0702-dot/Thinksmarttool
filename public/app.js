@@ -32,7 +32,18 @@ const MAX_ZOOM = 8.0;
 const MASTER_FOLDER = '2-templates';
 
 function isMasterFile(file) {
-  return !!(file && file.folder && file.folder.toLowerCase().startsWith(MASTER_FOLDER));
+  if (!file) return false;
+  const f = (file.folder || '').toLowerCase();
+  const p = (file.path || '').toLowerCase();
+  // 2-Templates and Name Card masters are protected (edit + export only, never overwrite)
+  return f.startsWith(MASTER_FOLDER) || p.startsWith(MASTER_FOLDER) || f.startsWith('name card') || p.startsWith('name card');
+}
+
+// A name card = master in "Name Card/" OR a personal copy (its name still contains "name card")
+function isNameCardFile(file) {
+  const f = (file.folder || '').toLowerCase();
+  const n = (file.name || '').toLowerCase();
+  return f.startsWith('name card') || n.includes('name card');
 }
 
 // Dropdown data for client info fields
@@ -61,11 +72,44 @@ const US_STATES = [
 // Apply a new text value to both the working SVG doc element and the rendered canvas copy
 function applyTextValue(el, editorId, newValue) {
   el.textContent = newValue;
+  clearSiblingTspans(el);
   const renderedBox = dom.canvasWrapper.querySelector('svg');
   if (renderedBox) {
     const canvasEl = renderedBox.querySelector(`[data-editor-id="${editorId}"]`);
-    if (canvasEl) canvasEl.textContent = newValue;
+    if (canvasEl) {
+      canvasEl.textContent = newValue;
+      clearSiblingTspans(canvasEl);
+    }
   }
+}
+
+function clearSiblingTspans(tspanEl) {
+  if (!tspanEl || tspanEl.tagName.toLowerCase() !== 'tspan') return;
+  const parent = tspanEl.parentElement;
+  if (!parent) return;
+  const y = tspanEl.getAttribute('y');
+  const siblings = Array.from(parent.querySelectorAll('tspan'));
+  siblings.forEach(sib => {
+    if (sib !== tspanEl && sib.getAttribute('y') === y) {
+      sib.textContent = '';
+    }
+  });
+}
+
+function getLineTextContent(tspanEl) {
+  if (!tspanEl) return '';
+  if (tspanEl.tagName.toLowerCase() !== 'tspan') return tspanEl.textContent.trim();
+  const parent = tspanEl.parentElement;
+  if (!parent) return tspanEl.textContent.trim();
+  const y = tspanEl.getAttribute('y');
+  const siblings = Array.from(parent.querySelectorAll('tspan'));
+  let text = '';
+  siblings.forEach(sib => {
+    if (sib.getAttribute('y') === y) {
+      text += sib.textContent;
+    }
+  });
+  return text.trim();
 }
 
 // Format "$1234.5" / "1,000,000" → "$1,234.50" / "$1,000,000". Returns null if not a number.
@@ -261,14 +305,28 @@ async function loadSvgContent(fileInfo) {
       // Optimize text layout by stripping absolute inline x offsets from same-line tspans
       optimizeSvgTexts(svgEl);
       
-      // Assign data-editor-id to all text elements in the parsed SVG document to ensure robust mapping
+      // Assign data-editor-id to all text and tspan elements in the parsed SVG document to ensure robust mapping
       const rawTextNodes = svgEl.querySelectorAll('text');
       let editorIdCounter = 1;
       rawTextNodes.forEach(textEl => {
         const tspans = Array.from(textEl.querySelectorAll('tspan'));
         const hasDirectText = Array.from(textEl.childNodes).some(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '');
         
-        if (tspans.length > 0 || hasDirectText) {
+        if (tspans.length > 0) {
+          const lines = {};
+          tspans.forEach(tspan => {
+            const y = tspan.getAttribute('y') || textEl.getAttribute('y') || '0';
+            if (!lines[y]) lines[y] = [];
+            lines[y].push(tspan);
+          });
+          Object.keys(lines).forEach(y => {
+            const lineTspans = lines[y];
+            const firstTspan = lineTspans[0];
+            if (firstTspan && firstTspan.textContent.trim() !== '') {
+              firstTspan.setAttribute('data-editor-id', `edit-text-${editorIdCounter++}`);
+            }
+          });
+        } else if (hasDirectText) {
           textEl.setAttribute('data-editor-id', `edit-text-${editorIdCounter++}`);
         }
       });
@@ -396,7 +454,8 @@ async function createNewProposal() {
     return;
   }
 
-  const clientName = prompt('Nhập tên khách hàng cho proposal mới:');
+  const isNC = isNameCardFile(appState.activeFile);
+  const clientName = prompt(isNC ? 'Nhập TÊN CỦA BẠN (để tạo name card riêng):' : 'Nhập tên khách hàng cho proposal mới:');
   if (!clientName || !clientName.trim()) return;
 
   // Static mode (deployed): create the proposal in this browser's storage
@@ -576,7 +635,7 @@ function makeProposalItem(file) {
 // A clickable, downloadable library item (brochure / name card)
 function makeDownloadItem(item) {
   const el = document.createElement('div');
-  const isActive = appState.activeLibraryPath === item.path;
+  const isActive = appState.activeLibraryPath === item.path || (appState.activeFile && appState.activeFile.path === item.path);
   el.className = `tree-file-item lib-item ${isActive ? 'active' : ''}`.trim();
   const display = item.name.replace(/\.[^.]+$/, '');
   el.innerHTML = `
@@ -586,7 +645,14 @@ function makeDownloadItem(item) {
   el.addEventListener('click', () => {
     document.querySelectorAll('.tree-file-item').forEach(x => x.classList.remove('active'));
     el.classList.add('active');
-    openLibraryItem(item);
+    
+    // If it's an SVG file, load it as editable template on the canvas!
+    if (item.ext === 'svg') {
+      appState.activeLibraryPath = null;
+      loadSvgContent(item);
+    } else {
+      openLibraryItem(item);
+    }
   });
   return el;
 }
@@ -656,18 +722,23 @@ function renderLibrarySection(container, label, iconHTML, groupsObj, q) {
     // Group multi-page brochures (PDF + JPEGs)
     items = preprocessLibraryItems(items);
 
-    const grp = makeCollapsibleFolder(`${escapeHtml(carrier)} <span class="nav-count">${items.length}</span>`, { extraClass: 'nav-carrier', iconHTML: NAV_ICONS.carrier });
-    
-    // Add click event to the carrier header to show all items
-    const headerEl = grp.folder.querySelector('.tree-folder-header');
-    if (headerEl) {
-      headerEl.addEventListener('click', (e) => {
-        openLibraryGroup(items, carrier);
-      });
-    }
+    if (carrier === 'Chung') {
+      // Append items directly to section content, bypassing folder grouping
+      items.sort((a, b) => a.name.localeCompare(b.name)).forEach(it => section.content.appendChild(makeDownloadItem(it)));
+    } else {
+      const grp = makeCollapsibleFolder(`${escapeHtml(carrier)} <span class="nav-count">${items.length}</span>`, { extraClass: 'nav-carrier', iconHTML: NAV_ICONS.carrier });
+      
+      // Add click event to the carrier header to show all items
+      const headerEl = grp.folder.querySelector('.tree-folder-header');
+      if (headerEl) {
+        headerEl.addEventListener('click', (e) => {
+          openLibraryGroup(items, carrier);
+        });
+      }
 
-    items.sort((a, b) => a.name.localeCompare(b.name)).forEach(it => grp.content.appendChild(makeDownloadItem(it)));
-    section.content.appendChild(grp.folder);
+      items.sort((a, b) => a.name.localeCompare(b.name)).forEach(it => grp.content.appendChild(makeDownloadItem(it)));
+      section.content.appendChild(grp.folder);
+    }
     count += items.length;
   });
   if (count === 0) {
@@ -772,8 +843,12 @@ function renderFileTree() {
   dom.treeContainer.innerHTML = '';
   let total = 0;
 
+  // Split matched SVGs into proposals vs name cards
+  const matched = appState.svgsList.filter(f => !q || f.name.toLowerCase().includes(q) || (f.path || '').toLowerCase().includes(q));
+  const nameCards = matched.filter(isNameCardFile);
+  const proposals = matched.filter(f => !isNameCardFile(f));
+
   // ---------- PROPOSAL / BÁO GIÁ ----------
-  const proposals = appState.svgsList.filter(f => !q || f.name.toLowerCase().includes(q) || (f.path || '').toLowerCase().includes(q));
   const propGroups = {};
   proposals.forEach(f => {
     const c = carrierOf(f);
@@ -796,8 +871,26 @@ function renderFileTree() {
   // ---------- BROCHURE ----------
   total += renderLibrarySection(dom.treeContainer, 'Brochure', NAV_ICONS.brochure, appState.library.brochure, q);
 
-  // ---------- NAME CARD ----------
-  total += renderLibrarySection(dom.treeContainer, 'Name Card', NAV_ICONS.namecard, appState.library.namecard, q);
+  // ---------- NAME CARD (editable like proposals: master + personal copies) ----------
+  const ncSection = makeCollapsibleFolder('Name Card', { extraClass: 'nav-section', iconHTML: NAV_ICONS.namecard });
+  const ncMasters = nameCards.filter(f => (f.folder || '').toLowerCase().startsWith('name card'));
+  const ncCopies = nameCards.filter(f => !(f.folder || '').toLowerCase().startsWith('name card'));
+  let ncCount = 0;
+  if (ncMasters.length) {
+    const grp = makeCollapsibleFolder(`Mẫu gốc <span class="nav-count">${ncMasters.length}</span>`, { extraClass: 'nav-carrier', iconHTML: NAV_ICONS.carrier });
+    ncMasters.sort((a, b) => a.name.localeCompare(b.name)).forEach(f => grp.content.appendChild(makeProposalItem(f)));
+    ncSection.content.appendChild(grp.folder);
+    ncCount += ncMasters.length;
+  }
+  if (ncCopies.length) {
+    const grp = makeCollapsibleFolder(`Của tôi <span class="nav-count">${ncCopies.length}</span>`, { extraClass: 'nav-carrier', iconHTML: NAV_ICONS.carrier });
+    ncCopies.sort((a, b) => a.name.localeCompare(b.name)).forEach(f => grp.content.appendChild(makeProposalItem(f)));
+    ncSection.content.appendChild(grp.folder);
+    ncCount += ncCopies.length;
+  }
+  if (ncCount === 0) ncSection.content.appendChild(makeEmptyHint(q ? 'Không có kết quả.' : 'Chưa có name card. Thả file .svg vào "Name Card/".'));
+  dom.treeContainer.appendChild(ncSection.folder);
+  total += ncCount;
 
   dom.fileCount.textContent = total;
 }
@@ -1247,7 +1340,10 @@ function populateTextsEditor() {
   if (isMasterFile(appState.activeFile)) {
     const warnEl = document.createElement('div');
     warnEl.className = 'template-warning';
-    warnEl.innerHTML = 'Đây là <b>MẪU GỐC</b> — không thể lưu đè. Bấm <b>"Tạo Proposal Mới"</b> ở góc trên bên phải để tạo bản riêng cho khách hàng (các chỉnh sửa hiện tại sẽ được mang sang).';
+    const isNC = (appState.activeFile.path || '').toLowerCase().includes('name card');
+    warnEl.innerHTML = isNC
+      ? 'Đây là <b>MẪU GỐC name card</b> — không thể lưu đè. Bấm <b>"Tạo Proposal Mới"</b> ở góc trên bên phải để tạo <b>bản riêng của bạn</b>, rồi chỉnh sửa và Xuất JPEG/PDF.'
+      : 'Đây là <b>MẪU GỐC</b> — không thể lưu đè. Bấm <b>"Tạo Proposal Mới"</b> ở góc trên bên phải để tạo bản riêng cho khách hàng (các chỉnh sửa hiện tại sẽ được mang sang).';
     dom.textsList.appendChild(warnEl);
   }
 
@@ -1256,6 +1352,167 @@ function populateTextsEditor() {
   
   if (textElements.length === 0) {
     dom.textsList.innerHTML = '<div class="no-data">Không tìm thấy đối tượng văn bản `<text>`.</div>';
+    return;
+  }
+
+  // --- CUSTOM EDITING FOR NAME CARD TEMPLATES ---
+  const isNameCard = appState.activeFile && appState.activeFile.path.toLowerCase().includes('name card');
+  if (isNameCard) {
+    const personalGroup = document.createElement('div');
+    personalGroup.className = 'text-group';
+    personalGroup.innerHTML = `
+      <div class="text-group-title">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>1. Thông tin cá nhân</span>
+        <span class="group-arrow" style="margin-left: auto; transition: transform 0.2s ease; display: inline-flex; align-items: center;">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </span>
+      </div>
+      <div class="text-group-items" id="group-personal"></div>
+    `;
+
+    const contactGroup = document.createElement('div');
+    contactGroup.className = 'text-group';
+    contactGroup.innerHTML = `
+      <div class="text-group-title">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        <span>2. Thông tin liên hệ</span>
+        <span class="group-arrow" style="margin-left: auto; transition: transform 0.2s ease; display: inline-flex; align-items: center;">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </span>
+      </div>
+      <div class="text-group-items" id="group-contact"></div>
+    `;
+
+    const socialGroup = document.createElement('div');
+    socialGroup.className = 'text-group';
+    socialGroup.innerHTML = `
+      <div class="text-group-title">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span>3. Địa chỉ & Mạng xã hội</span>
+        <span class="group-arrow" style="margin-left: auto; transition: transform 0.2s ease; display: inline-flex; align-items: center;">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </span>
+      </div>
+      <div class="text-group-items" id="group-social"></div>
+    `;
+
+    dom.textsList.appendChild(personalGroup);
+    dom.textsList.appendChild(contactGroup);
+    dom.textsList.appendChild(socialGroup);
+
+    const personalContainer = personalGroup.querySelector('#group-personal');
+    const contactContainer = contactGroup.querySelector('#group-contact');
+    const socialContainer = socialGroup.querySelector('#group-social');
+
+    // Add collapse listeners
+    [personalGroup, contactGroup, socialGroup].forEach(group => {
+      const title = group.querySelector('.text-group-title');
+      const items = group.querySelector('.text-group-items');
+      const arrow = group.querySelector('.group-arrow');
+      title.style.cursor = 'pointer';
+      title.addEventListener('click', () => {
+        const isCollapsed = items.style.display === 'none';
+        if (isCollapsed) {
+          items.style.display = 'flex';
+          arrow.style.transform = '';
+        } else {
+          items.style.display = 'none';
+          arrow.style.transform = 'rotate(-90deg)';
+        }
+      });
+    });
+
+    // Generic per-LINE editor — works with ANY name card content (no hard-coded names/phones).
+    // Each visual line (tspans grouped by their y position) becomes its own editable field.
+    function classifyLine(text) {
+      const t = (text || '').trim();
+      if (/@/.test(t)) return { label: 'Email', container: contactContainer };
+      if (/youtube/i.test(t)) return { label: 'Youtube', container: socialContainer };
+      if (/(www\.|https?:|\.com|\.net|\.org|\.vn)/i.test(t)) return { label: 'Website', container: socialContainer };
+      if (/^\+?\(?\d[\d\s().-]{5,}$/.test(t)) return { label: 'Số điện thoại', container: contactContainer };
+      if (/\d{2,}\s|(rd|st|ave|street|road|dr|blvd|ga|ca|#)\b/i.test(t)) return { label: 'Địa chỉ', container: socialContainer };
+      return { label: 'Tên / Chức vụ', container: personalContainer };
+    }
+
+    // Split a <text> element into visual lines (each = the tspans sharing the same y)
+    function getLines(textEl) {
+      const tspans = Array.from(textEl.querySelectorAll('tspan'));
+      if (tspans.length === 0) {
+        const txt = textEl.textContent.trim();
+        return txt ? [{ text: txt, apply: (v) => { textEl.textContent = v; } }] : [];
+      }
+      const order = [];
+      const byY = {};
+      tspans.forEach(ts => {
+        const y = ts.getAttribute('y') || '_';
+        if (!byY[y]) { byY[y] = []; order.push(y); }
+        byY[y].push(ts);
+      });
+      return order.map(y => {
+        const parts = byY[y];
+        const text = parts.map(t => t.textContent).join('');
+        return {
+          text,
+          apply: (v) => { parts[0].textContent = v; for (let i = 1; i < parts.length; i++) parts[i].textContent = ''; }
+        };
+      }).filter(l => l.text.trim() !== '');
+    }
+
+    // Helper to add one editable field bound to a line
+    function addNcField(container, label, line) {
+      if (!line) return;
+      const itemBlock = document.createElement('div');
+      itemBlock.className = 'text-edit-block';
+      itemBlock.innerHTML = `
+        <div class="text-meta"><span class="text-id">${escapeHtml(label)}</span></div>
+        <input type="text" class="text-input-field" value="${escapeHtml(line.text)}">
+      `;
+      const inputEl = itemBlock.querySelector('.text-input-field');
+      inputEl.addEventListener('input', (e) => { line.apply(e.target.value); renderSvgOnCanvas(); });
+      container.appendChild(itemBlock);
+    }
+
+    // PREFERRED: if the card has tagged fields (data-nc), show EXACTLY those 5 — nothing else
+    const ncNameEl = svgEl.querySelector('[data-nc="name"]');
+    const ncTitleEl = svgEl.querySelector('[data-nc="title"]');
+    const ncContactEl = svgEl.querySelector('[data-nc="contact"]');
+    if (ncNameEl || ncTitleEl || ncContactEl) {
+      if (ncNameEl)  addNcField(personalContainer, 'Họ và Tên', getLines(ncNameEl)[0]);
+      if (ncTitleEl) addNcField(personalContainer, 'Chức vụ', getLines(ncTitleEl)[0]);
+      if (ncContactEl) {
+        const clines = getLines(ncContactEl);
+        addNcField(contactContainer, 'Số điện thoại', clines[0]);
+        addNcField(contactContainer, 'Fax / Văn phòng', clines[1]);
+        addNcField(contactContainer, 'Email', clines.find(l => /@/.test(l.text)));
+      }
+      if (socialGroup) socialGroup.style.display = 'none'; // Website/Youtube/Địa chỉ cố định → ẩn
+      return;
+    }
+
+    let ncFieldCount = 0;
+    textElements.forEach(textEl => {
+      getLines(textEl).forEach(line => {
+        const { label, container } = classifyLine(line.text);
+        const itemBlock = document.createElement('div');
+        itemBlock.className = 'text-edit-block';
+        itemBlock.innerHTML = `
+          <div class="text-meta"><span class="text-id">${escapeHtml(label)}</span></div>
+          <input type="text" class="text-input-field" value="${escapeHtml(line.text)}">
+        `;
+        const inputEl = itemBlock.querySelector('.text-input-field');
+        inputEl.addEventListener('input', (e) => {
+          line.apply(e.target.value);   // update the working SVG doc
+          renderSvgOnCanvas();          // re-render the small name card (keeps pan/zoom)
+        });
+        container.appendChild(itemBlock);
+        ncFieldCount++;
+      });
+    });
+
+    if (ncFieldCount === 0) {
+      dom.textsList.innerHTML = '<div class="no-data">Không tìm thấy chữ nào để chỉnh sửa trong name card này.</div>';
+    }
     return;
   }
   
@@ -1471,10 +1728,10 @@ function populateTextsEditor() {
           <div class="text-meta">
             <span class="text-id">${displayName}</span>
           </div>
-          <textarea class="text-input-field" rows="1" data-editor-id="${editorId}">${textContent}</textarea>
+          <input type="text" class="text-input-field" data-editor-id="${editorId}" value="${escapeHtml(textContent)}">
         `;
-        const textarea = itemBlock.querySelector('.text-input-field');
-        textarea.addEventListener('input', (e) => {
+        const inputEl = itemBlock.querySelector('.text-input-field');
+        inputEl.addEventListener('input', (e) => {
           applyTextValue(el, editorId, e.target.value);
         });
       }
@@ -1523,17 +1780,15 @@ function populateTextsEditor() {
       else if (!isLeft && !isPhone) displayName = 'Tên Licensed Agent';
       else displayName = 'SĐT Licensed Agent';
       
-      const itemBlock = document.createElement('div');
-      itemBlock.className = 'text-edit-block';
       itemBlock.innerHTML = `
         <div class="text-meta">
           <span class="text-id">${displayName}</span>
         </div>
-        <textarea class="text-input-field" rows="1" data-editor-id="${editorId}">${textContent}</textarea>
+        <input type="text" class="text-input-field" data-editor-id="${editorId}" value="${escapeHtml(textContent)}">
       `;
       
-      const textarea = itemBlock.querySelector('.text-input-field');
-      textarea.addEventListener('input', (e) => {
+      const inputEl = itemBlock.querySelector('.text-input-field');
+      inputEl.addEventListener('input', (e) => {
         const newValue = e.target.value;
         el.textContent = newValue;
         const renderedBox = dom.canvasWrapper.querySelector('svg');
@@ -1604,15 +1859,15 @@ function populateTextsEditor() {
       <div class="text-meta">
         <span class="text-id">${item.displayName || 'Giá trị'}</span>
       </div>
-      <textarea class="text-input-field" rows="1" data-editor-id="${item.editorId}">${item.textContent}</textarea>
+      <input type="text" class="text-input-field" data-editor-id="${item.editorId}" value="${escapeHtml(item.textContent)}">
     `;
     
-    const textarea = itemBlock.querySelector('.text-input-field');
-    textarea.addEventListener('input', (e) => {
+    const inputEl = itemBlock.querySelector('.text-input-field');
+    inputEl.addEventListener('input', (e) => {
       applyTextValue(item.el, item.editorId, e.target.value);
     });
     // Auto-format money on blur: "1000000" → "$1,000,000"
-    textarea.addEventListener('blur', (e) => {
+    inputEl.addEventListener('blur', (e) => {
       const formatted = formatCurrencyValue(e.target.value);
       if (formatted !== null && formatted !== e.target.value) {
         e.target.value = formatted;
@@ -1899,7 +2154,61 @@ function getProposalBaseName() {
 }
 
 // Shared renderer: draws the active SVG onto a 2x canvas, then calls onReady(canvas)
-function renderSvgToCanvas(onReady, bgOverride) {
+// --- FONT EMBEDDING (so exports look identical on any machine) ---
+const EMBED_FONTS = [
+  { family: 'SFProDisplay-Black',   file: 'fonts/SFProDisplay-Black.woff' },
+  { family: 'SFProDisplay-Bold',    file: 'fonts/SFProDisplay-Bold.woff' },
+  { family: 'SFProDisplay-Heavy',   file: 'fonts/SFProDisplay-Heavy.woff' },
+  { family: 'SFProDisplay-Medium',  file: 'fonts/SFProDisplay-Medium.woff' },
+  { family: 'SFProDisplay-Regular', file: 'fonts/SFProDisplay-Regular.woff' },
+  { family: 'SFProText-Bold',       file: 'fonts/SFProText-Bold.woff' },
+  { family: 'SFProText-Regular',    file: 'fonts/SFProText-Regular.woff' }
+];
+// Italic weights aren't bundled → alias to the closest weight so text stays in the SF Pro family
+const ITALIC_ALIASES = [
+  { family: 'SFProDisplay-RegularItalic', from: 'SFProDisplay-Regular' },
+  { family: 'SFProDisplay-MediumItalic',  from: 'SFProDisplay-Medium' },
+  { family: 'SFProDisplay-BoldItalic',    from: 'SFProDisplay-Bold' }
+];
+
+let _embeddedFontCSS = null;
+
+function arrayBufferToBase64(buf) {
+  let binary = '';
+  const bytes = new Uint8Array(buf);
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+// Fetch the bundled woff files once and build @font-face rules with base64 data URLs
+async function getEmbeddedFontCSS() {
+  if (_embeddedFontCSS !== null) return _embeddedFontCSS;
+  try {
+    const dataUrls = {};
+    await Promise.all(EMBED_FONTS.map(async f => {
+      const resp = await fetch(f.file);
+      if (!resp.ok) return;
+      const buf = await resp.arrayBuffer();
+      dataUrls[f.family] = 'data:font/woff;base64,' + arrayBufferToBase64(buf);
+    }));
+    let css = '';
+    EMBED_FONTS.forEach(f => {
+      if (dataUrls[f.family]) css += `@font-face{font-family:'${f.family}';src:url('${dataUrls[f.family]}') format('woff');font-display:swap;}`;
+    });
+    ITALIC_ALIASES.forEach(a => {
+      if (dataUrls[a.from]) css += `@font-face{font-family:'${a.family}';src:url('${dataUrls[a.from]}') format('woff');font-display:swap;}`;
+    });
+    _embeddedFontCSS = css;
+  } catch (e) {
+    _embeddedFontCSS = '';
+  }
+  return _embeddedFontCSS;
+}
+
+async function renderSvgToCanvas(onReady, bgOverride) {
   if (!appState.activeSvgDoc) return;
 
   const svgEl = appState.activeSvgDoc.documentElement;
@@ -1931,8 +2240,19 @@ function renderSvgToCanvas(onReady, bgOverride) {
   const exportWidth = width * scaleFactor;
   const exportHeight = height * scaleFactor;
 
+  // Clone the SVG and embed the fonts (base64) so the export renders with the real
+  // fonts on ANY machine — not just computers that have SF Pro installed.
+  const fontCSS = await getEmbeddedFontCSS();
+  const svgClone = appState.activeSvgDoc.documentElement.cloneNode(true);
+  if (fontCSS) {
+    const styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+    styleEl.setAttribute('type', 'text/css');
+    styleEl.textContent = fontCSS;
+    svgClone.insertBefore(styleEl, svgClone.firstChild);
+  }
+
   const serializer = new XMLSerializer();
-  const svgString = serializer.serializeToString(appState.activeSvgDoc);
+  const svgString = serializer.serializeToString(svgClone);
 
   const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
   const url = URL.createObjectURL(blob);

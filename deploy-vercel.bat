@@ -6,6 +6,7 @@ copy /Y "2-Templates\NLG\IUL - NLG.svg" "public\templates\"
 copy /Y "2-Templates\NLG\TERMLIFE - NLG.svg" "public\templates\"
 copy /Y "2-Templates\AIG\AIG IUL.svg" "public\templates\"
 copy /Y "2-Templates\AIG\AIG Termlife.svg" "public\templates\"
+copy /Y "Name Card\Chung\Sale Name Card.svg" "public\templates\"
 echo === SYNTAX CHECK ===
 node --check public\app.js && echo APP_JS_OK
 echo === GIT ===

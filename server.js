@@ -35,8 +35,8 @@ function getSvgFiles(dir, fileList = []) {
   const files = fs.readdirSync(dir);
   
   files.forEach(file => {
-    // Skip node_modules, .git, .gemini, public, and archived files
-    if (['node_modules', '.git', '.gemini', 'public', '_Archive'].includes(file)) return;
+    // Skip node_modules, .git, .gemini, public, Brochure, Name Card, and archived files
+    if (['node_modules', '.git', '.gemini', 'public', '_Archive', 'Brochure'].includes(file)) return;
     
     const filePath = path.join(dir, file);
     const stat = fs.statSync(filePath);
@@ -109,9 +109,9 @@ app.post('/api/svgs/save', (req, res) => {
     return res.status(400).json({ success: false, error: 'Đường dẫn file không hợp lệ hoặc không an toàn.' });
   }
 
-  // Protect master templates: never allow overwriting files inside "2-Templates"
+  // Protect master templates: never allow overwriting files inside "2-Templates" or "Name Card"
   const normalizedRel = relativePath.replace(/\\/g, '/').toLowerCase();
-  if (normalizedRel.startsWith('2-templates/')) {
+  if (normalizedRel.startsWith('2-templates/') || normalizedRel.startsWith('name card/')) {
     return res.status(403).json({ success: false, error: 'Đây là file MẪU GỐC, không thể ghi đè. Hãy bấm "Tạo Proposal Mới" để tạo bản sao cho khách hàng rồi chỉnh sửa trên bản sao đó.' });
   }
   
@@ -191,8 +191,7 @@ app.post('/api/svgs/clone', (req, res) => {
 
 // Folders (relative to workspace) that hold downloadable library assets
 const LIBRARY_SECTIONS = {
-  brochure: 'Brochure',
-  namecard: 'Name Card'
+  brochure: 'Brochure'
 };
 
 const DOWNLOADABLE_EXT = ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ai', '.eps', '.zip'];
