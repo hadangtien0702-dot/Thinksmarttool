@@ -877,9 +877,8 @@ function renderFileTree() {
   const ncCopies = nameCards.filter(f => !(f.folder || '').toLowerCase().startsWith('name card'));
   let ncCount = 0;
   if (ncMasters.length) {
-    const grp = makeCollapsibleFolder(`Mẫu gốc <span class="nav-count">${ncMasters.length}</span>`, { extraClass: 'nav-carrier', iconHTML: NAV_ICONS.carrier });
-    ncMasters.sort((a, b) => a.name.localeCompare(b.name)).forEach(f => grp.content.appendChild(makeProposalItem(f)));
-    ncSection.content.appendChild(grp.folder);
+    // Master name cards appear directly under "Name Card" (no extra sub-group)
+    ncMasters.sort((a, b) => a.name.localeCompare(b.name)).forEach(f => ncSection.content.appendChild(makeProposalItem(f)));
     ncCount += ncMasters.length;
   }
   if (ncCopies.length) {
@@ -1798,7 +1797,9 @@ function populateTextsEditor() {
       else if (isLeft && isPhone) displayName = 'SĐT Agent Assistant';
       else if (!isLeft && !isPhone) displayName = 'Tên Licensed Agent';
       else displayName = 'SĐT Licensed Agent';
-      
+
+      const itemBlock = document.createElement('div');
+      itemBlock.className = 'text-edit-block';
       itemBlock.innerHTML = `
         <div class="text-meta">
           <span class="text-id">${displayName}</span>
