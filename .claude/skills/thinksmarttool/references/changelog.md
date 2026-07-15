@@ -3,14 +3,17 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
-## Current state (as of 2026-07-14)
-- Versions: `app.js?v=18`, `style.css?v=9` (verify against `public/index.html`).
-- Last commit on `main`: `e1417be`. Live at `thinksmarttool-gy6f.vercel.app`.
+## Current state (as of 2026-07-15)
+- Versions: `app.js?v=22`, `style.css?v=9` (verify against `public/index.html`).
+- Last commit on `main`: `43eb973` (uncommitted local work: agent-zone dedupe fixes — commit at EOD).
+- Live at `thinksmarttool-gy6f.vercel.app`.
 - All 3 tools working: Proposal (AIG/NLG + Khách hàng), Brochure (multi-page grouping, minimal preview),
   Name Card (5 tagged fields, editable, fit-to-viewport zoom, master-protected + copy flow).
 - Font embedding on export is live. Design system + light/dark theme live.
 
 ## PENDING / open tasks
+0. **`TERMLIFE - NLG` master polluted with test data** (see 2026-07-15 log) — owner to supply/restore
+   a clean master (both `2-Templates/NLG/` and `public/templates/`).
 1. **Name Card icons are low-res raster** → look rough / "mất góc" when zoomed/exported. Confirmed a
    source-asset issue, not a tool bug. Awaiting the owner's choice: re-export from Illustrator with vector
    icons (preferred) OR replace icons with vectors in code. See `tools.md` → "Known limitation".
@@ -21,6 +24,43 @@ Newest entries on top. Keep it concrete (versions, files, commands).
    FB post templates, client management…). Keep the structure modular.
 
 ## Log
+### 2026-07-15
+- **Fixed bogus duplicate "Tên Agent Assistant" field** (user report, AIG IUL + IUL - NLG): the
+  surrender-charge disclaimer paragraph wraps, and its short last line "khi không còn áp dụng."
+  (Y≈1177, X≈66, <40 chars) slipped through the agent-zone filters in `populateTextsEditor`.
+  Fix: in Section 3, skip any line whose parent `<text>` holds 2+ `[data-editor-id]` lines
+  (`isParagraphLine`) — real agent fields are always single-line `<text>` elements.
+- **loadSvgContent now strips stale `data-editor-id`** saved into files by older versions before
+  re-assigning fresh ids (old files carried ids on the `<text>` wrapper → duplicate rows + id
+  collisions). Follow-up: `tagClientInfoElements` got a `reclaimTag()` helper — if a saved
+  `id="client-*"` sits on an element without `data-editor-id` (old `<text>`-level tagging, e.g.
+  `IUL - NLG.svg`), the id is moved down to the inner tspan that carries the fresh editor id,
+  otherwise the client fields disappear (the editor loop only iterates `[data-editor-id]`).
+- **Wider phone detection in agent zone**: `isPhone` now also matches all-digit numbers like
+  `0938169130` (VN format), not just `(346) 858-4277` — TERMLIFE - NLG labeled phones as "Tên".
+- Verified all 4 templates + Jenny client file: 5 client fields, plan values, exactly 4 agent
+  fields, edit propagates to canvas. `app.js?v=22`.
+- NOTE for owner: **`TERMLIFE - NLG` master (both `2-Templates` and `public/templates`) contains
+  saved test data** (client "Trương thị thanh hảo", state "Sài gòn bình thạnh", VN phones) — it was
+  overwritten before master-protection existed. Needs a clean re-export/restore of that master.
+
+### 2026-07-14 (later 2)
+- **Fixed empty Proposal section on Vercel** (commit `6bda21f`): `2-Templates/` is gitignored so it isn't on
+  Vercel; `/api/svgs` now also scans `public/templates/*.svg` (deduped by filename, synthetic
+  `folder` so master-detection + carrier grouping work). Keep `public/templates/` + `manifest.json` in
+  sync with `2-Templates/`.
+- **Fixed proposal client fields (name/gender/rate) not showing** (commit `43eb973`). IMPORTANT ARCHITECTURE
+  GOTCHA: `data-editor-id` is assigned to the **FIRST `<tspan>` of each line** (see loadSvgContent ~line 312),
+  NOT the `<text>` element. So a value split across several tspans (e.g. "Standard Non-Tobacco" = 8 tspans,
+  a person name = 4 tspans) is NOT equal to that first tspan's `.textContent`. Any code that reads/matches a
+  field value must use **`getLineTextContent(el)`** (concatenates all tspans on the same line), and any write
+  must clear the sibling tspans (`applyTextValue` already calls `clearSiblingTspans`). Fixed
+  `tagClientInfoElements` (match via getLineTextContent; match rate/state against `RATE_CLASSES`/`US_STATES`;
+  detect the client name by a capitalized-multiword pattern in the client zone instead of a hardcoded string)
+  and the field-render read in `populateTextsEditor`. Verified all 4 templates show 5 client fields + editing
+  updates the canvas. Debug tip that worked: temporarily add `window.appState = appState;` to inspect
+  `activeSvgDoc` from `mcp__Claude_Browser__javascript_tool` (sync evals only — Promise evals hang the pane).
+
 ### 2026-07-14 (later)
 - **Fixed empty Proposal section on Vercel.** Root cause: `2-Templates/` is gitignored → not deployed →
   `/api/svgs` (Vercel runs server mode) found no proposal masters. Fix in `server.js` `/api/svgs` handler:

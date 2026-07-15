@@ -306,6 +306,9 @@ async function loadSvgContent(fileInfo) {
       optimizeSvgTexts(svgEl);
       
       // Assign data-editor-id to all text and tspan elements in the parsed SVG document to ensure robust mapping
+      // Strip any data-editor-id saved into the file by older versions first — stale ids on <text>
+      // elements would otherwise coexist with the fresh tspan-level ids and render duplicate fields.
+      svgEl.querySelectorAll('[data-editor-id]').forEach(n => n.removeAttribute('data-editor-id'));
       const rawTextNodes = svgEl.querySelectorAll('text');
       let editorIdCounter = 1;
       rawTextNodes.forEach(textEl => {
@@ -1602,11 +1605,23 @@ function populateTextsEditor() {
   
   // Helper to tag dynamic client info elements so they persist after edits
   function tagClientInfoElements(svgEl, textElementsList) {
-    let nameEl = svgEl.querySelector('#client-name');
-    let ageEl = svgEl.querySelector('#client-age');
-    let genderEl = svgEl.querySelector('#client-gender');
-    let rateEl = svgEl.querySelector('#client-rate');
-    let stateEl = svgEl.querySelector('#client-state');
+    // Files saved by older versions carry client-* ids on the <text> wrapper, but the editor
+    // loop only iterates [data-editor-id] elements (line-first tspans). Move such an id down
+    // to the tspan that holds the fresh data-editor-id so the field still renders.
+    const reclaimTag = (idName) => {
+      const el = svgEl.querySelector('#' + idName);
+      if (!el) return null;
+      if (el.getAttribute('data-editor-id')) return el;
+      el.removeAttribute('id');
+      const inner = el.querySelector('[data-editor-id]');
+      if (inner) { inner.setAttribute('id', idName); return inner; }
+      return null; // unmappable stale tag — fall through to re-detection below
+    };
+    let nameEl = reclaimTag('client-name');
+    let ageEl = reclaimTag('client-age');
+    let genderEl = reclaimTag('client-gender');
+    let rateEl = reclaimTag('client-rate');
+    let stateEl = reclaimTag('client-state');
 
     // data-editor-id sits on the FIRST tspan of each line, so a value split across several tspans
     // (e.g. "Standard Non-Tobacco", "Vu Nguyen") won't equal that tspan's own textContent.
@@ -1794,12 +1809,19 @@ function populateTextsEditor() {
       
       // Skip label rows
       const isLabel = /^(Agent Assistant|Licensed Agent|CEO|PRESENTED BY)$/.test(textContent);
-      
+
       // Only allow name/phone rows (short text, not static label)
-      const isPhone = /^\(\d{3}\)/.test(textContent);
+      // US format "(346) 858-4277" or an all-digits number like "0938169130"
+      const isPhone = /^\(\d{3}\)/.test(textContent) || /^[+\d][\d\s().-]{6,}$/.test(textContent);
       const isName = !isPhone && textContent.length > 1 && textContent.length < 40;
-      
-      if (!isAgentZone || !isAgentColumn || isBottomBar || isLabel || (!isPhone && !isName)) return;
+
+      // Skip wrapped-paragraph lines (e.g. the surrender-charge disclaimer whose short last line
+      // "khi không còn áp dụng." lands in the Agent Assistant column). Real agent fields are
+      // single-line <text> elements; a <text> holding 2+ editable lines is body text, not a field.
+      const parentText = el.tagName.toLowerCase() === 'text' ? el : el.closest('text');
+      const isParagraphLine = !!parentText && parentText.querySelectorAll('[data-editor-id]').length > 1;
+
+      if (!isAgentZone || !isAgentColumn || isBottomBar || isLabel || isParagraphLine || (!isPhone && !isName)) return;
       
       // Determine display label based on X column
       const isLeft = absoluteX < 200; // Agent Asst column (X≈36)
