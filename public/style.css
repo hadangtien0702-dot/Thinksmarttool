@@ -537,14 +537,14 @@ body.dark-theme .grid-backdrop { background-image: radial-gradient(circle, rgba(
   position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  text-align: center; max-width: 400px; padding: 40px 44px;
+  text-align: center; max-width: 560px; padding: 40px 44px;
   background-color: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
   box-shadow: var(--shadow-lg);
   z-index: 2;
 }
-.no-selection-message h3 { margin-top: 18px; font-size: var(--fs-lg); font-weight: 700; color: var(--text); letter-spacing: -0.2px; }
+.no-selection-message h3 { margin-top: 18px; font-size: var(--fs-lg); font-weight: 700; color: var(--text); letter-spacing: -0.2px; white-space: nowrap; }
 .no-selection-message p { margin-top: 8px; font-size: var(--fs-sm); color: var(--text-2); line-height: 1.6; }
 .pulse-icon { color: var(--brand); animation: pulse-glow 2.6s infinite ease-in-out; }
 @keyframes pulse-glow {
@@ -855,14 +855,18 @@ body.dark-theme .template-warning b { color: #FBBF24; }
 }
 .agent-preset-bar .btn { flex: 1; font-size: var(--fs-sm); white-space: nowrap; }
 
-/* Delete button for browser-saved proposals */
+/* Delete (trash) button for draft proposals */
 .tree-file-delete {
   margin-left: auto;
   color: var(--text-3);
   font-size: 12px;
-  padding: 2px 6px;
+  padding: 4px 6px;
   border-radius: var(--r-xs);
   opacity: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   transition: all var(--dur) var(--ease);
 }
 .tree-file-item:hover .tree-file-delete { opacity: 1; }
@@ -1295,4 +1299,53 @@ body.no-editor .sidebar-right { display: none; }
   .library-item-card { width: 100%; }
   .library-card-preview { height: auto; min-height: 220px; max-height: 60vh; padding: 12px; }
   .library-thumb, .library-thumb-pdf { max-width: 94%; width: auto; }
+}
+
+/* --------------------------------------------------------------------------
+   21. WORKFLOW ĐƠN GIẢN — 4 bước chào mừng + chấm "chưa lưu nháp"
+   -------------------------------------------------------------------------- */
+.welcome-steps {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 18px;
+}
+.welcome-steps .step {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  padding: 7px 14px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.welcome-steps .step b { color: var(--brand); margin-right: 5px; }
+.welcome-steps .arrow { color: var(--text-3); font-weight: 700; }
+
+/* Nút Lưu Nháp hiện chấm cam khi bản đang mở có thay đổi chưa lưu */
+#btn-save-top { position: relative; }
+#btn-save-top.has-unsaved::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #F59E0B;
+  border: 2px solid var(--header-bg);
+}
+
+/* Mobile: khung chào hẹp → cho tiêu đề xuống dòng bình thường, card chiếm 88% màn */
+@media (max-width: 900px) {
+  .no-selection-message { width: 88vw; max-width: 88vw; padding: 28px 20px; }
+  .no-selection-message h3 { white-space: normal; }
+}
+
+/* Mobile: không có hover → icon thùng rác của bản nháp luôn hiện */
+@media (max-width: 900px) {
+  .tree-file-delete { opacity: 1; }
 }

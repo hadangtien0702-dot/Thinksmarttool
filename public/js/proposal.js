@@ -235,6 +235,7 @@ function populateProposalTextsEditor(svgEl, textElements) {
 
   const clientBlocks = {};
   const planItems = [];
+  const planExtras = []; // non-$ editable labels: "20 năm", "120 tuổi", "Tuổi 63", "Cash Value at 63"
 
   textElements.forEach((el) => {
     // data-editor-id sits on the first tspan of a line → read the FULL line, not just that tspan
@@ -303,10 +304,19 @@ function populateProposalTextsEditor(svgEl, textElements) {
 
     // --- SECTION 2: Plan & Benefits (Y >= 450 && Y < 1100) ---
     else if (absoluteY >= 450 && absoluteY < 1100) {
-      // Only keep dollar values (except single "$")
-      if (!textContent.startsWith('$') || textContent === '$') return;
+      // Dollar values (except single "$")
+      if (textContent.startsWith('$') && textContent !== '$') {
+        planItems.push({ el, editorId, textContent, fontSize, absoluteX, absoluteY });
+        return;
+      }
 
-      planItems.push({ el, editorId, textContent, fontSize, absoluteX, absoluteY });
+      // Benefit-plan labels (IUL): payment period / coverage age / chart age labels.
+      // Collected here, appended to the editor only in the IUL ordering branch below.
+      const base = { el, editorId, textContent, absoluteX, absoluteY, noCurrency: true };
+      if (/^\d+\s*năm$/i.test(textContent)) planExtras.push({ ...base, kind: 'period' });        // "20 năm"
+      else if (/^\d+\s*tuổi$/i.test(textContent)) planExtras.push({ ...base, kind: 'coverage' }); // "120 tuổi"
+      else if (/^Tuổi\s*\d+$/i.test(textContent)) planExtras.push({ ...base, kind: 'age' });      // "Tuổi 63"
+      else if (/^Cash\s*Value at\s*\d+$/i.test(textContent)) planExtras.push({ ...base, kind: 'cashAt' });
     }
 
     // --- SECTION 3: Agent Info (Y >= 1100) ---
@@ -360,9 +370,18 @@ function populateProposalTextsEditor(svgEl, textElements) {
 
       const inputEl = itemBlock.querySelector('.text-input-field');
       inputEl.addEventListener('input', (e) => {
+        let newValue = e.target.value;
+        // Phone fields: auto-format 10 US digits as "(123) 456-7890" the moment they're complete
+        if (isPhone) {
+          const formatted = formatPhoneValue(newValue);
+          if (formatted && formatted !== newValue) {
+            newValue = formatted;
+            e.target.value = formatted;
+          }
+        }
         // applyTextValue clears sibling tspans on the same line — agent names/phones are split
         // into pieces ("T" + "ONY PHU"); writing textContent alone leaves the old tail visible
-        applyTextValue(el, editorId, e.target.value);
+        applyTextValue(el, editorId, newValue);
       });
 
       agentContainer.appendChild(itemBlock);
@@ -395,24 +414,41 @@ function populateProposalTextsEditor(svgEl, textElements) {
     if (mainBenefit) orderedPlanItems.push(mainBenefit);
     premiums.forEach(p => orderedPlanItems.push(p));
   } else {
-    // IUL: 6 fields
+    // IUL: 6 money fields + benefit-plan labels (period / coverage age / chart ages)
     const mainBenefit = planItems.find(item => item.absoluteX < 100 && item.absoluteY < 550);
     const monthlyPremium = planItems.find(item => item.absoluteX < 100 && item.absoluteY >= 550 && item.absoluteY < 650);
     const totalPremium = planItems.find(item => item.absoluteX < 100 && item.absoluteY >= 650);
     const chartProjections = planItems.filter(item => item.absoluteX >= 100)
                                       .sort((a, b) => b.absoluteY - a.absoluteY); // Descending Y -> chronological order
 
+    // Chart age labels left→right = column 1..3; pair each with its "Cash Value at N" line
+    // (same number) so editing "Tuổi 63" → "Tuổi 65" also rewrites the English subtitle.
+    const ageLabels = planExtras.filter(x => x.kind === 'age').sort((a, b) => a.absoluteX - b.absoluteX);
+    const cashAts = planExtras.filter(x => x.kind === 'cashAt');
+    const numOf = t => (String(t).match(/\d+/) || [null])[0];
+    ageLabels.forEach((it, i) => {
+      it.displayName = `Tuổi cột ${i + 1} (biểu đồ)`;
+      it.paired = cashAts.find(c => numOf(c.textContent) === numOf(it.textContent)) || null;
+    });
+
     if (mainBenefit) mainBenefit.displayName = 'Mức bảo vệ (Mệnh giá)';
     if (monthlyPremium) monthlyPremium.displayName = 'Phí đóng mỗi tháng';
     if (totalPremium) totalPremium.displayName = 'Tổng số tiền đóng (20 năm)';
-    if (chartProjections[0]) chartProjections[0].displayName = 'Giá trị tích luỹ Tuổi 63';
-    if (chartProjections[1]) chartProjections[1].displayName = 'Giá trị tích luỹ Tuổi 67';
-    if (chartProjections[2]) chartProjections[2].displayName = 'Giá trị tích luỹ Tuổi 72';
+    // Money labels follow the actual chart ages (column i ↔ projection i, both chronological)
+    if (chartProjections[0]) chartProjections[0].displayName = 'Giá trị tích luỹ ' + (ageLabels[0] ? ageLabels[0].textContent : 'Tuổi 63');
+    if (chartProjections[1]) chartProjections[1].displayName = 'Giá trị tích luỹ ' + (ageLabels[1] ? ageLabels[1].textContent : 'Tuổi 67');
+    if (chartProjections[2]) chartProjections[2].displayName = 'Giá trị tích luỹ ' + (ageLabels[2] ? ageLabels[2].textContent : 'Tuổi 72');
 
     if (mainBenefit) orderedPlanItems.push(mainBenefit);
     if (monthlyPremium) orderedPlanItems.push(monthlyPremium);
     if (totalPremium) orderedPlanItems.push(totalPremium);
     chartProjections.forEach(cp => orderedPlanItems.push(cp));
+
+    const period = planExtras.find(x => x.kind === 'period');
+    const coverage = planExtras.find(x => x.kind === 'coverage');
+    if (period) { period.displayName = 'Thời gian đóng phí'; orderedPlanItems.push(period); }
+    if (coverage) { coverage.displayName = 'Bảo vệ đến tuổi'; orderedPlanItems.push(coverage); }
+    ageLabels.forEach(it => orderedPlanItems.push(it));
   }
 
   // Create and append Section 2 elements
@@ -429,15 +465,22 @@ function populateProposalTextsEditor(svgEl, textElements) {
     const inputEl = itemBlock.querySelector('.text-input-field');
     inputEl.addEventListener('input', (e) => {
       applyTextValue(item.el, item.editorId, e.target.value);
-    });
-    // Auto-format money on blur: "1000000" → "$1,000,000"
-    inputEl.addEventListener('blur', (e) => {
-      const formatted = formatCurrencyValue(e.target.value);
-      if (formatted !== null && formatted !== e.target.value) {
-        e.target.value = formatted;
-        applyTextValue(item.el, item.editorId, formatted);
+      // Chart age label: keep the English "Cash Value at N" subtitle in sync
+      if (item.paired) {
+        const num = (e.target.value.match(/\d+/) || [null])[0];
+        if (num) applyTextValue(item.paired.el, item.paired.editorId, 'Cash Value at ' + num);
       }
     });
+    // Auto-format money on blur: "1000000" → "$1,000,000" (skip label fields like "20 năm")
+    if (!item.noCurrency) {
+      inputEl.addEventListener('blur', (e) => {
+        const formatted = formatCurrencyValue(e.target.value);
+        if (formatted !== null && formatted !== e.target.value) {
+          e.target.value = formatted;
+          applyTextValue(item.el, item.editorId, formatted);
+        }
+      });
+    }
 
     planContainer.appendChild(itemBlock);
   });
@@ -451,21 +494,12 @@ function populateProposalTextsEditor(svgEl, textElements) {
   }
   if (agentContainer.children.length === 0) {
     agentContainer.innerHTML = '<div class="no-data">Không có chữ ở phần này.</div>';
-  } else {
-    // Agent preset controls: save current agent info as default / fill saved info
-    const presetBar = document.createElement('div');
-    presetBar.className = 'agent-preset-bar';
-    presetBar.innerHTML = `
-      <button class="btn btn-secondary btn-sm" id="btn-save-agent-preset" title="Lưu tên & SĐT đại lý hiện tại làm mặc định trên máy này">Lưu làm mặc định</button>
-      <button class="btn btn-secondary btn-sm" id="btn-apply-agent-preset" title="Điền lại thông tin đại lý đã lưu">Điền thông tin đã lưu</button>
-    `;
-    agentGroup.appendChild(presetBar);
-    presetBar.querySelector('#btn-save-agent-preset').addEventListener('click', saveAgentPreset);
-    presetBar.querySelector('#btn-apply-agent-preset').addEventListener('click', applyAgentPreset);
   }
 }
 
-// --- AGENT PRESET (saved in browser localStorage) ---
+// --- AGENT INFO AUTO-PRESET (localStorage, no buttons — fully automatic) ---
+// storeAgentPreset() runs on every successful Lưu Nháp / Xuất (core.js);
+// applyAgentPresetQuiet() runs right after "Tạo bản cho khách" (core.js createNewProposal).
 function collectAgentFields() {
   const result = {};
   document.querySelectorAll('#group-agent .text-edit-block').forEach(block => {
@@ -476,24 +510,21 @@ function collectAgentFields() {
   return result;
 }
 
-function saveAgentPreset() {
+// Silently remember the agent info currently on screen
+function storeAgentPreset() {
   const fields = collectAgentFields();
   const preset = {};
-  Object.keys(fields).forEach(key => { preset[key] = fields[key].value; });
-  if (Object.keys(preset).length === 0) {
-    updateStatus('Không có thông tin đại lý để lưu.');
-    return;
-  }
+  Object.keys(fields).forEach(key => {
+    if (fields[key].value && fields[key].value.trim()) preset[key] = fields[key].value;
+  });
+  if (Object.keys(preset).length === 0) return;
   localStorage.setItem('agentPreset', JSON.stringify(preset));
-  updateStatus('Đã lưu thông tin đại lý làm mặc định trên máy này.');
 }
 
-function applyAgentPreset() {
+// Silently fill the remembered agent info into the freshly created client copy
+function applyAgentPresetQuiet() {
   const saved = localStorage.getItem('agentPreset');
-  if (!saved) {
-    updateStatus('Chưa có thông tin đại lý nào được lưu. Hãy điền rồi bấm "Lưu làm mặc định" trước.');
-    return;
-  }
+  if (!saved) return;
   try {
     const preset = JSON.parse(saved);
     const fields = collectAgentFields();
@@ -505,8 +536,6 @@ function applyAgentPreset() {
         applied++;
       }
     });
-    updateStatus(applied > 0 ? 'Đã điền thông tin đại lý đã lưu.' : 'Không khớp được trường nào để điền.');
-  } catch (e) {
-    updateStatus('Dữ liệu đại lý đã lưu bị lỗi.');
-  }
+    if (applied > 0) updateStatus('Đã tự điền thông tin đại lý của bạn (lưu từ lần trước).');
+  } catch (e) { /* preset hỏng → bỏ qua */ }
 }

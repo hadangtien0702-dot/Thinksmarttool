@@ -29,8 +29,27 @@ let appState = {
   canvasBgColor: 'transparent',
   selectedCategory: 'all',
   searchQuery: '',
-  isSpacePressed: false
+  isSpacePressed: false,
+  isDirty: false // true khi bản đang mở có thay đổi CHƯA Lưu Nháp
 };
+
+// --- DIRTY STATE (nhắc Lưu Nháp — sale hay bị khách gọi cắt ngang rồi quên) ---
+function markDirty() {
+  appState.isDirty = true;
+  if (dom.btnSaveTop) dom.btnSaveTop.classList.add('has-unsaved');
+}
+
+function clearDirty() {
+  appState.isDirty = false;
+  if (dom.btnSaveTop) dom.btnSaveTop.classList.remove('has-unsaved');
+}
+
+// Cảnh báo khi sắp rời khỏi bản khách còn thay đổi chưa lưu (đổi file khác trên cây).
+// Trả về true nếu được phép đi tiếp.
+function confirmLeaveUnsaved() {
+  if (!appState.isDirty || !appState.activeFile || isMasterFile(appState.activeFile)) return true;
+  return confirm('Bản của khách đang mở có thay đổi CHƯA LƯU NHÁP.\nChuyển đi bây giờ sẽ mất các thay đổi đó. Tiếp tục?');
+}
 
 // --- CONSTANTS ---
 const ZOOM_SPEED = 0.08;
@@ -57,6 +76,7 @@ function isNameCardFile(file) {
 
 // Apply a new text value to both the working SVG doc element and the rendered canvas copy
 function applyTextValue(el, editorId, newValue) {
+  markDirty();
   el.textContent = newValue;
   clearSiblingTspans(el);
   const renderedBox = dom.canvasWrapper.querySelector('svg');
@@ -96,6 +116,16 @@ function getLineTextContent(tspanEl) {
     }
   });
   return text.trim();
+}
+
+// Format a US phone number: "1234567890" / "+1 832 980 4749" → "(123) 456-7890".
+// Returns null when not formattable (not 10 digits, or starts with 0 — VN numbers like
+// 0938169130 are left untouched).
+function formatPhoneValue(raw) {
+  let digits = String(raw).replace(/\D/g, '');
+  if (digits.length === 11 && digits[0] === '1') digits = digits.slice(1); // strip +1 country code
+  if (digits.length !== 10 || digits[0] === '0') return null;
+  return '(' + digits.slice(0, 3) + ') ' + digits.slice(3, 6) + '-' + digits.slice(6);
 }
 
 // Format "$1234.5" / "1,000,000" → "$1,234.50" / "$1,000,000". Returns null if not a number.
@@ -332,6 +362,8 @@ async function loadSvgContent(fileInfo) {
       dom.activeFileTitle.textContent = isMaster ? `${cleanName} — MẪU GỐC` : cleanName;
       dom.activeFileTitle.classList.add('is-active');
       dom.btnSaveTop.disabled = isMaster;
+      clearDirty();
+      updateHeaderActions();
 
       // Enable export buttons (JPEG + PDF)
       if (dom.btnExportJpeg) dom.btnExportJpeg.disabled = false;
@@ -361,14 +393,14 @@ async function saveSvgToServer() {
   if (!appState.activeFile || !appState.activeSvgDoc) return;
 
   if (isMasterFile(appState.activeFile)) {
-    alert('Đây là file MẪU GỐC, không thể ghi đè.\n\nHãy bấm "Tạo Proposal Mới" để tạo bản sao cho khách hàng — mọi chỉnh sửa bạn vừa làm sẽ được mang sang bản sao đó.');
+    alert('Đây là file MẪU GỐC, không thể ghi đè.\n\nHãy bấm "Tạo bản cho khách" để tạo bản sao — mọi chỉnh sửa bạn vừa làm sẽ được mang sang bản sao đó.');
     return;
   }
 
   // Static mode (deployed): save the edited text values into this browser's storage
   if (appState.mode === 'static') {
     if (!String(appState.activeFile.path).startsWith('local:')) {
-      alert('Hãy bấm "Tạo Proposal Mới" để tạo bản cho khách trước khi lưu.');
+      alert('Hãy bấm "Tạo bản cho khách" để tạo bản riêng trước khi lưu.');
       return;
     }
     const all = getLocalProposals();
@@ -380,6 +412,8 @@ async function saveSvgToServer() {
     rec.fields = collectEditedFields();
     rec.mtime = new Date().toISOString();
     setLocalProposals(all);
+    clearDirty();
+    if (typeof storeAgentPreset === 'function') storeAgentPreset();
     flashButton(dom.btnSaveTop, '✓ Đã Lưu!');
     updateStatus(`Đã lưu proposal vào trình duyệt này: ${appState.activeFile.name}`);
     return;
@@ -405,6 +439,8 @@ async function saveSvgToServer() {
     if (data.success) {
       // Re-update file size info in state
       appState.activeFile.size = new Blob([content]).size;
+      clearDirty();
+      if (typeof storeAgentPreset === 'function') storeAgentPreset();
       updateInspectorDetails();
 
       const prevBtnText = dom.btnSaveTop.innerHTML;
@@ -476,6 +512,8 @@ async function createNewProposal() {
     await fetchStaticList();
     const newFile = appState.svgsList.find(f => f.path === `local:${rec.id}`);
     if (newFile) await loadSvgContent(newFile);
+    // Bản mới cho khách → tự điền tên/SĐT đại lý đã dùng lần trước (không cần nút)
+    if (newFile && !isNC && typeof applyAgentPresetQuiet === 'function') applyAgentPresetQuiet();
     renderFileTree();
     updateStatus(`Đã tạo proposal mới (lưu trên máy này): ${rec.clientName}`);
     return;
@@ -507,6 +545,8 @@ async function createNewProposal() {
     const newFile = appState.svgsList.find(f => f.path === data.path);
     if (newFile) {
       await loadSvgContent(newFile);
+      // Bản mới cho khách → tự điền tên/SĐT đại lý đã dùng lần trước (không cần nút)
+      if (!isNC && typeof applyAgentPresetQuiet === 'function') applyAgentPresetQuiet();
       renderFileTree();
     }
     updateStatus(`Đã tạo proposal mới: ${data.name}`);
@@ -527,10 +567,11 @@ const NAV_ICONS = {
   fileDl: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
   arrow: '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>',
   download: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
-  bigFile: '<svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
+  bigFile: '<svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>'
 };
 
-const CARRIER_ORDER = ['AIG', 'NLG', 'Khách hàng', 'Chung', 'Khác'];
+const CARRIER_ORDER = ['AIG', 'NLG', 'Bản nháp', 'Chung', 'Khác'];
 
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -548,7 +589,8 @@ function carrierOf(file) {
   const f = (file.folder || '').toLowerCase();
   const p = (file.path || '').toLowerCase();
   const n = (file.name || '').toLowerCase();
-  if (file.localId || f.includes('client') || p.includes('4-clients') || f.includes('máy này')) return 'Khách hàng';
+  // Bản đã tạo cho khách (4-Clients / lưu trên máy) = bản nháp đang làm dở → nhóm "Bản nháp"
+  if (file.localId || f.includes('client') || p.includes('4-clients') || f.includes('máy này')) return 'Bản nháp';
   if (f.includes('aig') || n.includes('aig')) return 'AIG';
   if (f.includes('nlg') || n.includes('nlg')) return 'NLG';
   return 'Khác';
@@ -594,31 +636,96 @@ function makeProposalItem(file) {
   const isActive = appState.activeFile && appState.activeFile.path === file.path;
   el.className = `tree-file-item ${isActive ? 'active' : ''}`.trim();
   const display = file.name.replace(/\.svg$/i, '');
+  // Bản nháp = bản lưu trên trình duyệt (localId) hoặc file trong 4-Clients → được phép xoá
+  const isDraft = !!file.localId || String(file.path).replace(/\\/g, '/').toLowerCase().startsWith('4-clients/');
   el.innerHTML = `
     <span class="tree-file-icon">${NAV_ICONS.file}</span>
     <span class="tree-file-name" title="${escapeHtml(file.name)}">${escapeHtml(display)}</span>
-    ${file.localId ? '<span class="tree-file-delete" title="Xóa proposal này khỏi máy">✕</span>' : ''}
+    ${isDraft ? `<span class="tree-file-delete" title="Xoá bản nháp này">${NAV_ICONS.trash}</span>` : ''}
   `;
   el.addEventListener('click', () => {
+    if (appState.activeFile && appState.activeFile.path !== file.path && !confirmLeaveUnsaved()) return;
     document.querySelectorAll('.tree-file-item').forEach(x => x.classList.remove('active'));
     el.classList.add('active');
     loadSvgContent(file);
   });
   const del = el.querySelector('.tree-file-delete');
   if (del) {
-    del.addEventListener('click', (e) => {
+    del.addEventListener('click', async (e) => {
       e.stopPropagation();
-      if (!confirm(`Xóa proposal "${file.name}" khỏi máy này?`)) return;
-      setLocalProposals(getLocalProposals().filter(r => String(r.id) !== String(file.localId)));
-      fetchStaticList();
+      if (!confirm(`Xoá bản nháp "${display}"?\nHành động này không thể hoàn tác.`)) return;
+
+      // Static mode: bản lưu trong trình duyệt này
+      if (file.localId) {
+        setLocalProposals(getLocalProposals().filter(r => String(r.id) !== String(file.localId)));
+        if (appState.activeFile && appState.activeFile.path === file.path) resetCanvasToWelcome();
+        fetchStaticList();
+        return;
+      }
+
+      // Server mode: xoá file bản nháp trong 4-Clients
+      try {
+        const resp = await fetch('/api/svgs/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: file.path })
+        });
+        const data = await resp.json();
+        if (!data.success) {
+          alert(`Không thể xoá: ${data.error}`);
+          return;
+        }
+        if (appState.activeFile && appState.activeFile.path === file.path) resetCanvasToWelcome();
+        await fetchSvgsList();
+        updateStatus(`Đã xoá bản nháp: ${display}`);
+      } catch (err) {
+        alert(`Lỗi khi xoá bản nháp: ${err.message}`);
+      }
     });
   }
   return el;
 }
 
+// Đóng file đang mở và quay về màn hình chào (dùng sau khi xoá bản nháp đang mở)
+function resetCanvasToWelcome() {
+  appState.activeFile = null;
+  appState.activeSvgDoc = null;
+  clearDirty();
+  dom.canvasWrapper.innerHTML = '';
+  if (dom.noSelection) dom.noSelection.style.display = '';
+  hideLibraryPreview();
+  setEditorVisible(false);
+  updateHeaderActions();
+  dom.activeFileTitle.textContent = 'Chưa chọn thiết kế';
+  dom.activeFileTitle.classList.remove('is-active');
+  if (dom.btnExportJpeg) dom.btnExportJpeg.disabled = true;
+  if (dom.btnExportPdf) dom.btnExportPdf.disabled = true;
+}
+
 // Show/hide the right-hand editor panel (only visible while editing a proposal)
 function setEditorVisible(visible) {
   document.body.classList.toggle('no-editor', !visible);
+}
+
+// Header actions follow context so new users only ever see the button that makes sense:
+// - master template open  → one primary CTA "Tạo bản cho khách" (save hidden — it can't save anyway)
+// - client copy open      → "Lưu Nháp" (primary) + "Tạo bản mới" (secondary)
+// - nothing / library     → save hidden
+function updateHeaderActions() {
+  const btnNew = dom.btnNewProposal;
+  const btnSave = dom.btnSaveTop;
+  if (!btnNew || !btnSave) return;
+
+  const file = appState.activeFile;
+  const isClientCopy = !!file && !isMasterFile(file);
+
+  btnSave.style.display = isClientCopy ? '' : 'none';
+
+  const label = btnNew.querySelector('.btn-label');
+  if (label) label.textContent = isClientCopy ? 'Tạo bản mới' : 'Tạo bản cho khách';
+  const emphasize = !!file && !isClientCopy; // master open → make the CTA primary
+  btnNew.classList.toggle('btn-primary', emphasize);
+  btnNew.classList.toggle('btn-secondary', !emphasize);
 }
 
 // --- CANVAS RENDERING & INTERACTIVES ---
@@ -885,8 +992,8 @@ function populateTextsEditor() {
     warnEl.className = 'template-warning';
     const isNC = (appState.activeFile.path || '').toLowerCase().includes('name card');
     warnEl.innerHTML = isNC
-      ? 'Đây là <b>MẪU GỐC name card</b> — không thể lưu đè. Bấm <b>"Tạo Proposal Mới"</b> ở góc trên bên phải để tạo <b>bản riêng của bạn</b>, rồi chỉnh sửa và Xuất JPEG/PDF.'
-      : 'Đây là <b>MẪU GỐC</b> — không thể lưu đè. Bấm <b>"Tạo Proposal Mới"</b> ở góc trên bên phải để tạo bản riêng cho khách hàng (các chỉnh sửa hiện tại sẽ được mang sang).';
+      ? 'Đây là <b>MẪU GỐC name card</b> — không thể lưu đè. Bấm <b>"Tạo bản cho khách"</b> ở góc trên bên phải để tạo <b>bản riêng của bạn</b>, rồi chỉnh sửa và Xuất JPEG/PDF.'
+      : 'Đây là <b>MẪU GỐC</b> — không thể lưu đè. Bấm <b>"Tạo bản cho khách"</b> ở góc trên bên phải để tạo bản riêng (các chỉnh sửa hiện tại sẽ được mang sang).';
     dom.textsList.appendChild(warnEl);
   }
 
@@ -1026,6 +1133,7 @@ function populateColorsEditor() {
 
 function replaceColorInDoc(oldHex, newHex) {
   if (!appState.activeSvgDoc) return;
+  markDirty();
 
   const svgEl = appState.activeSvgDoc.documentElement;
   const allElements = svgEl.querySelectorAll('*');
@@ -1214,8 +1322,11 @@ function flashButton(btn, text) {
   setTimeout(() => { btn.innerHTML = prev; }, 2000);
 }
 
-function exportToJpeg() {
+async function exportToJpeg() {
   if (!appState.activeFile || !appState.activeSvgDoc) return;
+
+  // Bản khách còn thay đổi chưa lưu → tự Lưu Nháp trước khi xuất (chống quên)
+  if (appState.isDirty && !isMasterFile(appState.activeFile)) await saveSvgToServer();
 
   updateStatus('Đang xuất ảnh JPEG...');
   // JPEG has no transparency → render on a white background
@@ -1235,13 +1346,16 @@ function exportToJpeg() {
 }
 
 // Export proposal as a PDF (white background) via jsPDF
-function exportToPdf() {
+async function exportToPdf() {
   if (!appState.activeSvgDoc) return;
 
   if (!window.jspdf || !window.jspdf.jsPDF) {
     alert('Thư viện PDF chưa tải xong (cần internet). Vui lòng thử lại sau vài giây.');
     return;
   }
+
+  // Bản khách còn thay đổi chưa lưu → tự Lưu Nháp trước khi xuất (chống quên)
+  if (appState.activeFile && appState.isDirty && !isMasterFile(appState.activeFile)) await saveSvgToServer();
 
   updateStatus('Đang xuất PDF...');
   renderSvgToCanvas((canvas) => {

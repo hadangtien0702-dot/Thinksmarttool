@@ -33,6 +33,7 @@ function makeDownloadItem(item) {
     <span class="tree-file-name" title="${escapeHtml(item.name)}">${escapeHtml(display)}</span>
   `;
   el.addEventListener('click', () => {
+    if (!confirmLeaveUnsaved()) return;
     document.querySelectorAll('.tree-file-item').forEach(x => x.classList.remove('active'));
     el.classList.add('active');
 
@@ -123,6 +124,7 @@ function renderLibrarySection(container, label, iconHTML, groupsObj, q) {
       const headerEl = grp.folder.querySelector('.tree-folder-header');
       if (headerEl) {
         headerEl.addEventListener('click', (e) => {
+          if (!confirmLeaveUnsaved()) return;
           openLibraryGroup(items, carrier);
         });
       }
@@ -133,7 +135,9 @@ function renderLibrarySection(container, label, iconHTML, groupsObj, q) {
     count += items.length;
   });
   if (count === 0) {
-    section.content.appendChild(makeEmptyHint(q ? 'Không có kết quả.' : `Chưa có file. Thả file vào folder "${label}/<Hãng>/".`));
+    // The hint must show the REAL folder name (before the " / vietnamese" display suffix)
+    const folderName = String(label).split(' / ')[0];
+    section.content.appendChild(makeEmptyHint(q ? 'Không có kết quả.' : `Chưa có file. Thả file vào folder "${folderName}/<Hãng>/".`));
   }
   container.appendChild(section.folder);
   return count;
@@ -143,7 +147,9 @@ function renderLibrarySection(container, label, iconHTML, groupsObj, q) {
 function openLibraryGroup(items, groupName) {
   appState.activeLibraryPath = 'group:' + groupName;
   appState.activeFile = null;
+  clearDirty();
   setEditorVisible(false);
+  updateHeaderActions();
 
   dom.activeFileTitle.textContent = groupName + ` (${items.length} files)`;
   dom.activeFileTitle.classList.add('is-active');
@@ -234,7 +240,9 @@ function showLibraryGroupPreview(items) {
 function openLibraryItem(item) {
   appState.activeLibraryPath = item.path;
   appState.activeFile = null;
+  clearDirty();
   setEditorVisible(false);
+  updateHeaderActions();
 
   dom.activeFileTitle.textContent = item.name;
   dom.activeFileTitle.classList.add('is-active');

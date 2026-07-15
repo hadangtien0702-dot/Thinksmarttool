@@ -5,16 +5,22 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 
 ## Current state (as of 2026-07-15)
 - **Frontend is now modular**: `public/app.js` is GONE, replaced by `public/js/`
-  (`core.js` / `proposal.js` / `brochure.js` / `namecard.js` / `main.js`); versions: `core.js?v=3`,
-  `proposal.js?v=2`, `main.js?v=3`, `brochure.js?v=1`, `namecard.js?v=1`, `style.css?v=10`.
+  (`core.js` / `proposal.js` / `brochure.js` / `namecard.js` / `main.js`); versions: `core.js?v=8`,
+  `proposal.js?v=5`, `main.js?v=5`, `brochure.js?v=3`, `namecard.js?v=4`, `style.css?v=13`.
+- Sale workflow: **Chọn mẫu → Điền → Lưu Nháp → Xuất** (context-aware buttons, auto agent preset,
+  dirty tracking — see 2026-07-15 later 8).
 - Mobile-ready: ≤900px = drawer + bottom-sheet + touch pan/pinch (see 2026-07-15 later 5).
-- Last commit on `main`: `012fdb6` (uncommitted local work: the js/ module split — commit at EOD).
+- Last commit on `main`: `eed3494` (module split + all 2026-07-15 fixes + mobile UI — deployed & verified live).
 - Live at `thinksmarttool-gy6f.vercel.app`.
 - All 3 tools working: Proposal (AIG/NLG + Khách hàng), Brochure (multi-page grouping, minimal preview),
   Name Card (5 tagged fields, editable, fit-to-viewport zoom, master-protected + copy flow).
 - Font embedding on export is live. Design system + light/dark theme live.
 
 ## PENDING / open tasks
+-1. **Verify save/clone/delete on the LIVE site (Vercel serverless)**: those routes write/delete files
+   on the serverless filesystem, which is read-only/ephemeral — drafts on the live site probably can't
+   persist (may alert an error). Needs a real test on thinksmarttool-gy6f.vercel.app; if broken, the fix
+   is routing live-site drafts through the static-mode localStorage path (or a real storage backend).
 0. **`TERMLIFE - NLG` master polluted with test data** (see 2026-07-15 log) — owner to supply/restore
    a clean master (both `2-Templates/NLG/` and `public/templates/`).
 1. **Name Card icons are low-res raster** → look rough / "mất góc" when zoomed/exported. Confirmed a
@@ -27,6 +33,84 @@ Newest entries on top. Keep it concrete (versions, files, commands).
    FB post templates, client management…). Keep the structure modular.
 
 ## Log
+### 2026-07-15 (later 12 — trash icon to delete drafts)
+- **Draft items now have a trash icon** (hover on desktop, always visible on mobile). Applies to any
+  item in "Bản nháp" (4-Clients files) and browser-saved (localId) proposals — masters never get it.
+- New server route `POST /api/svgs/delete` (server.js, after clone): hard-restricted to `.svg` paths
+  starting with `4-clients/` + `isPathSafe` (verified: master path → 403, traversal → 400).
+- Client (`makeProposalItem`, core.js): confirm dialog ("không thể hoàn tác"), then localStorage
+  removal (static) or the delete API (server). If the deleted draft was open →
+  `resetCanvasToWelcome()` (new core helper: clears state/canvas, shows welcome, hides save,
+  disables exports). Tree refreshes after.
+- Verified full cycle: created ZZZ test draft via clone API, trash icon appeared (only on 4 drafts,
+  0 masters), UI delete removed it from disk + tree + reset canvas; real drafts untouched; no console
+  errors. Server restarted for the new route. `core.js?v=8`, `style.css?v=13`.
+
+### 2026-07-15 (later 11 — "Khách hàng" group renamed to "Bản nháp")
+- The proposal sub-group holding client copies (4-Clients / browser-saved) is now labeled **"Bản nháp"**
+  (was "Khách hàng") — matches the Lưu Nháp workflow wording. Changed `carrierOf()` return value +
+  `CARRIER_ORDER` in core.js. The client-name FIELD label "Khách hàng" in the editor is unchanged.
+  `core.js?v=7`.
+
+### 2026-07-15 (later 10 — bilingual nav section titles)
+- Nav sections now all bilingual like "Proposal / Báo giá": **"Brochure / Tài liệu"** (label in
+  main.js renderFileTree call) and **"Name Card / Danh thiếp"** (namecard.js). The Brochure empty-state
+  hint strips the display suffix (`label.split(' / ')[0]`) so it still shows the REAL folder name
+  ("Thả file vào folder "Brochure/<Hãng>/""). `brochure.js?v=3`, `namecard.js?v=4`, `main.js?v=5`.
+
+### 2026-07-15 (later 9 — welcome title on one line)
+- Welcome card: title "Chào mừng bạn đến với Thinksmart Tool" no longer wraps — card `max-width`
+  400→560px + `white-space: nowrap` on the h3; mobile (≤900px) override sets the card to `width: 88vw`
+  and lets the title wrap normally. Verified 1 line at 1280px, no overflow at 375px. `style.css?v=12`.
+
+### 2026-07-15 (later 8 — simplified sale workflow)
+- **Workflow simplified for new sales** after a role-play UX review with the owner. Owner's canonical
+  flow (keep this wording): **Chọn mẫu → Điền → Lưu Nháp → Xuất** — explicit Lưu Nháp matters because
+  sales get interrupted by client calls and forget.
+- Changes:
+  - **Context-aware header** (`updateHeaderActions()`, core.js): master → one primary "Tạo bản cho
+    khách" (Save hidden); client copy → "Lưu Nháp" primary + "Tạo bản mới" secondary. Button labels
+    live in `<span class="btn-label">` so JS can swap text without touching the svg.
+  - **Removed the 2 agent-preset buttons** ("Lưu làm mặc định"/"Điền thông tin đã lưu"). Now automatic:
+    `storeAgentPreset()` on every successful save/export; `applyAgentPresetQuiet()` after
+    createNewProposal (both server + static branches, skipped for name cards).
+  - **Dirty tracking** (`appState.isDirty`, `markDirty`/`clearDirty` in core.js): set in
+    `applyTextValue`, `replaceColorInDoc`, name-card edits; cleared on load + successful save. Orange
+    dot on Lưu Nháp (`.has-unsaved`), `confirmLeaveUnsaved()` guard on tree/brochure clicks,
+    beforeunload warning, and exports auto-save dirty client copies first (exportToJpeg/Pdf now async).
+  - Welcome screen shows the 4 steps (`.welcome-steps`, style.css section 21). Master banner + alerts
+    reworded to "Tạo bản cho khách".
+- Verified end-to-end on localhost (server mode): master state, create-copy flow (real clone in
+  4-Clients, then deleted), auto-fill from preset, dot lifecycle, switch-file confirm, no console
+  errors. `core.js?v=6`, `proposal.js?v=5`, `brochure.js?v=2`, `namecard.js?v=3`, `main.js?v=4`,
+  `style.css?v=11`.
+
+### 2026-07-15 (later 7 — US phone auto-format)
+- **Phone fields auto-format while typing**: 10 digits → "(123) 456-7890" the moment the 10th digit
+  lands. New `formatPhoneValue()` in `core.js`: strips non-digits, drops a leading "1" on 11-digit
+  (+1) input, returns null unless exactly 10 digits, and **leaves numbers starting with 0 untouched**
+  (VN format like 0938169130). NOTE: do NOT also exclude leading "1" — the owner's canonical example
+  is literally "1234567890 → (123) 456-7890".
+- Wired into: proposal agent SĐT inputs (`proposal.js`, only when `isPhone`) and Name Card
+  "Số điện thoại"/"Fax / Văn phòng" (`namecard.js` `addNcField`, label-matched `/điện thoại|fax/i`).
+  Name-card fallback per-line editor now reuses `addNcField` (dedupe).
+- Verified: "1234567890"→"(123) 456-7890", "+1 832 980 4749"→"(832) 980-4749",
+  "346.858.4277"→"(346) 858-4277", "0938169130" + short numbers + name fields untouched; canvas
+  synced; no console errors. `core.js?v=5`, `proposal.js?v=4`, `namecard.js?v=2`.
+
+### 2026-07-15 (later 6 — editable benefit-plan labels on IUL)
+- **New editable fields in Section 2 (IUL only)** (user request): "Thời gian đóng phí" (20 năm),
+  "Bảo vệ đến tuổi" (120 tuổi), "Tuổi cột 1/2/3 (biểu đồ)" (Tuổi 63/67/72). Section-2 collection in
+  `proposal.js` now also gathers non-$ labels into `planExtras` by pattern (`/^\d+ năm$/`,
+  `/^\d+ tuổi$/`, `/^Tuổi \d+$/`, `/^Cash Value at \d+$/`); appended ONLY in the IUL ordering branch
+  (Termlife untouched — its "10/20/30 năm" are column headers there, verified no extra fields).
+- Editing an age label auto-syncs its paired English subtitle: "Tuổi 63"→"Tuổi 65" also rewrites
+  "Cash Value at 63"→"Cash Value at 65" (paired by matching number at build time).
+- Money field labels now follow actual chart ages ("Giá trị tích luỹ " + ageLabels[i]) instead of
+  hardcoded 63/67/72. Label fields carry `noCurrency: true` → blur $-format skipped ("25 năm" stays).
+- Verified AIG IUL + IUL - NLG: 11 plan fields, edits hit canvas, EN sync works, no console errors.
+  `proposal.js?v=3`.
+
 ### 2026-07-15 (later 5 — mobile UI)
 - **Mobile optimization** (≤900px breakpoint, CSS section 20 in `style.css`):
   - Left sidebar → slide-in drawer (hamburger `#btn-mobile-nav` in header); picking a file auto-closes it.

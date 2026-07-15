@@ -7,13 +7,25 @@ no folder prefixes, no file extensions.
 
 Insurance quote designs, grouped by carrier: **AIG**, **NLG**, and **Khách hàng** (saved client copies).
 
-- Masters live in `2-Templates/AIG|NLG/` and are **protected** (`isMasterFile` true → Save disabled, a
+- Masters live in `2-Templates/AIG|NLG/` and are **protected** (`isMasterFile` true → a
   "MẪU GỐC — không thể lưu đè" banner shows). Editing a master shows fields but you can't overwrite it.
-- Flow: open a master → edit text → click **"Tạo Proposal Mới"** → enter client name → server clones it to
-  `4-Clients/<client> - <base>.svg` → that copy is editable + savable, appears under **Khách hàng**.
+- **Sale workflow (4 steps, owner-defined 2026-07-15): Chọn mẫu → Điền → Lưu Nháp → Xuất.**
+- **Context-aware header buttons** (`updateHeaderActions()` in core.js): master open → single primary CTA
+  **"Tạo bản cho khách"** (Save hidden); client copy open → **"Lưu Nháp"** (primary, orange dot via
+  `.has-unsaved` when there are unsaved edits) + "Tạo bản mới" (secondary). Welcome screen shows the 4 steps.
+- Flow: open a master → edit text → click **"Tạo bản cho khách"** → enter client name → server clones it to
+  `4-Clients/<client> - <base>.svg` → that copy is editable + savable, appears under **"Bản nháp"**.
+- Drafts have a **trash icon** (hover; always visible on mobile) → confirm → `POST /api/svgs/delete`
+  (restricted to `4-Clients/*.svg`). Deleting the open draft resets to the welcome screen
+  (`resetCanvasToWelcome()`).
+- **Agent info is remembered automatically** (no buttons): every successful Lưu Nháp / Xuất calls
+  `storeAgentPreset()` (localStorage), and "Tạo bản cho khách" auto-fills it via `applyAgentPresetQuiet()`.
+- **Unsaved-changes protection** (`appState.isDirty`, set in `applyTextValue`/`replaceColorInDoc`/name-card
+  edits): switching files asks to confirm (`confirmLeaveUnsaved()`), closing the tab warns (beforeunload),
+  and **Xuất JPEG/PDF auto-saves the draft first** on client copies.
 - The right editor groups proposal fields into **1. Thông tin khách hàng**, **2. Kế hoạch & Quyền lợi**,
   **3. Thông tin đại lý & Khác** using position/content heuristics in `populateTextsEditor()`. Some fields
-  are dropdowns (gender, rate class, US state); currency auto-formats.
+  are dropdowns (gender, rate class, US state); currency + US phone numbers auto-format.
 - Export: **Xuất JPEG** + **Xuất PDF** (bottom of the right panel). Fonts are embedded on export.
 
 ## 2. Brochure  (download library)
@@ -30,7 +42,7 @@ Marketing PDFs/images by carrier for sales to download. Comes from `/api/library
 ## 3. Name Card  (editable — works like a proposal)
 
 Agent business cards. Master: `Name Card/Chung/Sale Name Card.svg`. Routed through `/api/svgs` (not the
-download library). Protected like a proposal master; "Tạo Proposal Mới" makes a personal copy → "Của tôi".
+download library). Protected like a proposal master; "Tạo bản cho khách" makes a personal copy → "Của tôi".
 
 ### The `data-nc` tagging system (important)
 The editor shows **exactly the fields tagged in the SVG**, nothing else. Tags:

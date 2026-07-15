@@ -22,7 +22,7 @@ function renderFileTree() {
   total += renderProposalNavSection(dom.treeContainer, proposals, q);
 
   // ---------- BROCHURE (js/brochure.js) ----------
-  total += renderLibrarySection(dom.treeContainer, 'Brochure', NAV_ICONS.brochure, appState.library.brochure, q);
+  total += renderLibrarySection(dom.treeContainer, 'Brochure / Tài liệu', NAV_ICONS.brochure, appState.library.brochure, q);
 
   // ---------- NAME CARD (js/namecard.js) ----------
   total += renderNameCardNavSection(dom.treeContainer, nameCards, q);
@@ -362,5 +362,14 @@ document.addEventListener('DOMContentLoaded', () => {
   initEventListeners();
   initMobileUI();
   initTouchGestures();
+  updateHeaderActions();
   fetchSvgsList();
+});
+
+// Đóng tab / tải lại khi bản khách còn thay đổi chưa Lưu Nháp → trình duyệt hỏi xác nhận
+window.addEventListener('beforeunload', (e) => {
+  if (appState.isDirty && appState.activeFile && !isMasterFile(appState.activeFile)) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
 });

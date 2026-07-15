@@ -38,7 +38,8 @@ were force/committed earlier so they deploy), `Name Card/` (master is tracked de
 | `GET /api/svgs` | Recursively lists editable SVGs (skips `node_modules,.git,.gemini,public,_Archive,Brochure`). Name Card SVGs ARE included (editable). Each: `{name,path,category,folder,size,mtime}` |
 | `GET /api/svgs/content?path=` | Returns one SVG's text (path must end `.svg`, inside workspace) |
 | `POST /api/svgs/save` | Save SVG. **Blocks overwriting** paths under `2-templates/` or `name card/` (masters protected) |
-| `POST /api/svgs/clone` | Clone a template → `4-Clients/<name> - <base>.svg` (the "Tạo Proposal Mới" / create-my-own flow) |
+| `POST /api/svgs/clone` | Clone a template → `4-Clients/<name> - <base>.svg` (the "Tạo bản cho khách" / create-my-own flow) |
+| `POST /api/svgs/delete` | Delete a draft. HARD-RESTRICTED: only `.svg` files whose path starts with `4-Clients/` (masters can never be deleted) |
 | `GET /api/library` | Scans `Brochure/` (and any `LIBRARY_SECTIONS`) → `{carrier: [{name,path,size,ext,mtime}]}`. Downloadable exts: pdf/png/jpg/jpeg/gif/webp/svg/ai/eps/zip |
 | `GET /api/download?path=&inline=` | Streams a Brochure file (attachment, or `inline=1` for preview). Restricted to library folders |
 

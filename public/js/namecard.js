@@ -9,7 +9,7 @@
 
 // --- NAV SECTION: "Name Card" (gọi từ renderFileTree trong js/main.js) ---
 function renderNameCardNavSection(container, nameCards, q) {
-  const ncSection = makeCollapsibleFolder('Name Card', { extraClass: 'nav-section', iconHTML: NAV_ICONS.namecard });
+  const ncSection = makeCollapsibleFolder('Name Card / Danh thiếp', { extraClass: 'nav-section', iconHTML: NAV_ICONS.namecard });
   const ncMasters = nameCards.filter(f => (f.folder || '').toLowerCase().startsWith('name card'));
   const ncCopies = nameCards.filter(f => !(f.folder || '').toLowerCase().startsWith('name card'));
   let ncCount = 0;
@@ -135,6 +135,7 @@ function populateNameCardTextsEditor(svgEl, textElements) {
   // Helper to add one editable field bound to a line
   function addNcField(container, label, line) {
     if (!line) return;
+    const isPhoneField = /điện thoại|fax/i.test(label);
     const itemBlock = document.createElement('div');
     itemBlock.className = 'text-edit-block';
     itemBlock.innerHTML = `
@@ -142,7 +143,17 @@ function populateNameCardTextsEditor(svgEl, textElements) {
       <input type="text" class="text-input-field" value="${escapeHtml(line.text)}">
     `;
     const inputEl = itemBlock.querySelector('.text-input-field');
-    inputEl.addEventListener('input', (e) => { line.apply(e.target.value); renderSvgOnCanvas(); });
+    inputEl.addEventListener('input', (e) => {
+      let v = e.target.value;
+      // Auto-format 10 US digits as "(123) 456-7890" once complete
+      if (isPhoneField) {
+        const formatted = formatPhoneValue(v);
+        if (formatted && formatted !== v) { v = formatted; e.target.value = formatted; }
+      }
+      markDirty();
+      line.apply(v);
+      renderSvgOnCanvas();
+    });
     container.appendChild(itemBlock);
   }
 
@@ -167,18 +178,7 @@ function populateNameCardTextsEditor(svgEl, textElements) {
   textElements.forEach(textEl => {
     getLines(textEl).forEach(line => {
       const { label, container } = classifyLine(line.text);
-      const itemBlock = document.createElement('div');
-      itemBlock.className = 'text-edit-block';
-      itemBlock.innerHTML = `
-        <div class="text-meta"><span class="text-id">${escapeHtml(label)}</span></div>
-        <input type="text" class="text-input-field" value="${escapeHtml(line.text)}">
-      `;
-      const inputEl = itemBlock.querySelector('.text-input-field');
-      inputEl.addEventListener('input', (e) => {
-        line.apply(e.target.value);   // update the working SVG doc
-        renderSvgOnCanvas();          // re-render the small name card (keeps pan/zoom)
-      });
-      container.appendChild(itemBlock);
+      addNcField(container, label, line);
       ncFieldCount++;
     });
   });

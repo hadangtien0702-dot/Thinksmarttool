@@ -215,6 +215,31 @@ app.post('/api/svgs/clone', (req, res) => {
   }
 });
 
+// API: Delete a client draft — ONLY .svg files inside "4-Clients" (masters can never be deleted)
+app.post('/api/svgs/delete', (req, res) => {
+  const { path: relativePath } = req.body;
+
+  if (!isPathSafe(relativePath)) {
+    return res.status(400).json({ success: false, error: 'Đường dẫn file không hợp lệ hoặc không an toàn.' });
+  }
+
+  const normalizedRel = String(relativePath).replace(/\\/g, '/').toLowerCase();
+  if (!normalizedRel.startsWith('4-clients/') || !normalizedRel.endsWith('.svg')) {
+    return res.status(403).json({ success: false, error: 'Chỉ có thể xoá bản nháp trong thư mục 4-Clients.' });
+  }
+
+  try {
+    const absolutePath = path.resolve(WORKSPACE_DIR, relativePath);
+    if (!fs.existsSync(absolutePath)) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy file.' });
+    }
+    fs.unlinkSync(absolutePath);
+    res.json({ success: true, message: 'Đã xoá bản nháp.' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // ==========================================================================
 // LIBRARY (Brochure / Name Card) — downloadable assets grouped by carrier
 // ==========================================================================
