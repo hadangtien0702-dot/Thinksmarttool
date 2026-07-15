@@ -3,16 +3,18 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
-## Current state (as of 2026-07-15)
-- **Frontend is now modular**: `public/app.js` is GONE, replaced by `public/js/`
+## Current state (as of 2026-07-15, end of day)
+- **Frontend is modular**: `public/app.js` is GONE, replaced by `public/js/`
   (`core.js` / `proposal.js` / `brochure.js` / `namecard.js` / `main.js`); versions: `core.js?v=8`,
   `proposal.js?v=5`, `main.js?v=5`, `brochure.js?v=3`, `namecard.js?v=4`, `style.css?v=13`.
-- Sale workflow: **Chọn mẫu → Điền → Lưu Nháp → Xuất** (context-aware buttons, auto agent preset,
-  dirty tracking — see 2026-07-15 later 8).
+- Sale workflow: **Chọn mẫu → Điền → Lưu Nháp → Xuất** — context-aware header buttons, auto agent
+  preset, dirty tracking + confirmations, draft trash-delete (`/api/svgs/delete`), drafts grouped
+  under **"Bản nháp"** (see 2026-07-15 later 8/11/12).
 - Mobile-ready: ≤900px = drawer + bottom-sheet + touch pan/pinch (see 2026-07-15 later 5).
-- Last commit on `main`: `eed3494` (module split + all 2026-07-15 fixes + mobile UI — deployed & verified live).
+- Bilingual nav: Proposal / Báo giá · Brochure / Tài liệu · Name Card / Danh thiếp.
+- Last commit on `main`: `1b04991` — **pushed & deployed, verified live** (`js/core.js?v=8` served).
 - Live at `thinksmarttool-gy6f.vercel.app`.
-- All 3 tools working: Proposal (AIG/NLG + Khách hàng), Brochure (multi-page grouping, minimal preview),
+- All 3 tools working: Proposal (AIG/NLG + Bản nháp), Brochure (multi-page grouping, minimal preview),
   Name Card (5 tagged fields, editable, fit-to-viewport zoom, master-protected + copy flow).
 - Font embedding on export is live. Design system + light/dark theme live.
 
