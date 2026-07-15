@@ -74,6 +74,36 @@ function getSvgFiles(dir, fileList = []) {
 app.get('/api/svgs', (req, res) => {
   try {
     const svgs = getSvgFiles(WORKSPACE_DIR);
+
+    // Also include the committed copies in public/templates/ so proposals still show on
+    // deploys (e.g. Vercel) where the gitignored 2-Templates masters aren't present.
+    // Dedupe by filename so local runs (which DO have 2-Templates) don't double up.
+    const templatesDir = path.join(WORKSPACE_DIR, 'public', 'templates');
+    if (fs.existsSync(templatesDir)) {
+      const seen = new Set(svgs.map(f => f.name.toLowerCase()));
+      fs.readdirSync(templatesDir).forEach(file => {
+        if (!file.toLowerCase().endsWith('.svg') || seen.has(file.toLowerCase())) return;
+        const abs = path.join(templatesDir, file);
+        let stat;
+        try { stat = fs.statSync(abs); } catch (e) { return; }
+        const lower = file.toLowerCase();
+        const isNameCard = lower.includes('name card');
+        const carrier = lower.includes('aig') ? 'AIG' : lower.includes('nlg') ? 'NLG' : 'Khác';
+        const category = lower.includes('iul') ? 'IUL'
+          : lower.includes('term') ? 'Term Life'
+          : (isNameCard ? 'Name Card' : carrier);
+        svgs.push({
+          name: file,
+          path: 'public/templates/' + file,
+          category,
+          // Synthetic folder so the client treats these as protected masters under the right carrier
+          folder: isNameCard ? 'Name Card/Chung' : '2-Templates/' + carrier,
+          size: stat.size,
+          mtime: stat.mtime
+        });
+      });
+    }
+
     res.json({ success: true, svgs });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -111,7 +141,7 @@ app.post('/api/svgs/save', (req, res) => {
 
   // Protect master templates: never allow overwriting files inside "2-Templates" or "Name Card"
   const normalizedRel = relativePath.replace(/\\/g, '/').toLowerCase();
-  if (normalizedRel.startsWith('2-templates/') || normalizedRel.startsWith('name card/')) {
+  if (normalizedRel.startsWith('2-templates/') || normalizedRel.startsWith('name card/') || normalizedRel.startsWith('public/templates/')) {
     return res.status(403).json({ success: false, error: 'Đây là file MẪU GỐC, không thể ghi đè. Hãy bấm "Tạo Proposal Mới" để tạo bản sao cho khách hàng rồi chỉnh sửa trên bản sao đó.' });
   }
   
