@@ -33,7 +33,7 @@ HTML/CSS/JS in `public/` · **Local:** `http://localhost:8000` · **Live:** `thi
 
 | File | When to read |
 |------|--------------|
-| `references/architecture.md` | Folder structure, `server.js` API, data flow, server vs static mode, key `app.js` functions |
+| `references/architecture.md` | Folder structure, `server.js` API, data flow, server vs static mode, `public/js/` module layout (one file per tool) |
 | `references/tools.md` | How each tool works: Proposal (master→clone), Brochure (download library), Name Card (tagged fields) |
 | `references/conventions.md` | Cache-version bumping, git/privacy rules, workflow (local-first, EOD push), fonts, verifying changes |
 | `references/deployment.md` | GitHub repo, Vercel (serverless), the two URLs, publish/deploy steps |
@@ -41,7 +41,7 @@ HTML/CSS/JS in `public/` · **Local:** `http://localhost:8000` · **Live:** `thi
 
 ## How to work on this project (short version)
 
-- **Verify in the real app, not just syntax.** After editing `public/app.js`/`style.css`/`index.html`,
+- **Verify in the real app, not just syntax.** After editing `public/js/*.js`/`style.css`/`index.html`,
   bump the `?v=N` query in `index.html` (both files), then reload localhost:8000 to confirm. `server.js`
   changes need a server restart; static files are served fresh from disk.
 - **Never break element IDs / function names that JS depends on** when restyling. Match the existing
@@ -57,7 +57,7 @@ HTML/CSS/JS in `public/` · **Local:** `http://localhost:8000` · **Live:** `thi
 The owner wants this skill to get smarter every day. So, near the end of a working session (or when the
 user says to wrap up / update memory / push), **update the skill files** so the next session starts ahead:
 
-1. Append a dated entry to `references/changelog.md` — what changed, why, current `app.js`/`style.css`
+1. Append a dated entry to `references/changelog.md` — what changed, why, current `public/js/*`/`style.css`
    version numbers, and any new/closed PENDING items.
 2. If you introduced a new tool, folder, convention, API route, or gotcha, add it to the matching
    `references/*.md` (not just the changelog) so it's found by topic later.

@@ -1199,3 +1199,100 @@ body.no-editor .sidebar-right { display: none; }
   box-shadow: var(--shadow-brand);
 }
 
+
+/* --------------------------------------------------------------------------
+   20. MOBILE (≤ 900px) — drawer trái + bottom-sheet phải + cử chỉ cảm ứng
+   -------------------------------------------------------------------------- */
+
+/* Các nút chỉ dành cho mobile: ẩn trên desktop */
+.mobile-only { display: none; }
+.mobile-backdrop { display: none; }
+
+@media (max-width: 900px) {
+  :root {
+    --header-height: 56px;
+    --sidebar-left-width: min(320px, 86vw);
+  }
+
+  /* ---- Header gọn: ẩn chữ thương hiệu + tên file, nút chỉ còn icon ---- */
+  .app-header { padding: 0 10px; gap: 8px; }
+  .header-left { min-width: 0; gap: 8px; }
+  .logo-icon { width: 34px; height: 34px; }
+  .logo-icon svg { width: 18px; height: 18px; }
+  .brand-info { display: none; }
+  .header-center { display: none; }
+  .header-right { gap: 6px; margin-left: auto; }
+  .header-right .btn {
+    font-size: 0;          /* giấu chữ, giữ icon (svg có width/height riêng) */
+    gap: 0;
+    padding: 9px 11px;
+  }
+  .header-right .btn svg { width: 18px; height: 18px; }
+
+  #btn-mobile-nav { display: inline-flex; }
+  #btn-editor-close { display: inline-flex; }
+  body:not(.no-editor) #btn-mobile-editor { display: inline-flex; }
+
+  /* ---- Sidebar trái → ngăn kéo trượt từ cạnh trái ---- */
+  .sidebar-left {
+    position: fixed;
+    top: var(--header-height);
+    bottom: 0;
+    left: 0;
+    width: var(--sidebar-left-width);
+    transform: translateX(-105%);
+    transition: transform 240ms var(--ease);
+    z-index: 300;
+    box-shadow: var(--shadow-lg);
+  }
+  body.nav-open .sidebar-left { transform: translateX(0); }
+
+  /* ---- Sidebar phải → bottom sheet trượt từ cạnh dưới ---- */
+  .sidebar-right {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    width: 100%;
+    height: min(66vh, 580px);
+    transform: translateY(105%);
+    transition: transform 260ms var(--ease);
+    z-index: 300;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    box-shadow: var(--shadow-lg);
+  }
+  body.editor-open .sidebar-right { transform: translateY(0); }
+
+  /* ---- Backdrop mờ khi drawer / sheet đang mở ---- */
+  .mobile-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 10, 22, 0.45);
+    z-index: 250;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms var(--ease);
+  }
+  body.nav-open .mobile-backdrop,
+  body.editor-open .mobile-backdrop { opacity: 1; pointer-events: auto; }
+
+  /* ---- Canvas: tự xử lý cảm ứng (1 ngón kéo, 2 ngón chụm zoom) ---- */
+  .canvas-container { touch-action: none; }
+
+  /* ---- Kích thước chạm thoải mái hơn ---- */
+  .toolbar-btn { width: 36px; height: 36px; }
+  .tree-file-item { padding-top: 9px; padding-bottom: 9px; }
+
+  /* ---- iOS: input < 16px sẽ bị tự phóng to khi focus → nâng lên 16px ---- */
+  .text-input-field, #search-input { font-size: 16px; }
+
+  /* ---- Status bar: bỏ mẹo giữ Space (không áp dụng cho cảm ứng) ---- */
+  #status-right { display: none; }
+
+  /* ---- Preview thư viện brochure vừa khung màn nhỏ ---- */
+  .library-view-group { padding: 16px; gap: 16px; }
+  .library-item-card { width: 100%; }
+  .library-card-preview { height: auto; min-height: 220px; max-height: 60vh; padding: 12px; }
+  .library-thumb, .library-thumb-pdf { max-width: 94%; width: auto; }
+}

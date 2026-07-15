@@ -4,7 +4,8 @@
 
 | Path | What it is | In git? |
 |------|-----------|---------|
-| `public/` | The web app served by Express — `index.html`, `app.js`, `style.css`, `fonts/`, `templates/` | yes |
+| `public/` | The web app served by Express — `index.html`, `js/` (per-tool modules), `style.css`, `fonts/`, `templates/` | yes |
+| `public/js/` | **One JS file per tool** (since 2026-07-15; replaced monolithic `app.js`): `core.js` (shared), `proposal.js`, `brochure.js`, `namecard.js`, `main.js` (bootstrap). Load order in `index.html`: core → tools → main | yes |
 | `public/templates/` | SVGs + `manifest.json` served in **static mode** (Vercel fallback). Copies of the master templates + name card | yes |
 | `public/fonts/` | SF Pro woff files used by the SVGs and embedded on export | yes |
 | `server.js` | Express server + all API routes | yes |
@@ -22,7 +23,7 @@
 were force/committed earlier so they deploy), `Name Card/` (master is tracked despite this), `*.tmp`,
 `~ai*.tmp`, `.env*`, `push-to-github.bat`.
 
-## Two run modes (app.js auto-detects)
+## Two run modes (core.js auto-detects)
 
 - **Server mode** (local `node server.js` AND on Vercel — Vercel runs `server.js` as a serverless
   function). `/api/svgs`, `/api/library`, `/api/download` all work. This is the normal experience.
@@ -41,21 +42,47 @@ were force/committed earlier so they deploy), `Name Card/` (master is tracked de
 | `GET /api/library` | Scans `Brochure/` (and any `LIBRARY_SECTIONS`) → `{carrier: [{name,path,size,ext,mtime}]}`. Downloadable exts: pdf/png/jpg/jpeg/gif/webp/svg/ai/eps/zip |
 | `GET /api/download?path=&inline=` | Streams a Brochure file (attachment, or `inline=1` for preview). Restricted to library folders |
 
-## Key app.js functions (vanilla JS, single file)
+## Frontend modules (`public/js/`, vanilla JS, plain globals — no bundler)
 
-- `fetchSvgsList()` → `/api/svgs` (server) or `fetchStaticList()` (manifest). Then `fetchLibrary()` → `/api/library`.
-- `renderFileTree()` — builds the left nav: **Proposal** (grouped by carrier via `carrierOf()`), **Brochure**
-  (`renderLibrarySection` + `preprocessLibraryItems`), **Name Card** (masters direct + "Của tôi" copies).
-  `isNameCardFile()` splits name cards out of Proposal; `isMasterFile()` marks masters (protected).
-- `loadSvgContent(fileInfo)` — fetch + parse SVG, assign `data-editor-id` per `<text>`, render, show right
-  editor. Shows the right panel only for editable files (`setEditorVisible`); `no-editor` body class hides it.
-- `populateTextsEditor()` — builds the right-panel fields. Branches: **Name Card** (tagged `data-nc` → 5
-  fields, else generic per-line) vs **Proposal** (client/plan/agent groups by position/content heuristics).
-- `renderSvgOnCanvas()` — injects the SVG; `zoomToFit()` fits to viewport (cap = `MAX_ZOOM`, so small
-  designs like name cards open large/readable).
-- `renderSvgToCanvas()` (async) — rasterizes for export; **injects base64 @font-face** (`getEmbeddedFontCSS`)
-  so JPEG/PDF keep the real fonts on any machine. `exportToJpeg()` (white bg) + `exportToPdf()` only.
-- `preprocessLibraryItems()` — groups multi-page brochures: ≥2 same-base JPGs (with or without a PDF) → one
-  multi-page item.
+All functions are global; scripts share one namespace and load in order: core → proposal → brochure
+→ namecard → main. **Adding a new tool** = new `js/<tool>.js` with its own `render<Tool>NavSection()`
+(+ editor fn if editable), call it from `renderFileTree()` in `main.js`, add the `<script>` to `index.html`.
+
+**core.js** (shared engine):
+- `appState`, `dom` cache, `isMasterFile()`, `isNameCardFile()`, text helpers (`applyTextValue`,
+  `getLineTextContent`, `clearSiblingTspans`, `formatCurrencyValue`), `escapeHtml`, `formatBytes`.
+- `fetchSvgsList()` → `/api/svgs` (server) or `fetchStaticList()` (manifest + localStorage proposals).
+- `loadSvgContent(fileInfo)` — fetch + parse SVG, strip stale `data-editor-id`s, assign fresh ones per
+  LINE (first tspan of each y-group), render, show right editor (`setEditorVisible`).
+- `saveSvgToServer()`, `createNewProposal()` (shared clone flow: proposal copies AND name-card copies).
+- Nav building blocks: `NAV_ICONS`, `carrierOf/carrierSort`, `makeCollapsibleFolder`, `makeProposalItem`.
+- Canvas: `renderSvgOnCanvas`, `zoomToFit` (cap `MAX_ZOOM`), `handleZoom`, `applyTransform`.
+- `populateTextsEditor()` — **dispatcher**: shared shell (clear panel, master warning, collect
+  `[data-editor-id]`), then routes to `populateNameCardTextsEditor` or `populateProposalTextsEditor`.
+- Colors panel, inspector, `optimizeSvgTexts`, font embedding (`getEmbeddedFontCSS`),
+  `renderSvgToCanvas` (async, 2x + base64 @font-face), `exportToJpeg`/`exportToPdf`, `updateStatus`.
+
+**proposal.js** (Proposal / Báo giá):
+- `GENDERS`/`RATE_CLASSES`/`US_STATES` dropdown data.
+- `renderProposalNavSection(container, proposals, q)` — carrier-grouped nav section.
+- `populateProposalTextsEditor(svgEl, textElements)` — 3 groups (client Y<450 / plan $-values
+  450≤Y<1100 / agent Y≥1100) with all the position+content heuristics, `tagClientInfoElements`
+  (+`reclaimTag`), paragraph-line + phone detection.
+- Agent preset: `collectAgentFields`, `saveAgentPreset`, `applyAgentPreset` (localStorage).
+
+**brochure.js** (Brochure library):
+- `fetchLibrary()` → `/api/library`; `preprocessLibraryItems()` (≥2 same-base JPGs → one multi-page item).
+- `renderLibrarySection()`, `makeDownloadItem()`, `openLibraryGroup/Item()`,
+  `showLibraryPreview/MultiPagePreview/GroupPreview()`, `hideLibraryPreview()`.
+
+**namecard.js** (Name Card):
+- `renderNameCardNavSection(container, nameCards, q)` — masters direct + "Của tôi" copies.
+- `populateNameCardTextsEditor(svgEl, textElements)` — `data-nc` tagged → exactly 5 fields;
+  else generic per-line classifier (`classifyLine`/`getLines`).
+
+**main.js** (bootstrap):
+- `renderFileTree()` — composes the 3 tool nav sections + file count.
+- `showErrorState()`, `initEventListeners()` (zoom/pan/keyboard/save/export/new-proposal wiring),
+  `DOMContentLoaded` init.
 
 See `references/tools.md` for tool-level behavior and `references/conventions.md` for how to change things safely.

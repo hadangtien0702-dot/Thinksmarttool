@@ -1,12 +1,13 @@
 # Conventions & how to change things safely
 
 ## Cache versioning (do this on every front-end change)
-`index.html` loads `style.css?v=N` and `app.js?v=M`. After editing those files, **bump the number** so
-reloads pick up changes. Quick: `sed -i 's/app.js?v=18/app.js?v=19/' public/index.html`. Keep css and js
-versions independent. (As of the last update: `style.css?v=9`, `app.js?v=18` — check `index.html` for current.)
+`index.html` loads `style.css?v=N` and the 5 JS modules `js/core.js?v=N`, `js/proposal.js?v=N`,
+`js/brochure.js?v=N`, `js/namecard.js?v=N`, `js/main.js?v=N`. After editing a file, **bump that file's
+number** in `index.html` (only the files you touched — versions are independent per file).
+(As of 2026-07-15: `style.css?v=9`, all 5 js at `?v=1` — check `index.html` for current.)
 
 ## Verify in the real app (don't stop at syntax)
-- `node --check public/app.js` catches syntax errors, but always also **reload localhost:8000** and exercise
+- `node --check public/js/<file>.js` catches syntax errors, but always also **reload localhost:8000** and exercise
   the change (open a proposal, click a brochure, edit a name card field, export).
 - `server.js` changes → **restart** the server. Front-end files are served fresh from disk (just reload).
 - The in-app browser preview + screenshots have been **flaky/timing out** in past sessions. Fallbacks that
@@ -14,8 +15,10 @@ versions independent. (As of the last update: `style.css?v=9`, `app.js?v=18` —
   for synchronous DOM checks (avoid Promise-based evals — they tended to hang the pane).
 
 ## Don't break the app while restyling
-`app.js` depends on specific element IDs (`btn-save-top`, `tree-container`, `active-file-title`,
-`btn-export-jpeg`, `btn-export-pdf`, etc.) and function/variable names. Preserve them. Keep UI copy Vietnamese
+The JS modules depend on specific element IDs (`btn-save-top`, `tree-container`, `active-file-title`,
+`btn-export-jpeg`, `btn-export-pdf`, etc.) and function/variable names. All 5 files share ONE global
+namespace (plain scripts, no bundler) — don't redeclare a `const`/`function` name that another file
+already defines. Preserve them. Keep UI copy Vietnamese
 and match the existing code style. `style.css` is a token-driven design system (light default + `body.dark-theme`),
 brand violet `#4F00CA` family, font **Plus Jakarta Sans** (UI) + **Fira Code** (mono). SVG proposals use SF Pro
 (bundled in `public/fonts/`).

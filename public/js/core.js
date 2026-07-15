@@ -1,0 +1,1271 @@
+/**
+ * THINKSMART TOOL — CORE (dùng chung cho mọi công cụ)
+ * State, DOM cache, tải/lưu/clone file SVG, canvas zoom/pan, inspector,
+ * bảng màu, nhúng font và xuất JPEG/PDF.
+ *
+ * Kiến trúc module (nạp theo thứ tự trong index.html):
+ *   js/core.js      — file này: nền tảng dùng chung
+ *   js/proposal.js  — công cụ Proposal / Báo giá
+ *   js/brochure.js  — công cụ Brochure (thư viện tải về)
+ *   js/namecard.js  — công cụ Name Card
+ *   js/main.js      — khởi động app + cây điều hướng + sự kiện chung
+ * Công cụ mới sau này = thêm một file js/<tool>.js riêng, không sửa chồng lên tool khác.
+ */
+
+// --- STATE MANAGEMENT ---
+let appState = {
+  mode: 'server', // 'server' = local Express backend | 'static' = deployed (Vercel), browser-only
+  svgsList: [],
+  library: { brochure: {}, namecard: {} }, // downloadable assets grouped by carrier
+  activeLibraryPath: null,
+  activeFile: null,
+  activeSvgDoc: null, // Parsed DOM of active SVG
+  zoom: 1.0,
+  panX: 0,
+  panY: 0,
+  isPanning: false,
+  startX: 0,
+  startY: 0,
+  canvasBgColor: 'transparent',
+  selectedCategory: 'all',
+  searchQuery: '',
+  isSpacePressed: false
+};
+
+// --- CONSTANTS ---
+const ZOOM_SPEED = 0.08;
+const MIN_ZOOM = 0.05;
+const MAX_ZOOM = 8.0;
+
+// Master templates live in this folder and must never be overwritten
+const MASTER_FOLDER = '2-templates';
+
+function isMasterFile(file) {
+  if (!file) return false;
+  const f = (file.folder || '').toLowerCase();
+  const p = (file.path || '').toLowerCase();
+  // 2-Templates and Name Card masters are protected (edit + export only, never overwrite)
+  return f.startsWith(MASTER_FOLDER) || p.startsWith(MASTER_FOLDER) || f.startsWith('name card') || p.startsWith('name card');
+}
+
+// A name card = master in "Name Card/" OR a personal copy (its name still contains "name card")
+function isNameCardFile(file) {
+  const f = (file.folder || '').toLowerCase();
+  const n = (file.name || '').toLowerCase();
+  return f.startsWith('name card') || n.includes('name card');
+}
+
+// Apply a new text value to both the working SVG doc element and the rendered canvas copy
+function applyTextValue(el, editorId, newValue) {
+  el.textContent = newValue;
+  clearSiblingTspans(el);
+  const renderedBox = dom.canvasWrapper.querySelector('svg');
+  if (renderedBox) {
+    const canvasEl = renderedBox.querySelector(`[data-editor-id="${editorId}"]`);
+    if (canvasEl) {
+      canvasEl.textContent = newValue;
+      clearSiblingTspans(canvasEl);
+    }
+  }
+}
+
+function clearSiblingTspans(tspanEl) {
+  if (!tspanEl || tspanEl.tagName.toLowerCase() !== 'tspan') return;
+  const parent = tspanEl.parentElement;
+  if (!parent) return;
+  const y = tspanEl.getAttribute('y');
+  const siblings = Array.from(parent.querySelectorAll('tspan'));
+  siblings.forEach(sib => {
+    if (sib !== tspanEl && sib.getAttribute('y') === y) {
+      sib.textContent = '';
+    }
+  });
+}
+
+function getLineTextContent(tspanEl) {
+  if (!tspanEl) return '';
+  if (tspanEl.tagName.toLowerCase() !== 'tspan') return tspanEl.textContent.trim();
+  const parent = tspanEl.parentElement;
+  if (!parent) return tspanEl.textContent.trim();
+  const y = tspanEl.getAttribute('y');
+  const siblings = Array.from(parent.querySelectorAll('tspan'));
+  let text = '';
+  siblings.forEach(sib => {
+    if (sib.getAttribute('y') === y) {
+      text += sib.textContent;
+    }
+  });
+  return text.trim();
+}
+
+// Format "$1234.5" / "1,000,000" → "$1,234.50" / "$1,000,000". Returns null if not a number.
+// Explicitly typed decimals are preserved: "120.00" stays "$120.00" (not collapsed to "$120").
+function formatCurrencyValue(raw) {
+  const cleaned = String(raw).trim().replace(/[$,\s]/g, '');
+  if (cleaned === '' || isNaN(Number(cleaned))) return null;
+  const num = Number(cleaned);
+  const typedDecimals = /\.\d+$/.test(cleaned);
+  const hasDecimals = typedDecimals || Math.abs(num % 1) > 0.000001;
+  return '$' + num.toLocaleString('en-US', {
+    minimumFractionDigits: hasDecimals ? 2 : 0,
+    maximumFractionDigits: 2
+  });
+}
+
+// --- DOM ELEMENTS CACHE ---
+const dom = {
+  treeContainer: document.getElementById('tree-container'),
+  fileCount: document.getElementById('file-count'),
+  searchInput: document.getElementById('search-input'),
+  categoryPills: document.querySelectorAll('.category-pills .pill'),
+
+  canvasContainer: document.getElementById('canvas-container'),
+  canvasWrapper: document.getElementById('canvas-wrapper'),
+  noSelection: document.getElementById('no-selection'),
+
+  zoomValue: document.getElementById('zoom-value'),
+  btnZoomIn: document.getElementById('btn-zoom-in'),
+  btnZoomOut: document.getElementById('btn-zoom-out'),
+  btnZoomFit: document.getElementById('btn-zoom-fit'),
+  btnToggleGrid: document.getElementById('btn-toggle-grid'),
+  presetBtns: document.querySelectorAll('.preset-btn'),
+
+  activeFileTitle: document.getElementById('active-file-title'),
+  btnSaveTop: document.getElementById('btn-save-top'),
+
+  // Right Sidebar Tab Links & Panes
+  tabLinks: document.querySelectorAll('.tab-link'),
+  tabPanes: document.querySelectorAll('.tab-pane'),
+
+  // Inspector Tab
+  metaName: document.getElementById('meta-name'),
+  metaPath: document.getElementById('meta-path'),
+  metaCategory: document.getElementById('meta-category'),
+  metaSize: document.getElementById('meta-size'),
+  metaDimensions: document.getElementById('meta-dimensions'),
+  metaTextCount: document.getElementById('meta-text-count'),
+  metaColorCount: document.getElementById('meta-color-count'),
+
+  btnExportJpeg: document.getElementById('btn-export-jpeg'),
+  btnExportPdf: document.getElementById('btn-export-pdf'),
+  btnNewProposal: document.getElementById('btn-new-proposal'),
+
+  // Texts Tab
+  textsList: document.getElementById('texts-list'),
+
+  // Colors Tab
+  colorsList: document.getElementById('colors-list'),
+
+  statusLeft: document.getElementById('status-left'),
+  statusRight: document.getElementById('status-right')
+};
+
+// --- API CLIENT CALLS ---
+async function fetchSvgsList() {
+  updateStatus('Đang quét thư mục chứa file thiết kế...');
+  try {
+    const response = await fetch('/api/svgs');
+    if (!response.ok) throw new Error('API không khả dụng');
+    const data = await response.json();
+    if (data.success) {
+      appState.mode = 'server';
+      appState.svgsList = data.svgs;
+      await fetchLibrary();
+      renderFileTree();
+      updateStatus(`Đã tải ${data.svgs.length} thiết kế.`);
+    } else {
+      showErrorState(data.error);
+    }
+  } catch (error) {
+    // No backend (e.g. deployed on Vercel) → static mode: bundled templates + proposals saved in this browser
+    try {
+      await fetchStaticList();
+    } catch (e2) {
+      showErrorState(e2.message);
+    }
+  }
+}
+
+// --- STATIC (DEPLOYED) MODE: bundled templates + browser-saved proposals ---
+async function fetchStaticList() {
+  appState.mode = 'static';
+  const resp = await fetch('templates/manifest.json');
+  if (!resp.ok) throw new Error('Không tải được danh sách mẫu (templates/manifest.json).');
+  const manifest = await resp.json();
+
+  const list = manifest.map(t => ({
+    name: t.name,
+    path: `templates/${t.file}`,
+    category: t.category,
+    folder: '2-Templates',
+    size: 0,
+    mtime: null
+  }));
+
+  getLocalProposals().forEach(rec => {
+    list.push({
+      name: `${rec.clientName} - ${String(rec.templateName || '').replace(/\.svg$/i, '')}.svg`,
+      path: `local:${rec.id}`,
+      category: rec.category,
+      folder: 'Proposal của tôi (máy này)',
+      size: 0,
+      mtime: rec.mtime,
+      localId: rec.id
+    });
+  });
+
+  appState.svgsList = list;
+  renderFileTree();
+  updateStatus(`Chế độ online: ${manifest.length} mẫu + ${getLocalProposals().length} proposal lưu trên máy này.`);
+}
+
+// Browser storage for client proposals (static mode). Only edited text values are stored — very light.
+function getLocalProposals() {
+  try {
+    return JSON.parse(localStorage.getItem('localProposals') || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+
+function setLocalProposals(arr) {
+  localStorage.setItem('localProposals', JSON.stringify(arr));
+}
+
+function getLocalProposal(id) {
+  return getLocalProposals().find(r => String(r.id) === String(id));
+}
+
+// Snapshot all editable text values of the active document, keyed by data-editor-id
+function collectEditedFields() {
+  const fields = {};
+  if (!appState.activeSvgDoc) return fields;
+  appState.activeSvgDoc.documentElement.querySelectorAll('[data-editor-id]').forEach(el => {
+    fields[el.getAttribute('data-editor-id')] = el.textContent;
+  });
+  return fields;
+}
+
+async function loadSvgContent(fileInfo) {
+  updateStatus(`Đang tải thiết kế ${fileInfo.name}...`);
+  try {
+    let content = null;
+    let localRecord = null;
+
+    if (String(fileInfo.path).startsWith('local:')) {
+      // Proposal saved in this browser: load its template, edits are re-applied below
+      localRecord = getLocalProposal(String(fileInfo.path).slice(6));
+      if (!localRecord) throw new Error('Không tìm thấy proposal đã lưu trên máy này.');
+      const resp = await fetch(localRecord.templatePath);
+      if (!resp.ok) throw new Error('Không tải được file mẫu gốc.');
+      content = await resp.text();
+    } else if (appState.mode === 'static') {
+      const resp = await fetch(fileInfo.path);
+      if (!resp.ok) throw new Error('Không tải được file thiết kế.');
+      content = await resp.text();
+    } else {
+      const response = await fetch(`/api/svgs/content?path=${encodeURIComponent(fileInfo.path)}`);
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error);
+      content = data.content;
+    }
+
+    {
+      appState.activeFile = fileInfo;
+      appState.activeSvgDoc = new DOMParser().parseFromString(content, 'image/svg+xml');
+
+      // Check for parser errors
+      const parserError = appState.activeSvgDoc.querySelector('parsererror');
+      if (parserError) {
+        throw new Error('Mã nguồn SVG bị lỗi cú pháp XML.');
+      }
+
+      const svgEl = appState.activeSvgDoc.documentElement;
+
+      // Optimize text layout by stripping absolute inline x offsets from same-line tspans
+      optimizeSvgTexts(svgEl);
+
+      // Assign data-editor-id to all text and tspan elements in the parsed SVG document to ensure robust mapping
+      // Strip any data-editor-id saved into the file by older versions first — stale ids on <text>
+      // elements would otherwise coexist with the fresh tspan-level ids and render duplicate fields.
+      svgEl.querySelectorAll('[data-editor-id]').forEach(n => n.removeAttribute('data-editor-id'));
+      const rawTextNodes = svgEl.querySelectorAll('text');
+      let editorIdCounter = 1;
+      rawTextNodes.forEach(textEl => {
+        const tspans = Array.from(textEl.querySelectorAll('tspan'));
+        const hasDirectText = Array.from(textEl.childNodes).some(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '');
+
+        if (tspans.length > 0) {
+          const lines = {};
+          tspans.forEach(tspan => {
+            const y = tspan.getAttribute('y') || textEl.getAttribute('y') || '0';
+            if (!lines[y]) lines[y] = [];
+            lines[y].push(tspan);
+          });
+          Object.keys(lines).forEach(y => {
+            const lineTspans = lines[y];
+            const firstTspan = lineTspans[0];
+            if (firstTspan && firstTspan.textContent.trim() !== '') {
+              firstTspan.setAttribute('data-editor-id', `edit-text-${editorIdCounter++}`);
+            }
+          });
+        } else if (hasDirectText) {
+          textEl.setAttribute('data-editor-id', `edit-text-${editorIdCounter++}`);
+        }
+      });
+
+      // Re-apply edits saved in this browser (static mode proposals)
+      if (localRecord && localRecord.fields) {
+        Object.keys(localRecord.fields).forEach(eid => {
+          const target = svgEl.querySelector(`[data-editor-id="${eid}"]`);
+          if (target) target.textContent = localRecord.fields[eid];
+        });
+      }
+
+      // A proposal is now open → reveal the right-hand editor, clear any library preview
+      setEditorVisible(true);
+      hideLibraryPreview();
+
+      // Update UI title (mark master templates, and lock their Save button)
+      const isMaster = isMasterFile(fileInfo);
+      const cleanName = fileInfo.name.replace(/\.svg$/i, '');
+      dom.activeFileTitle.textContent = isMaster ? `${cleanName} — MẪU GỐC` : cleanName;
+      dom.activeFileTitle.classList.add('is-active');
+      dom.btnSaveTop.disabled = isMaster;
+
+      // Enable export buttons (JPEG + PDF)
+      if (dom.btnExportJpeg) dom.btnExportJpeg.disabled = false;
+      if (dom.btnExportPdf) dom.btnExportPdf.disabled = false;
+
+      // Setup Canvas
+      renderSvgOnCanvas();
+      resetPan();
+      zoomToFit();
+
+      // Update Inspector Panels
+      updateInspectorDetails();
+      populateTextsEditor();
+      populateColorsEditor();
+
+      // Tag canvas SVG text elements that are editable (after sidebar inputs exist)
+      tagEditableCanvasElements();
+
+      updateStatus(`Đang mở: ${fileInfo.name}`);
+    }
+  } catch (error) {
+    alert(`Lỗi khi mở file thiết kế: ${error.message}`);
+  }
+}
+
+async function saveSvgToServer() {
+  if (!appState.activeFile || !appState.activeSvgDoc) return;
+
+  if (isMasterFile(appState.activeFile)) {
+    alert('Đây là file MẪU GỐC, không thể ghi đè.\n\nHãy bấm "Tạo Proposal Mới" để tạo bản sao cho khách hàng — mọi chỉnh sửa bạn vừa làm sẽ được mang sang bản sao đó.');
+    return;
+  }
+
+  // Static mode (deployed): save the edited text values into this browser's storage
+  if (appState.mode === 'static') {
+    if (!String(appState.activeFile.path).startsWith('local:')) {
+      alert('Hãy bấm "Tạo Proposal Mới" để tạo bản cho khách trước khi lưu.');
+      return;
+    }
+    const all = getLocalProposals();
+    const rec = all.find(r => String(r.id) === String(appState.activeFile.path).slice(6));
+    if (!rec) {
+      alert('Không tìm thấy proposal này trên máy.');
+      return;
+    }
+    rec.fields = collectEditedFields();
+    rec.mtime = new Date().toISOString();
+    setLocalProposals(all);
+    flashButton(dom.btnSaveTop, '✓ Đã Lưu!');
+    updateStatus(`Đã lưu proposal vào trình duyệt này: ${appState.activeFile.name}`);
+    return;
+  }
+
+  updateStatus('Đang lưu thay đổi lên máy chủ...');
+  const serializer = new XMLSerializer();
+  const content = serializer.serializeToString(appState.activeSvgDoc);
+
+  try {
+    const response = await fetch('/api/svgs/save', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        path: appState.activeFile.path,
+        content: content
+      })
+    });
+    const data = await response.json();
+
+    if (data.success) {
+      // Re-update file size info in state
+      appState.activeFile.size = new Blob([content]).size;
+      updateInspectorDetails();
+
+      const prevBtnText = dom.btnSaveTop.innerHTML;
+      dom.btnSaveTop.innerHTML = `
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        Đã Lưu!
+      `;
+      dom.btnSaveTop.style.background = 'linear-gradient(135deg, var(--color-success), #15803d)';
+
+      setTimeout(() => {
+        dom.btnSaveTop.innerHTML = prevBtnText;
+        dom.btnSaveTop.style.background = '';
+      }, 2000);
+
+      updateStatus(`Đã lưu file thành công: ${appState.activeFile.name}`);
+    } else {
+      alert(`Không thể lưu file: ${data.error}`);
+    }
+  } catch (error) {
+    alert(`Lỗi đường truyền mạng: ${error.message}`);
+  }
+}
+
+// Create a new client proposal by cloning the currently open template (with any live edits).
+// Shared flow: dùng cho cả Proposal (bản cho khách) lẫn Name Card ("Tạo bản riêng").
+async function createNewProposal() {
+  if (!appState.activeFile || !appState.activeSvgDoc) {
+    alert('Hãy chọn một bản mẫu (IUL hoặc Term Life) ở cột bên trái trước.');
+    return;
+  }
+
+  const isNC = isNameCardFile(appState.activeFile);
+  const clientName = prompt(isNC ? 'Nhập TÊN CỦA BẠN (để tạo name card riêng):' : 'Nhập tên khách hàng cho proposal mới:');
+  if (!clientName || !clientName.trim()) return;
+
+  // Static mode (deployed): create the proposal in this browser's storage
+  if (appState.mode === 'static') {
+    let templatePath, templateName, category;
+    if (String(appState.activeFile.path).startsWith('local:')) {
+      const src = getLocalProposal(String(appState.activeFile.path).slice(6));
+      if (!src) {
+        alert('Không tìm thấy mẫu gốc của proposal này.');
+        return;
+      }
+      templatePath = src.templatePath;
+      templateName = src.templateName;
+      category = src.category;
+    } else {
+      templatePath = appState.activeFile.path;
+      templateName = appState.activeFile.name;
+      category = appState.activeFile.category;
+    }
+
+    const all = getLocalProposals();
+    const rec = {
+      id: Date.now(),
+      clientName: clientName.trim(),
+      templatePath: templatePath,
+      templateName: templateName,
+      category: category,
+      fields: collectEditedFields(),
+      mtime: new Date().toISOString()
+    };
+    all.push(rec);
+    setLocalProposals(all);
+
+    await fetchStaticList();
+    const newFile = appState.svgsList.find(f => f.path === `local:${rec.id}`);
+    if (newFile) await loadSvgContent(newFile);
+    renderFileTree();
+    updateStatus(`Đã tạo proposal mới (lưu trên máy này): ${rec.clientName}`);
+    return;
+  }
+
+  updateStatus('Đang tạo proposal mới...');
+  const serializer = new XMLSerializer();
+  const content = serializer.serializeToString(appState.activeSvgDoc);
+
+  try {
+    const response = await fetch('/api/svgs/clone', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        templatePath: appState.activeFile.path,
+        clientName: clientName.trim(),
+        content: content
+      })
+    });
+    const data = await response.json();
+
+    if (!data.success) {
+      alert(`Không thể tạo proposal: ${data.error}`);
+      return;
+    }
+
+    // Refresh the tree and open the newly created client file
+    await fetchSvgsList();
+    const newFile = appState.svgsList.find(f => f.path === data.path);
+    if (newFile) {
+      await loadSvgContent(newFile);
+      renderFileTree();
+    }
+    updateStatus(`Đã tạo proposal mới: ${data.name}`);
+  } catch (error) {
+    alert(`Lỗi khi tạo proposal: ${error.message}`);
+  }
+}
+
+// --- NAVIGATION: shared building blocks (dùng chung cho các section công cụ) ---
+
+// SVG icons used across the navigation
+const NAV_ICONS = {
+  proposal: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>',
+  brochure: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+  namecard: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2.2"/><line x1="13" y1="10" x2="18" y2="10"/><line x1="13" y1="14" x2="17" y2="14"/></svg>',
+  carrier: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+  file: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>',
+  fileDl: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+  arrow: '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>',
+  download: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+  bigFile: '<svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
+};
+
+const CARRIER_ORDER = ['AIG', 'NLG', 'Khách hàng', 'Chung', 'Khác'];
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function formatBytes(n) {
+  if (n == null) return '';
+  if (n < 1024) return n + ' B';
+  if (n < 1024 * 1024) return Math.round(n / 1024) + ' KB';
+  return (n / 1024 / 1024).toFixed(1) + ' MB';
+}
+
+// Determine carrier group for a proposal file (from folder or filename)
+function carrierOf(file) {
+  const f = (file.folder || '').toLowerCase();
+  const p = (file.path || '').toLowerCase();
+  const n = (file.name || '').toLowerCase();
+  if (file.localId || f.includes('client') || p.includes('4-clients') || f.includes('máy này')) return 'Khách hàng';
+  if (f.includes('aig') || n.includes('aig')) return 'AIG';
+  if (f.includes('nlg') || n.includes('nlg')) return 'NLG';
+  return 'Khác';
+}
+
+function carrierSort(a, b) {
+  const ia = CARRIER_ORDER.indexOf(a), ib = CARRIER_ORDER.indexOf(b);
+  return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib) || a.localeCompare(b);
+}
+
+// Build a collapsible folder shell → { folder, content }
+function makeCollapsibleFolder(labelHTML, { extraClass = '', open = true, iconHTML = '' } = {}) {
+  const folderEl = document.createElement('div');
+  folderEl.className = `tree-folder ${extraClass} ${open ? 'open' : ''}`.replace(/\s+/g, ' ').trim();
+
+  const headerEl = document.createElement('div');
+  headerEl.className = 'tree-folder-header';
+  headerEl.innerHTML = `
+    ${iconHTML ? `<span class="tree-folder-icon">${iconHTML}</span>` : ''}
+    <span class="tree-folder-label">${labelHTML}</span>
+    <span class="tree-folder-arrow">${NAV_ICONS.arrow}</span>
+  `;
+  headerEl.addEventListener('click', () => folderEl.classList.toggle('open'));
+
+  const contentEl = document.createElement('div');
+  contentEl.className = 'tree-folder-content';
+
+  folderEl.appendChild(headerEl);
+  folderEl.appendChild(contentEl);
+  return { folder: folderEl, content: contentEl };
+}
+
+function makeEmptyHint(msg) {
+  const d = document.createElement('div');
+  d.className = 'no-data nav-empty';
+  d.textContent = msg;
+  return d;
+}
+
+// A clickable, editable proposal item (dùng cho cả Proposal lẫn Name Card)
+function makeProposalItem(file) {
+  const el = document.createElement('div');
+  const isActive = appState.activeFile && appState.activeFile.path === file.path;
+  el.className = `tree-file-item ${isActive ? 'active' : ''}`.trim();
+  const display = file.name.replace(/\.svg$/i, '');
+  el.innerHTML = `
+    <span class="tree-file-icon">${NAV_ICONS.file}</span>
+    <span class="tree-file-name" title="${escapeHtml(file.name)}">${escapeHtml(display)}</span>
+    ${file.localId ? '<span class="tree-file-delete" title="Xóa proposal này khỏi máy">✕</span>' : ''}
+  `;
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.tree-file-item').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
+    loadSvgContent(file);
+  });
+  const del = el.querySelector('.tree-file-delete');
+  if (del) {
+    del.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!confirm(`Xóa proposal "${file.name}" khỏi máy này?`)) return;
+      setLocalProposals(getLocalProposals().filter(r => String(r.id) !== String(file.localId)));
+      fetchStaticList();
+    });
+  }
+  return el;
+}
+
+// Show/hide the right-hand editor panel (only visible while editing a proposal)
+function setEditorVisible(visible) {
+  document.body.classList.toggle('no-editor', !visible);
+}
+
+// --- CANVAS RENDERING & INTERACTIVES ---
+function renderSvgOnCanvas() {
+  if (!appState.activeSvgDoc) return;
+
+  dom.canvasWrapper.innerHTML = '';
+
+  // Clone the node to avoid reference errors when updating
+  const svgNode = appState.activeSvgDoc.documentElement.cloneNode(true);
+
+  const container = document.createElement('div');
+  container.className = 'rendered-svg-container';
+  container.id = 'svg-render-box';
+  container.appendChild(svgNode);
+
+  // Extract width/height to set explicit pixel boundaries
+  let svgWidth = parseFloat(svgNode.getAttribute('width'));
+  let svgHeight = parseFloat(svgNode.getAttribute('height'));
+  const viewBox = svgNode.getAttribute('viewBox');
+  if (viewBox) {
+    const parts = viewBox.split(/\s+/).map(parseFloat);
+    if (parts.length === 4) {
+      if (isNaN(svgWidth) || svgNode.getAttribute('width').includes('mm') || svgNode.getAttribute('width').includes('%')) {
+        svgWidth = parts[2];
+      }
+      if (isNaN(svgHeight) || svgNode.getAttribute('height').includes('mm') || svgNode.getAttribute('height').includes('%')) {
+        svgHeight = parts[3];
+      }
+    }
+  }
+
+  if (isNaN(svgWidth) || isNaN(svgHeight)) {
+    svgWidth = 800;
+    svgHeight = 600;
+  }
+
+  // Set explicit pixel dimensions on container to avoid browser rendering layout mismatches
+  container.style.width = `${svgWidth}px`;
+  container.style.height = `${svgHeight}px`;
+
+  // Wrap in interactive container
+  dom.canvasWrapper.appendChild(container);
+
+  // Hide no-selection overlay
+  if (dom.noSelection) {
+    dom.noSelection.style.display = 'none';
+  }
+
+  applyTransform();
+
+  // Tag editable elements after textareas are populated in the sidebar
+  requestAnimationFrame(tagEditableCanvasElements);
+}
+
+
+function applyTransform() {
+  dom.canvasWrapper.style.transform = `translate(${appState.panX}px, ${appState.panY}px) scale(${appState.zoom})`;
+  dom.zoomValue.textContent = `${Math.round(appState.zoom * 100)}%`;
+}
+
+// Tag rendered SVG canvas text nodes that have a matching sidebar textarea.
+// data-editor-id sits on the FIRST tspan of a line, but hover/click must cover the WHOLE
+// value ("Male", "$100,000", "Standard Non-Tobacco") — so tag the parent <text> block when
+// it holds a single editable line, and fall back to tagging every tspan of the line otherwise.
+function tagEditableCanvasElements() {
+  const renderedSvg = dom.canvasWrapper && dom.canvasWrapper.querySelector('svg');
+  if (!renderedSvg) return;
+
+  // Clear existing tags first
+  renderedSvg.querySelectorAll('.svg-editable-text').forEach(el => {
+    el.classList.remove('svg-editable-text');
+    el.removeAttribute('data-editor-target');
+  });
+
+  const textareas = document.querySelectorAll('.text-input-field[data-editor-id]');
+  textareas.forEach(textarea => {
+    const editorId = textarea.getAttribute('data-editor-id');
+    const svgTextEl = renderedSvg.querySelector(`[data-editor-id="${editorId}"]`);
+    if (!svgTextEl) return;
+
+    const parentText = svgTextEl.tagName.toLowerCase() === 'text' ? svgTextEl : svgTextEl.closest('text');
+    if (parentText && parentText.querySelectorAll('[data-editor-id]').length <= 1) {
+      // Whole <text> is one editable value → hover/click anywhere on it
+      parentText.classList.add('svg-editable-text');
+      parentText.setAttribute('data-editor-target', editorId);
+    } else if (parentText) {
+      // Multi-line <text>: tag every tspan on this line (same y as the id-carrying tspan)
+      const y = svgTextEl.getAttribute('y');
+      Array.from(parentText.querySelectorAll('tspan')).forEach(ts => {
+        if (ts.getAttribute('y') === y) {
+          ts.classList.add('svg-editable-text');
+          ts.setAttribute('data-editor-target', editorId);
+        }
+      });
+    } else {
+      svgTextEl.classList.add('svg-editable-text');
+      svgTextEl.setAttribute('data-editor-target', editorId);
+    }
+  });
+}
+
+function resetPan() {
+  appState.zoom = 1.0;
+  appState.panX = 0;
+  appState.panY = 0;
+  applyTransform();
+}
+
+function zoomToFit() {
+  const containerRect = dom.canvasContainer.getBoundingClientRect();
+  const svgEl = dom.canvasWrapper.querySelector('svg');
+  if (!svgEl) return;
+
+  // Extract natural dimension
+  let svgWidth = parseFloat(svgEl.getAttribute('width'));
+  let svgHeight = parseFloat(svgEl.getAttribute('height'));
+
+  // Try viewBox if dimensions are mm/missing
+  const viewBox = svgEl.getAttribute('viewBox');
+  if (viewBox) {
+    const parts = viewBox.split(/\s+/).map(parseFloat);
+    if (parts.length === 4) {
+      if (isNaN(svgWidth) || svgEl.getAttribute('width').includes('mm') || svgEl.getAttribute('width').includes('%')) {
+        svgWidth = parts[2];
+      }
+      if (isNaN(svgHeight) || svgEl.getAttribute('height').includes('mm') || svgEl.getAttribute('height').includes('%')) {
+        svgHeight = parts[3];
+      }
+    }
+  }
+
+  if (isNaN(svgWidth) || isNaN(svgHeight)) {
+    // Default safe fallback if metadata is corrupted
+    svgWidth = 800;
+    svgHeight = 600;
+  }
+
+  // Account for sidebar spacing/paddings
+  const padding = 60;
+  const zoomX = (containerRect.width - padding) / svgWidth;
+  const zoomY = (containerRect.height - padding) / svgHeight;
+
+  // Choose limiting zoom — fit to viewport (small designs like name cards zoom up so text is readable)
+  const fitZoom = Math.min(zoomX, zoomY, MAX_ZOOM);
+
+  appState.zoom = fitZoom;
+
+  // Center SVG in workspace viewport
+  appState.panX = (containerRect.width - svgWidth * fitZoom) / 2;
+  appState.panY = (containerRect.height - svgHeight * fitZoom) / 2;
+
+  applyTransform();
+}
+
+function handleZoom(delta, clientX, clientY) {
+  const containerRect = dom.canvasContainer.getBoundingClientRect();
+
+  // Zoom coordinate anchor
+  const x = clientX - containerRect.left;
+  const y = clientY - containerRect.top;
+
+  // Math calculations for centering zoom at cursor
+  const worldX = (x - appState.panX) / appState.zoom;
+  const worldY = (y - appState.panY) / appState.zoom;
+
+  const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, appState.zoom * (1 + delta)));
+
+  appState.zoom = newZoom;
+  appState.panX = x - worldX * newZoom;
+  appState.panY = y - worldY * newZoom;
+
+  applyTransform();
+}
+
+// --- INSPECTOR LOGIC & TAB UPDATES ---
+function updateInspectorDetails() {
+  if (!appState.activeFile || !appState.activeSvgDoc) return;
+
+  const file = appState.activeFile;
+  const svgEl = appState.activeSvgDoc.documentElement;
+
+  if (dom.metaName) dom.metaName.textContent = file.name;
+  if (dom.metaPath) dom.metaPath.textContent = file.path;
+  if (dom.metaCategory) dom.metaCategory.textContent = file.category;
+
+  // Size format
+  const sizeKb = (file.size / 1024).toFixed(1);
+  if (dom.metaSize) dom.metaSize.textContent = `${sizeKb} KB`;
+
+  // Dimensions
+  let width = svgEl.getAttribute('width') || '-';
+  let height = svgEl.getAttribute('height') || '-';
+  const viewBox = svgEl.getAttribute('viewBox');
+  if (dom.metaDimensions) {
+    if (viewBox) {
+      dom.metaDimensions.textContent = `${width} × ${height} (viewBox: ${viewBox})`;
+    } else {
+      dom.metaDimensions.textContent = `${width} × ${height}`;
+    }
+  }
+
+  // Stats
+  if (dom.metaTextCount) {
+    const texts = svgEl.querySelectorAll('text, tspan');
+    dom.metaTextCount.textContent = texts.length;
+  }
+
+  if (dom.metaColorCount) {
+    // Count colors in SVG
+    const colors = extractColorsFromDoc();
+    dom.metaColorCount.textContent = Object.keys(colors).length;
+  }
+}
+
+// Strip absolute inline x offsets from same-line tspans to prevent diacritics overlaps & gaps on Windows
+function optimizeSvgTexts(svgEl) {
+  const texts = svgEl.querySelectorAll('text');
+  texts.forEach(textEl => {
+    const tspans = Array.from(textEl.querySelectorAll('tspan'));
+    if (tspans.length === 0) return;
+
+    let lastY = null;
+
+    tspans.forEach((tspan, index) => {
+      const yAttr = tspan.getAttribute('y');
+
+      if (index === 0) {
+        if (yAttr !== null) lastY = yAttr;
+        return;
+      }
+
+      if (yAttr !== null) {
+        if (yAttr === lastY) {
+          tspan.removeAttribute('x');
+        } else {
+          lastY = yAttr;
+        }
+      } else {
+        tspan.removeAttribute('x');
+      }
+    });
+  });
+}
+
+// --- TEXT EDITOR PANEL (bộ điều phối) ---
+// Phần khung dùng chung: dọn panel, cảnh báo mẫu gốc, gom các dòng chỉnh sửa được,
+// rồi giao cho editor của từng công cụ (js/proposal.js hoặc js/namecard.js).
+function populateTextsEditor() {
+  if (!appState.activeSvgDoc) return;
+
+  dom.textsList.innerHTML = '';
+  const svgEl = appState.activeSvgDoc.documentElement;
+
+  // Clear search field
+  const textSearchInput = document.getElementById('text-search-input');
+  if (textSearchInput) {
+    textSearchInput.value = '';
+  }
+
+  // Warn when editing a master template
+  if (isMasterFile(appState.activeFile)) {
+    const warnEl = document.createElement('div');
+    warnEl.className = 'template-warning';
+    const isNC = (appState.activeFile.path || '').toLowerCase().includes('name card');
+    warnEl.innerHTML = isNC
+      ? 'Đây là <b>MẪU GỐC name card</b> — không thể lưu đè. Bấm <b>"Tạo Proposal Mới"</b> ở góc trên bên phải để tạo <b>bản riêng của bạn</b>, rồi chỉnh sửa và Xuất JPEG/PDF.'
+      : 'Đây là <b>MẪU GỐC</b> — không thể lưu đè. Bấm <b>"Tạo Proposal Mới"</b> ở góc trên bên phải để tạo bản riêng cho khách hàng (các chỉnh sửa hiện tại sẽ được mang sang).';
+    dom.textsList.appendChild(warnEl);
+  }
+
+  // Fetch text elements with data-editor-id (pre-assigned on load)
+  const textElements = Array.from(svgEl.querySelectorAll('[data-editor-id]'));
+
+  if (textElements.length === 0) {
+    dom.textsList.innerHTML = '<div class="no-data">Không tìm thấy đối tượng văn bản `<text>`.</div>';
+    return;
+  }
+
+  // Route to the tool that owns this file type
+  if (appState.activeFile && appState.activeFile.path.toLowerCase().includes('name card')) {
+    populateNameCardTextsEditor(svgEl, textElements);
+  } else {
+    populateProposalTextsEditor(svgEl, textElements);
+  }
+}
+
+// --- COLOR EXTRACTOR & REPLACER PANELS ---
+function extractColorsFromDoc() {
+  const colorsMap = {};
+  if (!appState.activeSvgDoc) return colorsMap;
+
+  const svgEl = appState.activeSvgDoc.documentElement;
+
+  // Recursively search colors in elements
+  const allElements = svgEl.querySelectorAll('*');
+
+  allElements.forEach(el => {
+    // Check attributes: fill, stroke, stop-color
+    const attrs = ['fill', 'stroke', 'stop-color'];
+    attrs.forEach(attr => {
+      const val = el.getAttribute(attr);
+      if (val && val.startsWith('#')) {
+        const hex = val.toLowerCase().trim();
+        if (!colorsMap[hex]) colorsMap[hex] = [];
+        colorsMap[hex].push({ element: el, type: 'attribute', name: attr });
+      }
+    });
+
+    // Check inline styles
+    const style = el.getAttribute('style');
+    if (style) {
+      // Basic regex parsing for inline styles
+      const hexMatches = style.match(/#[0-9a-fA-F]{3,8}/g);
+      if (hexMatches) {
+        hexMatches.forEach(match => {
+          const hex = match.toLowerCase().trim();
+          if (!colorsMap[hex]) colorsMap[hex] = [];
+          colorsMap[hex].push({ element: el, type: 'style' });
+        });
+      }
+    }
+  });
+
+  return colorsMap;
+}
+
+function populateColorsEditor() {
+  if (!appState.activeSvgDoc || !dom.colorsList) return;
+
+  dom.colorsList.innerHTML = '';
+  const colorsMap = extractColorsFromDoc();
+  const hexColors = Object.keys(colorsMap);
+
+  if (hexColors.length === 0) {
+    dom.colorsList.innerHTML = '<div class="no-data">Không tìm thấy màu dạng HEX (#...) nào.</div>';
+    return;
+  }
+
+  // Sort colors by luminance for beautiful grid representation
+  hexColors.sort((a, b) => {
+    // Hex to RGB representation
+    const rgbA = hexToRgb(a);
+    const rgbB = hexToRgb(b);
+    if (!rgbA || !rgbB) return 0;
+    // Luminance math formula
+    const lumA = 0.2126 * rgbA.r + 0.7152 * rgbA.g + 0.0722 * rgbA.b;
+    const lumB = 0.2126 * rgbB.r + 0.7152 * rgbB.g + 0.0722 * rgbB.b;
+    return lumB - lumA; // Dark to light
+  });
+
+  hexColors.forEach(hex => {
+    const usages = colorsMap[hex];
+    const count = usages.length;
+
+    const colorBlock = document.createElement('div');
+    colorBlock.className = 'color-edit-block';
+
+    // Custom label name based on branding if matches
+    let colorName = '';
+    const uppercaseHex = hex.toUpperCase();
+    if (uppercaseHex === '#241452') colorName = 'Deep Indigo';
+    else if (uppercaseHex === '#3A1D83') colorName = 'Royal Purple';
+    else if (uppercaseHex === '#6D28D9') colorName = 'Brand Purple';
+    else if (uppercaseHex === '#8B5CF6') colorName = 'Light Purple';
+    else if (uppercaseHex === '#A78BFA') colorName = 'Lavender';
+    else if (uppercaseHex === '#C9A227') colorName = 'Gold Brand';
+    else if (uppercaseHex === '#F4D77E') colorName = 'Gold Light';
+    else if (uppercaseHex === '#FFFFFF') colorName = 'Trắng';
+    else colorName = `${count} chi tiết`;
+
+    colorBlock.innerHTML = `
+      <div class="color-picker-wrapper">
+        <input type="color" class="color-picker-input" value="${hex}">
+      </div>
+      <div class="color-hex">${hex}</div>
+      <div class="color-tag" title="${colorName}">${colorName}</div>
+    `;
+
+    const picker = colorBlock.querySelector('.color-picker-input');
+
+    // Bind change event to replace color globally in SVGs
+    picker.addEventListener('input', (e) => {
+      const newHex = e.target.value.toLowerCase();
+
+      // Update color representation inside active DOM
+      replaceColorInDoc(hex, newHex);
+
+      // Update color code labels in editor UI itself
+      colorBlock.querySelector('.color-hex').textContent = newHex;
+
+      // Re-render SVG on Canvas to show instant updates
+      renderSvgOnCanvas();
+    });
+
+    // When done changing color, regenerate colors tree to update bindings
+    picker.addEventListener('change', () => {
+      populateColorsEditor();
+      updateInspectorDetails();
+    });
+
+    dom.colorsList.appendChild(colorBlock);
+  });
+}
+
+function replaceColorInDoc(oldHex, newHex) {
+  if (!appState.activeSvgDoc) return;
+
+  const svgEl = appState.activeSvgDoc.documentElement;
+  const allElements = svgEl.querySelectorAll('*');
+
+  allElements.forEach(el => {
+    // 1. Check fill, stroke, stop-color attributes
+    const attrs = ['fill', 'stroke', 'stop-color'];
+    attrs.forEach(attr => {
+      const val = el.getAttribute(attr);
+      if (val && val.toLowerCase().trim() === oldHex) {
+        el.setAttribute(attr, newHex);
+      }
+    });
+
+    // 2. Check inline style strings
+    const style = el.getAttribute('style');
+    if (style && style.toLowerCase().includes(oldHex)) {
+      // Regex replace hex strings
+      const regex = new RegExp(oldHex, 'gi');
+      const updatedStyle = style.replace(regex, newHex);
+      el.setAttribute('style', updatedStyle);
+    }
+  });
+}
+
+function hexToRgb(hex) {
+  // Supports shorthand #333 and standard #666666
+  const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+  const fullHex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : null;
+}
+
+// --- EXPORTS (JPEG / PDF) ---
+
+// Build export filename from the client name inside the SVG: "Proposal - Tran Van A"
+function getProposalBaseName() {
+  let clientName = '';
+  if (appState.activeSvgDoc) {
+    const nameEl = appState.activeSvgDoc.documentElement.querySelector('#client-name');
+    if (nameEl) clientName = nameEl.textContent.trim();
+  }
+  if (clientName) return `Proposal - ${clientName}`;
+  return appState.activeFile ? appState.activeFile.name.replace(/\.svg$/i, '') : 'Proposal';
+}
+
+// --- FONT EMBEDDING (so exports look identical on any machine) ---
+const EMBED_FONTS = [
+  { family: 'SFProDisplay-Black',   file: 'fonts/SFProDisplay-Black.woff' },
+  { family: 'SFProDisplay-Bold',    file: 'fonts/SFProDisplay-Bold.woff' },
+  { family: 'SFProDisplay-Heavy',   file: 'fonts/SFProDisplay-Heavy.woff' },
+  { family: 'SFProDisplay-Medium',  file: 'fonts/SFProDisplay-Medium.woff' },
+  { family: 'SFProDisplay-Regular', file: 'fonts/SFProDisplay-Regular.woff' },
+  { family: 'SFProText-Bold',       file: 'fonts/SFProText-Bold.woff' },
+  { family: 'SFProText-Regular',    file: 'fonts/SFProText-Regular.woff' }
+];
+// Italic weights aren't bundled → alias to the closest weight so text stays in the SF Pro family
+const ITALIC_ALIASES = [
+  { family: 'SFProDisplay-RegularItalic', from: 'SFProDisplay-Regular' },
+  { family: 'SFProDisplay-MediumItalic',  from: 'SFProDisplay-Medium' },
+  { family: 'SFProDisplay-BoldItalic',    from: 'SFProDisplay-Bold' }
+];
+
+let _embeddedFontCSS = null;
+
+function arrayBufferToBase64(buf) {
+  let binary = '';
+  const bytes = new Uint8Array(buf);
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+// Fetch the bundled woff files once and build @font-face rules with base64 data URLs
+async function getEmbeddedFontCSS() {
+  if (_embeddedFontCSS !== null) return _embeddedFontCSS;
+  try {
+    const dataUrls = {};
+    await Promise.all(EMBED_FONTS.map(async f => {
+      const resp = await fetch(f.file);
+      if (!resp.ok) return;
+      const buf = await resp.arrayBuffer();
+      dataUrls[f.family] = 'data:font/woff;base64,' + arrayBufferToBase64(buf);
+    }));
+    let css = '';
+    EMBED_FONTS.forEach(f => {
+      if (dataUrls[f.family]) css += `@font-face{font-family:'${f.family}';src:url('${dataUrls[f.family]}') format('woff');font-display:swap;}`;
+    });
+    ITALIC_ALIASES.forEach(a => {
+      if (dataUrls[a.from]) css += `@font-face{font-family:'${a.family}';src:url('${dataUrls[a.from]}') format('woff');font-display:swap;}`;
+    });
+    _embeddedFontCSS = css;
+  } catch (e) {
+    _embeddedFontCSS = '';
+  }
+  return _embeddedFontCSS;
+}
+
+// Shared renderer: draws the active SVG onto a 2x canvas, then calls onReady(canvas)
+async function renderSvgToCanvas(onReady, bgOverride) {
+  if (!appState.activeSvgDoc) return;
+
+  const svgEl = appState.activeSvgDoc.documentElement;
+
+  // Extract width/height
+  let width = parseFloat(svgEl.getAttribute('width'));
+  let height = parseFloat(svgEl.getAttribute('height'));
+  const viewBox = svgEl.getAttribute('viewBox');
+
+  if (viewBox) {
+    const parts = viewBox.split(/\s+/).map(parseFloat);
+    if (parts.length === 4) {
+      if (isNaN(width) || svgEl.getAttribute('width').includes('mm') || svgEl.getAttribute('width').includes('%')) {
+        width = parts[2];
+      }
+      if (isNaN(height) || svgEl.getAttribute('height').includes('mm') || svgEl.getAttribute('height').includes('%')) {
+        height = parts[3];
+      }
+    }
+  }
+
+  if (isNaN(width) || isNaN(height)) {
+    width = 1200; // Resolution standard fallback
+    height = 900;
+  }
+
+  // Multiply for high-res rendering (retina export vibe: 2x)
+  const scaleFactor = 2;
+  const exportWidth = width * scaleFactor;
+  const exportHeight = height * scaleFactor;
+
+  // Clone the SVG and embed the fonts (base64) so the export renders with the real
+  // fonts on ANY machine — not just computers that have SF Pro installed.
+  const fontCSS = await getEmbeddedFontCSS();
+  const svgClone = appState.activeSvgDoc.documentElement.cloneNode(true);
+  if (fontCSS) {
+    const styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+    styleEl.setAttribute('type', 'text/css');
+    styleEl.textContent = fontCSS;
+    svgClone.insertBefore(styleEl, svgClone.firstChild);
+  }
+
+  const serializer = new XMLSerializer();
+  const svgString = serializer.serializeToString(svgClone);
+
+  const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = exportWidth;
+    canvas.height = exportHeight;
+    const ctx = canvas.getContext('2d');
+
+    // Background: explicit override (e.g. white for PDF) or the selected canvas preset
+    const bg = bgOverride || appState.canvasBgColor;
+    if (bg && bg !== 'transparent') {
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, exportWidth, exportHeight);
+    }
+
+    ctx.drawImage(img, 0, 0, exportWidth, exportHeight);
+    URL.revokeObjectURL(url);
+    onReady(canvas);
+  };
+
+  img.onerror = (err) => {
+    alert('Không thể chuyển đổi SVG sang ảnh. Có thể có fonts hoặc liên kết ngoài không hợp lệ.');
+    console.error(err);
+  };
+
+  img.src = url;
+}
+
+function flashButton(btn, text) {
+  if (!btn) return;
+  const prev = btn.innerHTML;
+  btn.innerHTML = text;
+  setTimeout(() => { btn.innerHTML = prev; }, 2000);
+}
+
+function exportToJpeg() {
+  if (!appState.activeFile || !appState.activeSvgDoc) return;
+
+  updateStatus('Đang xuất ảnh JPEG...');
+  // JPEG has no transparency → render on a white background
+  renderSvgToCanvas((canvas) => {
+    const jpgUrl = canvas.toDataURL('image/jpeg', 0.92);
+    const link = document.createElement('a');
+    link.href = jpgUrl;
+
+    const jpgName = `${getProposalBaseName()}.jpg`;
+    link.download = jpgName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    updateStatus(`Đã xuất và tải xuống ảnh JPEG: ${jpgName}`);
+  }, '#ffffff');
+}
+
+// Export proposal as a PDF (white background) via jsPDF
+function exportToPdf() {
+  if (!appState.activeSvgDoc) return;
+
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    alert('Thư viện PDF chưa tải xong (cần internet). Vui lòng thử lại sau vài giây.');
+    return;
+  }
+
+  updateStatus('Đang xuất PDF...');
+  renderSvgToCanvas((canvas) => {
+    const { jsPDF } = window.jspdf;
+    // Canvas is rendered at 2x; PDF page uses the SVG's natural size
+    const pageW = canvas.width / 2;
+    const pageH = canvas.height / 2;
+
+    const pdf = new jsPDF({
+      orientation: pageW > pageH ? 'landscape' : 'portrait',
+      unit: 'px',
+      format: [pageW, pageH],
+      hotfixes: ['px_scaling']
+    });
+
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pageW, pageH);
+
+    const pdfName = `${getProposalBaseName()}.pdf`;
+    pdf.save(pdfName);
+    updateStatus(`Đã xuất PDF: ${pdfName}`);
+  }, '#ffffff');
+}
+
+// --- STATUS BAR ---
+function updateStatus(message) {
+  dom.statusLeft.textContent = message;
+}

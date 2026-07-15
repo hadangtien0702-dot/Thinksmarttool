@@ -4,8 +4,11 @@
 Newest entries on top. Keep it concrete (versions, files, commands).
 
 ## Current state (as of 2026-07-15)
-- Versions: `app.js?v=22`, `style.css?v=9` (verify against `public/index.html`).
-- Last commit on `main`: `43eb973` (uncommitted local work: agent-zone dedupe fixes — commit at EOD).
+- **Frontend is now modular**: `public/app.js` is GONE, replaced by `public/js/`
+  (`core.js` / `proposal.js` / `brochure.js` / `namecard.js` / `main.js`); versions: `core.js?v=3`,
+  `proposal.js?v=2`, `main.js?v=3`, `brochure.js?v=1`, `namecard.js?v=1`, `style.css?v=10`.
+- Mobile-ready: ≤900px = drawer + bottom-sheet + touch pan/pinch (see 2026-07-15 later 5).
+- Last commit on `main`: `012fdb6` (uncommitted local work: the js/ module split — commit at EOD).
 - Live at `thinksmarttool-gy6f.vercel.app`.
 - All 3 tools working: Proposal (AIG/NLG + Khách hàng), Brochure (multi-page grouping, minimal preview),
   Name Card (5 tagged fields, editable, fit-to-viewport zoom, master-protected + copy flow).
@@ -24,6 +27,75 @@ Newest entries on top. Keep it concrete (versions, files, commands).
    FB post templates, client management…). Keep the structure modular.
 
 ## Log
+### 2026-07-15 (later 5 — mobile UI)
+- **Mobile optimization** (≤900px breakpoint, CSS section 20 in `style.css`):
+  - Left sidebar → slide-in drawer (hamburger `#btn-mobile-nav` in header); picking a file auto-closes it.
+  - Right editor → bottom sheet (66vh, rounded top): opens via pencil `#btn-mobile-editor` (visible only
+    when a file is open) or by tapping editable text on canvas; closes via `#btn-editor-close` / backdrop.
+  - Body classes drive it: `nav-open` / `editor-open` + `#mobile-backdrop`. Buttons use `.mobile-only`
+    (hidden on desktop). Header compact: brand text + file title hidden, action buttons icon-only
+    (`font-size: 0` trick keeps the svg).
+  - **Touch gestures** in `main.js` `initTouchGestures()`: 1-finger drag = pan, 2-finger pinch = zoom
+    around midpoint (reuses `handleZoom`). `.canvas-container { touch-action: none; }` on mobile.
+  - Inputs ≥16px on mobile (blocks iOS focus auto-zoom); viewport meta now `user-scalable=no`.
+  - Verified at 375×812: drawer/sheet/backdrop flows, tap-text→sheet+focus, synthetic TouchEvent pan
+    (+50/+60 exact) and pinch (2× spread → 2× zoom exact); desktop at 1280px unchanged. NOTE: the
+    in-app browser pane freezes CSS transitions (rendering throttled) — computed transform stays at the
+    START value; inject `*{transition:none!important}` to assert end states when testing there.
+  - `style.css?v=10`, `main.js?v=3`.
+
+### 2026-07-15 (later 4 — keep typed ".00" in money fields)
+- **"$120.00" no longer collapses to "$120"** (user report). `formatCurrencyValue()` (core.js) only
+  kept decimals when the number was fractional; now it also keeps them when the user explicitly
+  typed a decimal part (`/\.\d+$/` on the cleaned string). "120" → "$120" unchanged; "120.5" →
+  "$120.50"; "1234567.00" → "$1,234,567.00". Verified on the blur auto-format of plan fields
+  (AIG IUL, "Phí đóng mỗi tháng") — input + canvas both correct. `core.js?v=3`.
+
+### 2026-07-15 (later 3 — full-text hover/click on canvas)
+- **Hover/click-to-edit now covers the WHOLE field text** (user report: only the first 1–2 chars of
+  "Male"/"$100,000"/"Standard Non-Tobacco" were hoverable). Cause: `.svg-editable-text` was applied to
+  the id-carrying FIRST tspan only. Fix in `tagEditableCanvasElements()` (core.js): tag the parent
+  `<text>` block (+ `data-editor-target="<editorId>"`) when it holds ≤1 editable line — hover anywhere
+  on the value glows the whole block; fallback tags every same-y tspan for multi-line texts. Click
+  handler (main.js) reads `data-editor-target || data-editor-id`.
+- Hardened click-to-edit for dropdown fields: `<select>` has no `.select()` → guarded with
+  `typeof textarea.select === 'function'`.
+- Verified AIG IUL + IUL - NLG: all 15 fields tagged at text level; clicking the LAST piece of
+  Male / Standard Non-Tobacco / $100,000 / Vu Nguyen / TONY PHU focuses the right sidebar field.
+  `core.js?v=2`, `main.js?v=2`.
+
+### 2026-07-15 (later 2 — agent field overwrite bug)
+- **Fixed agent fields overlaying instead of replacing** (user report: typing "anh thay tên" gave
+  "anh thay tênONY PHU" on canvas). Cause: the Section-3 (agent) input handler in `js/proposal.js`
+  wrote `el.textContent = newValue` directly — that only replaces the FIRST tspan of the line and
+  leaves sibling tspans ("ONY PHU", "46) 858-4277") untouched. Fix: use `applyTextValue()` (which
+  calls `clearSiblingTspans`) like Sections 1–2 already did. `js/proposal.js?v=2`.
+- RULE reinforced: **any write to a proposal line MUST go through `applyTextValue()`** — never set
+  `.textContent` directly on a line's first tspan (multi-tspan values will leave tails).
+- Verified typing into all 4 agent fields + client name on all 4 templates + Jenny client file:
+  canvas line equals exactly the typed value. Name Card fields unaffected (its `getLines().apply`
+  already clears same-line parts).
+
+### 2026-07-15 (later — module split)
+- **Split monolithic `public/app.js` (2446 lines) into per-tool modules** at the owner's request
+  ("tách riêng từng phần"): `public/js/core.js` (shared engine: state, dom, load/save/clone, canvas,
+  colors, fonts, export, texts-editor DISPATCHER), `js/proposal.js` (nav section + 3-group editor +
+  agent presets + GENDERS/RATE_CLASSES/US_STATES), `js/brochure.js` (library fetch/preview/downloads),
+  `js/namecard.js` (nav section + data-nc editor), `js/main.js` (renderFileTree composition +
+  initEventListeners + boot). Plain global scripts, NO bundler/modules — load order matters:
+  core → proposal → brochure → namecard → main (see index.html).
+- New seams: `renderFileTree()` (main.js) calls `renderProposalNavSection` / `renderLibrarySection` /
+  `renderNameCardNavSection`; `populateTextsEditor()` (core.js) routes to
+  `populateProposalTextsEditor(svgEl, textElements)` or `populateNameCardTextsEditor(svgEl, textElements)`.
+- Dropped dead code during the split: `copySvgCode`, `downloadSvgFile`, `copyPngToClipboard`,
+  `isStaticText` (buttons removed earlier; nothing called them).
+- Per-file cache versions now (`js/core.js?v=1` etc.) — bump only the file(s) you touch.
+- Verified on localhost:8000 after split AND after deleting app.js: 3 nav sections, AIG IUL proposal
+  15 fields + edit→canvas OK, brochure multi-page preview + download OK, name card 5 data-nc fields +
+  edit→canvas OK, zero console errors. `node --check` passed on all 5 files.
+- Updated `architecture.md` (module map), `conventions.md` (per-file `?v=` bump, one-global-namespace
+  warning), `deployment.md` (poll `js/core.js?v=`), `SKILL.md` accordingly.
+
 ### 2026-07-15
 - **Fixed bogus duplicate "Tên Agent Assistant" field** (user report, AIG IUL + IUL - NLG): the
   surrender-charge disclaimer paragraph wraps, and its short last line "khi không còn áp dụng."

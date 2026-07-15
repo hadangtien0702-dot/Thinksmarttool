@@ -17,7 +17,7 @@
 2. `git add -A && git commit -m "..." && git push origin main`.
 3. Verify: poll the live URL until the new version shows, e.g.
    ```bash
-   for i in $(seq 1 25); do v=$(curl -s https://thinksmarttool-gy6f.vercel.app/ | grep -oE "app.js\?v=[0-9]+" | head -1); [ "$v" = "app.js?v=<N>" ] && { echo "DEPLOYED $v"; break; }; sleep 6; done
+   for i in $(seq 1 25); do v=$(curl -s https://thinksmarttool-gy6f.vercel.app/ | grep -oE "js/core.js\?v=[0-9]+" | head -1); [ "$v" = "js/core.js?v=<N>" ] && { echo "DEPLOYED $v"; break; }; sleep 6; done
    ```
 4. Sanity-check the live `templates/manifest.json` and a couple of asset URLs return 200.
 
