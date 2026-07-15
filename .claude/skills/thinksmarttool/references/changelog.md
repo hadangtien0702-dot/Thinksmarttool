@@ -21,6 +21,16 @@ Newest entries on top. Keep it concrete (versions, files, commands).
    FB post templates, client management…). Keep the structure modular.
 
 ## Log
+### 2026-07-14 (later)
+- **Fixed empty Proposal section on Vercel.** Root cause: `2-Templates/` is gitignored → not deployed →
+  `/api/svgs` (Vercel runs server mode) found no proposal masters. Fix in `server.js` `/api/svgs` handler:
+  after the workspace scan, also scan `public/templates/*.svg` and add any not already found (dedupe by
+  filename), with a synthetic `folder` (`2-Templates/<carrier>` or `Name Card/Chung`) so master-protection +
+  carrier grouping still work. Their `path` is `public/templates/<file>` (loads fine via `/api/svgs/content`).
+  Also added `public/templates/` to the save-protection prefixes. Commit `6bda21f`. So: **keep the deployed
+  proposal copies in `public/templates/` + `manifest.json` in sync with `2-Templates/`** (deploy-vercel.bat
+  does the copy) — that's now what the live site serves. Local still uses `2-Templates/` (deduped).
+
 ### 2026-07-14
 - Created this `thinksmarttool` skill (project knowledge base) under `.claude/skills/thinksmarttool/`.
 - Fixed `itemBlock is not defined` crash (missing `const itemBlock` in the agent-fields render). Commit `e1417be`.

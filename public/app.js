@@ -1607,26 +1607,37 @@ function populateTextsEditor() {
     let genderEl = svgEl.querySelector('#client-gender');
     let rateEl = svgEl.querySelector('#client-rate');
     let stateEl = svgEl.querySelector('#client-state');
-    
-    if (!nameEl) {
-      nameEl = textElementsList.find(el => el.textContent.trim() === 'Dinh Thi Thao Nguyen');
-      if (nameEl) nameEl.setAttribute('id', 'client-name');
-    }
+
+    // data-editor-id sits on the FIRST tspan of each line, so a value split across several tspans
+    // (e.g. "Standard Non-Tobacco", "Vu Nguyen") won't equal that tspan's own textContent.
+    // Compare against the whole line instead so multi-tspan values are matched reliably.
+    const line = el => getLineTextContent(el).trim();
+    const isValue = t => t === '43' || /^\d+$/.test(t) || t === 'Male' || t === 'Female'
+      || RATE_CLASSES.includes(t) || US_STATES.includes(t);
+
     if (!ageEl) {
-      ageEl = textElementsList.find(el => el.textContent.trim() === '43');
+      ageEl = textElementsList.find(el => line(el) === '43');
       if (ageEl) ageEl.setAttribute('id', 'client-age');
     }
     if (!genderEl) {
-      genderEl = textElementsList.find(el => el.textContent.trim() === 'Male' || el.textContent.trim() === 'Female');
+      genderEl = textElementsList.find(el => { const t = line(el); return t === 'Male' || t === 'Female'; });
       if (genderEl) genderEl.setAttribute('id', 'client-gender');
     }
     if (!rateEl) {
-      rateEl = textElementsList.find(el => el.textContent.trim() === 'Standard Non-Tobacco' || el.textContent.trim() === 'Preferred Non-Tobacco');
+      rateEl = textElementsList.find(el => RATE_CLASSES.includes(line(el)));
       if (rateEl) rateEl.setAttribute('id', 'client-rate');
     }
     if (!stateEl) {
-      stateEl = textElementsList.find(el => el.textContent.trim() === 'Oklahoma');
+      stateEl = textElementsList.find(el => US_STATES.includes(line(el)));
       if (stateEl) stateEl.setAttribute('id', 'client-state');
+    }
+    if (!nameEl) {
+      // The client name isn't a fixed string (differs per template). Detect it as a capitalized
+      // multi-word line in the client card (Y < 450) that isn't a recognized value or a label word.
+      const looksLikeName = t => /^[A-Z][A-Za-z'.]+( [A-Z][A-Za-z'.]+){1,3}$/.test(t)
+        && !/(Client|Kh[aá]ch|Agent|Licensed|Assistant|CEO|Making|Promises|Keeping|Program|Universal|Index|Term|Life|Plan|Benefits|Summary|Value|Growth|Rate|Class|State|Gender|Male|Female|Tobacco|Preferred|Standard)/i.test(t);
+      nameEl = textElementsList.find(el => getAbsoluteY(el) < 450 && !isValue(line(el)) && looksLikeName(line(el)));
+      if (nameEl) nameEl.setAttribute('id', 'client-name');
     }
   }
 
@@ -1694,7 +1705,8 @@ function populateTextsEditor() {
   const planItems = [];
   
   textElements.forEach((el) => {
-    const textContent = el.textContent.trim();
+    // data-editor-id sits on the first tspan of a line → read the FULL line, not just that tspan
+    const textContent = getLineTextContent(el).trim();
     if (!textContent) return; // Skip empty elements
     
     const editorId = el.getAttribute('data-editor-id');
