@@ -140,7 +140,7 @@ function populateNameCardTextsEditor(svgEl, textElements) {
     itemBlock.className = 'text-edit-block';
     itemBlock.innerHTML = `
       <div class="text-meta"><span class="text-id">${escapeHtml(label)}</span></div>
-      <input type="text" class="text-input-field" value="${escapeHtml(line.text)}">
+      <input type="text" class="text-input-field" value="${escapeHtml(line.text)}" aria-label="${escapeHtml(label)}">
     `;
     const inputEl = itemBlock.querySelector('.text-input-field');
     inputEl.addEventListener('input', (e) => {

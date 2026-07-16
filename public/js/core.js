@@ -571,7 +571,9 @@ const NAV_ICONS = {
   trash: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>'
 };
 
-const CARRIER_ORDER = ['AIG', 'NLG', 'Bản nháp', 'Chung', 'Khác'];
+const CARRIER_ORDER = ['AIG', 'NLG', 'Allianz', 'Bản nháp', 'Chung', 'Khác'];
+// Các hãng luôn hiển thị trong nav Proposal, kể cả khi chưa có mẫu nào
+const MASTER_CARRIERS = ['AIG', 'NLG', 'Allianz'];
 
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -593,6 +595,7 @@ function carrierOf(file) {
   if (file.localId || f.includes('client') || p.includes('4-clients') || f.includes('máy này')) return 'Bản nháp';
   if (f.includes('aig') || n.includes('aig')) return 'AIG';
   if (f.includes('nlg') || n.includes('nlg')) return 'NLG';
+  if (f.includes('allianz') || n.includes('allianz')) return 'Allianz';
   return 'Khác';
 }
 
@@ -614,6 +617,7 @@ function makeCollapsibleFolder(labelHTML, { extraClass = '', open = true, iconHT
     <span class="tree-folder-arrow">${NAV_ICONS.arrow}</span>
   `;
   headerEl.addEventListener('click', () => folderEl.classList.toggle('open'));
+  makeKeyboardActivatable(headerEl);
 
   const contentEl = document.createElement('div');
   contentEl.className = 'tree-folder-content';
@@ -628,6 +632,19 @@ function makeEmptyHint(msg) {
   d.className = 'no-data nav-empty';
   d.textContent = msg;
   return d;
+}
+
+// Cho phép điều khiển bằng bàn phím: Tab tới được, Enter/Space kích hoạt như click (WCAG keyboard-nav)
+function makeKeyboardActivatable(el) {
+  el.tabIndex = 0;
+  el.setAttribute('role', 'button');
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      e.stopPropagation(); // phần tử lồng nhau (vd nút xoá trong dòng file) không kích hoạt phần tử cha
+      el.click();
+    }
+  });
 }
 
 // A clickable, editable proposal item (dùng cho cả Proposal lẫn Name Card)
@@ -649,8 +666,11 @@ function makeProposalItem(file) {
     el.classList.add('active');
     loadSvgContent(file);
   });
+  makeKeyboardActivatable(el);
   const del = el.querySelector('.tree-file-delete');
   if (del) {
+    makeKeyboardActivatable(del);
+    del.setAttribute('aria-label', `Xoá bản nháp ${display}`);
     del.addEventListener('click', async (e) => {
       e.stopPropagation();
       if (!confirm(`Xoá bản nháp "${display}"?\nHành động này không thể hoàn tác.`)) return;
@@ -984,17 +1004,6 @@ function populateTextsEditor() {
   const textSearchInput = document.getElementById('text-search-input');
   if (textSearchInput) {
     textSearchInput.value = '';
-  }
-
-  // Warn when editing a master template
-  if (isMasterFile(appState.activeFile)) {
-    const warnEl = document.createElement('div');
-    warnEl.className = 'template-warning';
-    const isNC = (appState.activeFile.path || '').toLowerCase().includes('name card');
-    warnEl.innerHTML = isNC
-      ? 'Đây là <b>MẪU GỐC name card</b> — không thể lưu đè. Bấm <b>"Tạo bản cho khách"</b> ở góc trên bên phải để tạo <b>bản riêng của bạn</b>, rồi chỉnh sửa và Xuất JPEG/PDF.'
-      : 'Đây là <b>MẪU GỐC</b> — không thể lưu đè. Bấm <b>"Tạo bản cho khách"</b> ở góc trên bên phải để tạo bản riêng (các chỉnh sửa hiện tại sẽ được mang sang).';
-    dom.textsList.appendChild(warnEl);
   }
 
   // Fetch text elements with data-editor-id (pre-assigned on load)

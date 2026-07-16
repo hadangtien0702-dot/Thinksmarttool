@@ -37,17 +37,23 @@ function renderProposalNavSection(container, proposals, q) {
     const c = carrierOf(f);
     (propGroups[c] = propGroups[c] || []).push(f);
   });
+  // Khi không tìm kiếm: luôn hiện đủ các hãng chính (kể cả hãng chưa có mẫu, vd Allianz)
+  if (!q) MASTER_CARRIERS.forEach(c => { propGroups[c] = propGroups[c] || []; });
   const propSection = makeCollapsibleFolder('Proposal / Báo giá', { extraClass: 'nav-section', iconHTML: NAV_ICONS.proposal });
   let propCount = 0;
   Object.keys(propGroups).sort(carrierSort).forEach(carrier => {
     const items = propGroups[carrier];
-    if (!items || !items.length) return;
+    if ((!items || !items.length) && !MASTER_CARRIERS.includes(carrier)) return;
     const grp = makeCollapsibleFolder(`${escapeHtml(carrier)} <span class="nav-count">${items.length}</span>`, { extraClass: 'nav-carrier', iconHTML: NAV_ICONS.carrier });
-    items.sort((a, b) => a.name.localeCompare(b.name)).forEach(f => grp.content.appendChild(makeProposalItem(f)));
+    if (items.length) {
+      items.sort((a, b) => a.name.localeCompare(b.name)).forEach(f => grp.content.appendChild(makeProposalItem(f)));
+    } else {
+      grp.content.appendChild(makeEmptyHint('Chưa có mẫu.'));
+    }
     propSection.content.appendChild(grp.folder);
     propCount += items.length;
   });
-  if (propCount === 0) propSection.content.appendChild(makeEmptyHint(q ? 'Không có kết quả.' : 'Chưa có proposal.'));
+  if (propCount === 0 && q) propSection.content.appendChild(makeEmptyHint('Không có kết quả.'));
   container.appendChild(propSection.folder);
   return propCount;
 }
@@ -278,7 +284,7 @@ function populateProposalTextsEditor(svgEl, textElements) {
           <div class="text-meta">
             <span class="text-id">${displayName}</span>
           </div>
-          <select class="text-input-field select-field" data-editor-id="${editorId}">
+          <select class="text-input-field select-field" data-editor-id="${editorId}" aria-label="${escapeHtml(displayName)}">
             ${opts.map(o => `<option value="${o}"${o === textContent ? ' selected' : ''}>${o}</option>`).join('')}
           </select>
         `;
@@ -291,7 +297,7 @@ function populateProposalTextsEditor(svgEl, textElements) {
           <div class="text-meta">
             <span class="text-id">${displayName}</span>
           </div>
-          <input type="text" class="text-input-field" data-editor-id="${editorId}" value="${escapeHtml(textContent)}">
+          <input type="text" class="text-input-field" data-editor-id="${editorId}" value="${escapeHtml(textContent)}" aria-label="${escapeHtml(displayName)}">
         `;
         const inputEl = itemBlock.querySelector('.text-input-field');
         inputEl.addEventListener('input', (e) => {
@@ -365,7 +371,7 @@ function populateProposalTextsEditor(svgEl, textElements) {
         <div class="text-meta">
           <span class="text-id">${displayName}</span>
         </div>
-        <input type="text" class="text-input-field" data-editor-id="${editorId}" value="${escapeHtml(textContent)}">
+        <input type="text" class="text-input-field" data-editor-id="${editorId}" value="${escapeHtml(textContent)}" aria-label="${escapeHtml(displayName)}">
       `;
 
       const inputEl = itemBlock.querySelector('.text-input-field');
@@ -417,9 +423,21 @@ function populateProposalTextsEditor(svgEl, textElements) {
     // IUL: 6 money fields + benefit-plan labels (period / coverage age / chart ages)
     const mainBenefit = planItems.find(item => item.absoluteX < 100 && item.absoluteY < 550);
     const monthlyPremium = planItems.find(item => item.absoluteX < 100 && item.absoluteY >= 550 && item.absoluteY < 650);
-    const totalPremium = planItems.find(item => item.absoluteX < 100 && item.absoluteY >= 650);
-    const chartProjections = planItems.filter(item => item.absoluteX >= 100)
-                                      .sort((a, b) => b.absoluteY - a.absoluteY); // Descending Y -> chronological order
+
+    const period = planExtras.find(x => x.kind === 'period');
+    const coverage = planExtras.find(x => x.kind === 'coverage');
+
+    // "Tổng số tiền đóng" là Ô THỨ 3 cùng hàng với "20 năm"/"120 tuổi" — X của nó ≥ 100 (≈212),
+    // nên phải tách ra TRƯỚC khi gom nhóm giá trị biểu đồ. Nếu không, nó bị nhận nhầm là cột
+    // biểu đồ đầu tiên và toàn bộ nhãn "Giá trị tích luỹ Tuổi N" lệch đi 1 ô (bug người dùng báo).
+    let totalPremium = planItems.find(item => item.absoluteX < 100 && item.absoluteY >= 650);
+    const chartCandidates = planItems.filter(item => item.absoluteX >= 100);
+    const boxRowY = period ? period.absoluteY : (coverage ? coverage.absoluteY : null);
+    if (!totalPremium && boxRowY !== null) {
+      const idx = chartCandidates.findIndex(item => Math.abs(item.absoluteY - boxRowY) < 25);
+      if (idx !== -1) totalPremium = chartCandidates.splice(idx, 1)[0];
+    }
+    const chartProjections = chartCandidates.sort((a, b) => b.absoluteY - a.absoluteY); // Descending Y -> chronological order
 
     // Chart age labels left→right = column 1..3; pair each with its "Cash Value at N" line
     // (same number) so editing "Tuổi 63" → "Tuổi 65" also rewrites the English subtitle.
@@ -433,33 +451,80 @@ function populateProposalTextsEditor(svgEl, textElements) {
 
     if (mainBenefit) mainBenefit.displayName = 'Mức bảo vệ (Mệnh giá)';
     if (monthlyPremium) monthlyPremium.displayName = 'Phí đóng mỗi tháng';
-    if (totalPremium) totalPremium.displayName = 'Tổng số tiền đóng (20 năm)';
-    // Money labels follow the actual chart ages (column i ↔ projection i, both chronological)
-    if (chartProjections[0]) chartProjections[0].displayName = 'Giá trị tích luỹ ' + (ageLabels[0] ? ageLabels[0].textContent : 'Tuổi 63');
-    if (chartProjections[1]) chartProjections[1].displayName = 'Giá trị tích luỹ ' + (ageLabels[1] ? ageLabels[1].textContent : 'Tuổi 67');
-    if (chartProjections[2]) chartProjections[2].displayName = 'Giá trị tích luỹ ' + (ageLabels[2] ? ageLabels[2].textContent : 'Tuổi 72');
+    if (totalPremium) totalPremium.displayName = 'Tổng số tiền đóng (' + (period ? period.textContent : '20 năm') + ')';
 
     if (mainBenefit) orderedPlanItems.push(mainBenefit);
     if (monthlyPremium) orderedPlanItems.push(monthlyPremium);
     if (totalPremium) orderedPlanItems.push(totalPremium);
-    chartProjections.forEach(cp => orderedPlanItems.push(cp));
 
-    const period = planExtras.find(x => x.kind === 'period');
-    const coverage = planExtras.find(x => x.kind === 'coverage');
+    // Mỗi cột biểu đồ = MỘT hàng chỉnh sửa gộp [tiền | tuổi] cho gọn (yêu cầu chủ tool 2026-07-15)
+    const columnCount = Math.max(chartProjections.length, ageLabels.length);
+    for (let i = 0; i < columnCount; i++) {
+      orderedPlanItems.push({ isChartCombo: true, index: i, money: chartProjections[i] || null, age: ageLabels[i] || null });
+    }
+
     if (period) { period.displayName = 'Thời gian đóng phí'; orderedPlanItems.push(period); }
-    if (coverage) { coverage.displayName = 'Bảo vệ đến tuổi'; orderedPlanItems.push(coverage); }
-    ageLabels.forEach(it => orderedPlanItems.push(it));
+    // "Bảo vệ đến khi nào / 120 tuổi" bị KHOÁ theo yêu cầu chủ tool (2026-07-15): giá trị cố định
+    // của sản phẩm, không đưa vào bảng chỉnh sửa (coverage vẫn được thu thập làm mốc hàng ô ở trên).
+  }
+
+  // Hàng gộp cho 1 cột biểu đồ: ô TIỀN bên trái + ô TUỔI bên phải
+  function buildChartComboBlock(combo) {
+    const idx = combo.index + 1;
+    const block = document.createElement('div');
+    block.className = 'text-edit-block';
+    block.innerHTML = `
+      <div class="text-meta">
+        <span class="text-id">Giá trị tích luỹ — Cột ${idx} biểu đồ</span>
+      </div>
+      <div class="dual-input-row">
+        ${combo.money ? `<input type="text" class="text-input-field" data-editor-id="${combo.money.editorId}" value="${escapeHtml(combo.money.textContent)}" aria-label="Số tiền cột ${idx}" title="Số tiền">` : ''}
+        ${combo.age ? `<input type="text" class="text-input-field dual-age" data-editor-id="${combo.age.editorId}" value="${escapeHtml(combo.age.textContent)}" aria-label="Tuổi cột ${idx}" title="Tuổi">` : ''}
+      </div>
+    `;
+
+    if (combo.money) {
+      const moneyInput = block.querySelector(`input[data-editor-id="${combo.money.editorId}"]`);
+      moneyInput.addEventListener('input', (e) => {
+        applyTextValue(combo.money.el, combo.money.editorId, e.target.value);
+      });
+      moneyInput.addEventListener('blur', (e) => {
+        const formatted = formatCurrencyValue(e.target.value);
+        if (formatted !== null && formatted !== e.target.value) {
+          e.target.value = formatted;
+          applyTextValue(combo.money.el, combo.money.editorId, formatted);
+        }
+      });
+    }
+    if (combo.age) {
+      const ageInput = block.querySelector(`input[data-editor-id="${combo.age.editorId}"]`);
+      ageInput.addEventListener('input', (e) => {
+        applyTextValue(combo.age.el, combo.age.editorId, e.target.value);
+        // Giữ dòng phụ tiếng Anh "Cash Value at N" khớp với tuổi mới
+        if (combo.age.paired) {
+          const num = (e.target.value.match(/\d+/) || [null])[0];
+          if (num) applyTextValue(combo.age.paired.el, combo.age.paired.editorId, 'Cash Value at ' + num);
+        }
+      });
+    }
+    return block;
   }
 
   // Create and append Section 2 elements
   orderedPlanItems.forEach(item => {
+    // Hàng gộp [tiền | tuổi] của cột biểu đồ có builder riêng
+    if (item.isChartCombo) {
+      planContainer.appendChild(buildChartComboBlock(item));
+      return;
+    }
+
     const itemBlock = document.createElement('div');
     itemBlock.className = 'text-edit-block';
     itemBlock.innerHTML = `
       <div class="text-meta">
         <span class="text-id">${item.displayName || 'Giá trị'}</span>
       </div>
-      <input type="text" class="text-input-field" data-editor-id="${item.editorId}" value="${escapeHtml(item.textContent)}">
+      <input type="text" class="text-input-field" data-editor-id="${item.editorId}" value="${escapeHtml(item.textContent)}" aria-label="${escapeHtml(item.displayName || 'Giá trị')}">
     `;
 
     const inputEl = itemBlock.querySelector('.text-input-field');

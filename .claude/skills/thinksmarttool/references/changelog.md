@@ -3,16 +3,20 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
-## Current state (as of 2026-07-15, end of day)
+## Current state (as of 2026-07-16)
 - **Frontend is modular**: `public/app.js` is GONE, replaced by `public/js/`
-  (`core.js` / `proposal.js` / `brochure.js` / `namecard.js` / `main.js`); versions: `core.js?v=8`,
-  `proposal.js?v=5`, `main.js?v=5`, `brochure.js?v=3`, `namecard.js?v=4`, `style.css?v=13`.
+  (`core.js` / `proposal.js` / `brochure.js` / `namecard.js` / `main.js`); versions: `core.js?v=11`,
+  `proposal.js?v=10`, `main.js?v=5`, `brochure.js?v=4`, `namecard.js?v=5`, `style.css?v=15`.
+- Proposal carriers: AIG, NLG, **Allianz (empty — awaiting owner's design)**; the 3 master carriers
+  always render in the nav even with 0 templates (`MASTER_CARRIERS` in core.js).
+- `/api/svgs` workspace scan is now an ALLOWLIST (`PROPOSAL_SCAN_DIRS` in server.js:
+  `2-Templates`, `4-Clients`, `Name Card`) — new root folders (design WIP etc.) can't leak into the tree.
 - Sale workflow: **Chọn mẫu → Điền → Lưu Nháp → Xuất** — context-aware header buttons, auto agent
   preset, dirty tracking + confirmations, draft trash-delete (`/api/svgs/delete`), drafts grouped
   under **"Bản nháp"** (see 2026-07-15 later 8/11/12).
 - Mobile-ready: ≤900px = drawer + bottom-sheet + touch pan/pinch (see 2026-07-15 later 5).
 - Bilingual nav: Proposal / Báo giá · Brochure / Tài liệu · Name Card / Danh thiếp.
-- Last commit on `main`: `1b04991` — **pushed & deployed, verified live** (`js/core.js?v=8` served).
+- All local work through 2026-07-16 committed & pushed (see Log).
 - Live at `thinksmarttool-gy6f.vercel.app`.
 - All 3 tools working: Proposal (AIG/NLG + Bản nháp), Brochure (multi-page grouping, minimal preview),
   Name Card (5 tagged fields, editable, fit-to-viewport zoom, master-protected + copy flow).
@@ -35,6 +39,118 @@ Newest entries on top. Keep it concrete (versions, files, commands).
    FB post templates, client management…). Keep the structure modular.
 
 ## Log
+### 2026-07-16 (later — banner gỡ, allowlist scan, hãng Allianz)
+- **Removed the "Đây là MẪU GỐC…" warning banner** in the texts editor panel (owner request) —
+  deleted the `template-warning` block in `populateTextsEditor()` (core.js). Master protection
+  itself unchanged (save still blocked, "Tạo bản cho khách" still the flow). `core.js?v=10`.
+- **`/api/svgs` scan switched from blocklist to ALLOWLIST** (`PROPOSAL_SCAN_DIRS =
+  ['2-Templates', '4-Clients', 'Name Card']` in server.js) after the owner's new WIP folder
+  `5-Design-Sections/` (11 Allianz section SVGs) leaked into the tree as "Khác 11". Any future
+  root folder stays out automatically; `_Archive` also skipped at any depth.
+- **New carrier "Allianz"** in Proposal / Báo giá (owner is designing Allianz templates):
+  `carrierOf()` + `CARRIER_ORDER` + new `MASTER_CARRIERS` (core.js); nav renders the 3 master
+  carriers even when empty with hint "Chưa có mẫu." (proposal.js, skipped while searching);
+  server-side carrier detection for `public/templates` fallback also knows Allianz. Created
+  empty `2-Templates/Allianz/`. When the design is final: drop the SVG there (filename should
+  contain "Allianz") + copy to `public/templates/` for Vercel.
+- **`.gitignore` += `5-Design-Sections/`** — design WIP must not reach the public repo.
+- Verified on localhost: tree = AIG 2 / NLG 2 / Allianz 0 ("Chưa có mẫu."), banner gone,
+  19 editor fields intact on IUL - NLG, no console errors. `core.js?v=11`, `proposal.js?v=10`.
+
+### 2026-07-16 (máy mới sau cài Windows — khôi phục môi trường)
+- **Máy được cài lại Windows**: user cũ `Kinn` → user mới `DRT-G21`; ổ dữ liệu cũ `G:` giờ mang
+  tên **`E:`** (cùng ổ vật lý). Repo giờ ở `E:\2026\Thinksmart\Sale\Proposal2026`.
+- Fix git "dubious ownership": `git config --global --add safe.directory E:/2026/Thinksmart/Sale/Proposal2026`.
+- **Khôi phục 4 skill user-level** từ backup `E:\2026\Claude\.claude\skills\` →
+  `C:\Users\DRT-G21\.claude\skills\` (frontend-design, ui-ux-pro-max, design-lessons, backend-patterns).
+- **2 file .bat backup/restore ở `E:\2026\Claude` viết lại dùng `%~dp0`** (tự nhận ổ đĩa — hết
+  hardcode `G:`); thêm guard "đã là junction thì bỏ qua". README cập nhật. Junction CHƯA chạy
+  (cần đóng Claude Code + Run as administrator) — tuỳ chủ dự án chạy `2-khoi-phuc-sau-khi-cai-win.bat`.
+- **Đường dẫn trong skill/tài liệu đổi hết** `G:\` → `E:\`, `C:\Users\Kinn` → `%USERPROFILE%`
+  (SKILL.md, architecture.md, conventions.md, design-lessons.md, design-lessons user-level).
+- Khối thay đổi 2026-07-15 VẪN CHƯA COMMIT (nguyên vẹn sau chuyển máy) — commit ở EOD như thường lệ.
+
+### 2026-07-15 (later 19 — design skills moved to USER level + global lesson notebook)
+- **Restructured per owner clarification** ("dự án nào cũng dùng, có bản lưu local, muốn biết hàng
+  tuần học thêm gì"): the design toolkit now lives at `C:\Users\Kinn\.claude\skills\` —
+  `frontend-design`, `ui-ux-pro-max`, and NEW **`design-lessons`** (global lesson notebook,
+  LESSONS.md with ⭐ golden rules + per-ISO-week log + weekly summary slot). Every project on the
+  machine sees them automatically.
+- Removed the project-level copies installed earlier the same day (duplicate names); `.gitignore`
+  entries kept as a guard. `conventions.md`/`SKILL.md`/`design-lessons.md` updated: project notebook
+  keeps Thinksmart-specific lessons, generalizable ones get PROMOTED to the global LESSONS.md.
+- Owner's philosophy captured in the global skill: solve short-term → extract lessons → compound
+  daily for long-term. Weekly review: ask "tuần này học được gì" (reads LESSONS.md current week).
+
+### 2026-07-15 (later 18 — design skills bundled + daily design lessons)
+- **Installed 2 design skills INTO the project** (owner: "đi theo dự án"): `.claude/skills/frontend-design/`
+  (from anthropics/claude-code plugins, v1.1.0) and `.claude/skills/ui-ux-pro-max/` (copied from user-level).
+  Both **gitignored** (licenses: Anthropic all-rights-reserved / none) — reinstall notes in `conventions.md`.
+- **New compounding file `references/design-lessons.md`** (owner: "update bài học mỗi ngày"): 10 seeded
+  rules + dated lesson log; SKILL.md now mandates using both skills for UI work and appending lessons
+  at session end (self-learn step 3).
+- NOTE: `4-Clients/` empty today = owner deleted their test drafts with the trash button (confirmed benign).
+
+### 2026-07-15 (later 17 — Roman numeral badges centered)
+- **Section badges "I" / "II" centered inside their rounded squares** (owner request) on all 4
+  proposal templates. Method worth reusing: measured the real offset in-browser
+  (getBoundingClientRect of rect vs text, divided by appState.zoom), then patched the `<text>`
+  `translate(x y)` values in the SVG files directly — patched BOTH `public/templates/*.svg` and
+  `2-Templates/**/*.svg` (8 files, each replacement matched exactly once). Re-measured: 0.00px
+  offset on every badge, all 4 templates.
+- NOTE: `4-Clients/` was EMPTY at patch time (owner deleted their test drafts with the new trash
+  button) — no drafts needed patching. Drafts created from now on inherit the centered badges.
+
+### 2026-07-15 (later 16 — chart columns edit as one [money | age] row)
+- **Each IUL chart column is now ONE combined edit row** (owner request): label
+  "Giá trị tích luỹ — Cột N biểu đồ" with two side-by-side inputs — MONEY on the left,
+  AGE on the right (replaces the separate "Giá trị tích luỹ Tuổi N" + "Tuổi cột N" fields).
+- Implementation: IUL branch pushes `{ isChartCombo, index, money, age }` items;
+  `buildChartComboBlock()` in `populateProposalTextsEditor` renders `.dual-input-row`
+  (CSS: money flex 1, age flex 0 0 40%). Money input keeps blur $-format; age input keeps
+  the "Cash Value at N" EN sync. Both carry data-editor-id → canvas hover/click-to-edit
+  still focuses the right input.
+- Verified AIG IUL + IUL - NLG: 3 combo rows, money blur "$52,000", age→"Tuổi 65" syncs
+  "Cash Value at 65", old EN gone; no console errors. `proposal.js?v=9`, `style.css?v=15`.
+
+### 2026-07-15 (later 15 — "Bảo vệ đến tuổi" locked)
+- **"Bảo vệ đến khi nào / 120 tuổi" is LOCKED** (owner decision): it's a fixed product value, removed
+  from the editable plan fields (the `coverage` extra is still collected — it stays the box-row Y
+  anchor fallback for the totalPremium detection). Canvas "120 tuổi" no longer hover/click-editable.
+  Verified on AIG IUL + IUL - NLG. `proposal.js?v=8`.
+
+### 2026-07-15 (later 14 — "Tổng số tiền đóng" mislabeled as chart value)
+- **Fixed one-off label shift in IUL Section 2** (user report from the LIVE site): the "Tổng số tiền
+  đóng" box value ($36,648, at X≈212 Y≈698) was being captured as the first chart projection because
+  the old `totalPremium` finder expected X<100 — so it got labeled "Giá trị tích luỹ Tuổi 63" and every
+  cash-value label shifted by one (the real Tuổi-72 value fell off into a generic "Giá trị" field).
+- Fix in `proposal.js` IUL branch: pull the box-row value OUT of `chartCandidates` first — it's the
+  item whose Y is within 25px of the "20 năm" (period) row — then sort the remainder as chart
+  projections. Label is now dynamic too: "Tổng số tiền đóng (" + period text + ")".
+- Verified AIG IUL + IUL - NLG: Tổng số tiền đóng=$36,648, Tuổi 63=$49,515, Tuổi 67=$61,945,
+  Tuổi 72=$85,078 (matches canvas), no stray "Giá trị" field; editing writes to the right canvas
+  element (translate 212,698). `proposal.js?v=7`.
+
+### 2026-07-15 (later 13 — full UI/UX audit via /ui-ux-pro-max)
+- Ran a full audit with the ui-ux-pro-max skill checklist (accessibility/touch/contrast/keyboard).
+  **Fixed:**
+  - Zoom tooltips were SWAPPED (minus said "Phóng to", plus said "Thu nhỏ") → corrected + aria-labels
+    on all 3 zoom buttons; aria-label on `#search-input`; `aria-live="polite"` on `#status-left`.
+  - Keyboard access: new `makeKeyboardActivatable()` (core.js) — tabindex=0 + role=button +
+    Enter/Space→click (with stopPropagation for the nested trash button) applied to tree file items,
+    folder headers, brochure items, and draft-delete buttons. Verified Enter opens a file.
+  - All editor inputs/selects now carry `aria-label` (proposal client/plan/agent + name card) — 20/20.
+  - Contrast: `--text-3` light `#8A90A2`→`#667085` (3.19→4.97:1), dark `#6D7488`→`#8B93A8`
+    (3.87→5.87:1) — WCAG AA.
+  - Mobile touch targets to 44px standard: `.toolbar-btn` 44, `.icon-btn` 44, tree rows padding 12px,
+    trash button padding 10px (negative margin keeps row height).
+  - Welcome heading h3→h2 (no more h1→h3 skip).
+- **Noted, not fixed** (minor): export buttons not disabled during export; `user-scalable=no` is an
+  intentional tradeoff (app has its own pinch zoom).
+- GOTCHA (testing): the in-app Browser pane also freezes STYLE RECALC after viewport resize — existing
+  elements report stale computed styles; verify with a freshly created element instead.
+- Versions: `core.js?v=9`, `proposal.js?v=6`, `brochure.js?v=4`, `namecard.js?v=5`, `style.css?v=14`.
+
 ### 2026-07-15 (later 12 — trash icon to delete drafts)
 - **Draft items now have a trash icon** (hover on desktop, always visible on mobile). Applies to any
   item in "Bản nháp" (4-Clients files) and browser-saved (localId) proposals — masters never get it.

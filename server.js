@@ -28,15 +28,22 @@ function isPathSafe(relativeFilePath) {
   return isInsideWorkspace && isSvg;
 }
 
+// Only these workspace folders belong to the Proposal/Name Card tools — design WIP
+// folders (1-Design, 5-Design-Sections, ...) must NOT leak into the file tree.
+const PROPOSAL_SCAN_DIRS = ['2-Templates', '4-Clients', 'Name Card'];
+
 // Helper to recursively list SVG files
 function getSvgFiles(dir, fileList = []) {
   if (!fs.existsSync(dir)) return fileList;
-  
+
   const files = fs.readdirSync(dir);
-  
+  const isRoot = path.resolve(dir) === path.resolve(WORKSPACE_DIR);
+
   files.forEach(file => {
-    // Skip node_modules, .git, .gemini, public, Brochure, Name Card, and archived files
-    if (['node_modules', '.git', '.gemini', 'public', '_Archive', 'Brochure'].includes(file)) return;
+    // At the workspace root, only descend into the tool-owned folders (allowlist)
+    if (isRoot && !PROPOSAL_SCAN_DIRS.includes(file)) return;
+    // Never descend into archived subfolders
+    if (file === '_Archive') return;
     
     const filePath = path.join(dir, file);
     const stat = fs.statSync(filePath);
@@ -88,7 +95,7 @@ app.get('/api/svgs', (req, res) => {
         try { stat = fs.statSync(abs); } catch (e) { return; }
         const lower = file.toLowerCase();
         const isNameCard = lower.includes('name card');
-        const carrier = lower.includes('aig') ? 'AIG' : lower.includes('nlg') ? 'NLG' : 'Khác';
+        const carrier = lower.includes('aig') ? 'AIG' : lower.includes('nlg') ? 'NLG' : lower.includes('allianz') ? 'Allianz' : 'Khác';
         const category = lower.includes('iul') ? 'IUL'
           : lower.includes('term') ? 'Term Life'
           : (isNameCard ? 'Name Card' : carrier);

@@ -4,7 +4,8 @@
 `index.html` loads `style.css?v=N` and the 5 JS modules `js/core.js?v=N`, `js/proposal.js?v=N`,
 `js/brochure.js?v=N`, `js/namecard.js?v=N`, `js/main.js?v=N`. After editing a file, **bump that file's
 number** in `index.html` (only the files you touched — versions are independent per file).
-(As of 2026-07-15: `style.css?v=9`, all 5 js at `?v=1` — check `index.html` for current.)
+(Don't trust hardcoded numbers here — ALWAYS check `index.html` for current versions; the changelog's
+"Current state" block tracks them too.)
 
 ## Verify in the real app (don't stop at syntax)
 - `node --check public/js/<file>.js` catches syntax errors, but always also **reload localhost:8000** and exercise
@@ -34,6 +35,19 @@ brand violet `#4F00CA` family, font **Plus Jakarta Sans** (UI) + **Fira Code** (
 **Local-first, one push at end of day.** During the day: edit + test on `localhost:8000`, do NOT commit or
 push per change. At **end of day** (or when the user says "push đi em" / wraps up): ONE `git add -A` + commit
 + `git push origin main` → Vercel auto-deploys. Then confirm the deploy (poll the live URL for the new `?v=`).
+
+## Design skills (USER-level — shared by all the owner's projects)
+The design toolkit lives at `%USERPROFILE%\.claude\skills\` (NOT in this repo; bản gốc lâu dài ở
+`E:\2026\Claude\.claude\skills\`): `frontend-design`
+(© Anthropic, from anthropics/claude-code plugins), `ui-ux-pro-max` (community, no license file),
+and `design-lessons` (the owner's own global lesson notebook — LESSONS.md, weekly structure).
+Every project on this machine sees them automatically. The `.gitignore` still blocks
+`.claude/skills/frontend-design/` and `.claude/skills/ui-ux-pro-max/` as a guard in case copies
+ever land in the repo again (licenses forbid public redistribution). To rebuild on a NEW machine:
+back up/copy the whole `%USERPROFILE%\.claude\skills\` folder; frontend-design can also be
+re-fetched from `https://github.com/anthropics/claude-code` (plugins/frontend-design).
+Project-specific design notes: `references/design-lessons.md` (generalizable ones get PROMOTED
+to the global LESSONS.md).
 
 ## Fonts (why export used to change fonts, now fixed)
 Proposals reference SF Pro (+ some italics/Bodoni not bundled). On machines without SF Pro, and in the

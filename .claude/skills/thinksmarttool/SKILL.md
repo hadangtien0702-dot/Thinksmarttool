@@ -2,7 +2,7 @@
 name: thinksmarttool
 description: >-
   Project knowledge base for **Thinksmart Tool** — the in-house SVG editor at
-  G:\2026\Thinksmart\Sale\Proposal2026 (insurance Proposal/Báo giá, Brochure, and Name Card tools,
+  E:\2026\Thinksmart\Sale\Proposal2026 (insurance Proposal/Báo giá, Brochure, and Name Card tools,
   Node/Express + vanilla JS, deployed on Vercel). Load this at the START of ANY session that touches
   this project so you already know its architecture, folders, conventions, deployment, and open tasks
   instead of re-discovering them. Use it whenever the user mentions Thinksmart Tool, the proposal/báo giá
@@ -18,7 +18,7 @@ team in the US (Thinksmart Insurance). It started as an SVG-based **insurance pr
 growing into a suite. The UI is Vietnamese. It is NOT a generic app — treat it as a real product the
 owner uses daily with their sales team.
 
-**Repo:** `G:\2026\Thinksmart\Sale\Proposal2026` · **Stack:** Node/Express (`server.js`) + vanilla
+**Repo:** `E:\2026\Thinksmart\Sale\Proposal2026` (trước 16/07/2026 ổ này tên `G:`) · **Stack:** Node/Express (`server.js`) + vanilla
 HTML/CSS/JS in `public/` · **Local:** `http://localhost:8000` · **Live:** `thinksmarttool-gy6f.vercel.app`.
 
 ## First thing to do in a session
@@ -37,7 +37,26 @@ HTML/CSS/JS in `public/` · **Local:** `http://localhost:8000` · **Live:** `thi
 | `references/tools.md` | How each tool works: Proposal (master→clone), Brochure (download library), Name Card (tagged fields) |
 | `references/conventions.md` | Cache-version bumping, git/privacy rules, workflow (local-first, EOD push), fonts, verifying changes |
 | `references/deployment.md` | GitHub repo, Vercel (serverless), the two URLs, publish/deploy steps |
+| `references/design-lessons.md` | **Design lessons that compound daily** + how to use the project's 2 design skills. Read before ANY UI work; append lessons at session end. |
 | `references/changelog.md` | **Newest state + recent changes + PENDING tasks.** Read this every session; update it every session. |
+
+## Design skills (owner mandate 2026-07-15, restructured same day)
+
+The owner's design toolkit lives at **USER level** — `%USERPROFILE%\.claude\skills\` (bản gốc lâu
+dài: `E:\2026\Claude\.claude\skills\`) — so EVERY
+project (this one and future ones) gets it automatically. No project-level copies (removed to avoid
+duplicate names). **Use for every UI task:**
+
+- **`frontend-design`** (Anthropic) — creation: intentional aesthetic direction, anti-"AI-look".
+- **`ui-ux-pro-max`** — QC/review: a11y/touch/contrast checklists; database via
+  `python "$env:USERPROFILE/.claude/skills/ui-ux-pro-max/scripts/search.py" "<query>" --domain <ux|style|color|typography>`.
+- **`design-lessons`** — the owner's GLOBAL lesson notebook
+  (`%USERPROFILE%\.claude\skills\design-lessons\LESSONS.md`): read before UI work, append after,
+  weekly summaries. Owner's philosophy: solve short-term problems → extract lessons → compound daily
+  for the long game.
+
+After any UI session: append project-specific lessons to `references/design-lessons.md` here, and
+**promote any generalizable lesson to the GLOBAL notebook** (LESSONS.md above, under the current week).
 
 ## How to work on this project (short version)
 
@@ -61,8 +80,10 @@ user says to wrap up / update memory / push), **update the skill files** so the 
    version numbers, and any new/closed PENDING items.
 2. If you introduced a new tool, folder, convention, API route, or gotcha, add it to the matching
    `references/*.md` (not just the changelog) so it's found by topic later.
-3. Keep entries concrete and short (file paths, function names, exact commands). Prune anything now false.
-4. Do this by editing the files directly with normal file tools — this skill lives in the repo at
+3. If the session touched UI, append a dated lesson entry to `references/design-lessons.md`
+   (and promote lasting rules into its "Quy tắc đúc kết" list).
+4. Keep entries concrete and short (file paths, function names, exact commands). Prune anything now false.
+5. Do this by editing the files directly with normal file tools — this skill lives in the repo at
    `.claude/skills/thinksmarttool/`, so updates are versioned with the project.
 
 This is the mechanism that makes the skill compound: every session leaves the knowledge base a little

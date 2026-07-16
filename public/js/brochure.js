@@ -45,6 +45,7 @@ function makeDownloadItem(item) {
       openLibraryItem(item);
     }
   });
+  makeKeyboardActivatable(el);
   return el;
 }
 

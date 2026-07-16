@@ -1,6 +1,6 @@
 # Architecture
 
-## Folder structure (repo root: `G:\2026\Thinksmart\Sale\Proposal2026`)
+## Folder structure (repo root: `E:\2026\Thinksmart\Sale\Proposal2026` — trước 16/07/2026 ổ này tên `G:`)
 
 | Path | What it is | In git? |
 |------|-----------|---------|

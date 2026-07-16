@@ -14,9 +14,18 @@ Thumbs.db
 # Archived / superseded files - local only
 _Archive/
 
+# Design work-in-progress (e.g. Allianz sections) — local only, not published
+5-Design-Sections/
+
 # Downloadable library assets — large, local-server only (not used by the static Vercel build)
 Brochure/
 Name Card/
+
+# Third-party design skills — installed locally, NOT redistributed on the public repo
+# (frontend-design: (c) Anthropic all-rights-reserved; ui-ux-pro-max: no license file).
+# Reinstall notes: .claude/skills/thinksmarttool/references/conventions.md
+.claude/skills/frontend-design/
+.claude/skills/ui-ux-pro-max/
 
 # Temp / local helper files
 push-to-github.bat
