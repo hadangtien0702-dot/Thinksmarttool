@@ -111,7 +111,9 @@ app.get('/api/svgs', (req, res) => {
       });
     }
 
-    res.json({ success: true, svgs });
+    // Trên Vercel (serverless, filesystem chỉ-đọc/tạm thời) → client lưu nháp vào localStorage
+    // của trình duyệt thay vì ghi file server. Local (node server.js) giữ nguyên ghi 4-Clients/.
+    res.json({ success: true, svgs, draftsMode: process.env.VERCEL ? 'browser' : 'server' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

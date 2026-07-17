@@ -199,7 +199,10 @@ async function fetchSvgsList() {
     const data = await response.json();
     if (data.success) {
       appState.mode = 'server';
+      // 'browser' trên Vercel: nháp lưu localStorage máy sale (server chỉ-đọc); 'server' khi chạy local
+      appState.draftsMode = data.draftsMode || 'server';
       appState.svgsList = data.svgs;
+      if (appState.draftsMode === 'browser') appendLocalDraftsToList();
       await fetchLibrary();
       renderFileTree();
       updateStatus(`Đã tải ${data.svgs.length} thiết kế.`);
@@ -216,24 +219,19 @@ async function fetchSvgsList() {
   }
 }
 
-// --- STATIC (DEPLOYED) MODE: bundled templates + browser-saved proposals ---
-async function fetchStaticList() {
-  appState.mode = 'static';
-  const resp = await fetch('templates/manifest.json');
-  if (!resp.ok) throw new Error('Không tải được danh sách mẫu (templates/manifest.json).');
-  const manifest = await resp.json();
+// Nháp lưu trong trình duyệt có đi theo chế độ này không? (static hoàn toàn, hoặc server
+// nhưng filesystem chỉ-đọc như Vercel → draftsMode 'browser')
+function usesBrowserDrafts() {
+  return appState.mode === 'static' || appState.draftsMode === 'browser';
+}
 
-  const list = manifest.map(t => ({
-    name: t.name,
-    path: `templates/${t.file}`,
-    category: t.category,
-    folder: '2-Templates',
-    size: 0,
-    mtime: null
-  }));
+// Giới hạn nháp trong trình duyệt (owner chốt 2026-07-17: "khoảng 10 nháp là được")
+const MAX_LOCAL_DRAFTS = 10;
 
+// Thêm các nháp localStorage vào appState.svgsList (dùng chung cho static list + server list trên Vercel)
+function appendLocalDraftsToList() {
   getLocalProposals().forEach(rec => {
-    list.push({
+    appState.svgsList.push({
       name: `${rec.clientName} - ${String(rec.templateName || '').replace(/\.svg$/i, '')}.svg`,
       path: `local:${rec.id}`,
       category: rec.category,
@@ -243,8 +241,25 @@ async function fetchStaticList() {
       localId: rec.id
     });
   });
+}
 
-  appState.svgsList = list;
+// --- STATIC (DEPLOYED) MODE: bundled templates + browser-saved proposals ---
+async function fetchStaticList() {
+  appState.mode = 'static';
+  const resp = await fetch('templates/manifest.json');
+  if (!resp.ok) throw new Error('Không tải được danh sách mẫu (templates/manifest.json).');
+  const manifest = await resp.json();
+
+  appState.svgsList = manifest.map(t => ({
+    name: t.name,
+    path: `templates/${t.file}`,
+    category: t.category,
+    folder: '2-Templates',
+    size: 0,
+    mtime: null
+  }));
+
+  appendLocalDraftsToList();
   renderFileTree();
   updateStatus(`Chế độ online: ${manifest.length} mẫu + ${getLocalProposals().length} proposal lưu trên máy này.`);
 }
@@ -267,11 +282,102 @@ function getLocalProposal(id) {
 }
 
 // Snapshot all editable text values of the active document, keyed by data-editor-id
+// --- APP DIALOG: thay alert()/prompt() hệ thống bằng modal theo design system ---
+// showAppAlert(message, {title, tone}) → Promise (resolve khi đóng)
+// showAppPrompt(message, {title, placeholder, confirmText, initialValue}) → Promise<string|null>
+function showAppDialog(opts) {
+  return new Promise((resolve) => {
+    const isPrompt = opts.type === 'prompt';
+    const prevFocus = document.activeElement;
+
+    const ICONS = {
+      info: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+      warning: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+      danger: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+      prompt: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z"/></svg>'
+    };
+    const tone = opts.tone || 'info';
+    const icon = ICONS[isPrompt ? 'prompt' : tone] || ICONS.info;
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'app-dialog-backdrop';
+    backdrop.innerHTML = `
+      <div class="app-dialog tone-${tone}" role="dialog" aria-modal="true" aria-label="${escapeHtml(opts.title || opts.message || '')}">
+        <div class="app-dialog-head">
+          <div class="app-dialog-icon">${icon}</div>
+          <div class="app-dialog-title">${escapeHtml(opts.title || 'Thông báo')}</div>
+        </div>
+        <div class="app-dialog-message">${escapeHtml(opts.message || '')}</div>
+        ${isPrompt ? `<input type="text" class="text-input-field app-dialog-input" aria-label="${escapeHtml(opts.title || 'Nhập thông tin')}" placeholder="${escapeHtml(opts.placeholder || '')}" value="${escapeHtml(opts.initialValue || '')}">` : ''}
+        <div class="app-dialog-actions">
+          ${isPrompt ? '<button type="button" class="btn btn-secondary app-dialog-cancel">Huỷ</button>' : ''}
+          <button type="button" class="btn btn-primary app-dialog-confirm">${escapeHtml(opts.confirmText || 'OK')}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+
+    const input = backdrop.querySelector('.app-dialog-input');
+    const btnConfirm = backdrop.querySelector('.app-dialog-confirm');
+    const btnCancel = backdrop.querySelector('.app-dialog-cancel');
+
+    let closed = false;
+    const close = (result) => {
+      if (closed) return;
+      closed = true;
+      backdrop.classList.remove('open');
+      setTimeout(() => {
+        backdrop.remove();
+        if (prevFocus && typeof prevFocus.focus === 'function') prevFocus.focus();
+      }, 180);
+      resolve(result);
+    };
+    const confirmValue = () => close(isPrompt ? (input ? input.value : '') : true);
+    const cancelValue = () => close(isPrompt ? null : true);
+
+    btnConfirm.addEventListener('click', confirmValue);
+    if (btnCancel) btnCancel.addEventListener('click', cancelValue);
+    backdrop.addEventListener('mousedown', (e) => { if (e.target === backdrop) cancelValue(); });
+    backdrop.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); cancelValue(); }
+      else if (e.key === 'Enter' && (isPrompt ? e.target === input : true)) { e.preventDefault(); confirmValue(); }
+    });
+
+    // Force reflow rồi mới thêm .open để transition chạy — không dùng rAF
+    // (rAF không chạy khi tab nền/pane bị throttle → dialog kẹt ở opacity 0)
+    void backdrop.offsetWidth;
+    backdrop.classList.add('open');
+    (input || btnConfirm).focus();
+    if (input && opts.initialValue) input.select();
+  });
+}
+function showAppAlert(message, opts = {}) {
+  return showAppDialog({ type: 'alert', message, title: opts.title || 'Thông báo', tone: opts.tone || 'info', confirmText: opts.confirmText });
+}
+function showAppPrompt(message, opts = {}) {
+  return showAppDialog({ type: 'prompt', message, title: opts.title || 'Nhập thông tin', placeholder: opts.placeholder, confirmText: opts.confirmText || 'OK', initialValue: opts.initialValue });
+}
+
+// Owner mandate 2026-07-17: tên khách nhập lúc "Tạo bản cho khách" phải điền luôn vào
+// ô tên trên bản vẽ (proposal: dòng id="client-name" — tag khi mở file; name card: text[data-nc="name"]).
+function applyClientNameToDoc(name) {
+  const doc = appState.activeSvgDoc;
+  if (!doc || !name) return;
+  let target = doc.querySelector('#client-name');
+  if (!target || !target.getAttribute('data-editor-id')) {
+    const nc = doc.querySelector('text[data-nc="name"]');
+    target = nc ? nc.querySelector('[data-editor-id]') : null;
+  }
+  if (!target) return;
+  applyTextValue(target, target.getAttribute('data-editor-id'), name);
+}
+
 function collectEditedFields() {
   const fields = {};
   if (!appState.activeSvgDoc) return fields;
   appState.activeSvgDoc.documentElement.querySelectorAll('[data-editor-id]').forEach(el => {
-    fields[el.getAttribute('data-editor-id')] = el.textContent;
+    // Lưu CẢ DÒNG (mọi tspan cùng y), không phải mảnh tspan đầu — để lúc áp lại so sánh
+    // được với dòng gốc và không phá các dòng nhiều tspan chưa sửa.
+    fields[el.getAttribute('data-editor-id')] = getLineTextContent(el);
   });
   return fields;
 }
@@ -283,12 +389,21 @@ async function loadSvgContent(fileInfo) {
     let localRecord = null;
 
     if (String(fileInfo.path).startsWith('local:')) {
-      // Proposal saved in this browser: load its template, edits are re-applied below
+      // Proposal saved in this browser: load its template, edits are re-applied below.
+      // Server mode (Vercel draftsMode 'browser'): templatePath là đường dẫn workspace
+      // ('public/templates/...') → phải qua content API; static mode: fetch thẳng URL.
       localRecord = getLocalProposal(String(fileInfo.path).slice(6));
       if (!localRecord) throw new Error('Không tìm thấy proposal đã lưu trên máy này.');
-      const resp = await fetch(localRecord.templatePath);
-      if (!resp.ok) throw new Error('Không tải được file mẫu gốc.');
-      content = await resp.text();
+      if (appState.mode === 'server') {
+        const r = await fetch(`/api/svgs/content?path=${encodeURIComponent(localRecord.templatePath)}`);
+        const d = await r.json();
+        if (!d.success) throw new Error(d.error || 'Không tải được file mẫu gốc.');
+        content = d.content;
+      } else {
+        const resp = await fetch(localRecord.templatePath);
+        if (!resp.ok) throw new Error('Không tải được file mẫu gốc.');
+        content = await resp.text();
+      }
     } else if (appState.mode === 'static') {
       const resp = await fetch(fileInfo.path);
       if (!resp.ok) throw new Error('Không tải được file thiết kế.');
@@ -344,11 +459,17 @@ async function loadSvgContent(fileInfo) {
         }
       });
 
-      // Re-apply edits saved in this browser (static mode proposals)
+      // Re-apply edits saved in this browser (nháp lưu localStorage)
       if (localRecord && localRecord.fields) {
         Object.keys(localRecord.fields).forEach(eid => {
           const target = svgEl.querySelector(`[data-editor-id="${eid}"]`);
-          if (target) target.textContent = localRecord.fields[eid];
+          if (!target) return;
+          const savedVal = localRecord.fields[eid];
+          // Bỏ qua dòng không đổi (record mới lưu cả dòng) và giá trị dạng mảnh của record cũ —
+          // chỉ áp dòng THỰC SỰ đã sửa, kèm xoá tspan em để không sót đuôi cũ (vd "$999.99" + ".70").
+          if (getLineTextContent(target) === savedVal || target.textContent === savedVal) return;
+          target.textContent = savedVal;
+          clearSiblingTspans(target);
         });
       }
 
@@ -385,7 +506,7 @@ async function loadSvgContent(fileInfo) {
       updateStatus(`Đang mở: ${fileInfo.name}`);
     }
   } catch (error) {
-    alert(`Lỗi khi mở file thiết kế: ${error.message}`);
+    showAppAlert(`Lỗi khi mở file thiết kế: ${error.message}`, { title: 'Không mở được file', tone: 'danger' });
   }
 }
 
@@ -393,20 +514,20 @@ async function saveSvgToServer() {
   if (!appState.activeFile || !appState.activeSvgDoc) return;
 
   if (isMasterFile(appState.activeFile)) {
-    alert('Đây là file MẪU GỐC, không thể ghi đè.\n\nHãy bấm "Tạo bản cho khách" để tạo bản sao — mọi chỉnh sửa bạn vừa làm sẽ được mang sang bản sao đó.');
+    showAppAlert('Đây là file MẪU GỐC, không thể ghi đè.\n\nHãy bấm "Tạo bản cho khách" để tạo bản sao — mọi chỉnh sửa bạn vừa làm sẽ được mang sang bản sao đó.', { title: 'Mẫu gốc được bảo vệ', tone: 'warning' });
     return;
   }
 
-  // Static mode (deployed): save the edited text values into this browser's storage
-  if (appState.mode === 'static') {
+  // Nháp trình duyệt (static mode HOẶC Vercel draftsMode 'browser'): lưu bộ giá trị đã điền vào localStorage
+  if (usesBrowserDrafts()) {
     if (!String(appState.activeFile.path).startsWith('local:')) {
-      alert('Hãy bấm "Tạo bản cho khách" để tạo bản riêng trước khi lưu.');
+      showAppAlert('Hãy bấm "Tạo bản cho khách" để tạo bản riêng trước khi lưu.', { title: 'Chưa có bản riêng', tone: 'warning' });
       return;
     }
     const all = getLocalProposals();
     const rec = all.find(r => String(r.id) === String(appState.activeFile.path).slice(6));
     if (!rec) {
-      alert('Không tìm thấy proposal này trên máy.');
+      showAppAlert('Không tìm thấy proposal này trên máy.', { title: 'Không tìm thấy', tone: 'danger' });
       return;
     }
     rec.fields = collectEditedFields();
@@ -459,10 +580,10 @@ async function saveSvgToServer() {
 
       updateStatus(`Đã lưu file thành công: ${appState.activeFile.name}`);
     } else {
-      alert(`Không thể lưu file: ${data.error}`);
+      showAppAlert(`Không thể lưu file: ${data.error}`, { title: 'Lưu không thành công', tone: 'danger' });
     }
   } catch (error) {
-    alert(`Lỗi đường truyền mạng: ${error.message}`);
+    showAppAlert(`Lỗi đường truyền mạng: ${error.message}`, { title: 'Mất kết nối', tone: 'danger' });
   }
 }
 
@@ -470,21 +591,38 @@ async function saveSvgToServer() {
 // Shared flow: dùng cho cả Proposal (bản cho khách) lẫn Name Card ("Tạo bản riêng").
 async function createNewProposal() {
   if (!appState.activeFile || !appState.activeSvgDoc) {
-    alert('Hãy chọn một bản mẫu (IUL hoặc Term Life) ở cột bên trái trước.');
+    showAppAlert('Hãy chọn một bản mẫu (IUL hoặc Term Life) ở cột bên trái trước.', { title: 'Chưa chọn mẫu' });
+    return;
+  }
+
+  // Nháp trình duyệt có giới hạn — báo TRƯỚC khi bắt người dùng gõ tên
+  if (usesBrowserDrafts() && getLocalProposals().length >= MAX_LOCAL_DRAFTS) {
+    showAppAlert(`Máy này đã lưu đủ ${MAX_LOCAL_DRAFTS} bản nháp.\n\nHãy xoá bớt bản cũ trong nhóm "Bản nháp" (biểu tượng thùng rác), hoặc xuất JPEG/PDF để giữ bản hoàn chỉnh về máy trước khi xoá.`, { title: 'Kho nháp đã đầy', tone: 'warning' });
     return;
   }
 
   const isNC = isNameCardFile(appState.activeFile);
-  const clientName = prompt(isNC ? 'Nhập TÊN CỦA BẠN (để tạo name card riêng):' : 'Nhập tên khách hàng cho proposal mới:');
+  const clientName = await showAppPrompt(
+    isNC ? 'Nhập tên của bạn — bản name card riêng sẽ được tạo với tên này.'
+         : 'Nhập tên khách hàng — bản proposal mới sẽ được tạo và điền sẵn tên này.',
+    {
+      title: isNC ? 'Tạo name card riêng' : 'Tạo bản cho khách',
+      placeholder: isNC ? 'Ví dụ: Tran Thi B' : 'Ví dụ: Nguyen Van A',
+      confirmText: 'Tạo bản'
+    }
+  );
   if (!clientName || !clientName.trim()) return;
 
-  // Static mode (deployed): create the proposal in this browser's storage
-  if (appState.mode === 'static') {
+  // Điền luôn tên vừa nhập vào ô tên trên bản vẽ (mang theo vào bản sao — owner mandate 2026-07-17)
+  applyClientNameToDoc(clientName.trim());
+
+  // Nháp trình duyệt (static mode HOẶC Vercel draftsMode 'browser'): tạo bản trong localStorage
+  if (usesBrowserDrafts()) {
     let templatePath, templateName, category;
     if (String(appState.activeFile.path).startsWith('local:')) {
       const src = getLocalProposal(String(appState.activeFile.path).slice(6));
       if (!src) {
-        alert('Không tìm thấy mẫu gốc của proposal này.');
+        showAppAlert('Không tìm thấy mẫu gốc của proposal này.', { title: 'Không tìm thấy', tone: 'danger' });
         return;
       }
       templatePath = src.templatePath;
@@ -509,7 +647,7 @@ async function createNewProposal() {
     all.push(rec);
     setLocalProposals(all);
 
-    await fetchStaticList();
+    if (appState.mode === 'static') { await fetchStaticList(); } else { await fetchSvgsList(); }
     const newFile = appState.svgsList.find(f => f.path === `local:${rec.id}`);
     if (newFile) await loadSvgContent(newFile);
     // Bản mới cho khách → tự điền tên/SĐT đại lý đã dùng lần trước (không cần nút)
@@ -536,7 +674,7 @@ async function createNewProposal() {
     const data = await response.json();
 
     if (!data.success) {
-      alert(`Không thể tạo proposal: ${data.error}`);
+      showAppAlert(`Không thể tạo proposal: ${data.error}`, { title: 'Tạo bản không thành công', tone: 'danger' });
       return;
     }
 
@@ -551,7 +689,7 @@ async function createNewProposal() {
     }
     updateStatus(`Đã tạo proposal mới: ${data.name}`);
   } catch (error) {
-    alert(`Lỗi khi tạo proposal: ${error.message}`);
+    showAppAlert(`Lỗi khi tạo proposal: ${error.message}`, { title: 'Tạo bản không thành công', tone: 'danger' });
   }
 }
 
@@ -679,7 +817,7 @@ function makeProposalItem(file) {
       if (file.localId) {
         setLocalProposals(getLocalProposals().filter(r => String(r.id) !== String(file.localId)));
         if (appState.activeFile && appState.activeFile.path === file.path) resetCanvasToWelcome();
-        fetchStaticList();
+        if (appState.mode === 'static') { fetchStaticList(); } else { fetchSvgsList(); }
         return;
       }
 
@@ -692,14 +830,14 @@ function makeProposalItem(file) {
         });
         const data = await resp.json();
         if (!data.success) {
-          alert(`Không thể xoá: ${data.error}`);
+          showAppAlert(`Không thể xoá: ${data.error}`, { title: 'Xoá không thành công', tone: 'danger' });
           return;
         }
         if (appState.activeFile && appState.activeFile.path === file.path) resetCanvasToWelcome();
         await fetchSvgsList();
         updateStatus(`Đã xoá bản nháp: ${display}`);
       } catch (err) {
-        alert(`Lỗi khi xoá bản nháp: ${err.message}`);
+        showAppAlert(`Lỗi khi xoá bản nháp: ${err.message}`, { title: 'Xoá không thành công', tone: 'danger' });
       }
     });
   }
@@ -1315,7 +1453,7 @@ async function renderSvgToCanvas(onReady, bgOverride) {
   };
 
   img.onerror = (err) => {
-    alert('Không thể chuyển đổi SVG sang ảnh. Có thể có fonts hoặc liên kết ngoài không hợp lệ.');
+    showAppAlert('Không thể chuyển đổi SVG sang ảnh. Có thể có fonts hoặc liên kết ngoài không hợp lệ.', { title: 'Xuất không thành công', tone: 'danger' });
     console.error(err);
   };
 
@@ -1357,7 +1495,7 @@ async function exportToPdf() {
   if (!appState.activeSvgDoc) return;
 
   if (!window.jspdf || !window.jspdf.jsPDF) {
-    alert('Thư viện PDF chưa tải xong (cần internet). Vui lòng thử lại sau vài giây.');
+    showAppAlert('Thư viện PDF chưa tải xong (cần internet). Vui lòng thử lại sau vài giây.', { title: 'Đang tải thư viện PDF', tone: 'warning' });
     return;
   }
 

@@ -6,7 +6,7 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 ## Current state (as of 2026-07-17)
 - **Frontend is modular**: `public/app.js` is GONE, replaced by `public/js/`
   (`core.js` / `proposal.js` / `brochure.js` / `namecard.js` / `main.js`); versions: `core.js?v=12`,
-  `proposal.js?v=10`, `main.js?v=5`, `brochure.js?v=4`, `namecard.js?v=5`, `style.css?v=19`. UI hiển thị **v1.01** ở chân sidebar trái
+  `proposal.js?v=10`, `main.js?v=5`, `brochure.js?v=4`, `namecard.js?v=5`, `style.css?v=20`, `core.js?v=14`. UI hiển thị **v1.02** ở chân sidebar trái
   (`sidebar-version-footer` trong index.html — cập nhật tay khi deploy).
 - Fonts: `public/fonts/` chứa 11 file THẬT (7 SF Pro weights + 3 SF Pro italics + Bodoni Moda);
   export nhúng đủ 11. Đừng copy đè từ `5-Design-Sections/sf pro/` (bộ giả cũ).
@@ -26,10 +26,8 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 - Font embedding on export is live. Design system + light/dark theme live.
 
 ## PENDING / open tasks
--1. **Verify save/clone/delete on the LIVE site (Vercel serverless)**: those routes write/delete files
-   on the serverless filesystem, which is read-only/ephemeral — drafts on the live site probably can't
-   persist (may alert an error). Needs a real test on thinksmarttool-gy6f.vercel.app; if broken, the fix
-   is routing live-site drafts through the static-mode localStorage path (or a real storage backend).
+-1. ~~Verify save/clone/delete on the LIVE site~~ **RESOLVED 2026-07-17 (v1.02)**: live site giờ chạy
+   **draftsMode 'browser'** — nháp lưu localStorage máy sale (xem log). Server ghi file chỉ còn cho local.
 0. ~~`TERMLIFE - NLG` master polluted with test data~~ **RESOLVED 2026-07-17** — toàn bộ 5 master
    đã chuẩn hoá placeholder (xem log "placeholder chuẩn cho mẫu gốc"), không cần bản restore nữa.
 1. **Name Card icons are low-res raster** → look rough / "mất góc" when zoomed/exported. Confirmed a
@@ -52,6 +50,43 @@ Newest entries on top. Keep it concrete (versions, files, commands).
    FB post templates, client management…). Keep the structure modular.
 
 ## Log
+### 2026-07-17 (v1.02 — nháp trình duyệt cho site live: 100 sale dùng đồng thời)
+- **Owner hỏi "100 sale vào cùng lúc thì sao?" → chốt mô hình 4 bước: Truy cập → Sửa → Lưu nháp
+  (~10 bản, tạm trên web) → Download.** Giải pháp: nháp lưu localStorage TRÌNH DUYỆT từng sale —
+  không server ghi file (Vercel read-only + lộ data giữa các sale), không cần đăng nhập/DB.
+- Implementation: server.js `/api/svgs` trả `draftsMode: process.env.VERCEL ? 'browser' : 'server'`;
+  core.js: `appState.draftsMode` + `usesBrowserDrafts()` + `MAX_LOCAL_DRAFTS = 10` +
+  `appendLocalDraftsToList()` (dùng chung static + server-browser); save/create/delete-refresh
+  mode-aware; nháp local: mở qua `/api/svgs/content` khi có server (templatePath dạng workspace
+  không fetch thẳng được). Máy local (không VERCEL env) giữ nguyên ghi `4-Clients/`.
+- **BUG NẶNG tóm được nhờ test round-trip**: nháp lưu "$999.99" mở lại thành "$999.99.70" — re-apply
+  fields thiếu `clearSiblingTspans` (đuôi ".70" của giá trị gốc nằm ở tspan em). Fix kép:
+  `collectEditedFields` lưu CẢ DÒNG (`getLineTextContent`) thay vì mảnh tspan đầu, và re-apply chỉ
+  đụng dòng thực-sự-khác + clear siblings (guard tương thích record cũ). KHÔNG được xoá mù siblings —
+  sẽ phá dòng nhiều tspan chưa sửa.
+- Verified (server riêng `VERCEL=1 PORT=8100`): draftsMode browser, tạo nháp vào localStorage +
+  điền tên, sửa + Lưu Nháp, reload → nháp trong nhóm "Bản nháp" mở đúng ($999.99 sạch, các dòng
+  chưa sửa nguyên vẹn), cap 10 hiện dialog "Kho nháp đã đầy", xoá nháp OK; port 8000 (server cũ
+  chưa restart, không trả draftsMode) → default 'server', ghi file như cũ; 0 lỗi console.
+- `core.js?v=14`, badge v1.02. LƯU Ý: server local của owner cần restart mới trả draftsMode
+  (không bắt buộc — thiếu flag thì frontend tự về 'server').
+
+### 2026-07-17 (sau push v1.01 — app dialog + auto điền tên khách, CHƯA PUSH)
+- **Modal dialog theo design system thay alert()/prompt() hệ thống** (owner chê alert xấu):
+  `showAppDialog/showAppAlert/showAppPrompt` (core.js, trước collectEditedFields) + CSS section 22
+  (`.app-dialog-*`: surface card, icon bubble theo tone info/warning/danger, scrim 50%, Enter/Esc,
+  focus restore, aria dialog). ĐÃ THAY 13 alert() + 1 prompt() trong core.js — 2 confirm() sync
+  (rời trang chưa lưu, xoá nháp) GIỮ nguyên vì đổi sẽ phải async-hoá cả chuỗi caller (việc sau).
+- **"Tạo bản cho khách" giờ điền luôn tên khách vào bản vẽ** (owner yêu cầu "nhớ thay đổi ở ô tên"):
+  `applyClientNameToDoc(name)` — ghi vào dòng `#client-name` (proposal) hoặc `text[data-nc="name"]`
+  (name card) TRƯỚC khi serialize/clone → file mới sinh ra đã mang tên; ô editor + canvas hiển thị
+  đúng ngay khi bản mới mở.
+- **GOTCHA mới: đừng mở dialog bằng requestAnimationFrame** — tab nền/pane throttle không chạy rAF
+  → dialog kẹt opacity 0. Dùng force reflow (`void el.offsetWidth`) rồi add class `.open` đồng bộ.
+- Verified server mode: dialog "Chưa chọn mẫu" đẹp (mở tức thì, focus OK, Esc đóng), flow tạo bản
+  "Test Khach A" → file + ô tên + canvas đều đúng, xoá nháp test sạch, master không đổi, 0 lỗi
+  console. `core.js?v=13`, `style.css?v=20`. Push sau (nhớ bump badge → v1.02 khi push).
+
 ### 2026-07-17 (EOD push từ máy D: — badge v1.01)
 - Push cả ngày làm việc: badge version, font thật (từ máy E: chưa push? — không, đã push 16/07;
   hôm nay là phần máy D:), audit fixes + mobile (style.css v19), placeholder 5 master

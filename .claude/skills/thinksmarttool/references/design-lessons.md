@@ -39,6 +39,25 @@ bản gốc lâu dài: `E:\2026\Claude\.claude\skills\`):
 
 ## Log bài học theo ngày
 
+### 2026-07-17 (tối — nháp trình duyệt cho site live)
+- **Snapshot dạng key→value của SVG nhiều tspan phải lưu CẢ DÒNG** (`getLineTextContent`), đừng lưu
+  `.textContent` của tspan đầu: lưu mảnh thì lúc áp lại không phân biệt được "dòng chưa sửa" với
+  "dòng đã sửa", và xoá siblings mù sẽ phá dòng chưa sửa. Round-trip test (lưu → reload → so từng
+  field) là cách duy nhất lộ bug này — sửa xong nhìn đúng, mở lại mới sai.
+- **Nghĩ theo "ai giữ state"**: 100 người dùng đồng thời không có nghĩa cần backend — nháp cá nhân
+  thuộc về MÁY người đó (localStorage), server chỉ phục vụ mẫu đọc-chung. Ranh giới quyết bằng env
+  flag server trả về (`draftsMode`), client không tự đoán môi trường.
+
+### 2026-07-17 (chiều — app dialog thay alert hệ thống)
+- **Dialog tự vẽ phải mở ĐỒNG BỘ, không qua rAF**: `requestAnimationFrame` không chạy khi tab bị
+  throttle (tab nền, pane nhúng) → dialog nằm ở opacity 0 vô hạn. Pattern đúng: append → `void
+  el.offsetWidth` (force reflow) → add class `.open` → focus, tất cả trong cùng call stack.
+- **Thay alert() nhưng ĐỪNG vội thay confirm() sync**: caller của confirm đang rẽ nhánh đồng bộ
+  (guard rời trang) — thay bằng modal Promise là phải async-hoá cả chuỗi. Tách scope: alert/prompt
+  (fire-and-forget hoặc caller đã async) đổi trước, confirm để đợt riêng.
+- **Modal điền form nên mang placeholder ví dụ đúng định dạng** ("Ví dụ: Nguyen Van A") — rẻ mà
+  giảm hẳn nhập sai, nhất quán với bộ placeholder của master.
+
 ### 2026-07-17 (audit /frontend-design + tối ưu mobile /ui-ux-pro-max, máy D:)
 - **A11y tree hiện attribute `title` chứ không phải text nhìn thấy**: cây accessibility báo
   "AIG IUL.svg" trong khi màn hình hiển thị "AIG IUL" sạch — suýt "sửa" một lỗi không tồn tại.
