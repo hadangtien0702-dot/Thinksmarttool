@@ -40,3 +40,4 @@ push-to-github.bat
 
 # Claude Code local (per-machine) settings
 .claude/settings.local.json
+__pycache__/

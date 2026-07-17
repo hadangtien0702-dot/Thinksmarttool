@@ -50,6 +50,22 @@ Newest entries on top. Keep it concrete (versions, files, commands).
    FB post templates, client management…). Keep the structure modular.
 
 ## Log
+### 2026-07-17 (v1.03 — Product Hub: sheet + repo, docs-only push)
+- **Owner lập Product Hub** (hỏi "trong ngành product gọi là gì" → Product Docs/Hub): thư mục mới
+  `product/` trong repo — `build-product-hub.py` (NGUỒN SỰ THẬT: sửa DATA rồi chạy lại),
+  sinh `PRODUCT-HUB.md` + `Thinksmart-Product-Hub.xlsx` (4 tab: Vision & Nguyên tắc / Roadmap /
+  Release Notes / Bài học).
+- **Google Sheet** (bản nhìn-cho-người, tài khoản Drive xuanthuongqtkd@gmail.com):
+  folder "Thinksmart Tool — Product" → sheet "Thinksmart Product Hub"
+  (id `1Y8kpimASEXucj8a5Mio2BNVabfwaX2ERZBKJ7cPUClQ` — link trong PRODUCT-HUB.md).
+  Upload qua Drive connector dạng CSV textContent (base64 chép tay 18k ký tự bị lỗi — bài học:
+  binary qua connector dễ hỏng, text thì an toàn).
+- **Roadmap trong hub = kết quả phân tích 6 lăng kính** (workflow sale / trải nghiệm khách /
+  proposal / compliance / khảo sát thị trường / vận hành đội — ~75 ý tưởng lọc còn ~25, nhóm
+  NOW/NEXT/LATER/LẰN RANH). Ưu tiên NOW: Gửi 1 chạm, Presentation mode, Backup nháp JSON,
+  Disclaimer tự động, QR vCard, tin nhắn mẫu.
+- Docs-only push, app KHÔNG đổi — badge vẫn bump v1.03 theo mandate (quy tắc đơn giản hơn ngoại lệ).
+
 ### 2026-07-17 (v1.02 — nháp trình duyệt cho site live: 100 sale dùng đồng thời)
 - **Owner hỏi "100 sale vào cùng lúc thì sao?" → chốt mô hình 4 bước: Truy cập → Sửa → Lưu nháp
   (~10 bản, tạm trên web) → Download.** Giải pháp: nháp lưu localStorage TRÌNH DUYỆT từng sale —
