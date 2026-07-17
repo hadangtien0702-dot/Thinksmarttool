@@ -1194,20 +1194,20 @@ function getProposalBaseName() {
 }
 
 // --- FONT EMBEDDING (so exports look identical on any machine) ---
+// 2026-07-17: all files are now REAL weights/styles (subset from the installed SF Pro OTFs;
+// the old bundle had Black=Bold=Heavy=Text-Bold as one identical file, so exports lost weights).
 const EMBED_FONTS = [
-  { family: 'SFProDisplay-Black',   file: 'fonts/SFProDisplay-Black.woff' },
-  { family: 'SFProDisplay-Bold',    file: 'fonts/SFProDisplay-Bold.woff' },
-  { family: 'SFProDisplay-Heavy',   file: 'fonts/SFProDisplay-Heavy.woff' },
-  { family: 'SFProDisplay-Medium',  file: 'fonts/SFProDisplay-Medium.woff' },
-  { family: 'SFProDisplay-Regular', file: 'fonts/SFProDisplay-Regular.woff' },
-  { family: 'SFProText-Bold',       file: 'fonts/SFProText-Bold.woff' },
-  { family: 'SFProText-Regular',    file: 'fonts/SFProText-Regular.woff' }
-];
-// Italic weights aren't bundled → alias to the closest weight so text stays in the SF Pro family
-const ITALIC_ALIASES = [
-  { family: 'SFProDisplay-RegularItalic', from: 'SFProDisplay-Regular' },
-  { family: 'SFProDisplay-MediumItalic',  from: 'SFProDisplay-Medium' },
-  { family: 'SFProDisplay-BoldItalic',    from: 'SFProDisplay-Bold' }
+  { family: 'SFProDisplay-Black',         file: 'fonts/SFProDisplay-Black.woff' },
+  { family: 'SFProDisplay-Bold',          file: 'fonts/SFProDisplay-Bold.woff' },
+  { family: 'SFProDisplay-Heavy',         file: 'fonts/SFProDisplay-Heavy.woff' },
+  { family: 'SFProDisplay-Medium',        file: 'fonts/SFProDisplay-Medium.woff' },
+  { family: 'SFProDisplay-Regular',       file: 'fonts/SFProDisplay-Regular.woff' },
+  { family: 'SFProText-Bold',             file: 'fonts/SFProText-Bold.woff' },
+  { family: 'SFProText-Regular',          file: 'fonts/SFProText-Regular.woff' },
+  { family: 'SFProDisplay-RegularItalic', file: 'fonts/SFProDisplay-RegularItalic.woff' },
+  { family: 'SFProDisplay-MediumItalic',  file: 'fonts/SFProDisplay-MediumItalic.woff' },
+  { family: 'SFProDisplay-BoldItalic',    file: 'fonts/SFProDisplay-BoldItalic.woff' },
+  { family: 'BodoniModa18pt-Italic',      file: 'fonts/BodoniModa18pt-Italic.woff2', format: 'woff2' }
 ];
 
 let _embeddedFontCSS = null;
@@ -1231,14 +1231,12 @@ async function getEmbeddedFontCSS() {
       const resp = await fetch(f.file);
       if (!resp.ok) return;
       const buf = await resp.arrayBuffer();
-      dataUrls[f.family] = 'data:font/woff;base64,' + arrayBufferToBase64(buf);
+      const fmt = f.format || 'woff';
+      dataUrls[f.family] = `data:font/${fmt};base64,` + arrayBufferToBase64(buf);
     }));
     let css = '';
     EMBED_FONTS.forEach(f => {
-      if (dataUrls[f.family]) css += `@font-face{font-family:'${f.family}';src:url('${dataUrls[f.family]}') format('woff');font-display:swap;}`;
-    });
-    ITALIC_ALIASES.forEach(a => {
-      if (dataUrls[a.from]) css += `@font-face{font-family:'${a.family}';src:url('${dataUrls[a.from]}') format('woff');font-display:swap;}`;
+      if (dataUrls[f.family]) css += `@font-face{font-family:'${f.family}';src:url('${dataUrls[f.family]}') format('${f.format || 'woff'}');font-display:swap;}`;
     });
     _embeddedFontCSS = css;
   } catch (e) {

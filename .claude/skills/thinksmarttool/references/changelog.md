@@ -3,10 +3,12 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
-## Current state (as of 2026-07-16)
+## Current state (as of 2026-07-17)
 - **Frontend is modular**: `public/app.js` is GONE, replaced by `public/js/`
-  (`core.js` / `proposal.js` / `brochure.js` / `namecard.js` / `main.js`); versions: `core.js?v=11`,
-  `proposal.js?v=10`, `main.js?v=5`, `brochure.js?v=4`, `namecard.js?v=5`, `style.css?v=15`.
+  (`core.js` / `proposal.js` / `brochure.js` / `namecard.js` / `main.js`); versions: `core.js?v=12`,
+  `proposal.js?v=10`, `main.js?v=5`, `brochure.js?v=4`, `namecard.js?v=5`, `style.css?v=17`.
+- Fonts: `public/fonts/` chứa 11 file THẬT (7 SF Pro weights + 3 SF Pro italics + Bodoni Moda);
+  export nhúng đủ 11. Đừng copy đè từ `5-Design-Sections/sf pro/` (bộ giả cũ).
 - Proposal carriers: AIG, NLG, **Allianz (empty — awaiting owner's design)**; the 3 master carriers
   always render in the nav even with 0 templates (`MASTER_CARRIERS` in core.js).
 - `/api/svgs` workspace scan is now an ALLOWLIST (`PROPOSAL_SCAN_DIRS` in server.js:
@@ -16,7 +18,7 @@ Newest entries on top. Keep it concrete (versions, files, commands).
   under **"Bản nháp"** (see 2026-07-15 later 8/11/12).
 - Mobile-ready: ≤900px = drawer + bottom-sheet + touch pan/pinch (see 2026-07-15 later 5).
 - Bilingual nav: Proposal / Báo giá · Brochure / Tài liệu · Name Card / Danh thiếp.
-- All local work through 2026-07-16 committed & pushed (see Log).
+- All local work through 2026-07-17 committed & pushed (see Log).
 - Live at `thinksmarttool-gy6f.vercel.app`.
 - All 3 tools working: Proposal (AIG/NLG + Bản nháp), Brochure (multi-page grouping, minimal preview),
   Name Card (5 tagged fields, editable, fit-to-viewport zoom, master-protected + copy flow).
@@ -32,13 +34,57 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 1. **Name Card icons are low-res raster** → look rough / "mất góc" when zoomed/exported. Confirmed a
    source-asset issue, not a tool bug. Awaiting the owner's choice: re-export from Illustrator with vector
    icons (preferred) OR replace icons with vectors in code. See `tools.md` → "Known limitation".
-2. **SF Pro italics + Bodoni Moda** not truly bundled — export aliases them to nearest weight. 100% fidelity
-   needs the real font files (or bundle Bodoni Moda from Google Fonts). See `conventions.md` → Fonts.
+2. ~~SF Pro italics + Bodoni Moda not truly bundled~~ **FIXED 2026-07-17** — all 11 fonts are now
+   real files (see log). Rebuild script: `build-fonts.py` (repo root; fontTools subset from
+   `C:\Windows\Fonts` OTFs).
 3. **Two Vercel URLs** (gy6f vs editor-proposesalsale) — consider consolidating/removing one in the dashboard.
 4. Future tools the owner may add (platform vision): more sales tools beyond proposals (video, training docs,
    FB post templates, client management…). Keep the structure modular.
 
 ## Log
+### 2026-07-17 (font thật thay font giả — "font bị đổi khi sửa/xuất")
+- **User report: "cảm giác khi sửa nội dung font bị đổi"** → điều tra toàn tuyến font. Kết luận:
+  - Code sửa chữ KHÔNG đổi font (applyTextValue giữ nguyên tspan + class; đã kiểm tra 92 dòng
+    editable của AIG IUL — các field khách/kế hoạch/đại lý đều 1 font/dòng; chỉ 7 dòng trộn font
+    là tiêu đề lớn + slogan + disclaimer, sửa chúng sẽ mất bold/nhấn giữa câu — hạn chế đã biết).
+  - **THỦ PHẠM THẬT: 7 file woff cũ trong `public/fonts/` là đồ giả** — md5 cho thấy
+    Black = Bold = Heavy = Text-Bold (cùng 1 file!), Text-Regular = Display-Regular. Máy có cài
+    SF Pro (local()) thì canvas đẹp, nhưng EXPORT chỉ nhúng woff → Heavy/Black tụt về Bold,
+    italic bị alias thành đứng, Bodoni (slogan NLG) rớt sang serif fallback. Máy KHÔNG cài
+    SF Pro (laptop sale, live site) thì canvas cũng sai luôn.
+- **Fix: build lại 10 woff THẬT** bằng fontTools (subset Latin + đủ tiếng Việt U+1E00-1EFF,
+  layout features giữ nguyên) từ OTF cài trong `C:\Windows\Fonts` — gồm cả 3 italic thật;
+  \+ tải **BodoniModa18pt-Italic.woff2** (Google Fonts OFL, pinned ital/opsz18/wght400).
+  Script: `build-fonts.py` (repo root — cần `pip install fonttools brotli zopfli`).
+- `style.css` @font-face: 3 italic trỏ file thật, thêm khai báo Bodoni. `core.js`: EMBED_FONTS
+  đủ 11 font (hỗ trợ per-font `format`), XÓA `ITALIC_ALIASES`.
+- Verified (probe @font-face tên riêng, né local()): Black/Heavy/Bold width khác nhau thật,
+  italic nghiêng thật, Bodoni load; `getEmbeddedFontCSS()` build đủ 11 families (~2.4MB base64),
+  0 lỗi console. `core.js?v=12`, `style.css?v=17`.
+- NOTE: repo public đang chứa SF Pro subset (Apple license không cho redistribute — trước giờ
+  vẫn vậy với bộ giả). Nếu owner muốn kín kẽ: chuyển repo private hoặc mua/kiểm tra license.
+- NOTE: folder `5-Design-Sections/sf pro/` của owner cũng là bộ woff GIẢ cũ — nếu cần dùng
+  cho design mới, copy từ `public/fonts/` sang.
+
+### 2026-07-16 (later 2 — chuẩn hóa design system, /frontend-design)
+- **Standardization pass on `style.css`** (owner: "chuẩn hóa Thinksmart Tool"); no visual redesign —
+  identity kept (violet ramp, Plus Jakarta Sans, dotted canvas, 4-step workflow). Changes:
+  - Deleted ~60 lines of DEAD CSS left by removed features: `.template-warning`, `.agent-preset-bar`,
+    whole CODE EDITOR section (`#raw-code-area`…), `.pane-section h3`, `.pane-description`,
+    `.metadata-grid`/`.meta-*`, `.font-semibold`/`.font-mono`/`.text-xs`, `.toolbar-label`,
+    `.text-font-info`, `.lib-ext`. (Verified dead by grepping index.html + js/*.js.)
+  - New tokens: `--attention: #F59E0B` (unsaved dot), `--ft-jpeg-1/2` (teal, export JPEG),
+    `--ft-pdf-1/2` (red, PDF mockup cover), `--fs-2xs: 10.5px` (eyebrows/chips).
+  - All stray font-sizes (9–14px) mapped to the type scale; ONLY literal left: mobile 16px input
+    (iOS anti-zoom functional constant). Swatch hexes (preset-btn) intentionally stay literal.
+  - Deduped double-defined `.sidebar-actions-footer` and `.tree-file-name`.
+  - `100vh` now paired with `100dvh` fallback (body/.app-container/.app-body/bottom-sheet 66dvh).
+- Verified localhost: tokens resolve both themes (fresh-element probe: light/dark --text-3,
+  --app-bg, --attention), export gradients from tokens, 19 editor fields intact, 0 console errors.
+- GOTCHA reconfirmed: pane freezes style recalc on body-class toggle — computed styles of EXISTING
+  elements are stale; read tokens via a freshly created element.
+- `style.css?v=16`. Design lessons appended (project notebook + global LESSONS.md rule 15).
+
 ### 2026-07-16 (later — banner gỡ, allowlist scan, hãng Allianz)
 - **Removed the "Đây là MẪU GỐC…" warning banner** in the texts editor panel (owner request) —
   deleted the `template-warning` block in `populateTextsEditor()` (core.js). Master protection

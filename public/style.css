@@ -53,6 +53,12 @@
   --success: #15A34A;  --success-soft: #E7F7EE;
   --warning: #C2740B;  --warning-soft: #FBF1E2;
   --danger:  #DC2626;  --danger-soft:  #FCECEC;
+  --attention: #F59E0B; /* chấm "chưa lưu" — sáng hơn --warning vì là đèn báo, không phải chữ */
+
+  /* File-type hues — màu theo LOẠI file xuất (thông tin, không phải trang trí):
+     JPEG = teal (ảnh), PDF = đỏ (tài liệu). Nút Xuất & mockup cover dùng chung. */
+  --ft-jpeg-1: #14B8A6;  --ft-jpeg-2: #0E7490;
+  --ft-pdf-1:  #F43F5E;  --ft-pdf-2:  #BE123C;
 
   /* Category accents */
   --cat-client: var(--brand-600);
@@ -63,7 +69,9 @@
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'Fira Code', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
-  /* Type scale */
+  /* Type scale (bậc nhỏ nhất --fs-2xs dành cho eyebrow/chip; 16px trên mobile là
+     hằng số chức năng chống iOS auto-zoom, không thuộc scale) */
+  --fs-2xs: 10.5px;
   --fs-xs: 11.5px;
   --fs-sm: 12.5px;
   --fs-base: 14px;
@@ -160,6 +168,7 @@ body {
   background-color: var(--app-bg);
   color: var(--text);
   height: 100vh;
+  height: 100dvh; /* mobile: trừ đúng thanh URL động */
   width: 100vw;
   overflow: hidden;
   font-size: var(--fs-base);
@@ -196,6 +205,7 @@ button, input, textarea, select { font-family: inherit; }
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
 }
 
@@ -238,7 +248,7 @@ button, input, textarea, select { font-family: inherit; }
   color: var(--text);
 }
 .brand-info .sub-brand {
-  font-size: 10px;
+  font-size: var(--fs-2xs);
   color: var(--brand);
   font-weight: 700;
   letter-spacing: 1.4px;
@@ -280,6 +290,7 @@ button, input, textarea, select { font-family: inherit; }
   display: flex;
   flex: 1;
   height: calc(100vh - var(--header-height));
+  height: calc(100dvh - var(--header-height));
   overflow: hidden;
   position: relative;
 }
@@ -326,7 +337,7 @@ aside {
 }
 
 .category-header {
-  font-size: 10.5px;
+  font-size: var(--fs-2xs);
   font-weight: 700;
   text-transform: uppercase;
   color: var(--text-3);
@@ -360,7 +371,7 @@ body.dark-theme .pill.active { color: var(--brand-hover); box-shadow: inset 0 0 
 .section-title-container {
   display: flex; justify-content: space-between; align-items: center;
   padding: 0 16px 10px;
-  font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+  font-size: var(--fs-2xs); font-weight: 700; text-transform: uppercase;
   color: var(--text-3); letter-spacing: 1px;
 }
 .file-count-badge {
@@ -368,7 +379,7 @@ body.dark-theme .pill.active { color: var(--brand-hover); box-shadow: inset 0 0 
   color: var(--brand);
   padding: 2px 8px;
   border-radius: var(--r-pill);
-  font-size: 10.5px;
+  font-size: var(--fs-2xs);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -416,7 +427,7 @@ body.dark-theme .pill.active { color: var(--brand-hover); box-shadow: inset 0 0 
 body.dark-theme .tree-file-item.active { color: var(--text); }
 .tree-file-item.active .tree-file-icon { color: var(--brand); }
 .tree-file-icon { margin-right: 9px; color: var(--text-3); display: flex; align-items: center; flex-shrink: 0; }
-.tree-file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tree-file-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* States */
 .loading-state, .no-data, .error-state {
@@ -488,11 +499,6 @@ body.dark-theme .tree-file-item.active { color: var(--text); }
   user-select: none;
   font-variant-numeric: tabular-nums;
 }
-.toolbar-label {
-  font-size: 10.5px; font-weight: 700; text-transform: uppercase;
-  color: var(--text-3); letter-spacing: 0.5px; margin-right: 4px; user-select: none;
-}
-
 /* Color presets */
 .color-presets { display: flex; gap: 6px; align-items: center; }
 .preset-btn {
@@ -554,7 +560,7 @@ body.dark-theme .grid-backdrop { background-image: radial-gradient(circle, rgba(
 
 .rendered-svg-container {
   box-shadow: var(--shadow-lg);
-  border-radius: 6px;
+  border-radius: var(--r-xs);
   background-color: #fff;
   display: inline-block;
   overflow: visible;
@@ -582,7 +588,7 @@ body.dark-theme .grid-backdrop { background-image: radial-gradient(circle, rgba(
   border-bottom: 1px solid var(--border);
   background-color: var(--surface);
   font-weight: 800;
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
   color: var(--text);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -594,28 +600,13 @@ body.dark-theme .grid-backdrop { background-image: radial-gradient(circle, rgba(
 .tab-pane { display: none; padding: 14px; flex-direction: column; gap: 12px; }
 .tab-pane.active { display: flex; }
 
-.pane-section h3 {
-  font-size: 11.5px; font-weight: 700; text-transform: uppercase;
-  color: var(--text-3); letter-spacing: 1px; margin-bottom: 12px;
-  padding-bottom: 8px; border-bottom: 1px solid var(--divider);
-}
-.pane-description { font-size: var(--fs-base); color: var(--text-2); line-height: 1.6; margin-bottom: 12px; }
-
-.metadata-grid { display: grid; grid-template-columns: 132px 1fr; row-gap: 12px; column-gap: 10px; font-size: var(--fs-base); }
-.meta-label { color: var(--text-2); }
-.meta-value { color: var(--text); word-break: break-all; }
-.font-semibold { font-weight: 600; }
-.font-mono { font-family: var(--font-mono); }
-.text-xs { font-size: var(--fs-xs); }
-
-/* Inspector footer */
+/* Inspector footer (chứa 2 nút Xuất — xem mục 17) */
 .sidebar-actions-footer {
-  padding: 12px 14px;
+  padding: 14px;
   border-top: 1px solid var(--border);
   background-color: var(--surface);
-  display: flex; gap: 8px; flex-wrap: wrap;
+  display: flex; gap: 10px; flex-wrap: wrap;
 }
-.sidebar-actions-footer .btn { flex: 1 1 30%; min-width: 104px; font-size: var(--fs-sm); padding: 9px 6px; gap: 5px; white-space: nowrap; }
 
 /* --------------------------------------------------------------------------
    7. BUTTONS
@@ -694,9 +685,8 @@ body.dark-theme .icon-btn .icon-moon { display: none; }
 }
 .text-edit-block:focus-within .text-meta { color: var(--brand); }
 
-.text-meta { font-size: 11px; color: var(--text-3); font-weight: 600; margin-bottom: 2px; transition: color var(--dur) var(--ease); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.text-id { font-family: var(--font-sans); font-size: 12px; font-weight: 600; color: var(--text-2); letter-spacing: 0; }
-.text-font-info { font-size: 10.5px; color: var(--text-3); background: var(--surface-3); padding: 1px 6px; border-radius: var(--r-xs); }
+.text-meta { font-size: var(--fs-xs); color: var(--text-3); font-weight: 600; margin-bottom: 2px; transition: color var(--dur) var(--ease); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.text-id { font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); letter-spacing: 0; }
 
 .text-input-field {
   width: 100%;
@@ -778,29 +768,7 @@ body.dark-theme .icon-btn .icon-moon { display: none; }
 }
 .color-picker-input { position: absolute; top: -10px; left: -10px; width: 66px; height: 66px; border: 0; padding: 0; cursor: pointer; }
 .color-hex { font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--text); font-weight: 500; text-transform: uppercase; }
-.color-tag { font-size: 11px; color: var(--text-3); text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-/* --------------------------------------------------------------------------
-   11. CODE EDITOR
-   -------------------------------------------------------------------------- */
-.code-editor-container {
-  flex: 1; min-height: 320px;
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  overflow: hidden;
-  background-color: var(--surface-2);
-}
-#raw-code-area {
-  width: 100%; height: 100%;
-  background: transparent; border: none;
-  color: var(--brand-active);
-  font-family: var(--font-mono);
-  font-size: 12px; line-height: 1.55;
-  padding: 12px; resize: none;
-}
-body.dark-theme #raw-code-area { color: var(--brand-hover); }
-#raw-code-area:focus { outline: none; }
-.code-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+.color-tag { font-size: var(--fs-xs); color: var(--text-3); text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* --------------------------------------------------------------------------
    12. TOOLTIP
@@ -812,7 +780,7 @@ body.dark-theme #raw-code-area { color: var(--brand-hover); }
   transform: translateX(-50%) translateY(-4px);
   background-color: var(--text);
   color: var(--surface);
-  font-size: 11px; font-weight: 600;
+  font-size: var(--fs-xs); font-weight: 600;
   padding: 5px 9px; border-radius: var(--r-xs);
   white-space: nowrap;
   opacity: 0; visibility: hidden;
@@ -833,33 +801,11 @@ select.text-input-field, .select-field {
 }
 select.text-input-field option, .select-field option { background-color: var(--surface); color: var(--text); }
 
-.template-warning {
-  background: var(--warning-soft);
-  border: 1px solid var(--warning);
-  color: var(--warning);
-  border-radius: var(--r-md);
-  padding: 11px 13px;
-  font-size: var(--fs-sm);
-  line-height: 1.55;
-  margin-bottom: 4px;
-}
-.template-warning b { color: var(--warning); font-weight: 700; }
-body.dark-theme .template-warning { color: #FBBF24; }
-body.dark-theme .template-warning b { color: #FBBF24; }
-
-.agent-preset-bar {
-  display: flex; gap: 8px;
-  padding: 10px 12px;
-  border-top: 1px dashed var(--border-strong);
-  background-color: var(--surface-2);
-}
-.agent-preset-bar .btn { flex: 1; font-size: var(--fs-sm); white-space: nowrap; }
-
 /* Delete (trash) button for draft proposals */
 .tree-file-delete {
   margin-left: auto;
   color: var(--text-3);
-  font-size: 12px;
+  font-size: var(--fs-sm);
   padding: 4px 6px;
   border-radius: var(--r-xs);
   opacity: 0;
@@ -897,23 +843,24 @@ body.dark-theme .template-warning b { color: #FBBF24; }
 @font-face { font-family: 'SFProDisplay-Black';   src: local('SF Pro Display Black'), local('SFPRODISPLAYBLACK'), url('fonts/SFProDisplay-Black.woff') format('woff'); font-display: swap; }
 @font-face { font-family: 'SFProText-Bold';       src: local('SF Pro Text Bold'), local('SFPROTEXTBOLD'), url('fonts/SFProText-Bold.woff') format('woff'); font-display: swap; }
 @font-face { font-family: 'SFProText-Regular';    src: local('SF Pro Text Regular'), local('SFPROTEXTREGULAR'), url('fonts/SFProText-Regular.woff') format('woff'); font-display: swap; }
-/* Italic weights not bundled → use installed italic if present, else fall back to the SF Pro family (not a random serif) */
-@font-face { font-family: 'SFProDisplay-RegularItalic'; src: local('SF Pro Display Italic'), local('SFProDisplay-RegularItalic'), url('fonts/SFProDisplay-Regular.woff') format('woff'); font-display: swap; }
-@font-face { font-family: 'SFProDisplay-MediumItalic';  src: local('SF Pro Display Medium Italic'), local('SFProDisplay-MediumItalic'), url('fonts/SFProDisplay-Medium.woff') format('woff'); font-display: swap; }
-@font-face { font-family: 'SFProDisplay-BoldItalic';    src: local('SF Pro Display Bold Italic'), local('SFProDisplay-BoldItalic'), url('fonts/SFProDisplay-Bold.woff') format('woff'); font-display: swap; }
+/* Italic weights — real files (subset từ SF Pro cài trong Windows, 2026-07-17) */
+@font-face { font-family: 'SFProDisplay-RegularItalic'; src: local('SF Pro Display Italic'), local('SFProDisplay-RegularItalic'), url('fonts/SFProDisplay-RegularItalic.woff') format('woff'); font-display: swap; }
+@font-face { font-family: 'SFProDisplay-MediumItalic';  src: local('SF Pro Display Medium Italic'), local('SFProDisplay-MediumItalic'), url('fonts/SFProDisplay-MediumItalic.woff') format('woff'); font-display: swap; }
+@font-face { font-family: 'SFProDisplay-BoldItalic';    src: local('SF Pro Display Bold Italic'), local('SFProDisplay-BoldItalic'), url('fonts/SFProDisplay-BoldItalic.woff') format('woff'); font-display: swap; }
+/* Bodoni Moda 18pt Italic (slogan NLG) — Google Fonts, OFL license */
+@font-face { font-family: 'BodoniModa18pt-Italic'; src: local('Bodoni Moda 18pt Italic'), local('BodoniModa18pt-Italic'), url('fonts/BodoniModa18pt-Italic.woff2') format('woff2'); font-display: swap; }
 
 /* --------------------------------------------------------------------------
    16. NAVIGATION — main tools (Proposal / Brochure / Name Card)
    -------------------------------------------------------------------------- */
 .tree-folder-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tree-file-name { flex: 1 1 auto; min-width: 0; }
 
 /* Top-level section (a "tool") */
 .tree-folder.nav-section { margin-bottom: 6px; }
 .tree-folder.nav-section > .tree-folder-header {
   text-transform: none;
   letter-spacing: -0.1px;
-  font-size: 14px;
+  font-size: var(--fs-base);
   font-weight: 800;
   color: var(--text);
   padding: 9px 10px;
@@ -941,30 +888,18 @@ body.dark-theme .template-warning b { color: #FBBF24; }
 /* Carrier sub-group */
 .tree-folder.nav-carrier > .tree-folder-header {
   text-transform: none; letter-spacing: 0;
-  font-size: 12.5px; font-weight: 700; color: var(--text-2);
+  font-size: var(--fs-sm); font-weight: 700; color: var(--text-2);
 }
 .tree-folder.nav-carrier > .tree-folder-header .tree-folder-icon { color: var(--text-3); }
 .nav-carrier > .tree-folder-content { margin-left: 18px; padding-left: 4px; border-left: 1px solid var(--divider); }
 
 .nav-count {
-  font-size: 10px; font-weight: 700; color: var(--text-3);
+  font-size: var(--fs-2xs); font-weight: 700; color: var(--text-3);
   background: var(--surface-3); border-radius: var(--r-pill);
   padding: 1px 7px; margin-left: 8px;
   font-variant-numeric: tabular-nums;
 }
-.nav-empty { padding: 9px 14px; font-size: 12px; text-align: left; align-items: flex-start; color: var(--text-3); line-height: 1.5; }
-
-/* Download-item extension chip */
-.lib-ext {
-  margin-left: auto;
-  font-size: 9.5px; font-weight: 700;
-  color: var(--text-3);
-  background: var(--surface-3);
-  border: 1px solid var(--border);
-  padding: 1px 6px; border-radius: var(--r-xs);
-  letter-spacing: 0.3px;
-  flex-shrink: 0;
-}
+.nav-empty { padding: 9px 14px; font-size: var(--fs-sm); text-align: left; align-items: flex-start; color: var(--text-3); line-height: 1.5; }
 
 /* --------------------------------------------------------------------------
    17. RIGHT EDITOR VISIBILITY  +  LIBRARY PREVIEW (Brochure / Name Card)
@@ -997,12 +932,11 @@ body.no-editor .sidebar-right { display: none; }
 .library-sub { font-size: var(--fs-sm); color: var(--text-2); font-variant-numeric: tabular-nums; }
 .library-download { margin-top: 10px; text-decoration: none; padding: 11px 26px; }
 
-/* Prominent export buttons (JPEG + PDF) */
-.sidebar-actions-footer { gap: 10px; padding: 14px; }
+/* Prominent export buttons (JPEG + PDF) — footer khai báo ở mục 6 */
 .sidebar-actions-footer .btn-export-main {
   flex: 1 1 0;
   min-width: 0;
-  font-size: 14px;
+  font-size: var(--fs-base);
   font-weight: 700;
   padding: 13px 10px;
   gap: 8px;
@@ -1012,7 +946,7 @@ body.no-editor .sidebar-right { display: none; }
   box-shadow: var(--shadow-sm);
   transition: transform var(--dur) var(--ease), filter var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
-.btn-export-jpeg { background: linear-gradient(140deg, #14B8A6, #0E7490); }
+.btn-export-jpeg { background: linear-gradient(140deg, var(--ft-jpeg-1), var(--ft-jpeg-2)); }
 .btn-export-pdf  { background: linear-gradient(140deg, var(--brand-500), var(--brand-700)); }
 .btn-export-main:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); box-shadow: var(--shadow-md); }
 .btn-export-main:active:not(:disabled) { transform: translateY(0); }
@@ -1102,7 +1036,7 @@ body.no-editor .sidebar-right { display: none; }
 .library-card-preview-pdf {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #F43F5E, #BE123C);
+  background: linear-gradient(135deg, var(--ft-pdf-1), var(--ft-pdf-2));
   color: #FFFFFF;
   display: flex;
   flex-direction: column;
@@ -1174,7 +1108,7 @@ body.no-editor .sidebar-right { display: none; }
   color: var(--text-2);
   padding: 2px 6px;
   border-radius: var(--r-xs);
-  font-size: 9px;
+  font-size: var(--fs-2xs);
   font-weight: 800;
   letter-spacing: 0.5px;
 }
@@ -1257,6 +1191,7 @@ body.no-editor .sidebar-right { display: none; }
     left: 0; right: 0; bottom: 0;
     width: 100%;
     height: min(66vh, 580px);
+    height: min(66dvh, 580px);
     transform: translateY(105%);
     transition: transform 260ms var(--ease);
     z-index: 300;
@@ -1337,7 +1272,7 @@ body.no-editor .sidebar-right { display: none; }
   width: 11px;
   height: 11px;
   border-radius: 50%;
-  background: #F59E0B;
+  background: var(--attention);
   border: 2px solid var(--header-bg);
 }
 

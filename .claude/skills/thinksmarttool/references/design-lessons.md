@@ -39,6 +39,26 @@ bản gốc lâu dài: `E:\2026\Claude\.claude\skills\`):
 
 ## Log bài học theo ngày
 
+### 2026-07-16 (chuẩn hóa design system theo /frontend-design)
+- **"Chuẩn hóa" một tool đang dùng hằng ngày = siết độ chính xác, KHÔNG đổi look**: giữ nguyên
+  bản sắc (ramp tím #4F00CA, Plus Jakarta Sans, canvas chấm bi, workflow 4 bước) — bold đã tiêu
+  đúng chỗ; giá trị nằm ở dọn nhiễu quanh nó.
+- **CSS chết tích tụ theo mỗi lần gỡ tính năng**: sau các đợt bỏ nút preset/banner/code-tab còn
+  ~60 dòng mồ côi (template-warning, agent-preset-bar, section CODE EDITOR, metadata-grid,
+  toolbar-label, lib-ext…). Cách tìm nhanh: grep từng class trong index.html + js/*.js.
+- **Màu "theo loại file" là thông tin → phải thành token có tên**: `--ft-jpeg-1/2` (teal = ảnh),
+  `--ft-pdf-1/2` (đỏ = tài liệu), `--attention` (chấm chưa lưu — đèn báo nên sáng hơn --warning
+  vốn dành cho CHỮ đạt AA). Hex swatch literal (nút chọn màu nền canvas) thì GIỮ literal.
+- **Type scale: thêm bậc thiếu thay vì rải px**: mọi 9/9.5/10/10.5px quy về `--fs-2xs: 10.5px`
+  (eyebrow/chip), 11→--fs-xs, 12→--fs-sm, 14→--fs-base. Literal duy nhất còn lại: 16px mobile
+  input (hằng số chức năng chống iOS auto-zoom — comment rõ, không thuộc scale).
+- **Selector khai báo 2 nơi là bug chờ nổ** (.sidebar-actions-footer 2 định nghĩa lệch padding/gap,
+  .tree-file-name 2 nơi): gộp về 1, để comment trỏ chéo nếu dùng ở section khác.
+- **100vh → thêm dòng `height: 100dvh` ngay sau** (fallback tự nhiên của CSS): mobile không hụt
+  đáy khi thanh URL co giãn; bottom-sheet cũng `min(66dvh, …)`.
+- **Đo dark-theme trong pane: toggle class rồi đọc computed style CÙNG call là số ĐÈN CŨ** (pane
+  đơ recalc) — đọc token qua PHẦN TỬ TẠO MỚI (`getPropertyValue('--x')` trên div vừa append) mới tin được.
+
 ### 2026-07-15 (ngày đầu áp dụng)
 - Chạy audit toàn tool bằng ui-ux-pro-max: phát hiện tooltip zoom tráo ngược, thiếu keyboard access,
   contrast text-3 dưới chuẩn, touch target mobile thiếu 44px → tất cả đã sửa (xem changelog later 13).
