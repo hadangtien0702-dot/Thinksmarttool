@@ -37,6 +37,13 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 2. ~~SF Pro italics + Bodoni Moda not truly bundled~~ **FIXED 2026-07-17** — all 11 fonts are now
    real files (see log). Rebuild script: `build-fonts.py` (repo root; fontTools subset from
    `C:\Windows\Fonts` OTFs).
+2b. **Custom domain `tool.thinksmartinsurance.com` — CHỜ OWNER THÊM DNS Ở A2 HOSTING** (added to
+   project thinksmarttool-gy6f 2026-07-17 via `vercel api`, verified:false). Owner cần vào cPanel
+   A2 Hosting → Zone Editor → thêm 2 record:
+   - CNAME: name `tool` → `538e043f27a6d167.vercel-dns-017.com.` (hoặc `cname.vercel-dns.com.`)
+   - TXT: name `_vercel` → `vc-domain-verify=tool.thinksmartinsurance.com,557b9ed5f517d8d589b4`
+   Sau khi DNS chạy: Vercel tự verify (hoặc `vercel api /v9/projects/thinksmarttool-gy6f/domains/tool.thinksmartinsurance.com/verify -X POST`
+   trong PowerShell — Git Bash sẽ nuốt path /v9). Rồi cập nhật URL mới trong SKILL.md/deployment.md.
 3. **Two Vercel URLs** (gy6f vs editor-proposesalsale) — consider consolidating/removing one in the dashboard.
 4. Future tools the owner may add (platform vision): more sales tools beyond proposals (video, training docs,
    FB post templates, client management…). Keep the structure modular.

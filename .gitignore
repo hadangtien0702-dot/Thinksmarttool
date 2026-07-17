@@ -34,3 +34,6 @@ push-to-github.bat
 *.tmp
 ~ai*.tmp
 ~$*
+
+.vercel
+.env*
