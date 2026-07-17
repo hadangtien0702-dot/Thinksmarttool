@@ -37,3 +37,6 @@ push-to-github.bat
 
 .vercel
 .env*
+
+# Claude Code local (per-machine) settings
+.claude/settings.local.json

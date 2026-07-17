@@ -69,7 +69,9 @@ After any UI session: append project-specific lessons to `references/design-less
   must never be pushed to the public repo. Confirm before any push.
 - **Follow the owner's workflow:** edit + test on local during the day; do NOT push per change. At end of
   day (or when the user says so), do ONE `git add -A` + commit + `git push origin main` → Vercel deploys.
-  See `references/conventions.md`.
+  **Mỗi lần push BẮT BUỘC (owner mandate 2026-07-17): (1) bump version badge trong index.html,
+  (2) update các file skill này (changelog + lessons) TRƯỚC khi commit.** See `references/conventions.md`
+  → "Pre-push checklist".
 
 ## Keep this skill current ("self-learn")
 

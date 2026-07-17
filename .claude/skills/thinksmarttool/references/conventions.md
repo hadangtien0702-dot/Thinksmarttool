@@ -36,6 +36,14 @@ brand violet `#4F00CA` family, font **Plus Jakarta Sans** (UI) + **Fira Code** (
 push per change. At **end of day** (or when the user says "push đi em" / wraps up): ONE `git add -A` + commit
 + `git push origin main` → Vercel auto-deploys. Then confirm the deploy (poll the live URL for the new `?v=`).
 
+### Pre-push checklist (owner mandate 2026-07-17 — BẮT BUỘC mỗi lần push)
+1. **Bump version badge hiển thị**: tăng số trong `.sidebar-version-footer` (index.html) — `v1.01` →
+   `v1.02`… + cập nhật ngày. Đây là cách owner phân biệt bản local vs live.
+2. **Update & học Skill**: cập nhật `references/changelog.md` (entry mới + Current state + PENDING),
+   các `references/*.md` liên quan nếu có convention/gotcha mới, và append design-lessons nếu phiên
+   có đụng UI. Xong hết mới `git add -A`.
+3. Privacy check như trên (`git status --porcelain --ignored | grep "!!"` — 4-Clients/2-Templates/_Archive).
+
 ## Design skills (USER-level — shared by all the owner's projects)
 The design toolkit lives at `%USERPROFILE%\.claude\skills\` (NOT in this repo; bản gốc lâu dài ở
 `E:\2026\Claude\.claude\skills\`): `frontend-design`
@@ -49,8 +57,10 @@ re-fetched from `https://github.com/anthropics/claude-code` (plugins/frontend-de
 Project-specific design notes: `references/design-lessons.md` (generalizable ones get PROMOTED
 to the global LESSONS.md).
 
-## Fonts (why export used to change fonts, now fixed)
-Proposals reference SF Pro (+ some italics/Bodoni not bundled). On machines without SF Pro, and in the
-`<img>`-based export, fonts fell back. Fix in place: `renderSvgToCanvas()` injects base64 `@font-face` for the
-bundled SF Pro woff into the SVG before rasterizing → JPEG/PDF keep the font anywhere. Still-open nuance: the
-3 SF Pro italics + Bodoni aren't true-bundled (aliased to nearest weight); a 100% fix needs those font files.
+## Fonts (why export used to change fonts, now FULLY fixed 2026-07-17)
+Proposals reference SF Pro (+ italics/Bodoni). `renderSvgToCanvas()` injects base64 `@font-face` for the
+bundled woffs into the SVG before rasterizing → JPEG/PDF keep the font anywhere. Since 2026-07-17 all
+**11 font files in `public/fonts/` are REAL** (7 SF Pro weights + 3 SF Pro italics + Bodoni Moda Italic;
+the old 7 woffs were fakes — several were the same file). `EMBED_FONTS` in core.js embeds all 11;
+`ITALIC_ALIASES` was removed. Rebuild script: `build-fonts.py` (repo root, fontTools subset from
+`C:\Windows\Fonts` OTFs). Do NOT copy woffs from `5-Design-Sections/sf pro/` — that's the old fake set.

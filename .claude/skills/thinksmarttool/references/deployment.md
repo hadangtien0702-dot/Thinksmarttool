@@ -8,8 +8,10 @@
 - **Vercel runs `server.js` as a serverless function** — it is NOT a pure static host. So `/api/svgs`,
   `/api/library`, `/api/download` work online, which means **Brochure downloads and Name Card editing work on
   the live site** (no static-bundle workaround needed). Brochure JPGs are committed so they deploy.
-- Two live URLs, same repo:
-  - **`https://thinksmarttool-gy6f.vercel.app`** ← current, share this one (matches renamed repo).
+- Live URLs, same repo:
+  - **`https://tool.thinksmartinsurance.com`** ← custom domain (verified 2026-07-17) — SHARE THIS ONE.
+    DNS: CNAME `tool` → vercel-dns; TXT `_vercel` giữ lại cho lần re-verify.
+  - `https://thinksmarttool-gy6f.vercel.app` ← Vercel default, vẫn sống.
   - `https://editor-proposesalsale.vercel.app` ← old name; may lag. Worth consolidating in the Vercel dashboard.
 
 ## Deploy steps (end of day)

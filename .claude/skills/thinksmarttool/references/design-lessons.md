@@ -39,6 +39,23 @@ bản gốc lâu dài: `E:\2026\Claude\.claude\skills\`):
 
 ## Log bài học theo ngày
 
+### 2026-07-17 (audit /frontend-design + tối ưu mobile /ui-ux-pro-max, máy D:)
+- **A11y tree hiện attribute `title` chứ không phải text nhìn thấy**: cây accessibility báo
+  "AIG IUL.svg" trong khi màn hình hiển thị "AIG IUL" sạch — suýt "sửa" một lỗi không tồn tại.
+  Trước khi sửa lỗi phát hiện qua a11y tree, verify lại bằng `textContent` của phần tử thật.
+- **`viewport-fit=cover` mà không có `env(safe-area-inset-*)` là mới làm nửa việc**: meta này
+  kéo web tràn xuống vùng tai thỏ/thanh home, mọi bar cố định (status bar, footer bottom-sheet,
+  chân drawer) phải cộng thêm env() không thì bị OS chrome đè. Fallback `env(..., 0px)` giữ
+  desktop/Android nguyên vẹn.
+- **Media query nâng touch target phải quét MỌI nút trong vùng, đừng chỉ icon-btn**: nút `.btn`
+  primary bị giấu chữ (font-size:0) trong header mobile còn 42×38 trong khi icon-btn cạnh nó đã 44.
+- **Pane đơ recalc kể cả sau reload** (nâng cấp bài học #7): số đo phần tử CŨ sau resize có thể
+  sai hoàn toàn (báo style mobile ở viewport 1280). Phân xử bằng 2 nguồn độc lập: phần tử TẠO MỚI
+  + đọc CSSOM (`document.styleSheets` xem rule nằm trong @media nào) — CSSOM không bao giờ stale.
+- Thêm cho mobile: `overscroll-behavior: none` (body) + `contain` (vùng scroll trong drawer/sheet)
+  chặn pull-to-refresh Android phá thao tác kéo canvas; `.tree-file-item:active` làm tap feedback
+  vì cảm ứng không có hover.
+
 ### 2026-07-16 (chuẩn hóa design system theo /frontend-design)
 - **"Chuẩn hóa" một tool đang dùng hằng ngày = siết độ chính xác, KHÔNG đổi look**: giữ nguyên
   bản sắc (ramp tím #4F00CA, Plus Jakarta Sans, canvas chấm bi, workflow 4 bước) — bold đã tiêu

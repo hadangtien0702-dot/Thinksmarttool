@@ -176,6 +176,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: 'cv05' 1, 'ss01' 1;
+  overscroll-behavior: none; /* mobile: chặn pull-to-refresh khi kéo canvas/drawer */
 }
 
 button, input, textarea, select { font-family: inherit; }
@@ -383,7 +384,32 @@ body.dark-theme .pill.active { color: var(--brand-hover); box-shadow: inset 0 0 
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
-.tree-container { flex: 1; overflow-y: auto; padding: 4px 8px 8px; }
+.tree-container { flex: 1; overflow-y: auto; padding: 4px 8px 8px; overscroll-behavior: contain; }
+
+/* Phiên bản app — chân sidebar trái */
+.sidebar-version-footer {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--divider);
+  flex-shrink: 0;
+}
+.version-badge {
+  background-color: var(--brand-soft);
+  color: var(--brand);
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.version-date {
+  font-size: var(--fs-2xs);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+/* Dark theme: brand-400 trên brand-soft chỉ 4.38:1 với chữ nhỏ — nâng lên brand-hover (≈5.7:1) */
+body.dark-theme .file-count-badge,
+body.dark-theme .version-badge { color: var(--brand-hover); }
 
 /* Tree */
 .tree-folder { margin-bottom: 2px; }
@@ -419,6 +445,7 @@ body.dark-theme .pill.active { color: var(--brand-hover); box-shadow: inset 0 0 
   position: relative;
 }
 .tree-file-item:hover { background-color: var(--surface-3); color: var(--text); }
+.tree-file-item:active { background-color: var(--surface-3); } /* tap feedback trên cảm ứng (không có hover) */
 .tree-file-item.active {
   background-color: var(--brand-soft);
   color: var(--brand-active);
@@ -596,7 +623,7 @@ body.dark-theme .grid-backdrop { background-image: radial-gradient(circle, rgba(
 }
 .sidebar-right-header svg { color: var(--brand); }
 
-.inspector-content { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+.inspector-content { flex: 1; overflow-y: auto; display: flex; flex-direction: column; overscroll-behavior: contain; }
 .tab-pane { display: none; padding: 14px; flex-direction: column; gap: 12px; }
 .tab-pane.active { display: flex; }
 
@@ -894,7 +921,7 @@ select.text-input-field option, .select-field option { background-color: var(--s
 .nav-carrier > .tree-folder-content { margin-left: 18px; padding-left: 4px; border-left: 1px solid var(--divider); }
 
 .nav-count {
-  font-size: var(--fs-2xs); font-weight: 700; color: var(--text-3);
+  font-size: var(--fs-2xs); font-weight: 700; color: var(--text-2); /* text-3 trên surface-3 chỉ 4.45:1 — hụt AA */
   background: var(--surface-3); border-radius: var(--r-pill);
   padding: 1px 7px; margin-left: 8px;
   font-variant-numeric: tabular-nums;
@@ -1153,7 +1180,12 @@ body.no-editor .sidebar-right { display: none; }
   }
 
   /* ---- Header gọn: ẩn chữ thương hiệu + tên file, nút chỉ còn icon ---- */
-  .app-header { padding: 0 10px; gap: 8px; }
+  .app-header {
+    padding: 0 10px;
+    padding-left: max(10px, env(safe-area-inset-left));   /* landscape có tai thỏ */
+    padding-right: max(10px, env(safe-area-inset-right));
+    gap: 8px;
+  }
   .header-left { min-width: 0; gap: 8px; }
   .logo-icon { width: 34px; height: 34px; }
   .logo-icon svg { width: 18px; height: 18px; }
@@ -1163,7 +1195,7 @@ body.no-editor .sidebar-right { display: none; }
   .header-right .btn {
     font-size: 0;          /* giấu chữ, giữ icon (svg có width/height riêng) */
     gap: 0;
-    padding: 9px 11px;
+    padding: 12px;         /* 18px icon + 24 padding + 2 border = 44px touch target */
   }
   .header-right .btn svg { width: 18px; height: 18px; }
 
@@ -1230,6 +1262,18 @@ body.no-editor .sidebar-right { display: none; }
 
   /* ---- Status bar: bỏ mẹo giữ Space (không áp dụng cho cảm ứng) ---- */
   #status-right { display: none; }
+
+  /* ---- Safe area (iPhone tai thỏ / thanh home): meta đã có viewport-fit=cover ---- */
+  .canvas-status-bar {
+    height: calc(var(--status-bar-height) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .sidebar-actions-footer {
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); /* nút Xuất trong bottom-sheet không đè thanh home */
+  }
+  .sidebar-version-footer {
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); /* chân drawer trái */
+  }
 
   /* ---- Preview thư viện brochure vừa khung màn nhỏ ---- */
   .library-view-group { padding: 16px; gap: 16px; }

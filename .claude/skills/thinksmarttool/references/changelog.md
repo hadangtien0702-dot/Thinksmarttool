@@ -6,7 +6,8 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 ## Current state (as of 2026-07-17)
 - **Frontend is modular**: `public/app.js` is GONE, replaced by `public/js/`
   (`core.js` / `proposal.js` / `brochure.js` / `namecard.js` / `main.js`); versions: `core.js?v=12`,
-  `proposal.js?v=10`, `main.js?v=5`, `brochure.js?v=4`, `namecard.js?v=5`, `style.css?v=17`.
+  `proposal.js?v=10`, `main.js?v=5`, `brochure.js?v=4`, `namecard.js?v=5`, `style.css?v=19`. UI hiển thị **v1.01** ở chân sidebar trái
+  (`sidebar-version-footer` trong index.html — cập nhật tay khi deploy).
 - Fonts: `public/fonts/` chứa 11 file THẬT (7 SF Pro weights + 3 SF Pro italics + Bodoni Moda);
   export nhúng đủ 11. Đừng copy đè từ `5-Design-Sections/sf pro/` (bộ giả cũ).
 - Proposal carriers: AIG, NLG, **Allianz (empty — awaiting owner's design)**; the 3 master carriers
@@ -29,8 +30,8 @@ Newest entries on top. Keep it concrete (versions, files, commands).
    on the serverless filesystem, which is read-only/ephemeral — drafts on the live site probably can't
    persist (may alert an error). Needs a real test on thinksmarttool-gy6f.vercel.app; if broken, the fix
    is routing live-site drafts through the static-mode localStorage path (or a real storage backend).
-0. **`TERMLIFE - NLG` master polluted with test data** (see 2026-07-15 log) — owner to supply/restore
-   a clean master (both `2-Templates/NLG/` and `public/templates/`).
+0. ~~`TERMLIFE - NLG` master polluted with test data~~ **RESOLVED 2026-07-17** — toàn bộ 5 master
+   đã chuẩn hoá placeholder (xem log "placeholder chuẩn cho mẫu gốc"), không cần bản restore nữa.
 1. **Name Card icons are low-res raster** → look rough / "mất góc" when zoomed/exported. Confirmed a
    source-asset issue, not a tool bug. Awaiting the owner's choice: re-export from Illustrator with vector
    icons (preferred) OR replace icons with vectors in code. See `tools.md` → "Known limitation".
@@ -44,10 +45,81 @@ Newest entries on top. Keep it concrete (versions, files, commands).
    check bằng SOA serial: không nhảy = chưa lưu thật).
 
 3. **Two Vercel URLs** (gy6f vs editor-proposesalsale) — consider consolidating/removing one in the dashboard.
+5. ~~Audit design 2026-07-17 — 4 lỗi nhỏ~~ **FIXED cùng ngày** (xem log "tối ưu mobile"); riêng
+   phát hiện "tên file hiện đuôi" là FALSE POSITIVE — text hiển thị đã sạch, đuôi chỉ nằm trong
+   tooltip `title` (giữ nguyên, hữu ích).
 4. Future tools the owner may add (platform vision): more sales tools beyond proposals (video, training docs,
    FB post templates, client management…). Keep the structure modular.
 
 ## Log
+### 2026-07-17 (EOD push từ máy D: — badge v1.01)
+- Push cả ngày làm việc: badge version, font thật (từ máy E: chưa push? — không, đã push 16/07;
+  hôm nay là phần máy D:), audit fixes + mobile (style.css v19), placeholder 5 master
+  (public/templates cập nhật cả 5), skill files.
+- **Owner mandate mới, đã ghi vào SKILL.md + conventions.md "Pre-push checklist"**: MỖI lần push
+  phải (1) bump version badge index.html (lần này v1.00→v1.01), (2) update & học skill files trước
+  khi commit. Nhớ làm mãi mãi về sau.
+
+### 2026-07-17 (placeholder chuẩn cho 5 mẫu gốc — owner chốt 3 phương án recommended)
+- **Đổi data giả lộn xộn trong MỌI master thành bộ placeholder thống nhất** (owner yêu cầu
+  "Place Holder chuẩn chỉnh", chốt qua 3 câu hỏi):
+  - Khách hàng (4 proposal): **Nguyen Van An · 43 · Male · Standard Non-Tobacco · Texas**
+    (tên ASCII không dấu — khớp regex detect client-name; 43 khớp fallback literal; Texas ∈ US_STATES).
+  - Đại lý (4 proposal): **Ten Tro Ly / Ten Agent · (000) 000-0000** — hết lộ SĐT thật Tony/Jason;
+    "(000..." khớp isPhone `^\(\d{3}\)`; số bắt đầu 0 nên formatPhoneValue không đụng.
+  - Số liệu kế hoạch GIỮ nguyên bộ nhất quán ($152.70×12×20=$36,648); riêng TERMLIFE - NLG
+    (bản bẩn: Trương thị thanh hảo/Sài gòn bình thạnh/VN phones/$1000.99) đưa về bộ term chuẩn
+    $300,000 · $77.00/$120.00/$180.00 → **đóng luôn PENDING #0**.
+  - Name Card: Nguyen Van An / (000) 000-0000 ×2 / email@thinksmartinsurance.com (hết lộ aileen@).
+- **Cách làm đáng tái dùng** (file 2.2–8.8MB không kéo qua eval được): dùng chính engine app —
+  `loadSvgContent(svgsList[i])` → set value ô input + dispatch `input`/`change` (đi qua
+  `applyTextValue` nên multi-tspan sạch, id client-* được giữ) → serialize + POST
+  `/api/svgs/save` vào file tạm `4-Clients/_ph_N.svg` (route hợp lệ) → cp đè
+  `2-Templates/**` + `public/templates/**` → rm tạm → `clearDirty()` trước khi load file kế.
+- Verified sau reload: cả 5 master đủ field (16/13/16/13/5), giá trị placeholder đúng 100%,
+  dropdown hợp lệ, 0 lỗi console. Backup 5 bản gốc cũ ở scratchpad phiên này (mất khi dọn máy —
+  nếu cần giữ lâu, copy vào _Archive).
+
+### 2026-07-17 (tối ưu mobile + đóng 4 lỗi audit — /ui-ux-pro-max)
+- **Đóng cả 4 lỗi audit** (PENDING 5a–5d cũ):
+  - `.header-right .btn` mobile: padding 9px 11px → **12px** ⇒ 44×44px (18 icon + 24 pad + 2 border).
+  - Dark theme: `.file-count-badge`/`.version-badge` color → `--brand-hover` (4.38 → **5.71:1**).
+  - `.nav-count` color `--text-3` → `--text-2` (4.45 → **5.81:1** trên surface-3, cả 2 theme đạt).
+  - Copy bước 3 màn chào: "Lưu nháp" → "Lưu Nháp" (khớp nút header). Phần "đuôi file trong cây"
+    là false positive — a11y tree đọc attribute `title` (có đuôi), text hiển thị vốn đã sạch.
+- **Safe-area cho iPhone tai thỏ** (meta có `viewport-fit=cover` nhưng CSS chưa từng dùng env()):
+  mobile block thêm `env(safe-area-inset-*)` cho `.app-header` (trái/phải, landscape),
+  `.canvas-status-bar` (height + padding-bottom), `.sidebar-actions-footer` (nút Xuất trong
+  bottom-sheet không đè thanh home), `.sidebar-version-footer` (chân drawer). Fallback 0px — desktop
+  và Android không đổi.
+- **Chống pull-to-refresh Android**: `overscroll-behavior: none` trên body;
+  `overscroll-behavior: contain` cho `.tree-container` + `.inspector-content` (scroll trong
+  drawer/sheet không lan ra body).
+- **Tap feedback**: `.tree-file-item:active` nền surface-3 (mobile không có hover).
+- Verified localhost 375px + 1280px: nút header 44×44 mobile / 75×38 desktop (đo bằng phần tử tạo
+  mới — số đo phần tử cũ sau resize pane bị đơ, CSSOM xác nhận rule nằm đúng trong @media),
+  contrast đo lại 5.71/5.81, copy đúng, 0 lỗi console, không tràn ngang. `style.css?v=19`.
+
+### 2026-07-17 (máy phụ D:\ — học project + audit design bằng /frontend-design)
+- **Máy phụ mới** (user `hadan`): repo clone tại `D:\AI-Production-Engineer\Proposal2026\Proposal2026`,
+  remote `hadangtien0702-dot/Thinksmarttool`, local ngang origin/main. Skill user-level đã cài
+  (frontend-design, ui-ux-pro-max, design-lessons stub — bản gốc ở máy chính E:\, cần merge).
+- **GOTCHA máy này: Browser pane timeout HẲN khi screenshot** — audit UI hoàn toàn bằng
+  `javascript_tool` sync eval (rect, token qua phần tử tạo mới, contrast tự tính). Hoạt động tốt.
+- **Audit toàn tool trên localhost:8000** (light+dark, desktop+375px): nền tảng vững — a11y đạt
+  (nút có tên 100%, input đủ aria-label, keyboard OK, heading đúng bậc), contrast chính đạt AA cả
+  2 theme, mobile không tràn ngang. Tìm thấy 4 lỗi nhỏ → ghi vào PENDING 5a–5d bên trên.
+- Docs pruned: conventions.md mục Fonts (đã hết "italics chưa bundle" — fix 17/07), deployment.md
+  thêm custom domain `tool.thinksmartinsurance.com`.
+
+### 2026-07-17 (badge phiên bản app ở chân sidebar trái)
+- Owner yêu cầu hiển thị số version trong UI để phân biệt bản đang chạy (local vs live).
+- Thêm `.sidebar-version-footer` (badge `v1.00` + ngày `17/07/2026`) vào cuối `sidebar-left`
+  trong `index.html`; CSS mới ngay sau `.tree-container` trong `style.css` (dùng `--brand-soft`,
+  `--divider`, `--fs-2xs` — tự tương thích light/dark). `style.css` bump → `?v=18`.
+- **Convention mới: mỗi lần deploy, cập nhật tay số version + ngày trong `sidebar-version-footer`
+  (index.html)** — đây là chỗ duy nhất giữ version hiển thị.
+
 ### 2026-07-17 (font thật thay font giả — "font bị đổi khi sửa/xuất")
 - **User report: "cảm giác khi sửa nội dung font bị đổi"** → điều tra toàn tuyến font. Kết luận:
   - Code sửa chữ KHÔNG đổi font (applyTextValue giữ nguyên tspan + class; đã kiểm tra 92 dòng
