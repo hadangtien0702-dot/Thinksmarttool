@@ -19,7 +19,7 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 - Mobile-ready: ≤900px = drawer + bottom-sheet + touch pan/pinch (see 2026-07-15 later 5).
 - Bilingual nav: Proposal / Báo giá · Brochure / Tài liệu · Name Card / Danh thiếp.
 - All local work through 2026-07-17 committed & pushed (see Log).
-- Live at `thinksmarttool-gy6f.vercel.app`.
+- Live at **`tool.thinksmartinsurance.com`** (custom domain, verified 2026-07-17) + `thinksmarttool-gy6f.vercel.app`.
 - All 3 tools working: Proposal (AIG/NLG + Bản nháp), Brochure (multi-page grouping, minimal preview),
   Name Card (5 tagged fields, editable, fit-to-viewport zoom, master-protected + copy flow).
 - Font embedding on export is live. Design system + light/dark theme live.
@@ -37,13 +37,12 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 2. ~~SF Pro italics + Bodoni Moda not truly bundled~~ **FIXED 2026-07-17** — all 11 fonts are now
    real files (see log). Rebuild script: `build-fonts.py` (repo root; fontTools subset from
    `C:\Windows\Fonts` OTFs).
-2b. **Custom domain `tool.thinksmartinsurance.com` — CHỜ OWNER THÊM DNS Ở A2 HOSTING** (added to
-   project thinksmarttool-gy6f 2026-07-17 via `vercel api`, verified:false). Owner cần vào cPanel
-   A2 Hosting → Zone Editor → thêm 2 record:
-   - CNAME: name `tool` → `538e043f27a6d167.vercel-dns-017.com.` (hoặc `cname.vercel-dns.com.`)
-   - TXT: name `_vercel` → `vc-domain-verify=tool.thinksmartinsurance.com,557b9ed5f517d8d589b4`
-   Sau khi DNS chạy: Vercel tự verify (hoặc `vercel api /v9/projects/thinksmarttool-gy6f/domains/tool.thinksmartinsurance.com/verify -X POST`
-   trong PowerShell — Git Bash sẽ nuốt path /v9). Rồi cập nhật URL mới trong SKILL.md/deployment.md.
+2b. ~~Custom domain chờ DNS~~ **LIVE 2026-07-17**: `tool.thinksmartinsurance.com` verified & serving
+   (CNAME `tool` → 538e043f27a6d167.vercel-dns-017.com + TXT `_vercel` vc-domain-verify; TXT có thể
+   xoá sau khi verify nhưng GIỮ LẠI thì an toàn cho lần re-verify). Gỡ bằng saga: record từng bị gõ
+   thiếu chữ ('_verce'), rồi nhiều lần edit không bấm 'Save All Records' (zone editor dạng staged —
+   check bằng SOA serial: không nhảy = chưa lưu thật).
+
 3. **Two Vercel URLs** (gy6f vs editor-proposesalsale) — consider consolidating/removing one in the dashboard.
 4. Future tools the owner may add (platform vision): more sales tools beyond proposals (video, training docs,
    FB post templates, client management…). Keep the structure modular.
