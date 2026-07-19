@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Đăng nhập — Thinksmart</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/portal.css?v=1">
+</head>
+<body>
+  <script>
+    try { if (localStorage.getItem('tst-theme') === 'dark') document.body.classList.add('dark-theme'); } catch (e) {}
+  </script>
+
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <span class="logo-icon" style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--brand-600),var(--brand-800));color:#fff">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+          </svg>
+        </span>
+        <div><b style="font-size:var(--fs-md);font-weight:800">Thinksmart</b> <span style="color:var(--text-3);font-weight:600">Insurance</span></div>
+      </div>
+
+      <h1 id="auth-title">Đăng nhập</h1>
+      <p class="auth-sub">Trang nội bộ — dành cho đội ngũ Thinksmart Insurance.</p>
+
+      <div id="config-notice" class="notice warn" style="display:none">
+        <span>⚙️</span>
+        <div><b>Chưa cấu hình hệ thống tài khoản.</b> Admin xem <code>SETUP-SUPABASE.md</code> để bật đăng nhập. <a href="/">Về trang chủ</a></div>
+      </div>
+
+      <div id="auth-forms">
+        <div class="auth-tabs" role="tablist">
+          <button id="tab-login" class="active" role="tab" aria-selected="true">Đăng nhập</button>
+          <button id="tab-signup" role="tab" aria-selected="false">Đăng ký</button>
+        </div>
+
+        <form id="form-auth" novalidate>
+          <div class="field" id="field-name" style="display:none">
+            <label for="inp-name">Họ và tên</label>
+            <input id="inp-name" type="text" autocomplete="name" placeholder="Ví dụ: Trần Quốc Anh">
+          </div>
+          <div class="field">
+            <label for="inp-email">Email</label>
+            <input id="inp-email" type="email" autocomplete="email" placeholder="ban@thinksmartinsurance.com" required>
+          </div>
+          <div class="field">
+            <label for="inp-password">Mật khẩu</label>
+            <input id="inp-password" type="password" autocomplete="current-password" placeholder="Tối thiểu 6 ký tự" required minlength="6">
+          </div>
+
+          <div class="auth-msg" id="auth-msg" role="status" aria-live="polite"></div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="btn-submit">Đăng nhập</button>
+        </form>
+      </div>
+
+      <!-- Trạng thái: đăng ký xong, chờ admin duyệt -->
+      <div id="pending-state" style="display:none">
+        <div class="notice info">
+          <span>⏳</span>
+          <div><b>Tài khoản đã tạo — đang chờ admin duyệt.</b><br>
+          Báo admin duyệt tài khoản, sau đó đăng nhập lại để vào trang.</div>
+        </div>
+        <button class="btn btn-secondary btn-block" id="btn-back-login">Về màn hình đăng nhập</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="portal-footer" style="justify-content:center">
+    <span class="version-badge">v1.10</span>
+    <span>Thinksmart Insurance — lưu hành nội bộ</span>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/portal/config.js?v=1"></script>
+  <script src="/js/portal/auth.js?v=1"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      if (!TSTAuth.configured) {
+        document.getElementById('config-notice').style.display = 'flex';
+        document.getElementById('auth-forms').style.display = 'none';
+        return;
+      }
+
+      const sb = TSTAuth.getClient();
+      const params = new URLSearchParams(location.search);
+      // Chỉ nhận đường dẫn nội bộ, chặn open-redirect kiểu //evil.com
+      let next = params.get('next') || '/';
+      if (!/^\/(?!\/)/.test(next)) next = '/';
+
+      let mode = 'login';
+      const tabLogin = document.getElementById('tab-login');
+      const tabSignup = document.getElementById('tab-signup');
+      const fieldName = document.getElementById('field-name');
+      const inpName = document.getElementById('inp-name');
+      const inpEmail = document.getElementById('inp-email');
+      const inpPassword = document.getElementById('inp-password');
+      const btnSubmit = document.getElementById('btn-submit');
+      const msg = document.getElementById('auth-msg');
+      const title = document.getElementById('auth-title');
+
+      function setMode(m) {
+        mode = m;
+        const isLogin = m === 'login';
+        tabLogin.classList.toggle('active', isLogin);
+        tabSignup.classList.toggle('active', !isLogin);
+        tabLogin.setAttribute('aria-selected', isLogin);
+        tabSignup.setAttribute('aria-selected', !isLogin);
+        fieldName.style.display = isLogin ? 'none' : 'block';
+        inpPassword.setAttribute('autocomplete', isLogin ? 'current-password' : 'new-password');
+        btnSubmit.textContent = isLogin ? 'Đăng nhập' : 'Tạo tài khoản';
+        title.textContent = isLogin ? 'Đăng nhập' : 'Đăng ký thành viên';
+        msg.textContent = '';
+        msg.className = 'auth-msg';
+      }
+      tabLogin.addEventListener('click', function () { setMode('login'); });
+      tabSignup.addEventListener('click', function () { setMode('signup'); });
+
+      function showError(text) {
+        msg.className = 'auth-msg error';
+        msg.textContent = text;
+      }
+
+      // Đổi thông báo lỗi Supabase phổ biến sang tiếng Việt dễ hiểu
+      function viError(error) {
+        const t = (error && error.message || '').toLowerCase();
+        if (t.includes('invalid login credentials')) return 'Email hoặc mật khẩu chưa đúng. Kiểm tra lại giúp nhé.';
+        if (t.includes('user already registered')) return 'Email này đã có tài khoản — chuyển qua tab Đăng nhập.';
+        if (t.includes('password should be at least')) return 'Mật khẩu cần tối thiểu 6 ký tự.';
+        if (t.includes('unable to validate email') || t.includes('invalid format')) return 'Email chưa đúng định dạng.';
+        if (t.includes('email not confirmed')) return 'Email chưa xác nhận. Mở hộp thư và bấm link xác nhận, hoặc báo admin tắt bước xác nhận email.';
+        return 'Có lỗi xảy ra: ' + (error && error.message ? error.message : 'không rõ nguyên nhân.');
+      }
+
+      async function afterLogin() {
+        const profile = await TSTAuth.getProfile(true);
+        if (profile && !profile.approved) {
+          await sb.auth.signOut();
+          document.getElementById('auth-forms').style.display = 'none';
+          document.getElementById('pending-state').style.display = 'block';
+          return;
+        }
+        location.replace(next);
+      }
+
+      document.getElementById('form-auth').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        msg.textContent = '';
+        msg.className = 'auth-msg';
+
+        const email = inpEmail.value.trim();
+        const password = inpPassword.value;
+        if (!email || !password) { showError('Điền đủ email và mật khẩu giúp nhé.'); return; }
+
+        btnSubmit.disabled = true;
+        try {
+          if (mode === 'login') {
+            const { error } = await sb.auth.signInWithPassword({ email: email, password: password });
+            if (error) { showError(viError(error)); return; }
+            await afterLogin();
+          } else {
+            const fullName = inpName.value.trim();
+            if (!fullName) { showError('Điền họ tên để đồng đội biết bạn là ai nhé.'); return; }
+            const { data, error } = await sb.auth.signUp({
+              email: email,
+              password: password,
+              options: { data: { full_name: fullName } }
+            });
+            if (error) { showError(viError(error)); return; }
+            // Nếu project bật "Confirm email" thì cần xác nhận email trước
+            if (data.user && !data.session) {
+              msg.className = 'auth-msg ok';
+              msg.textContent = 'Đã tạo tài khoản. Mở email và bấm link xác nhận, sau đó chờ admin duyệt.';
+              return;
+            }
+            document.getElementById('auth-forms').style.display = 'none';
+            document.getElementById('pending-state').style.display = 'block';
+            if (data.session) await sb.auth.signOut();
+          }
+        } finally {
+          btnSubmit.disabled = false;
+        }
+      });
+
+      document.getElementById('btn-back-login').addEventListener('click', function () {
+        document.getElementById('pending-state').style.display = 'none';
+        document.getElementById('auth-forms').style.display = 'block';
+        setMode('login');
+      });
+
+      // Đã đăng nhập sẵn → vào thẳng
+      TSTAuth.getSession().then(function (s) { if (s) afterLogin(); });
+    })();
+  </script>
+</body>
+</html>
