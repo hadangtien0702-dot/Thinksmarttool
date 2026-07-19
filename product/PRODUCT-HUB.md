@@ -1,6 +1,6 @@
 # Thinksmart Tool — Product Hub
 
-> Bản Markdown đồng bộ với Google Sheet (bản nhìn-cho-người). Nguồn sự thật: `product/build-product-hub.py` — sửa DATA trong đó rồi chạy lại để tái sinh cả hai. Cập nhật: 17/07/2026.
+> Bản Markdown đồng bộ với Google Sheet (bản nhìn-cho-người). Nguồn sự thật: `product/build-product-hub.py` — sửa DATA trong đó rồi chạy lại để tái sinh cả hai. Cập nhật: 19/07/2026.
 >
 > 📊 **Google Sheet:** https://docs.google.com/spreadsheets/d/1JzPxAoxjRCrgrqY5Lk86p1XyEWx3f47HyaBHGR4gWzY/edit
 >
@@ -17,13 +17,24 @@
 ### Nguyên tắc sản phẩm
 
 - **1. Nhanh gọn** — Mọi tính năng đo bằng số chạm. Sale bị khách gọi cắt ngang liên tục — flow phải sống sót qua gián đoạn (dirty-state, tự lưu trước khi xuất, nút theo ngữ cảnh).
-- **2. Data khách nằm trên máy sale** — Không server lưu data khách, không bắt đăng nhập. Nháp = localStorage trình duyệt từng người. Đây là lợi thế privacy + compliance, là nguyên tắc thiết kế chứ không phải tình cờ.
+- **2. Data khách nằm trên máy sale** — Không server lưu data khách. Nháp = localStorage trình duyệt từng người. Từ v1.10 có đăng nhập NỘI BỘ (video học/forum, Supabase) nhưng nguyên tắc không đổi: data KHÁCH không bao giờ lên server. Đây là lợi thế privacy + compliance.
 - **3. Một màn hình một việc chính** — Nút đổi theo ngữ cảnh (mẫu gốc → 'Tạo bản cho khách'; bản nháp → 'Lưu Nháp'). Không bày mọi nút cùng lúc. Chủ ghét nút thừa.
 - **4. Trình bày, không phải illustration engine** — Tool KHÔNG BAO GIỜ tự tính phí/cash value — số liệu do sale chép từ illustration chính thức của hãng (AG 49-A/B). Disclaimer là mặc định trên mọi bản xuất.
 - **5. Học tích luỹ mỗi ngày** — Mỗi phiên làm việc để lại changelog + bài học (design-lessons). Mỗi lần push: bump version badge + cập nhật skill. Kiến thức compound cho đường dài.
 - **6. Nền tảng mở rộng dần** — Module mới tái dùng hạ tầng cũ: engine SVG fill-text dùng cho proposal → name card → (tương lai) mẫu bài đăng FB; khung thư viện Brochure → kho video training.
 
 ## 2. Roadmap
+
+### PORTAL — trang nội bộ công ty (đang triển khai, mỗi phần 1 branch feat/*)
+
+| Tính năng | Giá trị cho sale | Effort | Rủi ro / Điều kiện | Trạng thái |
+|---|---|---|---|---|
+| Khung portal: trang chủ + Tool thành mục con (/tool) | Một địa chỉ duy nhất cho cả đội: học – làm – trao đổi; tool cũ giữ nguyên thói quen dùng | M | Route không dấu / cuối để giữ đường dẫn tương đối của tool | Xong v1.10 |
+| Login email/mật khẩu + phân quyền Admin/Nhân viên (Supabase) | Nội dung nội bộ có kiểm soát; nhân viên mới đăng ký → admin duyệt | M | Chờ owner tạo project Supabase + dán key mới BẬT (đang chế độ mở); data khách vẫn không lên server | Xong v1.10 (chờ bật) |
+| Thư viện Video học cho sale (YouTube unlisted + Drive) | Đào tạo tập trung: admin dán link là cả đội xem được, lọc theo chuyên mục | M | Video Drive phải share 'anyone with link'; RLS chặn người chưa duyệt | Xong v1.10 |
+| Verify đăng nhập end-to-end + push deploy Đợt 1 | Đợt 1 lên tool.thinksmartinsurance.com an toàn | S | Test đủ: đăng ký → duyệt → đăng nhập → video → guard /tool rồi mới push | Chưa làm |
+| Forum nội bộ: đăng tin + bình luận (Đợt 2) | Thay nhóm chat trôi tin: thông báo mẫu mới, hỏi đáp, kinh nghiệm đọng lại | L | Cần quy ước kiểm duyệt; làm sau khi auth chạy thật | Chưa làm |
+| Trang quản lý thành viên cho admin (Đợt 2) | Duyệt nhân viên 1 chạm ngay trong web, khỏi vào Supabase dashboard | S | Làm sau khi có admin thật dùng thử flow duyệt tay | Chưa làm |
 
 ### NOW — làm ngay (mỗi cái vài giờ)
 
@@ -53,7 +64,7 @@
 | Tính năng | Giá trị cho sale | Effort | Rủi ro / Điều kiện | Trạng thái |
 |---|---|---|---|---|
 | Mẫu bài đăng Facebook theo hãng | Nguồn khách số 1; tái dùng engine SVG sẵn có; tên+SĐT tự điền từ preset | M | Disclaimer trong mẫu; duyệt bộ đầu bằng skill viet-insurance-ads | Chưa làm |
-| Kho video & tài liệu training | Onboarding sale mới ngay trong tool; tái dùng khung Brochure + link YouTube unlisted | M | Không commit MP4 vào repo; nội dung là việc của chủ | Chưa làm |
+| Kho video & tài liệu training | Onboarding sale mới ngay trong tool; tái dùng khung Brochure + link YouTube unlisted | M | Không commit MP4 vào repo; nội dung là việc của chủ | Xong v1.10 — thành trang /videos của Portal |
 | Field-map theo manifest (hạ tầng) | Thêm hãng mới = 15 phút gán nhãn thay vì 1-2 ngày dò toạ độ. LÀM TRƯỚC khi thêm Allianz/mẫu mới | M | Giữ fallback heuristic cho 4 mẫu cũ, không thì nháp đang dùng vỡ | Chưa làm |
 | Mẫu Whole Life / Final Expense | Cộng đồng lớn tuổi hỏi nhiều; layout gần IUL nên tái dùng editor | L | Làm SAU field-map manifest | Chưa làm |
 | Xuất song ngữ Việt–Anh | Thuyết phục cả 2 thế hệ trong nhà (con đọc English review giúp bố mẹ) | M | Cần thiết kế lại spacing từng mẫu | Chưa làm |
@@ -71,6 +82,7 @@
 
 | Version | Ngày | Tính năng chính | Giá trị / Ý nghĩa |
 |---|---|---|---|
+| v1.10 | 19/07/2026 | PORTAL Đợt 1 (local, chưa deploy): trang chủ nội bộ mới · Tool chuyển về /tool nguyên vẹn · trang Video học (YouTube/Drive, admin dán link) · Login email/mật khẩu + phân quyền Admin/Nhân viên (Supabase, RLS) · chế độ mở khi chưa dán key · 4 branch feat/* merge lần lượt | Web từ 'cái tool' thành trang nội bộ công ty: học – làm – trao đổi một chỗ; nền tảng cho Forum Đợt 2; quy trình branch theo phần giúp lỗi phần nào khoanh phần đó. |
 | v1.02 | 17/07/2026 | Nháp trình duyệt cho site live (draftsMode browser, max 10 bản) · modal dialog đẹp thay alert hệ thống (13+1 chỗ) · tên khách tự điền khi 'Tạo bản cho khách' · fix bug round-trip '$999.99.70' | 100 sale dùng đồng thời không cần đăng nhập; data khách an toàn trên máy từng người; đóng PENDING lâu nhất (lưu nháp trên live); bớt 1 bước nhập tay mỗi bản chào. |
 | v1.01 | 17/07/2026 | Placeholder chuẩn cho cả 5 mẫu gốc (Nguyen Van An / Texas / (000) 000-0000) · mobile: nút 44px, safe-area iPhone, chặn pull-to-refresh, tap feedback · contrast đạt AA cả 2 theme · pre-push checklist thành quy định | Mẫu gốc chuyên nghiệp, hết lộ SĐT thật của team và data test; dùng mượt trên điện thoại — nơi sale làm việc thật; quy trình release có kỷ luật. |
 | v1.00 | 17/07/2026 | Badge version trong UI · 11 font THẬT (fix 'font bị đổi khi xuất' — bộ woff cũ là đồ giả) · custom domain tool.thinksmartinsurance.com | Bản xuất đúng font trên MỌI máy (kể cả máy sale không cài SF Pro); địa chỉ dễ nhớ để chia sẻ cho đội; phân biệt được bản local vs live. |
@@ -78,6 +90,8 @@
 
 ## 4. Bài học
 
+- **19/07:** Mỗi phần một branch feat/*, merge --no-ff lần lượt, mỗi trạng thái sau merge phải chạy được (route/redirect tạm nếu phần sau chưa vào) — lỗi phần nào khoanh vùng phần đó.
+- **19/07:** Mở rộng app 1 trang thành nhiều trang: route KHÔNG dấu '/' cuối thì mọi đường dẫn tương đối của trang cũ giữ nguyên; Express non-strict match cả '/tool/' nên phải tự check req.path mà redirect.
 - **17/07:** Ship xong phải test ROUND-TRIP (lưu → mở lại → so từng field): bug '$999.99 thành $999.99.70' chỉ lộ khi mở lại, nhìn lúc lưu thì mọi thứ đều đẹp.
 - **17/07:** Snapshot key→value của SVG nhiều tspan phải lưu CẢ DÒNG, và mọi write phải xoá tspan em — nửa vời là data khách sai số tiền.
 - **17/07:** 100 người dùng đồng thời KHÔNG có nghĩa cần backend. Hỏi 'ai giữ state?': nháp cá nhân thuộc máy sale (localStorage), server chỉ phục vụ mẫu đọc chung.
