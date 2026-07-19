@@ -346,10 +346,6 @@ app.get('/api/download', (req, res) => {
 // KHÔNG dùng dấu "/" cuối: các đường dẫn tương đối trong tool.html (style.css,
 // js/..., templates/...) phải resolve về gốc "/" mới đúng.
 // ---------------------------------------------------------------------------
-// Tạm thời: trang chủ portal chưa vào (branch feat/portal-shell) — "/" đưa về tool.
-// express.static ưu tiên public/index.html; khi file đó xuất hiện, route này tự hết tác dụng.
-app.get('/', (req, res) => res.redirect(302, '/tool'));
-
 const PORTAL_PAGES = { '/tool': 'tool.html' };
 Object.entries(PORTAL_PAGES).forEach(([route, file]) => {
   // Express non-strict: "/tool" match cả "/tool/" — tự redirect bỏ dấu "/" cuối
