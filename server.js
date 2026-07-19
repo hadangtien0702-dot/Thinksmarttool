@@ -340,6 +340,25 @@ app.get('/api/download', (req, res) => {
   res.sendFile(absolutePath);
 });
 
+// ---------------------------------------------------------------------------
+// PORTAL — URL sạch cho các trang (index.html là trang chủ portal, do static
+// middleware phục vụ sẵn ở "/"). Tool cũ chuyển về /tool (file public/tool.html).
+// KHÔNG dùng dấu "/" cuối: các đường dẫn tương đối trong tool.html (style.css,
+// js/..., templates/...) phải resolve về gốc "/" mới đúng.
+// ---------------------------------------------------------------------------
+// Tạm thời: trang chủ portal chưa vào (branch feat/portal-shell) — "/" đưa về tool.
+// express.static ưu tiên public/index.html; khi file đó xuất hiện, route này tự hết tác dụng.
+app.get('/', (req, res) => res.redirect(302, '/tool'));
+
+const PORTAL_PAGES = { '/tool': 'tool.html' };
+Object.entries(PORTAL_PAGES).forEach(([route, file]) => {
+  // Express non-strict: "/tool" match cả "/tool/" — tự redirect bỏ dấu "/" cuối
+  app.get(route, (req, res) => {
+    if (req.path !== route) return res.redirect(301, route);
+    res.sendFile(path.join(__dirname, 'public', file));
+  });
+});
+
 // Start Server
 app.listen(PORT, () => {
   console.log(`==================================================`);
