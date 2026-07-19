@@ -2,9 +2,9 @@
 
 > Bản Markdown đồng bộ với Google Sheet (bản nhìn-cho-người). Nguồn sự thật: `product/build-product-hub.py` — sửa DATA trong đó rồi chạy lại để tái sinh cả hai. Cập nhật: 17/07/2026.
 >
-> 📊 **Google Sheet:** https://docs.google.com/spreadsheets/d/1Y8kpimASEXucj8a5Mio2BNVabfwaX2ERZBKJ7cPUClQ/edit
+> 📊 **Google Sheet:** https://docs.google.com/spreadsheets/d/1JzPxAoxjRCrgrqY5Lk86p1XyEWx3f47HyaBHGR4gWzY/edit
 >
-> 📁 **Drive folder:** https://drive.google.com/drive/folders/1Ngep_IP1gAxkSwZ34daDUc5dGtTNdf6B (tài khoản xuanthuongqtkd@gmail.com)
+> 📁 **Drive folder:** https://drive.google.com/drive/folders/1SLfL8Xyjl3NPlEjjdodJKS9eUsEtQ75x — "Thinksmart Tool — Product" trong "2). Thinksmart Insurance Video" (Drive vickytrieu2017@gmail.com)
 
 ## 1. Vision & Nguyên tắc
 
