@@ -50,6 +50,22 @@ Newest entries on top. Keep it concrete (versions, files, commands).
    FB post templates, client management…). Keep the structure modular.
 
 ## Log
+### 2026-07-19 (BÀN GIAO — owner chuyển Portal cho team PD, push v1.10)
+- **Owner quyết định dừng vai trò ở đây, bàn giao phần Portal cho team PD làm tiếp.**
+  Push v1.10 lên main (+ 4 branch feat/* để team thấy cấu trúc từng phần).
+- **Trạng thái bàn giao cho team PD:**
+  - Portal Đợt 1 chạy LOCAL đầy đủ ở chế độ mở (chưa bật Supabase). Live site sau deploy
+    cũng chạy chế độ mở — Tool hoạt động như cũ, trang chủ mới có notice "chưa bật tài khoản".
+  - Việc kế tiếp theo thứ tự: (1) tạo Supabase project + chạy `supabase/schema.sql` + dán key
+    vào `public/js/portal/config.js` (làm theo `SETUP-SUPABASE.md`, 10 phút);
+    (2) test e2e đăng ký → duyệt → đăng nhập → video → guard /tool; (3) Forum Đợt 2 +
+    trang quản lý thành viên (mỗi phần 1 branch `feat/*` theo conventions.md).
+  - Google Sheet Product Hub: owner đã chia 4 tab, quyền "anyone with link = writer".
+    Nội dung cập nhật CHƯA vào Sheet (bị dừng giữa chừng) — toàn bộ nội dung chuẩn đã nằm
+    trong `product/PRODUCT-HUB.md` + `build-product-hub.py` (nguồn sự thật), chép sang Sheet
+    theo đó. Kỹ thuật điều khiển Sheet không cần login đã thử OK: name box + synthetic Enter,
+    paste bằng ClipboardEvent+DataTransfer, verify bằng gviz CSV (`&range=`).
+
 ### 2026-07-19 (PORTAL Đợt 1 — biến tool thành trang nội bộ công ty, v1.10)
 - **Chuyển hướng lớn (owner quyết):** web trở thành portal nội bộ Thinksmart Insurance:
   (1) Video học cho sale, (2) Forum (Đợt 2), (3) Tool thành mục con, (4) Login + phân quyền
