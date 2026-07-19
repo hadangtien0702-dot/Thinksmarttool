@@ -202,6 +202,19 @@
 
   </div>
 
+  <!-- Portal auth guard: chỉ chặn khi đã cấu hình Supabase (SETUP-SUPABASE.md);
+       chưa cấu hình thì tool chạy mở như cũ. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/portal/config.js?v=1"></script>
+  <script src="/js/portal/auth.js?v=1"></script>
+  <script>
+    if (window.TSTAuth && TSTAuth.configured) {
+      TSTAuth.requireLogin().then(function (r) {
+        if (r.profile && !r.profile.approved) TSTAuth.signOut();
+      });
+    }
+  </script>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <!-- Mỗi công cụ một file JS riêng — core nạp trước, main nạp cuối -->
   <script src="js/core.js?v=14"></script>
