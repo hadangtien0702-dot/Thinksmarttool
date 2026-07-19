@@ -346,7 +346,7 @@ app.get('/api/download', (req, res) => {
 // KHÔNG dùng dấu "/" cuối: các đường dẫn tương đối trong tool.html (style.css,
 // js/..., templates/...) phải resolve về gốc "/" mới đúng.
 // ---------------------------------------------------------------------------
-const PORTAL_PAGES = { '/tool': 'tool.html', '/login': 'login.html' };
+const PORTAL_PAGES = { '/tool': 'tool.html', '/login': 'login.html', '/videos': 'videos.html' };
 Object.entries(PORTAL_PAGES).forEach(([route, file]) => {
   // Express non-strict: "/tool" match cả "/tool/" — tự redirect bỏ dấu "/" cuối
   app.get(route, (req, res) => {
