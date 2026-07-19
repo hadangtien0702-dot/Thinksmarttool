@@ -1,5 +1,25 @@
 # Architecture
 
+## PORTAL (từ 2026-07-19 — Đợt 1)
+
+Web giờ là **trang nội bộ công ty**, tool là mục con. Route (khai báo `PORTAL_PAGES` cuối server.js;
+mỗi route tự redirect bản có "/" cuối về không "/" để giữ đường dẫn tương đối):
+
+| Route | File | Ghi chú |
+|-------|------|---------|
+| `/` | `public/index.html` | Trang chủ portal (hero chào theo buổi + 3 thẻ khu vực: Học/teal · Tool/violet · Forum/amber) |
+| `/login` | `public/login.html` | Đăng nhập/Đăng ký (Supabase email+password), màn "chờ admin duyệt" |
+| `/videos` | `public/videos.html` + `js/portal/videos.js` | Thư viện video (YouTube unlisted + Drive preview), admin CRUD dán link |
+| `/tool` | `public/tool.html` | Editor SVG cũ nguyên vẹn (đổi tên từ index.html; asset tương đối vẫn resolve về gốc) |
+
+- **Auth stack:** `js/portal/config.js` (owner dán Supabase URL + anon key — trống = "chế độ mở",
+  không bắt login) → `js/portal/auth.js` (`TSTAuth`: requireLogin/getProfile/initShell) →
+  `supabase/schema.sql` (bảng `profiles` role admin|user + approved, bảng `videos`, RLS,
+  trigger tạo profile, helper `is_admin()`/`is_approved()`). Hướng dẫn: `SETUP-SUPABASE.md`.
+- **CSS:** `public/portal.css` — token copy từ `style.css` §1 (đổi token sửa CẢ HAI); portal cuộn
+  dọc bình thường (khác tool overflow hidden). Version badge ở 4 chỗ: tool sidebar + 3 footer.
+- Forum = Đợt 2 (nav có chip "Sắp có").
+
 ## Folder structure (repo root: `E:\2026\Thinksmart\Sale\Proposal2026` — trước 16/07/2026 ổ này tên `G:`)
 
 | Path | What it is | In git? |

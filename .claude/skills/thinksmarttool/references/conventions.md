@@ -36,6 +36,16 @@ brand violet `#4F00CA` family, font **Plus Jakarta Sans** (UI) + **Fira Code** (
 push per change. At **end of day** (or when the user says "push đi em" / wraps up): ONE `git add -A` + commit
 + `git push origin main` → Vercel auto-deploys. Then confirm the deploy (poll the live URL for the new `?v=`).
 
+### Branch theo từng phần (owner mandate 2026-07-19 — áp dụng từ Portal Đợt 1)
+Mỗi PHẦN chức năng làm trên **branch `feat/<phần>` riêng**, xong verify trên local rồi
+`git merge --no-ff` vào `main` LẦN LƯỢT — để lỗi phần nào khoanh vùng phần đó. Quy tắc:
+- Mỗi trạng thái sau merge phải là web CHẠY ĐƯỢC (dùng route/redirect tạm nếu phần sau chưa vào —
+  ví dụ `/` redirect về `/tool` trong lúc chờ trang chủ portal).
+- Code cũng tách theo phần tương ứng (mỗi trang 1 file JS trong `js/portal/`, tool cũ nguyên khối riêng).
+- Giữ branch sau khi merge (đừng xoá) để owner nhìn được lịch sử từng phần.
+- Ví dụ chuẩn (Đợt 1): `feat/tool-route` → `feat/portal-shell` → `feat/auth-login` → `feat/videos-page`,
+  cuối cùng commit docs (skill + Product Hub) thẳng trên main.
+
 ### Pre-push checklist (owner mandate 2026-07-17 — BẮT BUỘC mỗi lần push)
 1. **Bump version badge hiển thị**: tăng số trong `.sidebar-version-footer` (index.html) — `v1.01` →
    `v1.02`… + cập nhật ngày. Đây là cách owner phân biệt bản local vs live.

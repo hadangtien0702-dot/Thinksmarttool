@@ -50,6 +50,36 @@ Newest entries on top. Keep it concrete (versions, files, commands).
    FB post templates, client management…). Keep the structure modular.
 
 ## Log
+### 2026-07-19 (PORTAL Đợt 1 — biến tool thành trang nội bộ công ty, v1.10)
+- **Chuyển hướng lớn (owner quyết):** web trở thành portal nội bộ Thinksmart Insurance:
+  (1) Video học cho sale, (2) Forum (Đợt 2), (3) Tool thành mục con, (4) Login + phân quyền
+  admin/user. Stack chọn: **Supabase** (Postgres+Auth, free tier) + video **YouTube unlisted
+  hoặc Google Drive** + đăng nhập email/mật khẩu + lộ trình MVP.
+- **Cấu trúc mới:** `/` = trang chủ portal (index.html MỚI) · `/login` · `/videos` ·
+  `/tool` = editor cũ (`git mv index.html → tool.html`, KHÔNG đổi đường dẫn tương đối —
+  route không có "/" cuối nên asset vẫn resolve về gốc; server tự redirect `/tool/` → `/tool`).
+  Route khai báo trong `PORTAL_PAGES` cuối server.js. Gotcha: Express non-strict routing —
+  `app.get('/tool')` match luôn `/tool/`, phải check `req.path` để redirect.
+- **File mới:** `public/portal.css` (token COPY từ style.css §1 — đổi token phải sửa cả 2),
+  `public/login.html`, `public/videos.html`, `public/js/portal/{config,auth,videos}.js`,
+  `supabase/schema.sql` (profiles + videos + RLS + trigger + is_admin()/is_approved()),
+  `SETUP-SUPABASE.md` (hướng dẫn owner 10 phút).
+- **Chế độ mở:** khi `config.js` chưa có key Supabase → không bắt đăng nhập, tool chạy như cũ,
+  các trang hiện notice "chưa bật hệ thống tài khoản". Dán key vào là toàn bộ guard bật.
+- **Version badge giờ ở 4 chỗ** (tool.html sidebar + footer của index/login/videos) —
+  khi bump: `grep -rn "version-badge" public/*.html`. Đã bump **v1.10 · 19/07/2026**.
+- Đã verify local (port 8000): 4 trang 200, `/tool/`→301, tool load đủ 12 file SVG,
+  0 lỗi console. CHƯA test được flow đăng nhập thật — chờ owner tạo Supabase project
+  (PENDING: verify e2e sau khi dán key rồi mới push/deploy).
+- Gotcha máy D:\ hôm nay: Browser pane tab cũ báo viewport 0×0 (probe fixed inset:0 width=0)
+  — mở TAB MỚI (tabs_create) là có viewport thật 1280×720; đừng tin số đo tab cũ.
+- **Workflow branch mới (owner mandate):** Đợt 1 được tách thành 4 branch merge --no-ff lần lượt
+  (`feat/tool-route` → `feat/portal-shell` → `feat/auth-login` → `feat/videos-page`), mỗi trạng thái
+  sau merge đều chạy được (redirect tạm `/`→`/tool` ở branch 1). Từ nay MỌI phần mới làm branch
+  riêng như vậy — xem conventions.md "Branch theo từng phần". Gotcha verify: server test nền có thể
+  thành zombie giữ port 8000 → node mới EADDRINUSE và curl trúng server CŨ (kết quả sai);
+  trước mỗi vòng test: `netstat -ano | grep :8000` + taskkill PID cũ.
+
 ### 2026-07-17 (v1.03 — Product Hub: sheet + repo, docs-only push)
 - **Owner lập Product Hub** (hỏi "trong ngành product gọi là gì" → Product Docs/Hub): thư mục mới
   `product/` trong repo — `build-product-hub.py` (NGUỒN SỰ THẬT: sửa DATA rồi chạy lại),
