@@ -10,14 +10,68 @@
 // Dropdown data for client info fields
 const GENDERS = ['Male', 'Female'];
 
-const RATE_CLASSES = [
-  'Preferred Plus',
-  'Preferred Non-Tobacco',
-  'Standard Plus',
-  'Standard Non-Tobacco',
-  'Preferred Tobacco',
-  'Standard Tobacco'
-];
+// XẾP HẠNG SỨC KHOẺ (underwriting class) — MỖI HÃNG MỘT DANH SÁCH RIÊNG.
+// Dùng chung cho cả IUL lẫn Term Life của cùng hãng.
+// ⚠️ Chữ ở đây in THẲNG lên báo giá gửi khách → phải đúng chính tả của hãng.
+//    Muốn thêm/sửa hạng cho hãng nào thì sửa đúng mảng của hãng đó ở dưới.
+const RATE_CLASSES_BY_CARRIER = {
+  AIG: [
+    'Preferred Plus',
+    'Preferred Non-Tobacco',
+    'Standard Plus',
+    'Standard Non-Tobacco',
+    'Preferred Tobacco',
+    'Standard Tobacco'
+  ],
+  NLG: [
+    'Elite Non-Tobacco',
+    'Preferred Non-Tobacco',
+    'Select Non-Tobacco',
+    'Standard Non-Tobacco',
+    'Express Standard Non-Tobacco 1',
+    'Express Standard Non-Tobacco 2',
+    'Preferred Tobacco',
+    'Standard Tobacco',
+    'Express Standard Tobacco'
+  ],
+  // LƯU Ý CHÍNH TẢ: Allianz viết "Nontobacco" LIỀN (không gạch nối), khác với
+  // "Non-Tobacco" của AIG/NLG. Giữ đúng như hãng dùng — đừng "sửa cho đồng bộ".
+  Allianz: [
+    'Preferred Plus Nontobacco',
+    'Preferred Nontobacco',
+    'Standard Nontobacco',
+    'Preferred Tobacco',
+    'Standard Tobacco'
+  ]
+};
+
+// Dùng khi không nhận ra hãng của file đang mở
+const RATE_CLASSES_DEFAULT = RATE_CLASSES_BY_CARRIER.AIG;
+
+// Gộp hạng của TẤT CẢ hãng (đã loại trùng) — dùng để TỰ NHẬN DIỆN ô xếp hạng
+// trong bản vẽ chưa gắn id. Việc nhận diện xảy ra trước khi biết hãng nên phải
+// khớp mọi hạng, không được dùng riêng danh sách một hãng.
+const ALL_RATE_CLASSES = Object.keys(RATE_CLASSES_BY_CARRIER)
+  .reduce((acc, k) => acc.concat(RATE_CLASSES_BY_CARRIER[k]), [])
+  .filter((v, i, a) => a.indexOf(v) === i);
+
+// carrierOf() trả 'Bản nháp' cho file đã tạo cho khách → mất dấu hãng gốc.
+// Hàm này soi tên + đường dẫn file nên bản nháp (vd "Vu Nguyen - AIG IUL.svg")
+// vẫn ra đúng danh sách của AIG.
+function rateCarrierOf(file) {
+  if (!file) return null;
+  const s = ((file.folder || '') + ' ' + (file.path || '') + ' ' + (file.name || '')).toLowerCase();
+  if (s.includes('aig')) return 'AIG';
+  if (s.includes('nlg')) return 'NLG';
+  if (s.includes('allianz')) return 'Allianz';
+  return null;
+}
+
+// Danh sách xếp hạng áp dụng cho file đang mở
+function rateClassesFor(file) {
+  const carrier = rateCarrierOf(file);
+  return (carrier && RATE_CLASSES_BY_CARRIER[carrier]) || RATE_CLASSES_DEFAULT;
+}
 
 const US_STATES = [
   'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
@@ -151,7 +205,7 @@ function populateProposalTextsEditor(svgEl, textElements) {
     // Compare against the whole line instead so multi-tspan values are matched reliably.
     const line = el => getLineTextContent(el).trim();
     const isValue = t => t === '43' || /^\d+$/.test(t) || t === 'Male' || t === 'Female'
-      || RATE_CLASSES.includes(t) || US_STATES.includes(t);
+      || ALL_RATE_CLASSES.includes(t) || US_STATES.includes(t);
 
     if (!ageEl) {
       ageEl = textElementsList.find(el => line(el) === '43');
@@ -162,7 +216,7 @@ function populateProposalTextsEditor(svgEl, textElements) {
       if (genderEl) genderEl.setAttribute('id', 'client-gender');
     }
     if (!rateEl) {
-      rateEl = textElementsList.find(el => RATE_CLASSES.includes(line(el)));
+      rateEl = textElementsList.find(el => ALL_RATE_CLASSES.includes(line(el)));
       if (rateEl) rateEl.setAttribute('id', 'client-rate');
     }
     if (!stateEl) {
@@ -269,7 +323,7 @@ function populateProposalTextsEditor(svgEl, textElements) {
 
       // Gender / Rate Class / State use dropdowns to prevent typos on client-facing proposals
       const dropdownOptions = id === 'client-gender' ? GENDERS
-        : id === 'client-rate' ? RATE_CLASSES
+        : id === 'client-rate' ? rateClassesFor(appState.activeFile)   // theo hãng của file đang mở
         : id === 'client-state' ? US_STATES
         : null;
 
