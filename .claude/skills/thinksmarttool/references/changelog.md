@@ -3,6 +3,25 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
+## ⚠️ HAI NHÁNH SONG SONG (từ 2026-07-20) — ĐỌC TRƯỚC KHI ĐỘNG VÀO GIT
+
+| | `main` | `feat/login` |
+|---|---|---|
+| Vai trò | **BẢN LIVE cho đội sale dùng thật** | Portal đang phát triển |
+| Ở đâu | Đã push, Vercel auto-deploy | **CHỈ CHẠY LOCAL — CHƯA PUSH** |
+| Version | v1.11 · `proposal.js?v=11` | v1.11 · `portal.css?v=18`, `style.css?v=38` |
+| `config.js` | Khoá Supabase **TRỐNG** → chế độ mở, **không bắt đăng nhập** | **CÓ khoá thật** → bắt đăng nhập + chờ duyệt |
+| Nội dung | Chỉ Tool. `/`, `/login`, `/videos` → **302 về `/tool`** | Portal đầy đủ: trang chủ dashboard, /members, /videos |
+
+**🚨 TUYỆT ĐỐI KHÔNG merge `feat/login` vào `main` khi chưa duyệt xong tài khoản cho đội sale.**
+Lý do: `config.js` trên feat/login có khoá Supabase → live sẽ bắt đăng nhập, cả đội sale bị chặn
+khỏi Tool ngay lập tức (họ chưa có tài khoản; ai đăng ký cũng kẹt ở "chờ admin duyệt").
+Muốn đưa lên live phải: (1) duyệt sẵn tài khoản cho toàn đội, HOẶC (2) tạm để `config.js` trống.
+
+Khi cần sửa cho bản live: `git checkout main` → sửa → push (đừng mang theo thay đổi của feat/login).
+Redirect tạm ở `server.js` (main) dùng **302 chứ không 301** — 301 bị trình duyệt cache cứng, sau này
+portal xong muốn trả lại trang chủ sẽ rất cực để gỡ.
+
 ## Current state (as of 2026-07-17)
 - **Frontend is modular**: `public/app.js` is GONE, replaced by `public/js/`
   (`core.js` / `proposal.js` / `brochure.js` / `namecard.js` / `main.js`); versions: `core.js?v=12`,
@@ -26,6 +45,22 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 - Font embedding on export is live. Design system + light/dark theme live.
 
 ## PENDING / open tasks
+
+**Mở từ 2026-07-20:**
+- **A. Danh sách xếp hạng Allianz đang là TẠM** — owner sẽ gửi bản chính thức sau. Sửa ở
+  `RATE_CLASSES_BY_CARRIER.Allianz` trong `public/js/proposal.js` (nhớ bump `proposal.js?v=`).
+- **B. `feat/login` chưa push** — chờ duyệt sẵn tài khoản cho đội sale rồi mới tính đưa lên live
+  (xem cảnh báo 2 nhánh ở đầu file).
+- **C. Danh sách phòng ban cố định** — hiện ô nhập tự do (`window.prompt` trong `members.js`).
+  Owner gửi danh sách thì đổi thành dropdown.
+- **D. Video học "mồ côi"** — nav đã ẩn ở trang chủ/members/tool nhưng `videos.html` vẫn tự hiện mục
+  của nó → không có đường vào. Quyết: làm xong rồi mở lại, hay bỏ hẳn?
+- **E. Ô tìm kiếm mẫu trong Tool đã bị xoá** khỏi `tool.html` (bản update của owner) → không tìm mẫu
+  theo tên được nữa; `main.js` còn handler chết trỏ tới `#search-input`. Khôi phục hay bỏ hẳn?
+- **F. JS chết trong core.js/main.js** — handler cho UI đã gỡ từ lâu (`#text-search-input`, meta
+  inspector, tab màu, preset nền). Null-guard nên không lỗi, chỉ là code không bao giờ chạy.
+- **G. 2 tài khoản test trong DB** (`mkt@gmail.com`, `test1@gmail.com`) — dọn khi không cần nữa.
+
 -1. ~~Verify save/clone/delete on the LIVE site~~ **RESOLVED 2026-07-17 (v1.02)**: live site giờ chạy
    **draftsMode 'browser'** — nháp lưu localStorage máy sale (xem log). Server ghi file chỉ còn cho local.
 0. ~~`TERMLIFE - NLG` master polluted with test data~~ **RESOLVED 2026-07-17** — toàn bộ 5 master
@@ -50,6 +85,54 @@ Newest entries on top. Keep it concrete (versions, files, commands).
    FB post templates, client management…). Keep the structure modular.
 
 ## Log
+### 2026-07-20 (owner quay lại tự làm; tách 2 nhánh: main cho sale, feat/login local)
+
+**ĐÃ PUSH LÊN LIVE (main) — 2 lần, đều tách riêng, không dính feat/login:**
+1. `ddd1944` — **Bản live tạm thời chỉ phục vụ Tool**: `/`, `/login`, `/videos` → 302 `/tool`.
+   Owner thấy portal chưa hoàn thiện (Video học/Forum trống) lộ ra cho sale nên muốn dọn.
+   Đặt redirect TRƯỚC `express.static` vì static tự trả `public/index.html` cho `/`.
+2. `7f49f77` — **Xếp hạng sức khoẻ theo từng hãng (v1.11)**, `proposal.js?v=11`:
+   - AIG 6 mục (giữ nguyên) · NLG 9 mục · Allianz 5 mục. Dùng chung cho IUL + Term Life.
+   - **Allianz viết `Nontobacco` LIỀN**, khác `Non-Tobacco` của AIG/NLG — chính tả của hãng,
+     đừng "sửa cho đồng bộ". Owner nói danh sách Allianz là **tạm**, sẽ gửi bản chính thức sau.
+   - `rateCarrierOf()` mới: `carrierOf()` trả `'Bản nháp'` cho file trong `4-Clients` nên MẤT dấu
+     hãng → bản nháp "Vu Nguyen - AIG IUL.svg" sẽ ra danh sách sai. Hàm mới soi tên/đường dẫn file.
+   - `ALL_RATE_CLASSES` (gộp mọi hãng, loại trùng) dùng cho việc TỰ NHẬN DIỆN ô xếp hạng trong bản
+     vẽ chưa gắn id — nhận diện xảy ra TRƯỚC khi biết hãng nên không được dùng list của một hãng.
+
+**LÀM Ở LOCAL (feat/login, CHƯA push)** — 2 commit `38ad6c9` + `f0bf673`:
+- Supabase bật thật: dán khoá, tắt "Confirm email", bật Email provider. Owner = `super_admin`.
+- **Quản lý thành viên `/members`**: 3 role `super_admin > admin > user`, 4 trạng thái
+  `pending/active/suspended/deleted`, cột `department`. Nút: Duyệt · Phòng ban · Đặt/Bỏ quyền Admin ·
+  Tạm khoá · Mở khoá · Xoá (xoá = mềm, ẩn khỏi danh sách, tài khoản vẫn còn để khôi phục).
+- **Bảo mật ở DB chứ không chỉ ẩn nút**: trigger `enforce_member_update()` + RLS. Đã test bằng cách
+  gọi thẳng API (bỏ qua giao diện): super_admin tự đổi quyền mình → BỊ CHẶN. Admin chỉ đụng được
+  `user`, không đổi được role, không xoá được.
+- Cột `approved` cũ được trigger `sync_profile_flags()` tự đồng bộ `= (status='active')` → mọi guard
+  cũ đọc `approved` vẫn đúng, không phải sửa.
+- Super Admin **bị chặn vào Tool** (vào `/tool` → đá về `/members`), ẩn luôn mục Công cụ khỏi nav.
+  → Muốn tự test Tool phải tạm đổi role mình về `admin`.
+- UI: Tool thành mục con dùng CHUNG sidebar với portal (bỏ rail riêng); hover mềm toàn cục bằng
+  `:where(...)` (specificity 0 nên không đè transition riêng của component); nội dung chia thẻ bo góc;
+  topbar thành thẻ nổi bo 20px khớp rail; bỏ `max-width:1200px` của `.dash` để header và nội dung
+  chung một cột; rail/topbar/nội dung cùng thụt vào 8px; `--r-xl` 18px→20px ở CẢ 2 file CSS.
+- `.gitignore`: bỏ qua `.agents/`, `skills-lock.json`, `.claude/skills/supabase*`, `.codex/`
+  (skill bên thứ 3 cài bằng `npx skills add` — cài lại được, ~240 KB không cần vào repo).
+
+**BẪY GẶP PHẢI HÔM NAY (đọc kỹ, đều tốn thời gian):**
+- **PowerShell `Get-Content`/`Set-Content` PHÁ tiếng Việt**: dùng để bump `?v=` hàng loạt → 5 file HTML
+  vỡ hết dấu (`Trang nội bộ` → `Trang ná»™i bá»™`). Phát hiện nhờ tiêu đề tab. Khôi phục bằng
+  `git checkout -- <file>` rồi bump lại bằng công cụ sửa file. **Trên Windows đừng sửa hàng loạt file
+  có tiếng Việt bằng PowerShell.**
+- **`git commit -m` với here-string chứa dấu nháy kép bị vỡ** thành nhiều pathspec → dùng
+  `git commit -F <file>` (ghi message ra file trước) cho message dài/có tiếng Việt.
+- **`node --check` KHÔNG bắt được `ReferenceError`**: đổi tên `RATE_CLASSES` xong vẫn còn 2 chỗ gọi
+  tên cũ, cú pháp vẫn "OK" nhưng chạy sẽ vỡ panel sửa chữ. **Đổi tên biến xong phải `grep` tên cũ.**
+- **Rule chung `aside { overflow: hidden }`** cắt mất phần bung của sidebar dạng `<aside>` — phải
+  `overflow: visible` cho riêng nó.
+- **Breakpoint phải TRÙNG giữa các hệ layout**: sidebar ẩn ở 820px nhưng layout mobile của tool bật ở
+  900px → dải 821–900px hiện CẢ hai hệ nav. Đã đưa về cùng 900px.
+
 ### 2026-07-19 (BÀN GIAO — owner chuyển Portal cho team PD, push v1.10)
 - **Owner quyết định dừng vai trò ở đây, bàn giao phần Portal cho team PD làm tiếp.**
   Push v1.10 lên main (+ 4 branch feat/* để team thấy cấu trúc từng phần).
