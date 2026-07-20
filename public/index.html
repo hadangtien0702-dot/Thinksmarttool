@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/vendor/animate.min.css">
-  <link rel="stylesheet" href="/portal.css?v=18">
+  <link rel="stylesheet" href="/portal.css?v=23">
 </head>
 <body>
   <script>
@@ -139,7 +139,7 @@
       </main>
 
       <footer class="portal-footer">
-        <span class="version-badge">v1.11</span>
+        <span class="version-badge">v1.12</span>
         <span>20/07/2026 · Thinksmart Insurance — lưu hành nội bộ</span>
       </footer>
     </div>
@@ -163,15 +163,8 @@
       const ROLE_LABEL = { super_admin: 'Super Admin', admin: 'Admin', user: 'Nhân viên' };
       const role = (profile && profile.role) || 'user';
       const isStaff = role === 'admin' || role === 'super_admin';
-      const isSuper = role === 'super_admin';
 
-      // Super Admin không sửa file báo giá → ẩn Công cụ + thẻ "Tạo báo giá"
-      if (isSuper) {
-        const toolNav = document.querySelector('.sidebar-nav a[href="/tool"]');
-        if (toolNav) toolNav.style.display = 'none';
-        const hero = document.querySelector('.hero-action');
-        if (hero) hero.style.display = 'none';
-      }
+      // Super Admin dùng được MỌI công cụ (chủ tool quyết 20/07/2026) — không ẩn gì.
 
       // ---- Lời chào theo buổi + ngày ----
       const now = new Date();
@@ -213,8 +206,6 @@
         document.getElementById('stat-members').style.display = '';
         document.getElementById('stat-pending').style.display = '';
         document.getElementById('panel-members').style.display = '';
-        // Super Admin: thẻ tạo báo giá đã ẩn → panel thành viên chiếm trọn hàng
-        if (isSuper) document.getElementById('dash-grid').style.gridTemplateColumns = '1fr';
 
         sb.from('profiles').select('*', { count: 'exact', head: true }).neq('status', 'deleted').then(function (res) {
           setVal('val-members', res.count == null ? '—' : res.count);
@@ -270,6 +261,6 @@
     })();
   </script>
   <script src="/vendor/gsap.min.js"></script>
-  <script src="/js/animations.js"></script>
+  <script src="/js/animations.js?v=3"></script>
 </body>
 </html>

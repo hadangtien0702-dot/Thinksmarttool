@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/vendor/animate.min.css">
-  <link rel="stylesheet" href="/portal.css?v=18">
+  <link rel="stylesheet" href="/portal.css?v=23">
 </head>
 <body>
   <script>
@@ -87,7 +87,9 @@
         </div>
 
         <div id="page-content" style="display:none">
-          <div id="load-msg" class="notice info" style="display:none"><span>⏳</span><div>Đang tải danh sách…</div></div>
+          <!-- CHỈ dùng để báo LỖI tải. Trạng thái "đang tải" nằm ở setLoading()
+               trong members.js (nút + làm mờ bảng) — cố ý không dùng banner nữa. -->
+          <div id="load-msg" class="notice error" style="display:none"></div>
 
           <!-- Chờ duyệt -->
           <div class="seg" id="seg-pending" style="display:none">
@@ -95,7 +97,13 @@
               <h2>Chờ duyệt</h2>
               <span class="seg-count warn" id="count-pending">0</span>
             </div>
-            <div class="member-list" id="list-pending"></div>
+            <div class="member-table">
+              <div class="member-head">
+                <span>Thành viên</span><span>Phòng ban</span><span>Quyền</span>
+                <span>Trạng thái</span><span>Tham gia</span><span class="ta-right">Thao tác</span>
+              </div>
+              <div class="member-list" id="list-pending"></div>
+            </div>
           </div>
 
           <!-- Đang hoạt động -->
@@ -104,7 +112,13 @@
               <h2>Thành viên</h2>
               <span class="seg-count" id="count-active">0</span>
             </div>
-            <div class="member-list" id="list-active"></div>
+            <div class="member-table">
+              <div class="member-head">
+                <span>Thành viên</span><span>Phòng ban</span><span>Quyền</span>
+                <span>Trạng thái</span><span>Tham gia</span><span class="ta-right">Thao tác</span>
+              </div>
+              <div class="member-list" id="list-active"></div>
+            </div>
             <div class="empty-state" id="empty-active" style="display:none">
               <b>Chưa có thành viên nào đang hoạt động.</b>
               <span>Khi có người đăng ký, họ sẽ hiện ở mục “Chờ duyệt” phía trên.</span>
@@ -117,7 +131,13 @@
               <h2>Tạm khoá</h2>
               <span class="seg-count warn" id="count-suspended">0</span>
             </div>
-            <div class="member-list" id="list-suspended"></div>
+            <div class="member-table">
+              <div class="member-head">
+                <span>Thành viên</span><span>Phòng ban</span><span>Quyền</span>
+                <span>Trạng thái</span><span>Tham gia</span><span class="ta-right">Thao tác</span>
+              </div>
+              <div class="member-list" id="list-suspended"></div>
+            </div>
           </div>
         </div>
 
@@ -126,7 +146,7 @@
       </main>
 
       <footer class="portal-footer">
-        <span class="version-badge">v1.11</span>
+        <span class="version-badge">v1.12</span>
         <span>20/07/2026 · Thinksmart Insurance — lưu hành nội bộ</span>
       </footer>
     </div>
@@ -135,8 +155,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/portal/config.js?v=1"></script>
   <script src="/js/portal/auth.js?v=2"></script>
-  <script src="/js/portal/members.js?v=3"></script>
+  <script src="/js/portal/members.js?v=6"></script>
   <script src="/vendor/gsap.min.js"></script>
-  <script src="/js/animations.js"></script>
+  <script src="/js/animations.js?v=3"></script>
 </body>
 </html>

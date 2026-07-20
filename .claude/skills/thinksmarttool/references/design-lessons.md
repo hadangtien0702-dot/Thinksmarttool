@@ -95,6 +95,31 @@ bản gốc lâu dài: `E:\2026\Claude\.claude\skills\`):
 - **Đo dark-theme trong pane: toggle class rồi đọc computed style CÙNG call là số ĐÈN CŨ** (pane
   đơ recalc) — đọc token qua PHẦN TỬ TẠO MỚI (`getPropertyValue('--x')` trên div vừa append) mới tin được.
 
+### 2026-07-20 (Portal `feat/login` — animation, bảng thành viên)
+- **TRƯỚC KHI SỬA ANIMATION, KIỂM TRA MÔI TRƯỜNG.** Chủ tool sửa nhiều lần không thấy khác gì vì
+  Windows tắt Animation effects (`MinAnimate=0`) → `prefers-reduced-motion: reduce` → block trong
+  portal.css ép mọi transition về `0.01ms` và animations.js return sớm. Cách kiểm nhanh:
+  `matchMedia('(prefers-reduced-motion: reduce)').matches` + đo `transitionDuration` thật.
+  Bật lại phải KHỞI ĐỘNG LẠI Chrome, reload không đủ.
+- **`clearProps: 'all'` của GSAP xoá SẠCH thuộc tính `style`, kể cả `display:none` của phân quyền.**
+  Đây là lỗ hổng HIỂN THỊ THEO QUYỀN, không chỉ là lỗi thẩm mỹ: Nhân viên thường thấy được thẻ và
+  panel dành riêng Admin sau khi hiệu ứng chạy xong. LUÔN liệt kê cụ thể `'transform,opacity'`,
+  và đừng tween phần tử đang bị ẩn theo quyền.
+- **`gsap.from()` để lộ một khung hình ở trạng thái CUỐI** trước khi kéo về trạng thái đầu → giật.
+  Đặt trạng thái đầu bằng `gsap.set()` lúc container còn `display:none`, rồi `.to()` tới đích.
+- **CSS `transition` trên phần tử GSAP đang tween = xung đột**: GSAP ghi transform mỗi khung hình,
+  transition nội suy lại từng lần ghi → trễ và snap lúc kết thúc. Tắt transition bằng một class
+  bật trong lúc tween (`body.is-entering`).
+- **Bảng nhiều hàng chia cột PHẢI dùng `subgrid`**, không cho mỗi hàng tự dựng lưới: cột có nội
+  dung co giãn (nhóm nút đổi theo quyền) sẽ kéo các cột khác lệch mỗi hàng một kiểu — đo được 70px.
+  Chỉ container cha định nghĩa `grid-template-columns`; hàng con dùng `subgrid`. Đánh đổi: không
+  được thêm padding/border TRÁI-PHẢI cho phần tử subgrid (nó thụt vào là lệch lại).
+- **Trạng thái "đang tải" không được làm xê dịch bố cục**: banner chen giữa trang đẩy nội dung rồi
+  biến mất = giật mỗi lần refresh. Thay bằng phản hồi tại chỗ (nút đổi nhãn + khoá, vùng dữ liệu mờ
+  đi). Khung xương cho lần tải đầu phải cao ĐÚNG BẰNG hàng thật, nếu không lúc thay dữ liệu lại nhảy.
+- **Ẩn theo quyền phải gỡ ở MỌI tầng, không chỉ tầng nút**: bỏ chặn Super Admin có 5 chỗ, nặng nhất
+  là `location.replace()` chặn ở trang đích — gỡ 4 chỗ hiển thị mà quên chỗ này thì bấm vào vẫn văng ra.
+
 ### 2026-07-15 (ngày đầu áp dụng)
 - Chạy audit toàn tool bằng ui-ux-pro-max: phát hiện tooltip zoom tráo ngược, thiếu keyboard access,
   contrast text-3 dưới chuẩn, touch target mobile thiếu 44px → tất cả đã sửa (xem changelog later 13).

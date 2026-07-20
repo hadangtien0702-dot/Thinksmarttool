@@ -82,39 +82,81 @@
           ? '<span class="badge st-suspended">Tạm khoá</span>'
           : '<span class="badge st-pending">Chờ duyệt</span>');
     const dept = p.department && p.department.trim()
-      ? '<span class="m-dept">' + esc(p.department.trim()) + '</span>' : '';
+      ? '<span class="m-dept">' + esc(p.department.trim()) + '</span>'
+      : '<span class="m-empty">—</span>';
 
+    // 6 ô, THỨ TỰ PHẢI TRÙNG với .member-head trong members.html và với
+    // grid-template-columns của .member-table (portal.css). Đổi cột thì đổi cả 3 nơi.
     return '' +
       '<div class="member-row' + (isMe ? ' is-me' : '') + '">' +
-        '<span class="m-avatar">' + esc(initial(p.full_name)) + '</span>' +
-        '<div class="m-id">' +
-          '<b>' + esc(name) + '</b>' +
-          '<span>' + esc(p.email || '') + '</span>' +
+        '<div class="m-user">' +
+          '<span class="m-avatar">' + esc(initial(p.full_name)) + '</span>' +
+          '<div class="m-id">' +
+            '<b>' + esc(name) + '</b>' +
+            '<span title="' + esc(p.email || '') + '">' + esc(p.email || '') + '</span>' +
+          '</div>' +
         '</div>' +
-        '<div class="m-meta">' +
-          dept + roleBadge + statusBadge +
-          '<span class="m-date">Tham gia ' + fmtDate(p.created_at) + '</span>' +
-        '</div>' +
+        '<div class="m-cell" data-label="Phòng ban">' + dept + '</div>' +
+        '<div class="m-cell" data-label="Quyền">' + roleBadge + '</div>' +
+        '<div class="m-cell" data-label="Trạng thái">' + statusBadge + '</div>' +
+        '<div class="m-cell m-date" data-label="Tham gia">' + fmtDate(p.created_at) + '</div>' +
         '<div class="member-actions">' + actionsFor(p) + '</div>' +
       '</div>';
   }
 
+  // ---- Trạng thái đang tải ---------------------------------------------------
+  // CỐ Ý không dùng banner "Đang tải…" nữa: nó chen vào giữa trang, đẩy nội dung
+  // tụt xuống rồi biến mất → giật bố cục mỗi lần bấm Tải lại (chủ tool đã chê).
+  // Thay bằng phản hồi tại chỗ: nút đổi nhãn + bảng mờ nhẹ, không xê dịch gì.
+  let firstLoad = true;
+  function setLoading(on) {
+    const btn = $('btn-refresh');
+    if (btn) {
+      btn.disabled = on;
+      btn.textContent = on ? 'Đang tải…' : '↻ Tải lại';
+    }
+    $('page-content').classList.toggle('is-loading', on);
+  }
+
+  // Khung xương cho lần tải ĐẦU (lúc đó bảng trống, không có gì để làm mờ)
+  function skeletonRows(n) {
+    let s = '';
+    for (let i = 0; i < n; i++) {
+      s += '<div class="member-row is-skeleton">' +
+             '<div class="m-user"><span class="sk sk-avatar"></span>' +
+               '<div class="m-id"><span class="sk sk-line"></span><span class="sk sk-line short"></span></div></div>' +
+             '<div class="m-cell"><span class="sk sk-pill"></span></div>' +
+             '<div class="m-cell"><span class="sk sk-pill"></span></div>' +
+             '<div class="m-cell"><span class="sk sk-pill"></span></div>' +
+             '<div class="m-cell"><span class="sk sk-line short"></span></div>' +
+             '<div class="member-actions"><span class="sk sk-btn"></span></div>' +
+           '</div>';
+    }
+    return s;
+  }
+
   // ---- Tải & render ----------------------------------------------------------
   async function load() {
-    $('load-msg').style.display = 'flex';
+    setLoading(true);
+    if (firstLoad) $('list-active').innerHTML = skeletonRows(3);
+
     const { data, error } = await sb
       .from('profiles')
       .select('id, full_name, email, role, status, department, created_at')
       .neq('status', 'deleted')
       .order('created_at', { ascending: false });
-    $('load-msg').style.display = 'none';
+
+    setLoading(false);
+    firstLoad = false;
 
     if (error) {
+      $('list-active').innerHTML = '';
       $('load-msg').className = 'notice error';
       $('load-msg').innerHTML = '<span>⚠️</span><div>Không tải được danh sách: ' + esc(error.message) + '</div>';
       $('load-msg').style.display = 'flex';
       return;
     }
+    $('load-msg').style.display = 'none';
 
     const rows = data || [];
     // Sắp quyền cao lên trước trong mỗi nhóm cho dễ nhìn
@@ -188,11 +230,7 @@
     if (backdrop) backdrop.addEventListener('click', closeMenu);
     const logout = $('btn-logout-side');
     if (logout) logout.addEventListener('click', TSTAuth.signOut);
-    // Super Admin không dùng Tool → ẩn mục Công cụ khỏi nav
-    if (me && me.role === 'super_admin') {
-      const toolLink = document.querySelector('.sidebar-nav a[href="/tool"]');
-      if (toolLink) toolLink.style.display = 'none';
-    }
+    // Super Admin dùng được MỌI công cụ (chủ tool quyết 20/07/2026) — giữ mục Công cụ.
   }
 
   // ---- Khởi động -------------------------------------------------------------

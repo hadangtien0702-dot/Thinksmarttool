@@ -126,7 +126,7 @@
 
         <!-- Phiên bản app: cập nhật số này mỗi lần deploy (xem conventions.md) -->
         <div class="sidebar-version-footer">
-          <span class="version-badge">v1.11</span>
+          <span class="version-badge">v1.12</span>
           <span class="version-date">20/07/2026</span>
         </div>
       </aside>
@@ -257,8 +257,8 @@
       TSTAuth.requireLogin().then(function (r) {
         var p = r.profile;
         if (p && p.status !== 'active') { TSTAuth.signOut(); return; }   // chờ duyệt / tạm khoá / đã xoá
-        // Super Admin không có quyền sửa file báo giá → đưa về trang quản lý
-        if (p && p.role === 'super_admin') { location.replace('/members'); return; }
+        // Super Admin dùng được MỌI công cụ (chủ tool quyết 20/07/2026) — trước đây
+        // bị đá về /members, giờ không chặn nữa.
         if (p && (p.role === 'admin' || p.role === 'super_admin')) {
           var m = document.getElementById('side-members');
           if (m) m.style.display = '';
@@ -297,6 +297,6 @@
     })();
   </script>
   <script src="/vendor/gsap.min.js"></script>
-  <script src="/js/animations.js"></script>
+  <script src="/js/animations.js?v=3"></script>
 </body>
 </html>

@@ -570,31 +570,93 @@ button { font-family: inherit; cursor: pointer; }
 }
 .seg-count.warn { background: var(--warning-soft); color: var(--warning); }
 
-.member-list { display: flex; flex-direction: column; }
+/* --- Bảng thành viên: lưới 6 cột -------------------------------------------
+   CHỈ .member-table định nghĩa chiều rộng cột; hàng tiêu đề, danh sách và từng
+   hàng đều là `subgrid` ăn theo nó. BẮT BUỘC phải vậy: nếu mỗi hàng tự dựng lưới
+   riêng thì cột "Thao tác" (số nút đổi theo trạng thái + quyền) sẽ kéo co các cột
+   còn lại lệch nhau mỗi hàng — đã đo, lệch tới 70px.
+   Hệ quả: đừng thêm padding/border TRÁI-PHẢI cho .member-head/.member-list/
+   .member-row — nó làm subgrid thụt vào và lệch lại. Padding dọc thì vô hại. */
+.member-table {
+  display: grid;
+  grid-template-columns:
+    minmax(200px, 2fr)      /* Thành viên (avatar + tên + email) */
+    minmax(96px,  0.9fr)    /* Phòng ban */
+    minmax(92px,  0.8fr)    /* Quyền */
+    minmax(124px, 1fr)      /* Trạng thái */
+    minmax(96px,  0.8fr)    /* Tham gia */
+    minmax(180px, auto);    /* Thao tác */
+  column-gap: 12px;
+}
+.member-head, .member-list, .member-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+}
+.member-list { row-gap: 0; }
+
+.member-head {
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-2xs); font-weight: 800; letter-spacing: 0.6px;
+  text-transform: uppercase; color: var(--text-3);
+}
+.member-head .ta-right { text-align: right; }
+
 .member-row {
-  display: flex; align-items: center; gap: 14px;
+  align-items: center;
   background: transparent; border: none;
   border-top: 1px solid var(--divider);
-  border-radius: var(--r-md); padding: 13px 10px;
+  padding: 13px 0;
   box-shadow: none;
 }
 .member-row:first-child { border-top: none; }
 .member-row:hover { background: var(--surface-2); }
 .member-row.is-me { background: var(--brand-soft); }
 .member-row.is-me:hover { background: var(--brand-soft); }
+
+/* Cột 1: avatar + danh tính đi liền nhau thành một khối */
+.member-row .m-user { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .member-row .m-avatar {
   width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   background: var(--brand-soft-2); color: var(--brand);
   font-size: var(--fs-md); font-weight: 800;
 }
-.member-row .m-id { min-width: 0; flex: 1; }
+.member-row .m-id { min-width: 0; }
 .member-row .m-id b { display: block; font-size: var(--fs-base); font-weight: 700; }
-.member-row .m-id span { display: block; color: var(--text-3); font-size: var(--fs-sm); word-break: break-all; }
-.member-row .m-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.member-row .m-id span {
+  display: block; color: var(--text-3); font-size: var(--fs-sm);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* Các ô còn lại: căn trái đồng loạt để mắt rà dọc theo cột */
+.member-row .m-cell { min-width: 0; display: flex; align-items: center; }
 .member-row .m-date { color: var(--text-3); font-size: var(--fs-xs); white-space: nowrap; }
-.member-row .member-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.member-row .m-empty { color: var(--text-3); font-size: var(--fs-sm); }
+.member-row .member-actions {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 8px; flex-wrap: wrap;
+}
 .member-row .m-self { color: var(--text-3); font-size: var(--fs-xs); font-weight: 700; padding-right: 4px; }
+
+/* --- Đang tải: phản hồi TẠI CHỖ, không chen banner làm xê dịch bố cục ------
+   Bảng mờ + khoá thao tác trong lúc chờ; kích thước không đổi nên không giật. */
+.is-loading .member-table { opacity: 0.5; pointer-events: none; }
+.member-table { transition: opacity 0.18s var(--ease); }
+
+/* Khung xương cho lần tải đầu (bảng còn trống, không có gì để làm mờ) */
+.sk {
+  display: block; border-radius: var(--r-sm);
+  background: var(--surface-3);
+  animation: sk-pulse 1.4s ease-in-out infinite;
+}
+.sk-avatar { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; }
+.sk-line { height: 11px; width: 74%; margin: 4px 0; }
+.sk-line.short { width: 46%; }
+.sk-pill { height: 18px; width: 76px; border-radius: var(--r-pill); }
+.sk-btn { height: 30px; width: 104px; margin-left: auto; }
+@keyframes sk-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 
 .badge {
   display: inline-flex; align-items: center;
@@ -627,10 +689,29 @@ button { font-family: inherit; cursor: pointer; }
   .user-chip { padding-right: 6px; }
 }
 
-@media (max-width: 640px) {
-  .member-row { flex-wrap: wrap; }
-  .member-row .m-meta { width: 100%; justify-content: flex-start; order: 3; padding-left: 54px; }
-  .member-row .member-actions { width: 100%; order: 4; padding-left: 54px; }
+/* Hẹp hơn 900px: bảng 6 cột không nhét vừa → mỗi thành viên thành một THẺ,
+   từng thuộc tính xuống dòng riêng kèm nhãn (data-label) vì hàng tiêu đề đã ẩn. */
+@media (max-width: 900px) {
+  .member-head { display: none; }
+  /* Bỏ subgrid, mỗi thành viên xếp dọc thành một thẻ */
+  .member-table { display: block; }
+  .member-list { display: block; }
+  .member-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 14px 0;
+  }
+  .member-row .m-cell::before {
+    content: attr(data-label) ':';
+    flex: 0 0 92px;
+    color: var(--text-3); font-size: var(--fs-2xs); font-weight: 800;
+    letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .member-row .m-user { padding-bottom: 4px; }
+  .member-row .m-id span { white-space: normal; word-break: break-word; }
+  .member-row .member-actions { justify-content: flex-start; padding-top: 4px; }
+  /* Chạm bằng ngón tay: nút thao tác đủ 44px (btn-sm desktop chỉ 36px) */
+  .member-row .member-actions .btn { min-height: 44px; }
 }
 
 /* ==========================================================================
@@ -701,8 +782,10 @@ button { font-family: inherit; cursor: pointer; }
               box-shadow 0.3s ease 0.06s;
 }
 
-/* Brand text: wipe + slide, xuất hiện sau khi khung bắt đầu mở. */
-.sidebar-brand > span {
+/* Brand text: wipe + slide, xuất hiện sau khi khung bắt đầu mở.
+   :not(.logo-icon) BẮT BUỘC — ô logo cũng là <span> con trực tiếp của brand,
+   thiếu nó thì logo bị ẩn luôn lúc rail thu gọn, đầu rail trống hoác. */
+.sidebar-brand > span:not(.logo-icon) {
   display: inline-flex; align-items: baseline; gap: 4px;
   opacity: 0; visibility: hidden;
   transform: translateX(-8px);
@@ -711,7 +794,7 @@ button { font-family: inherit; cursor: pointer; }
   transition: opacity 0.14s ease, transform 0.16s ease,
               clip-path 0.16s ease, visibility 0s linear 0.16s;
 }
-.sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-brand > span {
+.sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-brand > span:not(.logo-icon) {
   opacity: 1; visibility: visible;
   transform: translateX(0);
   clip-path: inset(0 0 0 0 round 2px);
@@ -887,6 +970,16 @@ button { font-family: inherit; cursor: pointer; }
    là thẻ nổi) — khoảng thở hai bên đã do .app-shell lo. */
 .dash { flex: 1; width: 100%; padding: 12px 0 40px; }
 
+/* Trong lúc GSAP chạy hiệu ứng xuất hiện: tắt CSS transition của vùng đang tween.
+   Nếu để nguyên, `transition: transform .25s` của .stat-card sẽ nội suy TỪNG LẦN
+   GSAP ghi transform (mỗi khung hình) → chuyển động trễ và giật một cái lúc kết thúc.
+   Class do animations.js bật/tắt. */
+body.is-entering .topbar-greeting, body.is-entering .topbar-greeting *,
+body.is-entering .stat-row, body.is-entering .stat-row *,
+body.is-entering .dash-grid, body.is-entering .dash-grid * {
+  transition: none !important;
+}
+
 /* ---- Tactile Click Feedback & Card Micro-Interactions ---- */
 button:active, .btn:active, .icon-btn:active, .sidebar-nav a:active, .sidebar-foot button:active, .stat-card:active, .area-card:active {
   transform: scale(0.97) !important;
@@ -994,7 +1087,7 @@ button:active, .btn:active, .icon-btn:active, .sidebar-nav a:active, .sidebar-fo
     width: 236px !important;
     padding: 16px 12px !important;
   }
-  .sidebar .sidebar-brand > span { opacity: 1 !important; visibility: visible !important; transform: translateX(0) !important; clip-path: inset(0 0 0 0) !important; }
+  .sidebar .sidebar-brand > span:not(.logo-icon) { opacity: 1 !important; visibility: visible !important; transform: translateX(0) !important; clip-path: inset(0 0 0 0) !important; }
   .sidebar .nav-text { opacity: 1 !important; visibility: visible !important; transform: translateX(0) !important; clip-path: inset(0 0 0 0) !important; }
   .sidebar .sidebar-nav a .nav-badge { opacity: 1 !important; transform: scale(1) !important; }
   .sidebar.open { transform: translateX(0); }

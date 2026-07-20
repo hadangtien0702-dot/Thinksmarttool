@@ -26,6 +26,14 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 - Font embedding on export is live. Design system + light/dark theme live.
 
 ## PENDING / open tasks
+-2. **`feat/login` đã push lên GitHub (20/07/2026, v1.12) — CHƯA merge vào main, CHƯA deploy.**
+   Về nhà: `git fetch && git checkout feat/login`. Việc còn lại trên nhánh này:
+   (a) test e2e đăng ký → duyệt → đăng nhập → video → guard `/tool` (chưa chạy lần nào);
+   (b) Forum Đợt 2; (c) khi ưng thì merge `--no-ff` vào main rồi mới deploy.
+   LƯU Ý: `changelog.md` trên nhánh này ĐANG THIẾU khối 2026-07-19/20 của `main` (nhánh tách trước
+   commit đó) — lúc merge nhớ giữ CẢ HAI khối, đừng để bên nào đè bên nào.
+
+
 -1. ~~Verify save/clone/delete on the LIVE site~~ **RESOLVED 2026-07-17 (v1.02)**: live site giờ chạy
    **draftsMode 'browser'** — nháp lưu localStorage máy sale (xem log). Server ghi file chỉ còn cho local.
 0. ~~`TERMLIFE - NLG` master polluted with test data~~ **RESOLVED 2026-07-17** — toàn bộ 5 master
@@ -50,6 +58,53 @@ Newest entries on top. Keep it concrete (versions, files, commands).
    FB post templates, client management…). Keep the structure modular.
 
 ## Log
+### 2026-07-20 (nhánh `feat/login` — v1.12, PUSH GIT KHÔNG DEPLOY)
+- **Bối cảnh:** chủ tool làm tiếp Portal trên nhánh `feat/login` (local:8000, Supabase ĐÃ bật thật —
+  key nằm trong `public/js/portal/config.js`). Push lên GitHub để về nhà làm tiếp; **`main` giữ
+  nguyên**, `tool.thinksmartinsurance.com` không đổi.
+- **BÀI HỌC LỚN NHẤT PHIÊN NÀY — Windows tắt Animation effects làm mọi animation vô hiệu.**
+  Chủ tool "sửa hoài không thấy khác gì": registry `HKCU\Control Panel\Desktop\WindowMetrics\MinAnimate = 0`
+  → Chrome báo `prefers-reduced-motion: reduce` → block ở `portal.css` ép mọi transition xuống
+  `0.01ms` và `animations.js` return ngay. Đo được: `.sidebar` transition-duration `1e-05s` thay vì
+  `0.34s`. Bật lại: `ms-settings:easeofaccess-visualeffects` → Animation effects On → **khởi động lại
+  Chrome** (đọc thiết lập lúc khởi động, reload không đủ).
+- **Logo rail bị ẩn mất** (đầu rail trống hoác): `.sidebar-brand > span` quét trúng cả
+  `<span class="logo-icon">`. Sửa: `> span:not(.logo-icon)` ở 3 rule (2 desktop + 1 mobile override).
+- **`clearProps: 'all'` của GSAP XOÁ SẠCH thuộc tính `style`** — kể cả `display:none` do phân quyền
+  đặt. Hậu quả thật: Super Admin thấy thẻ "Tạo báo giá"; Nhân viên thường thấy thẻ số liệu +
+  panel dành riêng Admin sau khi entrance chạy xong. Đo bằng thí nghiệm: style `display:none` → `""`.
+  Sửa: `clearProps: 'transform,opacity'` (đã kiểm chứng giữ nguyên display), và phần tử bị ẩn thì
+  KHÔNG tween.
+- **`gsap.from()` lộ 1 khung hình ở trạng thái CUỐI** rồi mới kéo về đầu → giật một cái lúc hiện.
+  Sửa: `gsap.set()` đặt trạng thái đầu ngay khi script chạy (shell còn `display:none`, chưa vẽ),
+  rồi `gsap.to()` tới trạng thái cuối.
+- **CSS transition đánh nhau với GSAP**: `.stat-card` có `transition: transform .25s`, GSAP ghi
+  transform mỗi khung hình → mỗi lần ghi lại bị nội suy → trễ + snap. Sửa: `body.is-entering`
+  tắt transition vùng đang tween (portal.css), animations.js bật/tắt class.
+- **Animation rút gọn theo yêu cầu chủ tool**: bỏ 3 nhóm lệch nhịp, còn 1 nhịp — opacity + y 10px,
+  0.32s, stagger 0.04s (tổng ~480ms).
+- **Bảng thành viên chia 6 cột** (chủ tool: "một hàng ngang khó nhìn"): Thành viên · Phòng ban ·
+  Quyền · Trạng thái · Tham gia · Thao tác, có hàng tiêu đề. **BẮT BUỘC dùng `subgrid`** —
+  mỗi hàng tự dựng lưới riêng thì cột "Thao tác" (số nút đổi theo trạng thái+quyền) kéo co các cột
+  còn lại lệch tới 70px (đã đo). `.member-table` là nơi DUY NHẤT định nghĩa chiều rộng cột;
+  `.member-head`/`.member-list`/`.member-row` đều `grid-template-columns: subgrid`.
+  Hệ quả: **đừng thêm padding/border trái-phải** cho 3 cái đó — subgrid thụt vào là lệch lại.
+  ≤900px: bỏ subgrid, thành thẻ xếp dọc có nhãn `data-label`; nút thao tác nâng lên 44px.
+- **Bỏ banner "Đang tải danh sách…"** (chủ tool chê): banner chen vào giữa trang, đẩy nội dung rồi
+  biến mất → giật bố cục mỗi lần bấm Tải lại. Thay bằng `setLoading()`: nút đổi nhãn + khoá, bảng
+  mờ 0.5 + `pointer-events:none`. Đo: chiều cao bảng 224px không đổi trước/trong khi tải.
+  Lần tải ĐẦU dùng khung xương `.sk` cao đúng 66px = bằng hàng thật nên thay vào không nhảy.
+  `#load-msg` giờ CHỈ dùng báo lỗi.
+- **Super Admin dùng được MỌI công cụ** (chủ tool quyết): gỡ **5 chỗ** chặn —
+  `tool.html` (đá về `/members`, nặng nhất), `index.html` ×2 (ẩn nav + ẩn hero, ép lưới 1 cột),
+  `videos.html`, `members.js`. Gỡ thiếu chỗ tool.html thì bấm "Công cụ" vẫn bị văng ra.
+- Versions: `portal.css?v=23`, `animations.js?v=3`, `members.js?v=6`, badge **v1.12** (5 chỗ).
+- **GOTCHA công cụ đo**: (1) `resize_window` preset "desktop" báo thành công nhưng viewport VẪN 375px
+  → luôn kiểm `innerWidth` trước khi tin số đo; (2) browser pane không chạy rAF khi ở nền → tween
+  GSAP không bao giờ complete, phải `tl.progress(1, false)` để tua đồng bộ; (3) đo CSS mới phải
+  `link.disabled = true` rồi mới inject — không thì rule CŨ vẫn thắng và đo ra kết quả sai.
+
+
 ### 2026-07-19 (BÀN GIAO — owner chuyển Portal cho team PD, push v1.10)
 - **Owner quyết định dừng vai trò ở đây, bàn giao phần Portal cho team PD làm tiếp.**
   Push v1.10 lên main (+ 4 branch feat/* để team thấy cấu trúc từng phần).
