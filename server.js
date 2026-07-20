@@ -8,6 +8,18 @@ const PORT = process.env.PORT || 3000;
 // Body parser
 app.use(express.json({ limit: '50mb' }));
 
+// ---------------------------------------------------------------------------
+// BẢN LIVE TẠM THỜI CHỈ PHỤC VỤ TOOL.
+// Trang chủ portal / Video học / Đăng nhập vẫn đang phát triển dở (nhánh
+// feat/login), chưa muốn đội sale nhìn thấy → đưa hết về /tool.
+// Dùng 302 (tạm thời), KHÔNG dùng 301: 301 bị trình duyệt cache cứng, gỡ ra
+// rất cực khi portal hoàn thiện và muốn trả lại trang chủ.
+// PHẢI đặt TRƯỚC express.static, vì static sẽ tự trả public/index.html cho "/".
+// ---------------------------------------------------------------------------
+['/', '/login', '/videos'].forEach((route) => {
+  app.get(route, (req, res) => res.redirect(302, '/tool'));
+});
+
 // Static files from "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
 
