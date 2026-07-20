@@ -41,3 +41,13 @@ push-to-github.bat
 # Claude Code local (per-machine) settings
 .claude/settings.local.json
 __pycache__/
+
+# Skill/agent của bên thứ 3 cài bằng `npx skills add` — cài lại được, không đưa vào repo
+# (cùng lý do với frontend-design / ui-ux-pro-max ở trên)
+.agents/
+skills-lock.json
+.claude/skills/supabase/
+.claude/skills/supabase-postgres-best-practices/
+
+# Cấu hình công cụ khác trên máy cá nhân
+.codex/

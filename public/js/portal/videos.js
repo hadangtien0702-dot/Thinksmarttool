@@ -252,15 +252,11 @@
 
   // ---- Init ----------------------------------------------------------------
   (async function init() {
-    TSTAuth.initShell();
-
-    if (!TSTAuth.configured) {
-      document.getElementById('config-notice').style.display = 'flex';
-      return;
-    }
+    // Shell (sidebar, theme, user) được init bởi inline script trong videos.html.
+    // videos.js chỉ lo phần data/render.
+    if (!TSTAuth.configured) return; // inline script đã hiện config-notice
 
     const { profile } = await TSTAuth.requireLogin();
-    // Chưa được duyệt → quay về login (màn hình chờ duyệt)
     if (!profile || !profile.approved) {
       await TSTAuth.signOut();
       return;

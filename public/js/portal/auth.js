@@ -40,7 +40,7 @@
     if (!session) return null;
     const { data, error } = await sb
       .from('profiles')
-      .select('id, full_name, role, approved')
+      .select('id, full_name, role, approved, status, department')
       .eq('id', session.user.id)
       .single();
     if (error) return null;

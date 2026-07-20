@@ -5,6 +5,6 @@
 // để Tool vẫn dùng bình thường trong lúc chờ setup — xem SETUP-SUPABASE.md.
 // ============================================================================
 window.TST_CONFIG = {
-  supabaseUrl: '',      // ví dụ: 'https://abcdefgh.supabase.co'
-  supabaseAnonKey: '',  // ví dụ: 'eyJhbGciOi...'
+  supabaseUrl: 'https://tdgunknoldhtchflopvf.supabase.co',      // ví dụ: 'https://abcdefgh.supabase.co'
+  supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkZ3Vua25vbGRodGNoZmxvcHZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ0NzgxNzAsImV4cCI6MjEwMDA1NDE3MH0.9Bbxk5D4E3SpridNbANDs5UGDiZ0Ps1ZDXy8INNC-8o',  // ví dụ: 'eyJhbGciOi...'
 };

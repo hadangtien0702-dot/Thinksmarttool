@@ -30,18 +30,21 @@
   --brand-ring:       rgba(109, 40, 217, 0.28);
   --accent-primary:   var(--brand-600);
 
+  --gradient-brand: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%);
+  --gradient-hero:  linear-gradient(135deg, #3B0764 0%, #6D28D9 50%, #7C3AED 100%);
+
   /* Neutral surfaces (light) */
   --app-bg:      #F4F5F8;
   --surface:     #FFFFFF;
   --surface-2:   #FBFBFD;
   --surface-3:   #F1F2F6;
-  --canvas-bg:   #E9EBF0;
-  --header-bg:   #FFFFFF;
+  --canvas-bg:   #F0F2F6;
+  --header-bg:   rgba(255, 255, 255, 0.88);
 
   /* Text */
   --text:    #111420;
   --text-2:  #565E70;
-  --text-3:  #667085; /* đậm hơn bản cũ #8A90A2 → contrast ≥4.5:1 trên nền sáng (WCAG AA) */
+  --text-3:  #667085;
   --text-on-brand: #FFFFFF;
 
   /* Borders */
@@ -53,10 +56,9 @@
   --success: #15A34A;  --success-soft: #E7F7EE;
   --warning: #C2740B;  --warning-soft: #FBF1E2;
   --danger:  #DC2626;  --danger-soft:  #FCECEC;
-  --attention: #F59E0B; /* chấm "chưa lưu" — sáng hơn --warning vì là đèn báo, không phải chữ */
+  --attention: #F59E0B;
 
-  /* File-type hues — màu theo LOẠI file xuất (thông tin, không phải trang trí):
-     JPEG = teal (ảnh), PDF = đỏ (tài liệu). Nút Xuất & mockup cover dùng chung. */
+  /* File-type hues */
   --ft-jpeg-1: #14B8A6;  --ft-jpeg-2: #0E7490;
   --ft-pdf-1:  #F43F5E;  --ft-pdf-2:  #BE123C;
 
@@ -69,8 +71,7 @@
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'Fira Code', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
-  /* Type scale (bậc nhỏ nhất --fs-2xs dành cho eyebrow/chip; 16px trên mobile là
-     hằng số chức năng chống iOS auto-zoom, không thuộc scale) */
+  /* Type scale */
   --fs-2xs: 10.5px;
   --fs-xs: 11.5px;
   --fs-sm: 12.5px;
@@ -91,8 +92,8 @@
   --shadow-xs: 0 1px 2px rgba(17, 20, 32, 0.05);
   --shadow-sm: 0 1px 3px rgba(17, 20, 32, 0.08), 0 1px 2px rgba(17, 20, 32, 0.04);
   --shadow-md: 0 6px 16px rgba(17, 20, 32, 0.08), 0 2px 6px rgba(17, 20, 32, 0.04);
-  --shadow-lg: 0 18px 40px rgba(17, 20, 32, 0.14), 0 6px 12px rgba(17, 20, 32, 0.06);
-  --shadow-brand: 0 6px 18px rgba(109, 40, 217, 0.30);
+  --shadow-lg: 0 20px 48px rgba(17, 20, 32, 0.16), 0 6px 14px rgba(17, 20, 32, 0.08);
+  --shadow-brand: 0 8px 24px rgba(109, 40, 217, 0.35);
   --shadow-inner: inset 0 1px 2px rgba(17, 20, 32, 0.06);
 
   /* Motion */
@@ -181,6 +182,10 @@ body {
 
 button, input, textarea, select { font-family: inherit; }
 
+button:active, .btn:active, .icon-btn:active, .portal-sidebar .sidebar-nav a:active, .portal-sidebar .sidebar-foot button:active, .tree-item:active {
+  transform: scale(0.97) !important;
+}
+
 :focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
@@ -199,6 +204,15 @@ button, input, textarea, select { font-family: inherit; }
 ::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); background-clip: padding-box; }
 * { scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent; }
 
+/* Hover mềm toàn cục: mọi phần tử tương tác đều có transition cơ bản, không còn
+   trạng thái "bật" đột ngột. :where() = specificity 0 nên transition riêng đã
+   tinh chỉnh của từng component (sidebar rail, tree, tooltip…) luôn thắng rule này. */
+:where(a, button, input, select, textarea) {
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease),
+              color var(--dur) var(--ease), box-shadow var(--dur) var(--ease),
+              transform var(--dur) var(--ease), opacity var(--dur) var(--ease);
+}
+
 /* --------------------------------------------------------------------------
    3. APP LAYOUT
    -------------------------------------------------------------------------- */
@@ -213,66 +227,52 @@ button, input, textarea, select { font-family: inherit; }
 /* Header */
 .app-header {
   height: var(--header-height);
-  background-color: var(--header-bg);
+  background-color: var(--glass-bg);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 18px;
+  padding: 0 20px;
   gap: 16px;
   z-index: 100;
-  box-shadow: var(--shadow-xs);
+  box-shadow: 0 4px 20px rgba(17, 20, 32, 0.04);
 }
 
-.header-left { display: flex; align-items: center; gap: 12px; min-width: 200px; }
+.header-left { display: flex; align-items: center; gap: 12px; min-width: 220px; }
 
-.logo-icon {
-  background: linear-gradient(140deg, var(--brand-500), var(--brand-800));
-  color: #fff;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--r-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow-brand);
-  flex-shrink: 0;
+.header-brand-logo {
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none; color: inherit;
 }
-.logo-icon svg { width: 22px; height: 22px; }
-
-.brand-info { display: flex; flex-direction: column; gap: 1px; }
-.brand-info h1 {
-  font-size: var(--fs-md);
-  font-weight: 800;
-  letter-spacing: -0.2px;
-  line-height: 1.1;
-  color: var(--text);
+.header-breadcrumb {
+  display: flex; align-items: center; gap: 6px;
+  font-size: var(--fs-sm); font-weight: 700;
 }
-.brand-info .sub-brand {
-  font-size: var(--fs-2xs);
-  color: var(--brand);
-  font-weight: 700;
-  letter-spacing: 1.4px;
-  text-transform: uppercase;
-}
+.header-breadcrumb .crumb-root { color: var(--text-2); }
+.header-breadcrumb .crumb-sep { color: var(--text-3); font-weight: 400; }
+.header-breadcrumb .crumb-active { color: var(--text); font-weight: 800; }
 
 .header-center { flex: 1; display: flex; justify-content: center; min-width: 0; }
 
 .active-file-title {
   font-size: var(--fs-sm);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-2);
-  background: var(--surface-3);
-  padding: 7px 16px;
+  background: rgba(241, 242, 246, 0.85);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  padding: 8px 18px;
   border-radius: var(--r-pill);
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   border: 1px solid var(--border);
   max-width: 460px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  box-shadow: var(--shadow-xs);
+  transition: all 0.25s ease;
 }
 .active-file-title::before {
   content: '';
@@ -280,9 +280,17 @@ button, input, textarea, select { font-family: inherit; }
   border-radius: 50%;
   background: var(--text-3);
   flex-shrink: 0;
+  transition: all 0.25s ease;
 }
-.active-file-title.is-active { color: var(--text); }
-.active-file-title.is-active::before { background: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.active-file-title.is-active {
+  color: var(--text);
+  border-color: var(--brand-300);
+  background: var(--brand-soft);
+}
+.active-file-title.is-active::before {
+  background: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-ring);
+}
 
 .header-right { display: flex; align-items: center; gap: 10px; }
 
@@ -307,8 +315,212 @@ aside {
 .sidebar-right { width: var(--sidebar-right-width); border-left: 1px solid var(--border); }
 
 /* --------------------------------------------------------------------------
+   PORTAL SIDEBAR — Tool là mục con của Thinksmart Insurance.
+   Copy đúng thông số từ portal.css .sidebar (đổi look phải sửa CẢ HAI file)
+   để menu hiển thị giống hệt nhau ở mọi trang. Editor 3 cột giữ nguyên.
+   -------------------------------------------------------------------------- */
+.tool-shell { display: flex; height: 100vh; height: 100dvh; width: 100vw; position: relative; padding-left: 92px; }
+.tool-shell .app-container { width: auto; flex: 1; min-width: 0; }
+
+.portal-sidebar {
+  position: fixed;
+  left: 12px; top: 12px; bottom: 12px;
+  width: 64px; flex-shrink: 0; height: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  display: flex; flex-direction: column;
+  padding: 14px 10px;
+  z-index: 200;
+  overflow: hidden;
+  /* KHÔNG dùng backdrop-filter ở đây: nền --surface là màu ĐẶC nên blur vô hình,
+     nhưng vẫn bắt GPU re-blur mỗi frame khi animate width → nguồn giật chính. */
+  box-shadow: 0 4px 20px rgba(17, 20, 32, 0.08), 0 1px 4px rgba(17, 20, 32, 0.04);
+  will-change: width;
+  /* Thu gọn: ease chuẩn mềm cả 2 đầu — không dừng phựt. */
+  transition: width 0.34s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.28s ease,
+              border-color 0.2s ease;
+}
+.portal-sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) {
+  width: 240px;
+  border-color: var(--brand-ring);
+  box-shadow: 0 12px 40px rgba(17, 20, 32, 0.12), 0 4px 16px rgba(109, 40, 217, 0.08);
+  /* Bung: phản hồi tức thì (bỏ delay), decelerate dài để đáp êm. */
+  transition: width 0.5s cubic-bezier(0.25, 1, 0.3, 1),
+              box-shadow 0.4s ease,
+              border-color 0.24s ease;
+}
+
+.portal-sidebar .sidebar-brand {
+  display: flex; align-items: center; gap: 12px;
+  padding: 2px 2px 18px; color: var(--text); text-decoration: none;
+  white-space: nowrap; overflow: hidden;
+  margin-bottom: 4px;
+}
+.portal-sidebar .sidebar-brand .logo-icon {
+  width: 40px; height: 40px; border-radius: var(--r-md); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--brand-600), var(--brand-800)); color: #fff;
+  box-shadow: 0 4px 14px rgba(109, 40, 217, 0.35);
+  will-change: transform, box-shadow;
+  transform: scale(0.97);
+  transition: transform 0.24s cubic-bezier(0.4, 0, 1, 1), box-shadow 0.24s ease;
+}
+.portal-sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-brand .logo-icon {
+  transform: translateX(1px) scale(1.04) rotate(-2deg);
+  box-shadow: 0 6px 18px rgba(109, 40, 217, 0.42);
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1) 0.06s,
+              box-shadow 0.3s ease 0.06s;
+}
+.portal-sidebar .sidebar-brand > span {
+  display: inline-flex; align-items: baseline; gap: 4px;
+  opacity: 0; visibility: hidden;
+  transform: translateX(-8px);
+  clip-path: inset(0 100% 0 0 round 2px);
+  will-change: opacity, transform, clip-path;
+  transition: opacity 0.14s ease, transform 0.16s ease,
+              clip-path 0.16s ease, visibility 0s linear 0.16s;
+}
+.portal-sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-brand > span {
+  opacity: 1; visibility: visible;
+  transform: translateX(0);
+  clip-path: inset(0 0 0 0 round 2px);
+  transition: opacity 0.28s ease-out 0.08s,
+              transform 0.32s cubic-bezier(0.22, 1, 0.36, 1) 0.08s,
+              clip-path 0.32s cubic-bezier(0.22, 1, 0.36, 1) 0.08s,
+              visibility 0s linear 0s;
+}
+
+.portal-sidebar .sidebar-brand b { font-size: var(--fs-md); font-weight: 800; letter-spacing: -0.2px; color: var(--text); }
+.portal-sidebar .sidebar-brand span span { color: var(--text-3); font-weight: 600; font-size: var(--fs-sm); }
+
+.portal-sidebar .sidebar-nav { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.portal-sidebar .sidebar-nav a {
+  display: flex; align-items: center; gap: 12px;
+  min-height: 44px; padding: 0 12.5px; border-radius: var(--r-md);
+  color: var(--text-2); font-weight: 600; font-size: var(--fs-base); text-decoration: none;
+  white-space: nowrap; overflow: hidden;
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease),
+              transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s var(--ease);
+}
+.portal-sidebar .sidebar-nav a svg {
+  width: 19px; height: 19px; flex-shrink: 0;
+  opacity: 0.82;
+  transform: scale(0.96);
+  transition: opacity 0.22s ease, transform 0.26s cubic-bezier(0.22, 1, 0.36, 1), color 0.2s ease;
+}
+.portal-sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-nav a svg,
+.portal-sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-foot button svg {
+  opacity: 1;
+  transform: translateX(1px) scale(1.03);
+}
+.portal-sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-nav a:nth-child(1) svg { transition-delay: 0.06s; }
+.portal-sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-nav a:nth-child(2) svg { transition-delay: 0.1s; }
+.portal-sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-nav a:nth-child(3) svg { transition-delay: 0.14s; }
+.portal-sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-nav a:nth-child(4) svg { transition-delay: 0.18s; }
+.portal-sidebar .sidebar-nav a:hover { background: var(--surface-3); color: var(--text); transform: translateX(2px); }
+.portal-sidebar .sidebar-nav a:hover svg { transform: translateX(1px) scale(1.09); color: var(--brand); transition-delay: 0s; }
+.portal-sidebar .sidebar-nav a.active { background: var(--gradient-brand); color: #fff; box-shadow: var(--shadow-brand); }
+.portal-sidebar .sidebar-nav a.active svg { color: #fff; opacity: 1; }
+.portal-sidebar .sidebar-nav a.active:hover { transform: translateX(1px); }
+
+/* Nav text: wipe + slide reveal, theo nhịp 40ms mỗi mục. */
+.portal-sidebar .nav-text {
+  opacity: 0; visibility: hidden;
+  transform: translateX(-8px);
+  clip-path: inset(0 100% 0 0 round 2px);
+  white-space: nowrap;
+  will-change: opacity, transform, clip-path;
+  transition: opacity 0.14s ease, transform 0.16s ease,
+              clip-path 0.16s ease, visibility 0s linear 0.16s;
+}
+.portal-sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .nav-text {
+  opacity: 1; visibility: visible;
+  transform: translateX(0);
+  clip-path: inset(0 0 0 0 round 2px);
+  transition: opacity 0.26s ease-out,
+              transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+              clip-path 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+              visibility 0s linear 0s;
+}
+.portal-sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-nav a:nth-child(1) .nav-text { transition-delay: 0.1s; }
+.portal-sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-nav a:nth-child(2) .nav-text { transition-delay: 0.14s; }
+.portal-sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-nav a:nth-child(3) .nav-text { transition-delay: 0.18s; }
+.portal-sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-nav a:nth-child(4) .nav-text { transition-delay: 0.22s; }
+
+.portal-sidebar .sidebar-foot {
+  margin-top: auto; display: flex; flex-direction: column; gap: 4px;
+  padding-top: 10px; border-top: 1px solid var(--divider);
+}
+.portal-sidebar .sidebar-foot button {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  min-height: 44px; padding: 0 12.5px; border: none; background: transparent;
+  border-radius: var(--r-md); color: var(--text-2); font-weight: 600; font-size: var(--fs-base);
+  cursor: pointer;
+  white-space: nowrap; overflow: hidden;
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease),
+              transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.portal-sidebar .sidebar-foot button svg {
+  width: 19px; height: 19px; flex-shrink: 0;
+  opacity: 0.82;
+  transform: scale(0.96);
+  transition: opacity 0.22s ease, transform 0.26s cubic-bezier(0.22, 1, 0.36, 1), color 0.2s ease;
+}
+.portal-sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-foot button:nth-child(1) svg { transition-delay: 0.2s; }
+.portal-sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-foot button:nth-child(2) svg { transition-delay: 0.24s; }
+.portal-sidebar .sidebar-foot button:hover { background: var(--surface-3); color: var(--text); transform: translateX(2px); }
+.portal-sidebar .sidebar-foot button:hover svg { transform: translateX(1px) scale(1.08); transition-delay: 0s; }
+.portal-sidebar .sidebar-foot button:first-child:hover svg { transform: rotate(-8deg) scale(1.06); }
+.portal-sidebar .sidebar-foot button.logout:hover svg { transform: translateX(2px) scale(1.06); }
+.portal-sidebar .sidebar-foot button.logout:hover { background: var(--danger-soft); color: var(--danger); }
+.portal-sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-foot button:nth-child(1) .nav-text { transition-delay: 0.24s; }
+.portal-sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-foot button:nth-child(2) .nav-text { transition-delay: 0.28s; }
+
+/* LƯU Ý: KHÔNG ẩn .app-header của tool — nó chứa Lưu Nháp, Tạo bản cho khách
+   và 2 nút mobile (mở cây file + bảng sửa chữ). Muốn header biến mất phải dời
+   các nút đó sang chỗ khác trước (việc của đợt redesign riêng). */
+/* Mobile: giấu sidebar (tool có drawer riêng) */
+@media (max-width: 900px) {
+  .portal-sidebar { display: none; }
+  .tool-shell { padding-left: 0; }
+}
+
+/* --------------------------------------------------------------------------
    4. LEFT SIDEBAR — EXPLORER
    -------------------------------------------------------------------------- */
+.sidebar-brand-header {
+  padding: 16px 16px 14px;
+  border-bottom: 1px solid var(--divider);
+  background: var(--surface);
+  display: flex; align-items: center;
+}
+.brand-logo-link {
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none; color: var(--text);
+  transition: opacity 0.2s ease;
+}
+.brand-logo-link:hover { opacity: 0.9; }
+.logo-icon-sm {
+  width: 36px; height: 36px;
+  border-radius: var(--r-md);
+  background: var(--gradient-brand);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 14px rgba(109, 40, 217, 0.32);
+  flex-shrink: 0;
+}
+.brand-name-group {
+  display: flex; flex-direction: column; gap: 1px;
+}
+.brand-title {
+  font-size: var(--fs-md); font-weight: 800; letter-spacing: -0.2px; color: var(--text); line-height: 1.1;
+}
+.brand-badge {
+  font-size: var(--fs-2xs); font-weight: 700; color: var(--brand); letter-spacing: 1.2px; text-transform: uppercase;
+}
+
 .sidebar-section { padding: 14px 14px; border-bottom: 1px solid var(--divider); }
 
 .search-input-container { position: relative; width: 100%; }
@@ -451,6 +663,10 @@ body.dark-theme .version-badge { color: var(--brand-hover); }
   color: var(--brand-active);
   font-weight: 700;
 }
+.tree-file-item.active::before {
+  content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 18px; border-radius: 0 3px 3px 0; background: var(--brand);
+}
 body.dark-theme .tree-file-item.active { color: var(--text); }
 .tree-file-item.active .tree-file-icon { color: var(--brand); }
 .tree-file-icon { margin-right: 9px; color: var(--text-3); display: flex; align-items: center; flex-shrink: 0; }
@@ -480,6 +696,8 @@ body.dark-theme .tree-file-item.active { color: var(--text); }
   display: flex;
   flex-direction: column;
   background-color: var(--canvas-bg);
+  background-image: radial-gradient(rgba(109, 40, 217, 0.12) 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
   position: relative;
   overflow: hidden;
 }
@@ -570,20 +788,85 @@ body.dark-theme .grid-backdrop { background-image: radial-gradient(circle, rgba(
   position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  text-align: center; max-width: 560px; padding: 40px 44px;
+  text-align: center; width: min(720px, calc(100% - 32px)); max-width: 720px; padding: 44px 48px 40px;
   background-color: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
   box-shadow: var(--shadow-lg);
   z-index: 2;
 }
-.no-selection-message h2 { margin-top: 18px; font-size: var(--fs-lg); font-weight: 700; color: var(--text); letter-spacing: -0.2px; white-space: nowrap; }
-.no-selection-message p { margin-top: 8px; font-size: var(--fs-sm); color: var(--text-2); line-height: 1.6; }
-.pulse-icon { color: var(--brand); animation: pulse-glow 2.6s infinite ease-in-out; }
-@keyframes pulse-glow {
-  0%, 100% { transform: scale(1); opacity: 0.85; }
-  50% { transform: scale(1.06); opacity: 1; filter: drop-shadow(0 8px 20px var(--brand-ring)); }
+.welcome-emblem {
+  width: 76px; height: 76px; border-radius: 22px;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(140deg, var(--brand-500), var(--brand-800));
+  color: #fff; box-shadow: 0 14px 30px var(--brand-ring);
+  animation: emblem-float 4s ease-in-out infinite;
 }
+.welcome-emblem svg { width: 36px; height: 36px; }
+@keyframes emblem-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+.welcome-eyebrow {
+  margin-top: 20px;
+  font-size: var(--fs-2xs); font-weight: 800; letter-spacing: 1.6px; text-transform: uppercase;
+  color: var(--brand);
+}
+.no-selection-message h2 {
+  margin-top: 8px; font-size: clamp(20px, 2.4vw, 26px); font-weight: 800;
+  color: var(--text); letter-spacing: -0.4px; line-height: 1.2;
+}
+.no-selection-message p {
+  margin-top: 10px; font-size: var(--fs-base); color: var(--text-2); line-height: 1.6; max-width: 44ch;
+}
+
+/* Stepper 4 bước — encode đúng quy trình Chọn mẫu → Điền → Lưu → Xuất */
+.welcome-flow {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+  gap: 6px; margin-top: 28px;
+}
+.welcome-flow .wf-step {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 14px 7px 7px; border-radius: var(--r-pill);
+  background: var(--surface-2); border: 1px solid var(--border);
+  font-size: var(--fs-sm); font-weight: 600; color: var(--text); white-space: nowrap;
+}
+.welcome-flow .wf-num {
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--brand); color: #fff; font-weight: 800; font-size: var(--fs-2xs);
+}
+.welcome-flow .wf-line { width: 16px; height: 2px; background: var(--border-strong); border-radius: 2px; }
+/* High Impact Action Button */
+#btn-new-proposal {
+  background: var(--gradient-brand) !important;
+  color: #ffffff !important;
+  border: none !important;
+  padding: 14px 32px !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  border-radius: var(--r-md) !important;
+  box-shadow: 0 10px 28px rgba(109, 40, 217, 0.42) !important;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  letter-spacing: -0.2px !important;
+}
+#btn-new-proposal:hover {
+  transform: translateY(-3px) scale(1.02) !important;
+  box-shadow: 0 16px 40px rgba(109, 40, 217, 0.6) !important;
+}
+#btn-new-proposal:active {
+  transform: scale(0.96) !important;
+}
+
+@media (max-width: 560px) {
+  .welcome-flow { flex-direction: column; align-items: stretch; }
+  .welcome-flow .wf-line { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .welcome-emblem { animation: none; } }
 
 .rendered-svg-container {
   box-shadow: var(--shadow-lg);
@@ -985,8 +1268,10 @@ body.no-editor .sidebar-right { display: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
     scroll-behavior: auto !important;
   }
 }
@@ -1190,6 +1475,9 @@ body.no-editor .sidebar-right { display: none; }
   .logo-icon { width: 34px; height: 34px; }
   .logo-icon svg { width: 18px; height: 18px; }
   .brand-info { display: none; }
+  /* Header không còn logo-icon (brand nằm ở sidebar, sidebar ẩn trên mobile)
+     → brand chữ trong .header-brand phải hiện lại làm nhận diện duy nhất */
+  .tool-shell .header-brand .brand-info { display: flex; }
   .header-center { display: none; }
   .header-right { gap: 6px; margin-left: auto; }
   .header-right .btn {
@@ -1283,29 +1571,9 @@ body.no-editor .sidebar-right { display: none; }
 }
 
 /* --------------------------------------------------------------------------
-   21. WORKFLOW ĐƠN GIẢN — 4 bước chào mừng + chấm "chưa lưu nháp"
+   21. WORKFLOW ĐƠN GIẢN — chấm "chưa lưu nháp"
+   (Stepper màn chào dùng .welcome-flow ở mục 5 — bộ .welcome-steps cũ đã xoá)
    -------------------------------------------------------------------------- */
-.welcome-steps {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: center;
-  margin-top: 18px;
-}
-.welcome-steps .step {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-pill);
-  padding: 7px 14px;
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--text-2);
-  white-space: nowrap;
-}
-.welcome-steps .step b { color: var(--brand); margin-right: 5px; }
-.welcome-steps .arrow { color: var(--text-3); font-weight: 700; }
-
 /* Nút Lưu Nháp hiện chấm cam khi bản đang mở có thay đổi chưa lưu */
 #btn-save-top { position: relative; }
 #btn-save-top.has-unsaved::after {
