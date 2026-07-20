@@ -73,7 +73,7 @@
   --r-sm: 8px;
   --r-md: 10px;
   --r-lg: 14px;
-  --r-xl: 18px;
+  --r-xl: 20px;   /* trùng độ bo của rail + topbar để mọi thẻ lớn cùng một ngôn ngữ */
   --r-pill: 999px;
 
   --shadow-xs: 0 1px 2px rgba(17, 20, 32, 0.05);
@@ -646,7 +646,10 @@ button { font-family: inherit; cursor: pointer; }
 
 .sidebar {
   position: fixed;
-  left: 12px; top: 12px; bottom: 12px;
+  /* Sát mép hơn (8px thay vì 12px) để rail, header và nội dung nằm gần nhau,
+     đọc thành một khối thay vì 3 vùng rời. Đổi số này phải đổi luôn
+     .app-shell padding-left (8 + 64 + 8 = 80) và .tool-shell bên style.css. */
+  left: 8px; top: 8px; bottom: 8px;
   width: 64px; flex-shrink: 0;
   height: auto;
   background: var(--surface);
@@ -830,18 +833,23 @@ button { font-family: inherit; cursor: pointer; }
 /* Khung shell: padding-left 92px né rail nổi (left 12 + rộng 64 + 16 khe) —
    TRÙNG số với .tool-shell bên style.css. Rule gốc này bắt buộc phải có:
    thiếu nó nội dung chui xuống dưới rail (đã dính 1 lần). */
-.app-shell { display: flex; min-height: 100vh; min-height: 100dvh; padding-left: 92px; }
+/* padding-left = 8 (khe trái) + 64 (rail) + 8 (khe phải) — TRÙNG số với .tool-shell bên style.css.
+   Thêm 8px trên/phải/dưới để topbar + nội dung "nổi" thụt vào đúng bằng rail. */
+.app-shell { display: flex; min-height: 100vh; min-height: 100dvh; padding: 8px 8px 8px 80px; }
 .app-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 
+/* Topbar = thẻ NỔI bo tròn, cùng ngôn ngữ với rail (bo 20px, viền, bóng).
+   top: 8px để khi cuộn nó dính đúng ngang mép trên của rail, không trồi ra ngoài. */
 .topbar {
-  position: sticky; top: 0; z-index: 80;
+  position: sticky; top: 8px; z-index: 80;
   min-height: var(--header-height);
   display: flex; align-items: center; gap: 14px;
-  padding: 14px clamp(16px, 3vw, 32px);
-  /* Thanh header kính mờ: tách khỏi nền, nội dung cuộn phía dưới sẽ mờ đi */
+  padding: 14px clamp(16px, 3vw, 28px);
   background: var(--header-bg);
   backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--border);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(17, 20, 32, 0.08), 0 1px 4px rgba(17, 20, 32, 0.04);
 }
 .menu-toggle { display: none; }
 .topbar-greeting h1 { font-size: clamp(20px, 2.4vw, 26px); font-weight: 800; letter-spacing: -0.5px; line-height: 1.15; }
@@ -873,7 +881,11 @@ button { font-family: inherit; cursor: pointer; }
   padding: 1px 8px; border-radius: var(--r-pill);
 }
 
-.dash { flex: 1; width: 100%; max-width: 1200px; padding: clamp(18px, 3vw, 28px) clamp(16px, 3vw, 32px) 48px; }
+/* KHÔNG giới hạn max-width: nội dung phải trải đúng bằng .topbar phía trên,
+   nếu không trên màn rộng header dài tới mép còn nội dung hụt ~700px → nhìn rời rạc.
+   KHÔNG padding ngang: thẻ nội dung phải thẳng CẠNH với thẻ topbar (cả hai cùng
+   là thẻ nổi) — khoảng thở hai bên đã do .app-shell lo. */
+.dash { flex: 1; width: 100%; padding: 12px 0 40px; }
 
 /* ---- Tactile Click Feedback & Card Micro-Interactions ---- */
 button:active, .btn:active, .icon-btn:active, .sidebar-nav a:active, .sidebar-foot button:active, .stat-card:active, .area-card:active {
@@ -974,10 +986,10 @@ button:active, .btn:active, .icon-btn:active, .sidebar-nav a:active, .sidebar-fo
 /* ---- Responsive dashboard ---- */
 @media (max-width: 900px) {
   .dash-grid { grid-template-columns: 1fr; }
-  .app-shell { padding-left: 0; }
+  .app-shell { padding: 8px; }   /* mobile: rail thành drawer nên bỏ chừa 80px */
   .sidebar {
-    left: 12px; top: 12px; bottom: 12px;
-    transform: translateX(calc(-100% - 24px));
+    left: 8px; top: 8px; bottom: 8px;
+    transform: translateX(calc(-100% - 16px));  /* 8px khe + đủ giấu bóng đổ */
     transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: var(--shadow-lg);
     width: 236px !important;
     padding: 16px 12px !important;

@@ -85,7 +85,7 @@
   --r-sm: 8px;
   --r-md: 10px;
   --r-lg: 14px;
-  --r-xl: 18px;
+  --r-xl: 20px;   /* trùng độ bo của rail + topbar bên portal.css */
   --r-pill: 999px;
 
   /* Elevation (light) */
@@ -319,12 +319,14 @@ aside {
    Copy đúng thông số từ portal.css .sidebar (đổi look phải sửa CẢ HAI file)
    để menu hiển thị giống hệt nhau ở mọi trang. Editor 3 cột giữ nguyên.
    -------------------------------------------------------------------------- */
-.tool-shell { display: flex; height: 100vh; height: 100dvh; width: 100vw; position: relative; padding-left: 92px; }
+/* padding-left = 8 (khe trái) + 64 (rail) + 8 (khe phải) — TRÙNG số với .app-shell bên portal.css */
+.tool-shell { display: flex; height: 100vh; height: 100dvh; width: 100vw; position: relative; padding-left: 80px; }
 .tool-shell .app-container { width: auto; flex: 1; min-width: 0; }
 
 .portal-sidebar {
   position: fixed;
-  left: 12px; top: 12px; bottom: 12px;
+  /* Sát mép hơn — TRÙNG số với .sidebar bên portal.css (đổi thì đổi cả hai) */
+  left: 8px; top: 8px; bottom: 8px;
   width: 64px; flex-shrink: 0; height: auto;
   background: var(--surface);
   border: 1px solid var(--border);
