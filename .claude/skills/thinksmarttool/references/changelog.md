@@ -141,6 +141,45 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
 
+### 2026-07-21 (later 7 — sửa lỗi chính tả trong bản vẽ)
+
+Chủ tool báo nhãn ghi **"Xếp hạng ức khoẻ"**, thiếu chữ "s".
+
+**⚠️ BẪY QUAN TRỌNG — VÌ SAO GREP THƯỜNG KHÔNG TÌM RA LỖI CHÍNH TẢ TRONG SVG:**
+Illustrator cắt một dòng chữ thành nhiều `<tspan>` để chỉnh kerning từng chữ cái, nên
+chuỗi liền mạch KHÔNG tồn tại trong file. Ví dụ thật:
+
+```
+<tspan class="cls-139" x="0" y="0">X</tspan>
+<tspan class="cls-178" y="0">ếp hạng </tspan>
+<tspan class="cls-137" y="0">ứ</tspan>
+<tspan y="0">c khoẻ / </tspan>
+```
+
+`grep "Xếp hạng"` → **0 kết quả**, dù chữ đó hiện rành rành trên màn hình. Đây là lý do
+lỗi này sống sót lâu. **Cách soát đúng: ghép nội dung mọi tspan trong từng `<text>` lại
+rồi mới đối chiếu** (script mẫu ở scratchpad phiên này, ~30 dòng).
+
+**Đã sửa (8 file = 4 mẫu × 2 bản):**
+- `Xếp hạng ức khoẻ` → `Xếp hạng sức khoẻ` — AIG IUL, AIG Termlife, IUL–NLG, TERMLIFE–NLG.
+  Chèn "s" vào cuối mảnh `"ếp hạng "` (mảnh chữ thường), KHÔNG chèn vào mảnh kerning
+  riêng của chữ "ứ". Các mảnh không có thuộc tính `x` riêng nên chữ tự chạy tiếp,
+  thêm ký tự không vỡ bố cục.
+- `INDEXD UNIVERSAL LIFE` → `INDEXED` (thiếu chữ E) — AIG IUL, IUL–NLG. Lỗi này chủ tool
+  chưa thấy, em quét ra khi soát toàn bộ; chủ tool duyệt sửa 21/07.
+
+**Một trường hợp trông như lỗi nhưng KHÔNG phải:** `"Tổng sốtiền đóng"` — thực ra là
+HAI DÒNG riêng ("Tổng số" y=0 / "tiền đóng" y=13.2), dính vào nhau chỉ vì script ghép.
+Bài học: ghép tspan để soát thì phải **nhóm theo y**, và luôn soi lại cấu trúc trước khi
+kết luận là lỗi.
+
+**Kiểm chứng:** quét lại cả 6 mẫu → 0 lỗi còn lại. Đo trên trình duyệt: nhãn dài thêm
+1 ký tự vẫn nằm gọn trong thẻ nền ở cả 4 mẫu (AIG IUL 269.2/280, IUL–NLG 270.7/281.5,
+AIG Term 267.2/278.8, TERMLIFE–NLG 267.3/278.9). 2 bản mỗi mẫu giống hệt nhau.
+
+**Chốt cách viết:** giữ **"khoẻ"** (dấu hỏi trên chữ e) cho đồng bộ với mẫu Allianz
+("Sức khoẻ") và nhãn trong bảng sửa chữ của tool. Chỉ thêm chữ "s" bị thiếu.
+
 ### 2026-07-21 (later 6 — chặn tràn chữ ở ô Thông tin khách hàng)
 
 Chủ tool báo: hạng sức khoẻ dài chạy lố ra khỏi thẻ nền / bị cắt cụt
