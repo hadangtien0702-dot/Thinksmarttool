@@ -46,28 +46,39 @@ window.TST_CONFIG = {
 
 4. Chạy local kiểm tra (hoặc nhờ Claude làm): mở trang chủ — giờ sẽ đòi đăng nhập.
 
-## Bước 5 — Tạo tài khoản admin đầu tiên (của anh)
+## Bước 5 — Tạo tài khoản admin
 
-1. Mở trang web → **Đăng ký** với email của anh.
-2. Quay lại Supabase **SQL Editor**, chạy (thay email):
+> ⚠️ **Cập nhật 21/07/2026:** bảng `profiles` KHÔNG còn cột `approved`. Giờ dùng:
+> - `role` — `'user'` (nhân viên) · `'admin'` · `'super_admin'` (quyền cao nhất)
+> - `status` — `'pending'` (chờ duyệt) · `'active'` · `'suspended'` · `'deleted'`
+>
+> Hướng dẫn cũ ghi `approved = true` là SAI, chạy sẽ báo lỗi không có cột.
+
+**Cách tạo tài khoản (kể cả admin) — làm trong Supabase, không làm qua web được:**
+
+1. Supabase → **Authentication** → **Users** → **Add user** → **Create new user**.
+   Nhập email + mật khẩu, bật **Auto Confirm User** (không thì phải xác nhận email).
+2. Supabase → **SQL Editor**, chạy (thay email cho đúng):
 
 ```sql
-update public.profiles set role = 'admin', approved = true
-where id = (select id from auth.users where email = 'EMAIL_CUA_ANH');
+update public.profiles
+set role = 'super_admin', status = 'active', full_name = 'Tên hiển thị'
+where id = (select id from auth.users where email = 'EMAIL_CAN_NANG_QUYEN');
 ```
 
-3. Đăng nhập lại trên web → chip tài khoản góc phải hiện **Admin**,
-   trang **Video học** có nút **+ Thêm video**.
+3. Đăng nhập lại trên web → chip góc phải hiện **Super Admin**, sidebar có
+   **Quản lý thành viên**.
+
+**Vì sao phải chạy SQL mà không sửa trên trang Quản lý thành viên:** trigger
+`enforce_member_update` cố ý CHẶN việc đổi `role`/`status` từ phía ứng dụng, để
+người dùng web không tự nâng quyền cho mình. Nâng quyền chỉ làm được từ SQL Editor.
 
 ## Duyệt nhân viên mới (việc thường ngày)
 
-Nhân viên tự **Đăng ký** trên web → thấy màn "chờ admin duyệt". Anh duyệt bằng cách:
-
-1. Supabase → **Table Editor** → bảng `profiles`.
-2. Tìm dòng của nhân viên (xem `full_name`), sửa cột `approved` thành `true` → Save.
-
-(Đợt 2 sẽ làm trang "Quản lý thành viên" ngay trong web để duyệt 1 chạm,
-không phải vào Supabase nữa.)
+Nhân viên tự **Đăng ký** trên web → thấy màn "chờ admin duyệt".
+Giờ đã có trang **Quản lý thành viên** (`/members`) để duyệt 1 chạm — vào đó bấm
+**Duyệt**, không phải mở Supabase nữa. (Cách cũ qua Table Editor: sửa cột `status`
+thành `active`.)
 
 ## Thêm video học
 
