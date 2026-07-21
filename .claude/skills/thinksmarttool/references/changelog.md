@@ -32,11 +32,11 @@ Badge UI **v1.14** (5 chỗ — `grep -rn "version-badge" public/*.html`). Cache
 | File | Version | File | Version |
 |---|---|---|---|
 | `portal.css` | `?v=32` | `style.css` | `?v=53` |
-| `js/core.js` | `?v=23` | `js/proposal.js` | `?v=19` |
+| `js/core.js` | `?v=23` | `js/proposal.js` | `?v=21` |
 | `js/brochure.js` | `?v=6` | `js/animations.js` | `?v=4` |
 | `js/portal/auth.js` | `?v=3` | `js/portal/members.js` | `?v=10` |
 | `js/ui-dialog.js` | `?v=2` | `dialog.css` | `?v=3` |
-| `js/portal/config.js` | `?v=3` | `js/portal/videos.js` | `?v=2` |
+| `js/portal/config.js` | `?v=4` | `js/portal/videos.js` | `?v=2` |
 
 **⚠️ HAI FILE CSS LÀ BẢN SAO CỦA NHAU** — `portal.css` (portal) và `style.css` (Tool) chép tay lẫn
 nhau phần rail, nút, token. **Đây là nguồn lỗi lặp đi lặp lại** (logo rail sai 2 lần, nút lệch cỡ
@@ -140,6 +140,45 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > **Ghi chú merge 21/07/2026:** `main` và `feat/login` chạy song song ngày 20/07 nên có HAI mục
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
+
+### 2026-07-21 (later 6 — chặn tràn chữ ở ô Thông tin khách hàng)
+
+Chủ tool báo: hạng sức khoẻ dài chạy lố ra khỏi thẻ nền / bị cắt cụt
+("Express Standard Non-Tobacco 2" 30 ký tự, "Preferred Plus Nontobacco" 25 ký tự).
+
+**Sót của phiên trước:** `thuNhoChoVua()` mới chỉ áp cho phần **Kế hoạch & Quyền lợi**,
+quên hẳn phần **Thông tin khách hàng**. Bài học: làm tính năng chống tràn thì phải rà
+HẾT các nhóm ô, đừng chỉ làm nhóm đang gặp lỗi.
+
+- Thêm `vuaKhungOKhach(neo, dsCungPhan)` + `mepPhaiChoPhep()` trong `proposal.js`.
+  Ô khách hàng neo TRÁI theo đúng bản vẽ nên **KHÔNG** đổi sang căn giữa như phần Kế
+  hoạch — chỉ thu nhỏ cỡ chữ khi tràn.
+- Mép phải cho phép = chặt nhất trong hai nguồn: (1) chữ khác **cùng hàng bên phải**,
+  (2) thẻ `<rect>` nền hẹp nhất **bao quanh** chữ. Áp cho cả 3 ô: tên khách, hạng sức
+  khoẻ, tiểu bang.
+- ⚠️ **BẪY đã dính khi tự test:** điều kiện tìm khung bao ban đầu chỉ kiểm
+  `b.left <= r.left`, thiếu `b.right > r.left` → ô "Tiểu bang" nhận nhầm khung của ô
+  "Sức khoẻ" nằm BÊN TRÁI nó (khung đó kết thúc trước cả chỗ chữ bắt đầu) → mép phải
+  tính ra nhỏ hơn mép trái. Khung bao phải **thực sự trùm qua** điểm chữ bắt đầu.
+
+**⚠️ BẪY KHI VIẾT TEST (quan trọng hơn cả bản vá):** lần đo đầu dò phần tử bằng
+`#client-rate`. Id `client-*` do `tagClientInfoElements()` gắn vào **activeSvgDoc**,
+mà `renderSvgOnCanvas()` clone canvas TRƯỚC đó → **bản canvas không có id này** (trừ
+mẫu đã lưu sẵn id trong file). Kết quả: mẫu nào thiếu id thì hàm kiểm trả null, test
+báo "0 lỗi" một cách GIẢ TẠO. Sửa: lấy `data-editor-id` **thẳng từ ô nhập trong bảng
+bên phải** rồi mới dò sang canvas — id đó chắc chắn có ở cả hai bên. Đã thêm biến đếm
+`boQua` vào test để lộ ngay nếu có trường hợp bị bỏ sót thay vì lặng lẽ pass.
+
+**Kiểm chứng (đo lại bằng cách tin cậy): 65 trường hợp, 0 bỏ qua, 0 tràn.**
+
+| Mẫu | Số ca thử | Cỡ chữ nhỏ nhất |
+|---|---|---|
+| AIG IUL / Term Life | 12 + 12 | không phải thu nhỏ |
+| NLG IUL / Term Life | 15 + 15 | 10.7px (gốc 14.3px = 75%) |
+| Allianz Max-Funded | 11 | 12.9px |
+
+Cỡ chữ ghi vào **cả hai cây DOM** nên bản xuất PDF/JPEG cũng đúng (đã đối chiếu).
+`proposal.js?v=21`, `config.js?v=4`.
 
 ### 2026-07-21 (later 5 — nén 2 mẫu NLG, 8.5 MB → 2.3 MB mỗi file)
 

@@ -202,6 +202,85 @@ function rongOChua(editorId) {
   return hep;
 }
 
+// --- Ô THÔNG TIN KHÁCH HÀNG: chữ dài thì thu nhỏ cho vừa khung -----------------
+// Khác phần Kế hoạch: mấy ô này neo TRÁI theo đúng bản vẽ (tên khách bắt đầu sát mép
+// thẻ), KHÔNG được đổi sang căn giữa. Chỉ cần chặn tràn.
+// Chủ tool báo 21/07: "Express Standard Non-Tobacco 2" (30 ký tự) và
+// "Preferred Plus Nontobacco" (25 ký tự) chạy lố ra khỏi thẻ nền / bị cắt cụt.
+// Tên khách dài và bang tên dài ("North Carolina", "Massachusetts") cũng dính.
+const LE_PHAI_O_KHACH = 8;   // chừa ra so với mép phải khung, đơn vị SVG
+
+// Mép phải mà chữ KHÔNG được vượt qua. Lấy chặt nhất trong hai nguồn:
+//   (1) chữ khác nằm CÙNG HÀNG bên phải (vd ô "Tiểu bang" đứng cạnh ô "Sức khoẻ")
+//   (2) thẻ <rect> nền hẹp nhất bao quanh chữ
+// Dùng toạ độ màn hình rồi quy đổi về đơn vị SVG — chắc ăn hơn dò transform lồng nhau.
+function mepPhaiChoPhep(editorId, dsCungPhan) {
+  const svg = dom.canvasWrapper.querySelector('svg');
+  const o = elCanvas(editorId);
+  if (!svg || !o) return null;
+  const vb = svg.viewBox && svg.viewBox.baseVal;
+  const khungSvg = svg.getBoundingClientRect();
+  const tyLe = (vb && vb.width) ? khungSvg.width / vb.width : 0;
+  if (!tyLe) return null;
+
+  const r = o.getBoundingClientRect();
+  const giuaY = (r.top + r.bottom) / 2;
+  const doi = px => (px - khungSvg.left) / tyLe;
+  let phai = Infinity;
+
+  (dsCungPhan || []).forEach(function (idKhac) {
+    if (idKhac === editorId) return;
+    const k = elCanvas(idKhac);
+    if (!k) return;
+    const b = k.getBoundingClientRect();
+    if (b.left <= r.left) return;                       // phải đứng BÊN PHẢI
+    if (giuaY < b.top - 2 || giuaY > b.bottom + 2) return; // và CÙNG HÀNG
+    phai = Math.min(phai, doi(b.left));
+  });
+
+  svg.querySelectorAll('rect').forEach(function (n) {
+    const b = n.getBoundingClientRect();
+    if (b.width < 40 * tyLe || b.height < 10 * tyLe) return;   // bỏ qua icon/gạch nhỏ
+    // Khung phải THỰC SỰ BAO chỗ chữ bắt đầu: vừa mở ra bên trái, vừa kéo dài qua nó.
+    // Thiếu vế thứ hai là dính lỗi đã gặp 21/07: ô "Tiểu bang" lấy nhầm khung của ô
+    // "Sức khoẻ" nằm bên trái nó (khung đó kết thúc TRƯỚC cả chỗ chữ bắt đầu) → mép
+    // phải tính ra nhỏ hơn cả mép trái, thu nhỏ chữ vô tội vạ.
+    if (b.left > r.left || b.right <= r.left) return;
+    if (giuaY < b.top || giuaY > b.bottom) return;
+    phai = Math.min(phai, doi(b.right));
+  });
+
+  return phai === Infinity ? null : phai;
+}
+
+// Chuẩn bị + thu nhỏ cho một ô neo trái. Gọi lúc mở file và sau mỗi lần sửa.
+function vuaKhungOKhach(neo, dsCungPhan) {
+  if (!neo) return;
+  const oC = elCanvas(neo.id);
+  if (!oC) return;
+  if (!neo.coChuGoc) neo.coChuGoc = parseFloat(getComputedStyle(oC).fontSize) || null;
+  if (!neo.coChuGoc) return;
+
+  oC.style.fontSize = '';                    // trả cỡ gốc rồi mới đo mép và bề rộng
+  const phai = mepPhaiChoPhep(neo.id, dsCungPhan);
+  if (phai === null) return;
+
+  const vb = dom.canvasWrapper.querySelector('svg').viewBox.baseVal;
+  const khungSvg = dom.canvasWrapper.querySelector('svg').getBoundingClientRect();
+  const tyLe = khungSvg.width / vb.width;
+  const r = oC.getBoundingClientRect();
+  const trai = (r.left - khungSvg.left) / tyLe;
+  const rongThat = r.width / tyLe;
+  const rongChoPhep = phai - trai - LE_PHAI_O_KHACH;
+  if (rongChoPhep <= 0 || !rongThat) return;
+
+  const ty = Math.max(Math.min(1, rongChoPhep / rongThat), CO_CHU_TOI_THIEU);
+  const co = ty >= 0.999 ? '' : (neo.coChuGoc * ty).toFixed(2) + 'px';
+  oC.style.fontSize = co;
+  const oD = oChuTrongDoc(neo.id);
+  if (oD) oD.style.fontSize = co;
+}
+
 // ⚠️ text-anchor CHỈ gom được cả dòng thành một khối nếu các mảnh phía sau KHÔNG
 // mang toạ độ tuyệt đối. Theo chuẩn SVG, tspan có x HOẶC y là mở một "text chunk"
 // MỚI, và mỗi chunk tự neo giữa riêng nó → chữ vỡ ra từng mảnh lệch nhau.
@@ -504,6 +583,8 @@ function populateProposalTextsEditor(svgEl, textElements) {
   }
 
   const clientBlocks = {};
+  const idOKhach = [];      // editorId của các ô Thông tin khách hàng, theo thứ tự gặp
+  const neoVuaKhach = {};   // editorId -> mốc để thu nhỏ chữ cho vừa khung (xem vuaKhungOKhach)
   const allLines = [];   // MỌI dòng chữ + toạ độ — dùng làm NEO để dò nhãn (mẫu Allianz)
   const planItems = [];
   const planExtras = []; // non-$ editable labels: "20 năm", "120 tuổi", "Tuổi 63", "Cash Value at 63"
@@ -543,6 +624,7 @@ function populateProposalTextsEditor(svgEl, textElements) {
 
       const itemBlock = document.createElement('div');
       itemBlock.className = 'text-edit-block';
+      idOKhach.push(editorId);   // để biết ô nào đứng cạnh ô nào khi chặn tràn
 
       if (dropdownOptions) {
         const opts = dropdownOptions.includes(textContent)
@@ -559,6 +641,7 @@ function populateProposalTextsEditor(svgEl, textElements) {
         const select = itemBlock.querySelector('select');
         select.addEventListener('change', (e) => {
           applyTextValue(el, editorId, e.target.value);
+          vuaKhungOKhach(neoVuaKhach[editorId], idOKhach);
         });
       } else {
         itemBlock.innerHTML = `
@@ -570,9 +653,11 @@ function populateProposalTextsEditor(svgEl, textElements) {
         const inputEl = itemBlock.querySelector('.text-input-field');
         inputEl.addEventListener('input', (e) => {
           applyTextValue(el, editorId, e.target.value);
+          vuaKhungOKhach(neoVuaKhach[editorId], idOKhach);
         });
       }
 
+      neoVuaKhach[editorId] = { id: editorId, coChuGoc: null };
       clientBlocks[id] = itemBlock;
     }
 
@@ -889,7 +974,11 @@ function populateProposalTextsEditor(svgEl, textElements) {
     v.neoGiua = { id: v.editorId, buocCot: buoc, rong: null, coChuGoc: null, xong: false };
   });
   // Phải đợi font tải xong mới đo được bề rộng chữ cho đúng
-  const canhTatCa = () => oCanGiua.forEach(v => canhGiuaTheoBanVe(v.neoGiua));
+  const canhTatCa = () => {
+    oCanGiua.forEach(v => canhGiuaTheoBanVe(v.neoGiua));
+    // Ô khách hàng: chỉ thu nhỏ nếu tràn, KHÔNG đổi sang căn giữa (bản vẽ neo trái)
+    idOKhach.forEach(idx => vuaKhungOKhach(neoVuaKhach[idx], idOKhach));
+  };
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(canhTatCa);
   else canhTatCa();
 
