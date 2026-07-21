@@ -141,6 +141,30 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
 
+### 2026-07-21 (later 9 — tiêu đề IUL: thu nhỏ 40px → 38.09px, trả lại đúng lề gốc)
+
+Chủ tool báo tiếp sau "later 8": dịch trái xong dòng "INDEXED UNIVERSAL LIFE" vẫn
+**sát mép hai bên** — vì dịch chỉ đổi VỊ TRÍ, còn dòng đã DÀI THÊM 23 đơn vị (489.2 so
+với 465.9 gốc) thì vẫn dài. Căn giữa một dòng bị phình chỉ chia đều phần phình sang
+hai bên, không trả lại khoảng thở.
+
+**Vá đúng:** thu nhỏ dòng đó `40px → 38.09px` (tỉ lệ 465.9/489.2 = 0.9523) và trả
+`x` về `-111.65` gốc. Kết quả đo được: rộng 465.9, lề trái/phải **63.3 / 66.1** —
+Y HỆT hình học trước khi sửa chính tả. Cách gắn: `style="font-size:38.09px"` vào thẻ
+tspan BAO của dòng 2 (class `.cls-51`/`.cls-100` đặt 40px cũng trên chính thẻ đó,
+inline thắng class cùng phần tử; các mảnh con chỉ có class letter-spacing nên thừa
+hưởng trọn). CHỈ 2 mẫu IUL (AIG IUL + IUL–NLG, mỗi mẫu 2 bản); 2 mẫu Term Life tiêu
+đề "TERM LIFE" không đổi chữ nên KHÔNG đụng.
+
+**Bài học chuỗi 3 bản vá (later 7→8→9), ghi để không lặp:** đổi ĐỘ DÀI chữ trên bản
+vẽ thì phải khôi phục CẢ vị trí LẪN bề rộng chiếm chỗ. Sửa chính tả (7) → lệch; dịch
+tâm (8) → hết lệch nhưng sát mép; phải bù cỡ chữ (9) mới về đúng thiết kế. Lẽ ra làm
+một lần: đo hình học gốc TRƯỚC khi đổi chữ, đổi xong khôi phục đủ cả tâm + bề rộng.
+
+Lưu ý ngữ cảnh: khi chủ tool báo "vẫn lệch", màn hình của họ đang xem BẢN CŨ trong
+cache (bản 38.09px chưa push lúc đó) — đối chiếu số đo trên đĩa trước khi kết luận
+vá tiếp, kẻo vá chồng lên vá.
+
 ### 2026-07-21 (later 8 — canh giữa lại dòng tiêu đề sau khi sửa chính tả)
 
 Chủ tool báo ngay sau bản vá chính tả: thêm chữ "E" vào INDEXD làm dòng
