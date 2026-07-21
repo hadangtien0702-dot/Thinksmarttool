@@ -229,11 +229,20 @@ const dom = {
 
 // --- API CLIENT CALLS ---
 async function fetchSvgsList() {
-  updateStatus('Đang quét thư mục chứa file thiết kế...');
+  updateStatus('Đang tải danh sách mẫu...');
   try {
-    const response = await fetch('/api/svgs');
-    if (!response.ok) throw new Error('API không khả dụng');
-    const data = await response.json();
+    // Lần gọi ĐẦU dùng lại kết quả đã bắn sớm từ <head> tool.html (tiết kiệm ~550ms
+    // chờ mạng). Các lần sau (lưu/xoá nháp xong) phải lấy dữ liệu MỚI nên bỏ qua nó.
+    let data = null;
+    if (window.__svgsSom) {
+      data = await window.__svgsSom;
+      window.__svgsSom = null;
+    }
+    if (!data) {
+      const response = await fetch('/api/svgs');
+      if (!response.ok) throw new Error('API không khả dụng');
+      data = await response.json();
+    }
     if (data.success) {
       appState.mode = 'server';
       // 'browser' trên Vercel: nháp lưu localStorage máy sale (server chỉ-đọc); 'server' khi chạy local
@@ -1512,12 +1521,34 @@ async function exportToJpeg() {
   }, '#ffffff');
 }
 
+// Nạp jsPDF ĐÚNG LÚC CẦN. Trước đây nó là thẻ <script> trong tool.html nên 356 KB này
+// phải tải xong mới chạy được JS của mình, trên MỌI lượt vào trang — kể cả người chỉ
+// vào xem rồi đi ra. Nạp một lần rồi thôi (window.jspdf còn thì bỏ qua).
+let dangNapPdf = null;
+function napThuVienPdf() {
+  if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve();
+  if (dangNapPdf) return dangNapPdf;                 // bấm 2 lần liên tiếp → chỉ tải 1 lần
+  dangNapPdf = new Promise((xong, loi) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    s.onload = () => xong();
+    s.onerror = () => { dangNapPdf = null; loi(new Error('Không tải được thư viện PDF')); };
+    document.head.appendChild(s);
+  });
+  return dangNapPdf;
+}
+
 // Export proposal as a PDF (white background) via jsPDF
 async function exportToPdf() {
   if (!appState.activeSvgDoc) return;
 
-  if (!window.jspdf || !window.jspdf.jsPDF) {
-    showAppAlert('Thư viện PDF chưa tải xong (cần internet). Vui lòng thử lại sau vài giây.', { title: 'Đang tải thư viện PDF', tone: 'warning' });
+  updateStatus('Đang chuẩn bị xuất PDF...');
+  try {
+    await napThuVienPdf();
+  } catch (e) {
+    await showAppAlert('Không tải được thư viện tạo PDF. Kiểm tra kết nối mạng rồi thử lại.',
+      { title: 'Chưa xuất PDF được', tone: 'danger' });
+    updateStatus('Xuất PDF thất bại.');
     return;
   }
 

@@ -4,6 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Thinksmart Tool</title>
+
+  <!-- ⚠️ ĐOẠN NÀY PHẢI NẰM TRÊN MỌI THẺ <link rel="stylesheet">.
+       CSS chặn việc CHẠY script đứng sau nó (trình duyệt phải dựng xong CSSOM đã).
+       Để dưới các thẻ CSS thì phải chờ cả Google Fonts (~205ms trên mạng thật) mới
+       bắn được — mất sạch ý nghĩa "bắn sớm". Đo được ngày 21/07.
+       Việc nó làm: xin danh sách mẫu NGAY, để ~550ms chờ mạng chạy SONG SONG với
+       lúc tải supabase-js + JS của mình, thay vì cộng dồn vào cuối chuỗi khởi động.
+       core.js (fetchSvgsList) dùng lại kết quả này cho lần gọi ĐẦU TIÊN. -->
+  <script>
+    try { window.__svgsSom = fetch('/api/svgs').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }); } catch (e) {}
+  </script>
+
   <!-- Google Fonts: Plus Jakarta Sans (UI) + Fira Code (code / mono) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -253,7 +265,7 @@
   <!-- Portal auth guard: chỉ chặn khi đã cấu hình Supabase (SETUP-SUPABASE.md);
        chưa cấu hình thì tool chạy mở như cũ. -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/js/portal/config.js?v=2"></script>
+  <script src="/js/portal/config.js?v=3"></script>
   <script src="/js/portal/auth.js?v=3"></script>
   <script>
     if (window.TSTAuth && TSTAuth.configured) {
@@ -275,10 +287,12 @@
     }
   </script>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- jsPDF (356 KB) ĐÃ GỠ khỏi đây 21/07: nó chặn việc chạy JS của mình ~293ms trên
+       MỌI lượt vào trang, trong khi chỉ cần khi bấm "Xuất PDF". core.js tự nạp lúc cần
+       (napThuVienPdf). Muốn đưa lại vào đây thì nhớ là đang đánh đổi tốc độ vào trang. -->
   <!-- Mỗi công cụ một file JS riêng — core nạp trước, main nạp cuối -->
   <script src="/js/ui-dialog.js?v=2"></script>
-  <script src="js/core.js?v=22"></script>
+  <script src="js/core.js?v=23"></script>
   <script src="js/proposal.js?v=19"></script>
   <script src="js/brochure.js?v=6"></script>
   <script src="js/namecard.js?v=5"></script>

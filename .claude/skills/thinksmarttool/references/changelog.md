@@ -32,11 +32,11 @@ Badge UI **v1.14** (5 chỗ — `grep -rn "version-badge" public/*.html`). Cache
 | File | Version | File | Version |
 |---|---|---|---|
 | `portal.css` | `?v=32` | `style.css` | `?v=53` |
-| `js/core.js` | `?v=22` | `js/proposal.js` | `?v=19` |
+| `js/core.js` | `?v=23` | `js/proposal.js` | `?v=19` |
 | `js/brochure.js` | `?v=6` | `js/animations.js` | `?v=4` |
 | `js/portal/auth.js` | `?v=3` | `js/portal/members.js` | `?v=10` |
 | `js/ui-dialog.js` | `?v=2` | `dialog.css` | `?v=3` |
-| `js/portal/config.js` | `?v=2` | `js/portal/videos.js` | `?v=2` |
+| `js/portal/config.js` | `?v=3` | `js/portal/videos.js` | `?v=2` |
 
 **⚠️ HAI FILE CSS LÀ BẢN SAO CỦA NHAU** — `portal.css` (portal) và `style.css` (Tool) chép tay lẫn
 nhau phần rail, nút, token. **Đây là nguồn lỗi lặp đi lặp lại** (logo rail sai 2 lần, nút lệch cỡ
@@ -140,6 +140,42 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > **Ghi chú merge 21/07/2026:** `main` và `feat/login` chạy song song ngày 20/07 nên có HAI mục
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
+
+### 2026-07-21 (later 4 — tốc độ vào trang Công cụ, v1.14 đã LIVE)
+
+Chủ tool báo: vào `/tool` trên live phải chờ spinner "Đang quét thư mục" một lúc mới có dữ liệu.
+**Đo thật trên production TRƯỚC khi sửa** (đừng đoán nguyên nhân):
+
+| Bước | Thời gian | Ghi chú |
+|---|---|---|
+| HTML `/tool` | 531ms | |
+| Google Fonts CSS | 205ms | chặn |
+| supabase-js (CDN) | 218ms · 203 KB | cần cho đăng nhập |
+| jsPDF (CDN) | 293ms · 356 KB | **chỉ cần khi bấm Xuất PDF** |
+| JS nội bộ | ~250 KB | |
+| rồi mới gọi `/api/svgs` | 550ms | |
+
+**KHÔNG phải do quét thư mục.** `getSvgFiles()` chỉ `readdir`+`stat` (~6 file trên Vercel vì
+`2-Templates/` bị gitignore), `/api/svgs` trả về đúng 1 KB trong 550ms — toàn bộ là độ trễ mạng
+tới Vercel chứ không phải xử lý. Lỗi thật là **CHUỖI KHỞI ĐỘNG NỐI ĐUÔI NHAU**.
+
+- **Bắn sớm `/api/svgs` bằng inline script trong `<head>` tool.html** (`window.__svgsSom`);
+  `fetchSvgsList()` dùng lại cho lần gọi ĐẦU TIÊN, các lần sau (lưu/xoá nháp) vẫn fetch mới.
+  → 550ms chờ mạng chạy song song với lúc tải script thay vì cộng vào cuối.
+  ⚠️ **Đoạn này PHẢI đặt TRÊN mọi `<link rel="stylesheet">`** — CSS chặn việc CHẠY inline script
+  đứng sau nó, để dưới là phải chờ cả Google Fonts (~205ms) mới bắn được, mất sạch ý nghĩa.
+- **Gỡ thẻ `<script>` jsPDF khỏi tool.html**, thay bằng `napThuVienPdf()` trong core.js, nạp
+  đúng lúc bấm Xuất PDF. Tiết kiệm 356 KB + 293ms chặn trên MỌI lượt vào trang (kể cả người chỉ
+  vào xem rồi đi ra). Có chống bấm 2 lần (`dangNapPdf`) và báo lỗi tử tế khi mất mạng.
+- Đổi chữ trạng thái "Đang quét thư mục chứa file thiết kế…" → "Đang tải danh sách mẫu…"
+  (đội sale đọc câu này, không phải lập trình viên đọc).
+- Đồng bộ `portal.css?v=32` cho cả 4 trang — index/login còn kẹt `v=31` nên ăn CSS cũ trong cache.
+  **Bài học: cùng một file mà mỗi trang khai một số version khác nhau là bug thầm lặng.** Kiểm bằng
+  script dò trùng version qua cả 5 file HTML, đừng sửa tay từng trang rồi tin là đã đủ.
+- `core.js?v=23`, `config.js?v=3`.
+- Đã đo lại toàn bộ 5 trang: 39 file CSS/JS đều trả 200, không có 404. Trang nặng nhất 274 KB.
+- ⚠️ **Còn tồn: 2 mẫu NLG nặng 8.5 MB mỗi file** (các mẫu khác ~2.2 MB). Trên 4G của sale ngoài
+  đường là chờ lâu. Nghi ảnh nền nhúng ở độ phân giải thừa. Chờ chủ tool duyệt việc nén.
 
 ### 2026-07-21 (later 3 — logo vỡ ở Allianz + logo nét hơn cho Name Card, CHƯA PUSH)
 
