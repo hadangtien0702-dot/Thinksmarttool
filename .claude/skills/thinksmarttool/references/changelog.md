@@ -141,6 +141,29 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
 
+### 2026-07-21 (later 14 — mục mới "So sánh quyền lợi / Compare" trên cây công cụ, v1.15)
+
+Chủ tool yêu cầu thêm công cụ "so sánh quyền lợi các hãng". Đã nối vào KHUNG THƯ VIỆN có
+sẵn thay vì xây mới:
+
+- `server.js`: thêm `soSanh: 'Bang so sanh quyen loi cac hang'` vào `LIBRARY_SECTIONS`
+  → /api/library tự quét, /api/download tự cho tải (whitelist theo LIBRARY_SECTIONS).
+  **Đổi server.js = phải restart server** (đã restart preview).
+- `brochure.js`: `renderCompareNavSection()` — mục nav riêng, item hiện tên hãng sạch
+  ("01_National_Life_Group.png" → "National Life Group", số đầu tên = thứ tự).
+  ⚠️ KHÔNG dùng makeDownloadItem cho kiểu tên này — tachTenMau sẽ băm nát.
+  Xem/tải tái dùng openLibraryItem. `main.js`: gọi sau mục Name Card.
+- `core.js`: NAV_ICONS.compare (cái cân). Versions: core v24, brochure v8, main v6,
+  config v6, badge **v1.15**.
+- Kiểm trên app: mục hiện đúng vị trí, đủ 16 hãng đúng thứ tự, bấm vào xem ảnh + nút
+  Tải về đúng đường /api/download.
+
+**⚠️ PHÁT HIỆN QUAN TRỌNG: 16 PNG trong folder chỉ là LOGO các hãng (~280×80),
+KHÔNG phải bảng so sánh quyền lợi.** Khung công cụ chạy đúng nhưng nội dung bấm vào
+mới là logo. Đã hỏi chủ tool cung cấp nội dung so sánh thật (họ có Google Sheet
+"Bảng So Sánh" — xuất ảnh/PDF thả vào folder là hiện ngay, giữ nguyên kiểu tên
+"01_TenHang.png"). ĐỪNG tự bịa dữ liệu quyền lợi — chữ in lên tài liệu gửi khách.
+
 ### 2026-07-21 (later 13 — cập nhật brochure AIG IUL từ 2 PDF export mới)
 
 Chủ tool xuất 2 file `3-Export-PDF/Brochue - 01/02.pdf` (vector, 1 trang/file) và nhờ thay

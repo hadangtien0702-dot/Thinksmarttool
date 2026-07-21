@@ -27,6 +27,9 @@ function renderFileTree() {
   // ---------- NAME CARD (js/namecard.js) ----------
   total += renderNameCardNavSection(dom.treeContainer, nameCards, q);
 
+  // ---------- SO SÁNH QUYỀN LỢI CÁC HÃNG (js/brochure.js) ----------
+  total += renderCompareNavSection(dom.treeContainer, q);
+
   dom.fileCount.textContent = total;
 }
 

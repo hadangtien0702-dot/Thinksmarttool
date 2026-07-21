@@ -146,6 +146,44 @@ function renderLibrarySection(container, label, iconHTML, groupsObj, q) {
   return count;
 }
 
+// --- NAV SECTION: "So sánh quyền lợi các hãng" (gọi từ renderFileTree, js/main.js) ---
+// 16 ảnh PNG ở "Bang so sanh quyen loi cac hang/" (gốc repo, ĐÃ commit → chạy cả trên
+// Vercel; server trả về trong appState.library.soSanh, nhóm 'Chung' vì file nằm ngay
+// gốc folder). Tên file "01_National_Life_Group.png" → nhãn "National Life Group",
+// số đầu tên quyết định thứ tự hiển thị.
+// KHÔNG dùng makeDownloadItem: tachTenMau trong đó tách "Hãng + Chương trình" sẽ băm
+// nát kiểu tên này. Xem/tải dùng lại openLibraryItem như brochure.
+function renderCompareNavSection(container, q) {
+  const groups = (appState.library && appState.library.soSanh) || {};
+  const tenHang = n => String(n).replace(/\.[a-z0-9]+$/i, '').replace(/^\d+[_\s-]*/, '').replace(/_/g, ' ');
+  const items = (groups['Chung'] || []).slice()
+    .sort((a, b) => a.name.localeCompare(b.name))          // "01_".."16_" tự ra đúng thứ tự
+    .map(it => ({ ...it, displayName: tenHang(it.name) }))
+    .filter(it => !q || it.displayName.toLowerCase().includes(q));
+
+  const section = makeCollapsibleFolder('So sánh quyền lợi / Compare', { extraClass: 'nav-section', iconHTML: NAV_ICONS.compare });
+  items.forEach(it => {
+    const el = document.createElement('div');
+    const isActive = appState.activeLibraryPath === it.path;
+    el.className = `tree-file-item lib-item ${isActive ? 'active' : ''}`.trim();
+    el.innerHTML = `
+      <span class="tree-file-icon">${NAV_ICONS.fileDl}</span>
+      <span class="tree-file-name" title="${escapeHtml(it.displayName)}">${escapeHtml(it.displayName)}</span>
+    `;
+    el.addEventListener('click', async () => {
+      if (!(await confirmLeaveUnsaved())) return;
+      document.querySelectorAll('.tree-file-item').forEach(x => x.classList.remove('active'));
+      el.classList.add('active');
+      openLibraryItem({ ...it, name: it.displayName });    // tiêu đề hiện tên hãng sạch
+    });
+    makeKeyboardActivatable(el);
+    section.content.appendChild(el);
+  });
+  if (!items.length) section.content.appendChild(makeEmptyHint(q ? 'Không có kết quả.' : 'Chưa có bảng so sánh.'));
+  container.appendChild(section.folder);
+  return items.length;
+}
+
 // --- PREVIEWS ---
 function openLibraryGroup(items, groupName) {
   appState.activeLibraryPath = 'group:' + groupName;

@@ -261,7 +261,11 @@ app.post('/api/svgs/delete', (req, res) => {
 
 // Folders (relative to workspace) that hold downloadable library assets
 const LIBRARY_SECTIONS = {
-  brochure: 'Brochure'
+  brochure: 'Brochure',
+  // Bảng so sánh quyền lợi các hãng (chủ tool yêu cầu 21/07/2026) — 16 PNG nằm
+  // NGAY GỐC folder (không chia hãng con) nên rơi vào nhóm 'Chung'. Folder này
+  // ĐÃ commit vào repo (khác Brochure/ bị gitignore) → mục này chạy CẢ trên Vercel.
+  soSanh: 'Bang so sanh quyen loi cac hang'
 };
 
 const DOWNLOADABLE_EXT = ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ai', '.eps', '.zip'];
