@@ -58,6 +58,34 @@ Newest entries on top. Keep it concrete (versions, files, commands).
    FB post templates, client management…). Keep the structure modular.
 
 ## Log
+### 2026-07-21 (nhánh `feat/login` — v1.13, vá lỗ hổng guard trạng thái tài khoản)
+- **LỖ HỔNG THẬT: trạng thái tài khoản chỉ kiểm lúc ĐĂNG NHẬP, không kiểm lại khi vào trang.**
+  `requireLogin()` cũ chỉ hỏi "có session không". Chỉ `tool.html` + `members.js` tự kiểm thêm;
+  `/` và `/videos` KHÔNG. Hậu quả thật: admin bấm "Tạm khoá" nhưng phiên cũ của người đó còn hạn
+  → họ vẫn đi lại trong portal tới khi phiên hết. (RLS vẫn chặn dữ liệu — `is_approved()` đòi
+  status='active' — nên không rò nội dung, nhưng sai về mặt kiểm soát truy cập.)
+- **Lỗi thứ 2 — guard FAIL-OPEN**: `if (p && p.status !== 'active')` — p null (lỗi mạng/RLS) thì
+  bỏ qua cả điều kiện → CHO VÀO. Guard hỏng phải ĐÓNG.
+- **Sửa: dồn về `requireLogin()` trong `auth.js`** (chỗ duy nhất mọi trang đều đi qua):
+  status ≠ 'active' → `signOut('/login?state=' + pending|blocked)`; profile null → `blockPage()`
+  phủ toàn trang + nút Thử lại, **KHÔNG đăng xuất** (lỗi mạng mà đá người ta ra là quá tay).
+  `signOut(to)` nhận đích tuỳ chọn, chỉ chấp nhận đường dẫn nội bộ `^\/(?!\/)`.
+- **BẪY suýt dính**: `signOut` được gắn thẳng làm event listener (`addEventListener('click',
+  TSTAuth.signOut)`) → tham số `to` nhận Event object. Phải kiểm `typeof to === 'string'`,
+  không thì nút Đăng xuất chuyển hướng bậy.
+- `login.html`: `#pending-state` giờ dùng cho CẢ 2 trạng thái (pending ⏳ / blocked 🔒) qua
+  `showAccountState()`; `afterLogin()` đọc `status` thay vì cột `approved` cũ (cần phân biệt
+  "chờ duyệt" với "bị khoá" — cả hai đều approved=false) + fail-closed khi profile null.
+- Verified không cần tài khoản: `?state=blocked/pending/rác` đúng 3 kiểu; `/videos`,`/members`
+  chưa login → redirect kèm `?next=`; open-redirect `//evil.com` + `https://evil.com` → `/login`;
+  Event object → `/login`. `auth.js?v=3`, `portal.css?v=24`, badge v1.13.
+- **CHƯA test được (cần tài khoản thật — chủ tool chạy)**: đăng ký → chờ duyệt → duyệt → đăng nhập
+  → xem video → **tạm khoá lúc đang mở web rồi chuyển trang** (chính là ca vừa vá) → nhân viên vào
+  `/members` phải bị từ chối.
+- **Điểm chờ chủ tool quyết**: policy UPDATE trên `profiles` đòi `is_admin()` ⇒ **nhân viên thường
+  KHÔNG tự sửa được tên/phòng ban của mình**. Muốn cho phép: thêm policy update `id = auth.uid()`
+  (trigger sẵn có đã cấm đổi role/status nên vẫn an toàn).
+
 ### 2026-07-20 (nhánh `feat/login` — v1.12, PUSH GIT KHÔNG DEPLOY)
 - **Bối cảnh:** chủ tool làm tiếp Portal trên nhánh `feat/login` (local:8000, Supabase ĐÃ bật thật —
   key nằm trong `public/js/portal/config.js`). Push lên GitHub để về nhà làm tiếp; **`main` giữ

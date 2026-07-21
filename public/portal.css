@@ -980,6 +980,20 @@ body.is-entering .dash-grid, body.is-entering .dash-grid * {
   transition: none !important;
 }
 
+/* Màn chặn toàn trang khi guard không xác minh được hồ sơ (auth.js → blockPage).
+   Phủ kín để nội dung phía sau không dùng được, nhưng KHÔNG đăng xuất người dùng. */
+.auth-block {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px; background: var(--app-bg);
+}
+.auth-block-card {
+  width: 100%; max-width: 420px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-xl); box-shadow: var(--shadow-lg); padding: 22px;
+}
+.auth-block-card .notice { margin-bottom: 14px; }
+
 /* ---- Tactile Click Feedback & Card Micro-Interactions ---- */
 button:active, .btn:active, .icon-btn:active, .sidebar-nav a:active, .sidebar-foot button:active, .stat-card:active, .area-card:active {
   transform: scale(0.97) !important;

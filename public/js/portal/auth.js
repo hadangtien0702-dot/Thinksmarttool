@@ -49,25 +49,64 @@
     return cachedProfile;
   }
 
-  // Guard trang cần đăng nhập. Trả về { session, profile } hoặc tự redirect.
+  // Màn chặn toàn trang khi không xác minh được hồ sơ. KHÔNG đăng xuất —
+  // lỗi mạng/RLS tạm thời mà đá người ta ra ngoài là quá tay.
+  function blockPage(title, detail) {
+    const box = document.createElement('div');
+    box.className = 'auth-block';
+    box.innerHTML =
+      '<div class="auth-block-card">' +
+        '<div class="notice error"><span>⚠️</span><div><b>' + title + '</b><br>' + detail + '</div></div>' +
+        '<button class="btn btn-primary btn-block" id="auth-block-retry">Thử lại</button>' +
+      '</div>';
+    document.body.appendChild(box);
+    const btn = document.getElementById('auth-block-retry');
+    if (btn) btn.addEventListener('click', function () { location.reload(); });
+  }
+
+  // Guard trang cần đăng nhập. Trả về { session, profile } hoặc tự chặn/chuyển hướng.
   // Chưa cấu hình Supabase → cho qua (chế độ mở) để không khoá Tool khi chưa setup.
+  //
+  // TRẠNG THÁI TÀI KHOẢN ĐƯỢC KIỂM Ở ĐÂY, MỖI LẦN VÀO TRANG — không chỉ ở form
+  // đăng nhập. Lý do: admin bấm "Tạm khoá" lúc người ta đang mở web thì phiên cũ
+  // VẪN CÒN HẠN; nếu chỉ kiểm lúc đăng nhập, người bị khoá còn đi lại trong portal
+  // tới khi phiên hết hạn. (Lỗ hổng thật, phát hiện 21/07/2026.)
   async function requireLogin() {
     if (!configured) return { session: null, profile: null, openMode: true };
+
     const session = await getSession();
     if (!session) {
       const next = encodeURIComponent(location.pathname + location.search);
       location.replace('/login?next=' + next);
       return new Promise(() => {}); // dừng script trang trong lúc chuyển
     }
+
     const profile = await getProfile();
+
+    // FAIL-CLOSED: không đọc được hồ sơ thì KHÔNG cho vào. Trước đây các trang
+    // dùng `if (p && p.status !== 'active')` — p null là bỏ qua cả điều kiện,
+    // tức là guard hỏng thì mở toang. Guard hỏng phải ĐÓNG.
+    if (!profile) {
+      blockPage('Không đọc được hồ sơ tài khoản.',
+                'Có thể do mạng chập chờn. Bấm Thử lại; nếu vẫn lỗi, báo admin.');
+      return new Promise(() => {});
+    }
+
+    if (profile.status !== 'active') {
+      const state = profile.status === 'pending' ? 'pending' : 'blocked';
+      await signOut('/login?state=' + state);
+      return new Promise(() => {});
+    }
+
     return { session, profile, openMode: false };
   }
 
-  async function signOut() {
+  // to: đích sau khi đăng xuất (mặc định /login). requireLogin dùng để kèm ?state=
+  async function signOut(to) {
     const sb = getClient();
     if (sb) await sb.auth.signOut();
     cachedProfile = null;
-    location.href = '/login';
+    location.href = (typeof to === 'string' && /^\/(?!\/)/.test(to)) ? to : '/login';
   }
 
   // ---- Shell: theme + user chip (header portal) --------------------------
