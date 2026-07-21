@@ -27,13 +27,15 @@ function makeDownloadItem(item) {
   const el = document.createElement('div');
   const isActive = appState.activeLibraryPath === item.path || (appState.activeFile && appState.activeFile.path === item.path);
   el.className = `tree-file-item lib-item ${isActive ? 'active' : ''}`.trim();
-  const display = item.name.replace(/\.[^.]+$/, '');
+  // Cùng quy tắc với cây Proposal: mục nằm dưới tiêu đề hãng rồi nên bỏ tên hãng
+  // khỏi nhãn (xem tachTenMau trong core.js) — trước đây "AIG IUL", "NLG Termlife".
+  const display = tachTenMau(item).chuongTrinh;
   el.innerHTML = `
     <span class="tree-file-icon">${NAV_ICONS.fileDl}</span>
     <span class="tree-file-name" title="${escapeHtml(item.name)}">${escapeHtml(display)}</span>
   `;
-  el.addEventListener('click', () => {
-    if (!confirmLeaveUnsaved()) return;
+  el.addEventListener('click', async () => {
+    if (!(await confirmLeaveUnsaved())) return;
     document.querySelectorAll('.tree-file-item').forEach(x => x.classList.remove('active'));
     el.classList.add('active');
 
@@ -124,8 +126,8 @@ function renderLibrarySection(container, label, iconHTML, groupsObj, q) {
       // Add click event to the carrier header to show all items
       const headerEl = grp.folder.querySelector('.tree-folder-header');
       if (headerEl) {
-        headerEl.addEventListener('click', (e) => {
-          if (!confirmLeaveUnsaved()) return;
+        headerEl.addEventListener('click', async (e) => {
+          if (!(await confirmLeaveUnsaved())) return;
           openLibraryGroup(items, carrier);
         });
       }

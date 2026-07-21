@@ -36,8 +36,29 @@ bản gốc lâu dài: `E:\2026\Claude\.claude\skills\`):
 9. **Nhãn đôi song ngữ** (EN / VN) cho tiêu đề điều hướng — nhất quán cả 3 section.
 10. **Field editor gọn theo ngữ nghĩa**: 2 giá trị liên quan chặt (tiền + tuổi của 1 cột biểu đồ)
     → 1 hàng 2 ô (`.dual-input-row`), đừng rải thành 2 nhóm xa nhau.
+11. **Chữ trong SVG không tự giãn — mọi thứ đứng cạnh nhau đều phải tính lại tay.** Hai giá trị nằm
+    cạnh nhau trong bản vẽ là hai thẻ `<text>` với `translate()` cứng: giá trị dài ra là đè lên nhau.
+    Cách xử đúng: đo `getBBox().width` thật rồi đặt lại toạ độ cho CẢ HAI, và **neo theo TÂM cụm**
+    (đo một lần theo bản gốc) chứ đừng neo mép trái — neo tâm thì dài ngắn thế nào khối chữ vẫn cân
+    giữa thẻ nền, và tâm không trôi qua các lần sửa.
+12. **Kerning của Illustrator là kerning của CHỮ CÁI GỐC, không phải của ô.** Mỗi tspan mang một class
+    `letter-spacing` riêng dành cho đúng mảnh chữ ban đầu. Ghi chữ mới vào mảnh đó = áp nhầm kerning
+    cho toàn bộ chữ (chữ dính chùm). Luôn `letter-spacing: inherit` cho mảnh vừa ghi
+    (**`inherit` chứ không `normal`** — để tracking cố ý ở cấp `<text>` không bị xoá).
+13. **Mẫu này chạy được không có nghĩa mẫu kia chạy được.** 3 lỗi ngày 21/07 chỉ nổ ở Allianz vì các
+    mẫu AIG/NLG tình cờ không có class kerning âm ở mảnh đầu. Thêm mẫu mới = phải mở từng ô ra gõ thử,
+    không suy ra từ mẫu cũ.
 
 ## Log bài học theo ngày
+
+### 2026-07-21 (later 2 — 3 lỗi Allianz, xem changelog cùng ngày)
+- Rút ra quy tắc **11, 12, 13** ở trên. Cả 3 lỗi đều lọt vì phiên trước chỉ chạy `node --check`
+  rồi coi như xong; chỉ cần mở đúng mẫu Allianz gõ thử 3 ô là lộ hết ngay.
+- **Sửa chỗ nhìn thấy được thì phải NHÌN, không đọc code rồi suy.** Ảnh chụp Browser pane treo với
+  SVG 2.3 MB → thay bằng `javascript_tool` đọc `getBBox()`/`getComputedStyle()`/`transform` (số đo
+  thật, còn chắc hơn nhìn ảnh), và clone SVG đổi `viewBox` để cắt vùng cần xem gửi chủ tool.
+- **Ô sửa chữ phải kiểm CẢ HAI cây DOM.** Canvas đúng mà `activeSvgDoc` sai thì file xuất ra sai —
+  và đây là thứ chủ tool gửi cho khách. Test xong luôn đối chiếu `appState.activeSvgDoc`.
 
 ### 2026-07-17 (tối — nháp trình duyệt cho site live)
 - **Snapshot dạng key→value của SVG nhiều tspan phải lưu CẢ DÒNG** (`getLineTextContent`), đừng lưu
@@ -94,6 +115,38 @@ bản gốc lâu dài: `E:\2026\Claude\.claude\skills\`):
   đáy khi thanh URL co giãn; bottom-sheet cũng `min(66dvh, …)`.
 - **Đo dark-theme trong pane: toggle class rồi đọc computed style CÙNG call là số ĐÈN CŨ** (pane
   đơ recalc) — đọc token qua PHẦN TỬ TẠO MỚI (`getPropertyValue('--x')` trên div vừa append) mới tin được.
+
+### 2026-07-21 (phiên dài — rail, layout Tool, bảng thành viên, mẫu Allianz)
+- **ĐO PHẦN TỬ THẬT, ĐỪNG ĐO PHẦN TỬ TỰ DỰNG.** Sai 4 lần trong một phiên, đều cùng kiểu:
+  (a) dựng nút bằng class mà quên `id` → không thấy rule `#id !important` → báo sai "hai nút giống
+  nhau" trong khi thực tế 149×48 vs 121×38, chủ tool phải mở DevTools chỉ ra; (b) đo trúng phần tử
+  nằm trong khối `display:none` → mọi số ra 0; (c) đo bố cục SVG khi chưa nạp CSS chứa `@font-face`
+  → chạy bằng font thay thế, số đo lệch hoàn toàn; (d) vá toạ độ SVG bằng pixel màn hình mà quên
+  chia hệ số thu phóng → vá quá tay. Buộc phải dựng thì kèm ĐỦ id + class + ngữ cảnh cha, nạp đúng
+  CSS/font, kiểm `innerWidth` và `display` trước khi tin con số.
+- **Hai file CSS chép tay lẫn nhau = lỗi lặp vô hạn.** Cùng một bug logo rail phải sửa 2 lần vì
+  Tool dùng `style.css` còn portal dùng `portal.css`. Hệ nút cũng lệch (37/44px). Khi thấy mình
+  đang "sửa cả hai file cho giống nhau" → đó là tín hiệu phải gộp, không phải chép tiếp.
+- **`scaleY` để làm animation "dài ra" thì BÓP MÉO nội dung** (icon, chữ) — người dùng gọi là "giật".
+  Dùng `clip-path: inset()` để lộ dần: khung trông như dài ra mà nội dung không biến dạng.
+- **Hiệu ứng chuyển trang chụp KHUNG HÌNH ĐẦU của trang đích.** Trang nào giấu nội dung chờ xác thực
+  thì khung hình đó TRẮNG → người dùng thấy chớp, tưởng không có animation. Khai báo CSS thôi chưa
+  đủ, phải cho nội dung trang đích có nhịp hiện vào.
+- **Bảng nhiều hàng: `subgrid` là bắt buộc khi có cột co giãn theo nội dung.** Cột "Thao tác" đổi số
+  nút theo quyền → mỗi hàng tự dựng lưới là lệch tới 70px.
+- **Hàng thao tác trong bảng: 1 hành động chính + menu "⋯".** Bày 4 nút trộn 3 kiểu (nút viền, chữ
+  đỏ, nút đặc) vừa rối vừa kéo cột rộng ra. Gom lại: cột co từ rất rộng còn 180px.
+- **Ô chỉnh sửa phải phản chiếu ĐÚNG nội dung bản vẽ.** Mẫu Allianz dùng logic toạ độ của IUL nên
+  dán nhãn sai toàn bộ ("Giá trị tích luỹ Cột 2" thực ra là Tổng dòng tiền). Ghép theo NEO CHỮ
+  (nhãn tiếng Việt đứng ngay trên giá trị) là đúng 7/7 và bền khi bản vẽ đổi.
+- **SVG xuất từ Illustrator: tspan là anh em ruột, mỗi cái có `x` cố định.** Viết chữ dài/ngắn khác
+  vào một tspan là các tspan sau chồng lên nhau. Muốn cho sửa tự do phải DỒN cả cụm vào một tspan
+  rồi làm rỗng các tspan còn lại.
+- **Gỡ phần tử khỏi HTML thì phải soát JS còn ghi vào nó không** — `.textContent` trên `null` làm
+  chết cả hàm, trang trắng. Bọc null-safe cho các chỗ ghi số liệu.
+- **Icon raster tỉ lệ 1:1 trong file thiết kế = nhoè khi xuất.** App xuất 2x nên icon 23px thành 46px.
+  Đo độ phân giải thật (giải mã base64 lấy width/height) rồi đối chiếu cỡ hiển thị để chứng minh,
+  đừng tranh luận bằng mắt.
 
 ### 2026-07-20 (Portal `feat/login` — animation, bảng thành viên)
 - **TRƯỚC KHI SỬA ANIMATION, KIỂM TRA MÔI TRƯỜNG.** Chủ tool sửa nhiều lần không thấy khác gì vì

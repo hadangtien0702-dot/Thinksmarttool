@@ -8,7 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/vendor/animate.min.css">
-  <link rel="stylesheet" href="/portal.css?v=24">
+  <link rel="stylesheet" href="/portal.css?v=32">
+  <link rel="stylesheet" href="/dialog.css?v=3">
 </head>
 <body>
   <script>
@@ -91,6 +92,29 @@
                trong members.js (nút + làm mờ bảng) — cố ý không dùng banner nữa. -->
           <div id="load-msg" class="notice error" style="display:none"></div>
 
+          <!-- Thao tác hàng loạt — chỉ hiện khi đã chọn ít nhất 1 người -->
+          <div class="bulk-bar" id="bulk-bar" role="region" aria-label="Thao tác hàng loạt">
+            <span class="bulk-count" id="bulk-count">Đã chọn 0</span>
+            <button class="btn btn-primary btn-sm" data-bulk="approve">Duyệt</button>
+            <button class="btn btn-secondary btn-sm" data-bulk="dept">Đổi phòng ban</button>
+            <button class="btn btn-danger btn-sm" data-bulk="suspend">Tạm khoá</button>
+            <button class="btn btn-primary btn-sm" data-bulk="reactivate">Mở khoá</button>
+            <button class="btn btn-danger btn-sm" data-bulk="delete" id="bulk-delete">Xoá</button>
+            <span class="bulk-sep"></span>
+            <button class="btn btn-secondary btn-sm" id="bulk-clear">Bỏ chọn</button>
+          </div>
+
+          <!-- Bố cục 2 cột (chủ tool 21/07): trái = danh sách, phải = các con số -->
+          <div class="members-layout">
+            <div class="members-main">
+
+          <div class="filter-bar" id="filter-bar">
+            <span>Đang lọc phòng ban: <b id="filter-name">—</b></span>
+            <span class="fb-sep"></span>
+            <button class="btn btn-secondary btn-sm" id="filter-clear">Bỏ lọc</button>
+          </div>
+
+
           <!-- Chờ duyệt -->
           <div class="seg" id="seg-pending" style="display:none">
             <div class="seg-head">
@@ -99,6 +123,7 @@
             </div>
             <div class="member-table">
               <div class="member-head">
+                <span class="m-check"><input type="checkbox" class="pick-all" aria-label="Chọn tất cả trong nhóm này"></span>
                 <span>Thành viên</span><span>Phòng ban</span><span>Quyền</span>
                 <span>Trạng thái</span><span>Tham gia</span><span class="ta-right">Thao tác</span>
               </div>
@@ -114,6 +139,7 @@
             </div>
             <div class="member-table">
               <div class="member-head">
+                <span class="m-check"><input type="checkbox" class="pick-all" aria-label="Chọn tất cả trong nhóm này"></span>
                 <span>Thành viên</span><span>Phòng ban</span><span>Quyền</span>
                 <span>Trạng thái</span><span>Tham gia</span><span class="ta-right">Thao tác</span>
               </div>
@@ -133,30 +159,112 @@
             </div>
             <div class="member-table">
               <div class="member-head">
+                <span class="m-check"><input type="checkbox" class="pick-all" aria-label="Chọn tất cả trong nhóm này"></span>
                 <span>Thành viên</span><span>Phòng ban</span><span>Quyền</span>
                 <span>Trạng thái</span><span>Tham gia</span><span class="ta-right">Thao tác</span>
               </div>
               <div class="member-list" id="list-suspended"></div>
             </div>
           </div>
+
+            </div><!-- /members-main -->
+
+            <aside class="members-side" aria-label="Tổng quan thành viên">
+              <!-- MỘT khối duy nhất, bên trong chia hàng (chủ tool 21/07) -->
+              <div class="ms-panel">
+                <div class="ms-panel-head">Tổng quan</div>
+                <div class="ms-row">
+                  <span class="ms-label">Tổng thành viên</span>
+                  <span class="ms-value" id="ms-total">—</span>
+                </div>
+                <div class="ms-row">
+                  <span class="ms-label">Chờ duyệt</span>
+                  <span class="ms-value is-warn" id="ms-pending">—</span>
+                </div>
+                <div class="ms-row">
+                  <span class="ms-label">Đang hoạt động</span>
+                  <span class="ms-value is-ok" id="ms-active">—</span>
+                </div>
+
+                <!-- Số người theo phòng ban — BẤM ĐƯỢC để lọc danh sách bên trái -->
+                <div class="ms-panel-head ms-sub">Theo phòng ban</div>
+                <div id="ms-depts"></div>
+              </div>
+
+              <button class="btn btn-primary btn-block" id="btn-add-member">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                  <line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
+                </svg>
+                Thêm thành viên
+              </button>
+            </aside>
+          </div><!-- /members-layout -->
         </div>
 
         <!-- Gợi ý phòng ban đã dùng (đổ động từ dữ liệu) -->
         <datalist id="dept-list"></datalist>
+
+  <!-- Thêm thành viên: KHÔNG tạo tài khoản trực tiếp được (xem ghi chú trong members.js) -->
+  <div class="modal-backdrop" id="add-backdrop" aria-hidden="true">
+    <div class="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="add-title">
+      <div class="modal-head">
+        <h2 id="add-title">Thêm thành viên</h2>
+        <button class="icon-btn" id="add-close" aria-label="Đóng">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="notice info" style="margin-bottom:14px">
+          <span>💡</span>
+          <div>Gửi link này cho người mới. Họ tự đăng ký, sau đó tên sẽ hiện ở mục
+          <b>Chờ duyệt</b> để bạn duyệt và xếp phòng ban.</div>
+        </div>
+        <div class="field">
+          <label for="add-link">Link đăng ký</label>
+          <input id="add-link" type="text" readonly>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn btn-secondary btn-sm" id="add-cancel">Đóng</button>
+          <button class="btn btn-primary btn-sm" id="add-copy">Sao chép link</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chọn phòng ban — danh sách CỐ ĐỊNH, thay cho window.prompt (chủ tool 21/07) -->
+  <div class="modal-backdrop" id="dept-backdrop" aria-hidden="true">
+    <div class="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="dept-title">
+      <div class="modal-head">
+        <h2 id="dept-title">Chọn phòng ban</h2>
+        <button class="icon-btn" id="dept-close" aria-label="Đóng">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="dept-who" style="color:var(--text-2);font-size:var(--fs-sm);margin-bottom:12px"></p>
+        <div class="field">
+          <label for="dept-select">Phòng ban</label>
+          <select class="select-field" id="dept-select" style="width:100%"></select>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn btn-secondary btn-sm" id="dept-cancel">Huỷ</button>
+          <button class="btn btn-primary btn-sm" id="dept-save">Lưu</button>
+        </div>
+      </div>
+    </div>
+  </div>
       </main>
 
       <footer class="portal-footer">
-        <span class="version-badge">v1.13</span>
+        <span class="version-badge">v1.14</span>
         <span>20/07/2026 · Thinksmart Insurance — lưu hành nội bộ</span>
       </footer>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/js/portal/config.js?v=1"></script>
+  <script src="/js/portal/config.js?v=2"></script>
   <script src="/js/portal/auth.js?v=3"></script>
-  <script src="/js/portal/members.js?v=6"></script>
+  <script src="/js/ui-dialog.js?v=2"></script>
+  <script src="/js/portal/members.js?v=10"></script>
   <script src="/vendor/gsap.min.js"></script>
-  <script src="/js/animations.js?v=3"></script>
+  <script src="/js/animations.js?v=4"></script>
 </body>
 </html>

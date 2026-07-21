@@ -31,7 +31,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const greeting = document.querySelector('.topbar-greeting');
   const statRow  = document.querySelector('.stat-row');
   const dashGrid = document.querySelector('.dash-grid');
-  if (!greeting && !statRow && !dashGrid) return;
+  // Trang Quản lý thành viên & Video học cũng phải có nhịp hiện vào: hiệu ứng
+  // chuyển trang chụp KHUNG HÌNH ĐẦU của trang đích, mà lúc đó portal còn đang
+  // giấu nội dung chờ xác thực → người dùng chỉ thấy chớp trắng rồi nội dung
+  // nhảy vào, tưởng là không có animation (chủ tool báo 21/07).
+  const memberStats = document.querySelector('.member-stats');
+  const segs        = Array.from(document.querySelectorAll('.seg'));
+  const videoGrid   = document.querySelector('.video-grid');
+  if (!greeting && !statRow && !dashGrid && !memberStats && !segs.length && !videoGrid) return;
 
   // Một nhịp duy nhất: mờ → rõ, nhô lên 10px. Chủ tool chốt "animation đơn giản"
   // (20/07/2026) — bỏ kiểu 3 nhóm lệch nhịp với độ dịch/thời lượng khác nhau.
@@ -41,6 +48,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (greeting) els.push(greeting);
   if (statRow)  els.push(...statRow.children);
   if (dashGrid) els.push(...dashGrid.children);
+  if (memberStats) els.push(...memberStats.children);
+  segs.forEach(s => els.push(s));
+  if (videoGrid) els.push(videoGrid);
   if (!els.length) return;
 
   // Bẫy 2: đặt trạng thái đầu NGAY BÂY GIỜ, lúc shell còn ẩn nên chưa vẽ ra màn hình.

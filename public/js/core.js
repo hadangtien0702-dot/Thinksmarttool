@@ -46,9 +46,13 @@ function clearDirty() {
 
 // Cảnh báo khi sắp rời khỏi bản khách còn thay đổi chưa lưu (đổi file khác trên cây).
 // Trả về true nếu được phép đi tiếp.
-function confirmLeaveUnsaved() {
+// ⚠️ TRẢ VỀ PROMISE — mọi nơi gọi phải `await` (hàm gọi phải là async).
+async function confirmLeaveUnsaved() {
   if (!appState.isDirty || !appState.activeFile || isMasterFile(appState.activeFile)) return true;
-  return confirm('Bản của khách đang mở có thay đổi CHƯA LƯU NHÁP.\nChuyển đi bây giờ sẽ mất các thay đổi đó. Tiếp tục?');
+  return showAppConfirm(
+    'Bản của khách đang mở có thay đổi CHƯA LƯU NHÁP.\nChuyển đi bây giờ sẽ mất các thay đổi đó.',
+    { title: 'Còn thay đổi chưa lưu', tone: 'warning', confirmText: 'Rời đi, bỏ thay đổi', cancelText: 'Ở lại' }
+  );
 }
 
 // --- CONSTANTS ---
@@ -79,42 +83,75 @@ function applyTextValue(el, editorId, newValue) {
   markDirty();
   el.textContent = newValue;
   clearSiblingTspans(el);
+  boQuenKerning(el);
   const renderedBox = dom.canvasWrapper.querySelector('svg');
   if (renderedBox) {
     const canvasEl = renderedBox.querySelector(`[data-editor-id="${editorId}"]`);
     if (canvasEl) {
       canvasEl.textContent = newValue;
       clearSiblingTspans(canvasEl);
+      boQuenKerning(canvasEl);
     }
   }
 }
 
+// Illustrator cắt một dòng chữ thành nhiều tspan, mỗi mảnh mang một class kerning
+// riêng chỉ đúng cho ĐÚNG chữ cái gốc của nó (vd .cls-178 { letter-spacing: -.09em }
+// vốn chỉ dành cho chữ "T"). Ta lại dồn CẢ dòng mới vào mảnh đầu → kerning đó áp cho
+// toàn bộ chữ, các ký tự dính chặt vào nhau. Đây là lỗi "Texas" chủ tool báo 21/07.
+// Dùng 'inherit' (KHÔNG dùng 'normal'): trả về đúng letter-spacing của <text> cha, nên
+// nếu bản vẽ có tracking cố ý ở cấp dòng thì vẫn giữ nguyên.
+function boQuenKerning(el) {
+  if (el && el.style) el.style.letterSpacing = 'inherit';
+}
+
+// Dòng đã bị GỘP từ lần lưu trước (mảnh đầu ôm hết chữ, các mảnh em rỗng nhưng vẫn
+// còn class kerning cũ) thì lúc MỞ FILE đã hiển thị sai rồi, chưa cần gõ gì.
+// Dấu hiệu nhận biết: có mảnh em cùng dòng và TẤT CẢ đều rỗng.
+function chuanHoaKerningDongDaGop(svgEl) {
+  svgEl.querySelectorAll('tspan[data-editor-id]').forEach(el => {
+    if (el.textContent.trim().length < 2) return;
+    const em = manhCungDong(el).filter(sib => sib !== el);
+    if (em.length === 0) return;                               // dòng 1 mảnh: đúng như bản vẽ, không đụng
+    if (em.some(sib => sib.textContent !== '')) return;        // chưa gộp: kerning vẫn còn đúng chỗ
+    boQuenKerning(el);
+  });
+}
+
+// ⚠️ "CÙNG MỘT DÒNG" KHÔNG PHẢI LÀ "CÙNG THUỘC TÍNH y".
+// Theo chuẩn SVG, tspan KHÔNG có y thì nằm tiếp trên dòng của mảnh ngay trước nó.
+// Code cũ so thẳng getAttribute('y') vì Illustrator luôn ghi y cho mọi mảnh — sai kể
+// từ khi gomMotKhoiChu() (proposal.js) phải gỡ y đi để text-anchor gom được cả dòng.
+// Hậu quả đã đo được 21/07: gõ "-" vào ô "30 năm" ra "-0 năm", vì mảnh "0 năm" mất y
+// nên không bị dọn. Mọi chỗ gom dòng PHẢI đi qua hàm này.
+function manhCungDong(tspanEl) {
+  const parent = tspanEl && tspanEl.parentElement;
+  if (!parent) return tspanEl ? [tspanEl] : [];
+  const tatCa = Array.from(parent.querySelectorAll('tspan'));
+  let dangXet = null;
+  const yCua = new Map();
+  tatCa.forEach(sp => {
+    const y = sp.getAttribute('y');
+    if (y !== null) dangXet = y;
+    yCua.set(sp, dangXet);
+  });
+  const cua = yCua.get(tspanEl);
+  return tatCa.filter(sp => yCua.get(sp) === cua);
+}
+
 function clearSiblingTspans(tspanEl) {
   if (!tspanEl || tspanEl.tagName.toLowerCase() !== 'tspan') return;
-  const parent = tspanEl.parentElement;
-  if (!parent) return;
-  const y = tspanEl.getAttribute('y');
-  const siblings = Array.from(parent.querySelectorAll('tspan'));
-  siblings.forEach(sib => {
-    if (sib !== tspanEl && sib.getAttribute('y') === y) {
-      sib.textContent = '';
-    }
+  manhCungDong(tspanEl).forEach(sib => {
+    if (sib !== tspanEl) sib.textContent = '';
   });
 }
 
 function getLineTextContent(tspanEl) {
   if (!tspanEl) return '';
   if (tspanEl.tagName.toLowerCase() !== 'tspan') return tspanEl.textContent.trim();
-  const parent = tspanEl.parentElement;
-  if (!parent) return tspanEl.textContent.trim();
-  const y = tspanEl.getAttribute('y');
-  const siblings = Array.from(parent.querySelectorAll('tspan'));
+  if (!tspanEl.parentElement) return tspanEl.textContent.trim();
   let text = '';
-  siblings.forEach(sib => {
-    if (sib.getAttribute('y') === y) {
-      text += sib.textContent;
-    }
-  });
+  manhCungDong(tspanEl).forEach(sib => { text += sib.textContent; });
   return text.trim();
 }
 
@@ -282,80 +319,9 @@ function getLocalProposal(id) {
 }
 
 // Snapshot all editable text values of the active document, keyed by data-editor-id
-// --- APP DIALOG: thay alert()/prompt() hệ thống bằng modal theo design system ---
-// showAppAlert(message, {title, tone}) → Promise (resolve khi đóng)
-// showAppPrompt(message, {title, placeholder, confirmText, initialValue}) → Promise<string|null>
-function showAppDialog(opts) {
-  return new Promise((resolve) => {
-    const isPrompt = opts.type === 'prompt';
-    const prevFocus = document.activeElement;
-
-    const ICONS = {
-      info: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
-      warning: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-      danger: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
-      prompt: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z"/></svg>'
-    };
-    const tone = opts.tone || 'info';
-    const icon = ICONS[isPrompt ? 'prompt' : tone] || ICONS.info;
-
-    const backdrop = document.createElement('div');
-    backdrop.className = 'app-dialog-backdrop';
-    backdrop.innerHTML = `
-      <div class="app-dialog tone-${tone}" role="dialog" aria-modal="true" aria-label="${escapeHtml(opts.title || opts.message || '')}">
-        <div class="app-dialog-head">
-          <div class="app-dialog-icon">${icon}</div>
-          <div class="app-dialog-title">${escapeHtml(opts.title || 'Thông báo')}</div>
-        </div>
-        <div class="app-dialog-message">${escapeHtml(opts.message || '')}</div>
-        ${isPrompt ? `<input type="text" class="text-input-field app-dialog-input" aria-label="${escapeHtml(opts.title || 'Nhập thông tin')}" placeholder="${escapeHtml(opts.placeholder || '')}" value="${escapeHtml(opts.initialValue || '')}">` : ''}
-        <div class="app-dialog-actions">
-          ${isPrompt ? '<button type="button" class="btn btn-secondary app-dialog-cancel">Huỷ</button>' : ''}
-          <button type="button" class="btn btn-primary app-dialog-confirm">${escapeHtml(opts.confirmText || 'OK')}</button>
-        </div>
-      </div>`;
-    document.body.appendChild(backdrop);
-
-    const input = backdrop.querySelector('.app-dialog-input');
-    const btnConfirm = backdrop.querySelector('.app-dialog-confirm');
-    const btnCancel = backdrop.querySelector('.app-dialog-cancel');
-
-    let closed = false;
-    const close = (result) => {
-      if (closed) return;
-      closed = true;
-      backdrop.classList.remove('open');
-      setTimeout(() => {
-        backdrop.remove();
-        if (prevFocus && typeof prevFocus.focus === 'function') prevFocus.focus();
-      }, 180);
-      resolve(result);
-    };
-    const confirmValue = () => close(isPrompt ? (input ? input.value : '') : true);
-    const cancelValue = () => close(isPrompt ? null : true);
-
-    btnConfirm.addEventListener('click', confirmValue);
-    if (btnCancel) btnCancel.addEventListener('click', cancelValue);
-    backdrop.addEventListener('mousedown', (e) => { if (e.target === backdrop) cancelValue(); });
-    backdrop.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') { e.preventDefault(); cancelValue(); }
-      else if (e.key === 'Enter' && (isPrompt ? e.target === input : true)) { e.preventDefault(); confirmValue(); }
-    });
-
-    // Force reflow rồi mới thêm .open để transition chạy — không dùng rAF
-    // (rAF không chạy khi tab nền/pane bị throttle → dialog kẹt ở opacity 0)
-    void backdrop.offsetWidth;
-    backdrop.classList.add('open');
-    (input || btnConfirm).focus();
-    if (input && opts.initialValue) input.select();
-  });
-}
-function showAppAlert(message, opts = {}) {
-  return showAppDialog({ type: 'alert', message, title: opts.title || 'Thông báo', tone: opts.tone || 'info', confirmText: opts.confirmText });
-}
-function showAppPrompt(message, opts = {}) {
-  return showAppDialog({ type: 'prompt', message, title: opts.title || 'Nhập thông tin', placeholder: opts.placeholder, confirmText: opts.confirmText || 'OK', initialValue: opts.initialValue });
-}
+// --- HỘP THOẠI: xem public/js/ui-dialog.js (dùng chung Tool + Portal) ---
+// showAppAlert / showAppConfirm / showAppPrompt là hàm TOÀN CỤC do ui-dialog.js
+// định nghĩa; tool.html nạp file đó TRƯỚC core.js. Cả ba đều trả Promise → phải await.
 
 // Owner mandate 2026-07-17: tên khách nhập lúc "Tạo bản cho khách" phải điền luôn vào
 // ô tên trên bản vẽ (proposal: dòng id="client-name" — tag khi mở file; name card: text[data-nc="name"]).
@@ -442,8 +408,13 @@ async function loadSvgContent(fileInfo) {
 
         if (tspans.length > 0) {
           const lines = {};
+          // Mảnh không có y thì thuộc dòng của mảnh trước (chuẩn SVG) — file đã lưu
+          // sau khi gomMotKhoiChu() gỡ y sẽ rơi vào đúng trường hợp này.
+          let yDangXet = null;
           tspans.forEach(tspan => {
-            const y = tspan.getAttribute('y') || textEl.getAttribute('y') || '0';
+            const yRieng = tspan.getAttribute('y');
+            if (yRieng !== null) yDangXet = yRieng;
+            const y = yDangXet || textEl.getAttribute('y') || '0';
             if (!lines[y]) lines[y] = [];
             lines[y].push(tspan);
           });
@@ -458,6 +429,9 @@ async function loadSvgContent(fileInfo) {
           textEl.setAttribute('data-editor-id', `edit-text-${editorIdCounter++}`);
         }
       });
+
+      // Gỡ kerning thừa của những dòng đã bị gộp từ lần lưu trước (xem hàm này ở trên)
+      chuanHoaKerningDongDaGop(svgEl);
 
       // Re-apply edits saved in this browser (nháp lưu localStorage)
       if (localRecord && localRecord.fields) {
@@ -479,7 +453,8 @@ async function loadSvgContent(fileInfo) {
 
       // Update UI title (mark master templates, and lock their Save button)
       const isMaster = isMasterFile(fileInfo);
-      const cleanName = fileInfo.name.replace(/\.svg$/i, '');
+      // Thanh tiêu đề KHÔNG có ngữ cảnh nhóm → hiện đủ "Hãng — Chương trình"
+      const cleanName = tachTenMau(fileInfo).day;
       if (dom.activeFileTitle) {
         dom.activeFileTitle.textContent = isMaster ? `${cleanName} — MẪU GỐC` : cleanName;
         dom.activeFileTitle.classList.add('is-active');
@@ -739,6 +714,36 @@ function carrierOf(file) {
   return 'Khác';
 }
 
+// ---------------------------------------------------------------------------
+// TÊN HIỂN THỊ CỦA MẪU — chuẩn hoá một chỗ duy nhất.
+// Tên file do người thiết kế đặt nên mỗi file một kiểu:
+//   "AIG IUL" · "IUL - NLG" · "TERMLIFE - NLG" · "Max-Funded Allianz"
+// Trong cây, mẫu đã nằm sẵn dưới tiêu đề hãng → lặp lại tên hãng là thừa.
+// Nên: trong cây chỉ hiện TÊN CHƯƠNG TRÌNH; ở thanh tiêu đề (không có ngữ cảnh
+// nhóm) mới hiện "Hãng — Chương trình".
+// Bản nháp mang tên KHÁCH HÀNG → giữ nguyên, không cắt gì.
+// ---------------------------------------------------------------------------
+function tachTenMau(file) {
+  const goc = String(file.name || '').replace(/\.[^.]+$/, '').trim();
+  const laNhap = !!file.localId ||
+    String(file.path || '').replace(/\\/g, '/').toLowerCase().startsWith('4-clients/');
+  if (laNhap) return { hang: '', chuongTrinh: goc, day: goc };
+
+  const hang = carrierOf(file);
+  let ct = goc
+    .replace(/^\s*(AIG|NLG|Allianz)\s*[-–—_]*\s*/i, '')   // hãng ở ĐẦU tên
+    .replace(/\s*[-–—_]*\s*(AIG|NLG|Allianz)\s*$/i, '');  // hãng ở CUỐI tên
+  // Gọi tên chương trình thống nhất, bất kể file viết hoa/thường/liền
+  ct = ct.replace(/\bterm\s*-?\s*life\b/i, 'Term Life')
+         .replace(/\btermlife\b/i, 'Term Life')
+         .replace(/\biul\b/i, 'IUL')
+         .replace(/\s{2,}/g, ' ')
+         .trim();
+  if (!ct) ct = goc;   // tên chỉ có mỗi tên hãng → thà giữ nguyên còn hơn để trống
+  const coHang = ['AIG', 'NLG', 'Allianz'].includes(hang);
+  return { hang: coHang ? hang : '', chuongTrinh: ct, day: coHang ? `${hang} — ${ct}` : ct };
+}
+
 function carrierSort(a, b) {
   const ia = CARRIER_ORDER.indexOf(a), ib = CARRIER_ORDER.indexOf(b);
   return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib) || a.localeCompare(b);
@@ -792,7 +797,8 @@ function makeProposalItem(file) {
   const el = document.createElement('div');
   const isActive = appState.activeFile && appState.activeFile.path === file.path;
   el.className = `tree-file-item ${isActive ? 'active' : ''}`.trim();
-  const display = file.name.replace(/\.svg$/i, '');
+  // Trong cây: chỉ tên chương trình (tiêu đề nhóm đã nói hãng rồi) — xem tachTenMau()
+  const display = tachTenMau(file).chuongTrinh;
   // Bản nháp = bản lưu trên trình duyệt (localId) hoặc file trong 4-Clients → được phép xoá
   const isDraft = !!file.localId || String(file.path).replace(/\\/g, '/').toLowerCase().startsWith('4-clients/');
   el.innerHTML = `
@@ -800,8 +806,8 @@ function makeProposalItem(file) {
     <span class="tree-file-name" title="${escapeHtml(file.name)}">${escapeHtml(display)}</span>
     ${isDraft ? `<span class="tree-file-delete" title="Xoá bản nháp này">${NAV_ICONS.trash}</span>` : ''}
   `;
-  el.addEventListener('click', () => {
-    if (appState.activeFile && appState.activeFile.path !== file.path && !confirmLeaveUnsaved()) return;
+  el.addEventListener('click', async () => {
+    if (appState.activeFile && appState.activeFile.path !== file.path && !(await confirmLeaveUnsaved())) return;
     document.querySelectorAll('.tree-file-item').forEach(x => x.classList.remove('active'));
     el.classList.add('active');
     loadSvgContent(file);
@@ -813,7 +819,9 @@ function makeProposalItem(file) {
     del.setAttribute('aria-label', `Xoá bản nháp ${display}`);
     del.addEventListener('click', async (e) => {
       e.stopPropagation();
-      if (!confirm(`Xoá bản nháp "${display}"?\nHành động này không thể hoàn tác.`)) return;
+      const dongY = await showAppConfirm(`Bản nháp "${display}" sẽ bị xoá và không lấy lại được.`,
+        { title: 'Xoá bản nháp?', tone: 'danger', confirmText: 'Xoá bản nháp', cancelText: 'Giữ lại' });
+      if (!dongY) return;
 
       // Static mode: bản lưu trong trình duyệt này
       if (file.localId) {
@@ -883,11 +891,21 @@ function updateHeaderActions() {
 
   btnSave.style.display = isClientCopy ? '' : 'none';
 
+  // Chưa mở file nào → màn chào đang hiện, mà màn chào đã có nút "Tạo bản cho
+  // khách" to giữa màn hình. Để thêm nút y hệt trên header là thừa, hai nút
+  // giống nhau cùng lúc gây phân vân (chủ tool hỏi 21/07: "sao lại có ở đây nữa").
+  // Có file rồi thì header mới cần nút này.
+  btnNew.style.display = file ? '' : 'none';
+
   const label = btnNew.querySelector('.btn-label');
-  if (label) label.textContent = isClientCopy ? 'Tạo bản mới' : 'Tạo bản cho khách';
-  const emphasize = !!file && !isClientCopy; // master open → make the CTA primary
-  btnNew.classList.toggle('btn-primary', emphasize);
-  btnNew.classList.toggle('btn-secondary', !emphasize);
+  // "Tạo mới" ngắn gọn khi đang mở bản khách (chủ tool 21/07) — lúc đó nút đứng
+  // cạnh "Lưu Nháp", để dài thành hai cụm chữ dài kề nhau, nặng thanh header.
+  if (label) label.textContent = isClientCopy ? 'Tạo mới' : 'Tạo bản cho khách';
+  // LUÔN là btn-primary — chủ tool 21/07: "copy button Lưu Nháp ra và sửa thành
+  // Tạo mới", tức hai nút phải giống hệt nhau. Trước đây đổi qua btn-secondary
+  // khi mở bản khách nên hai nút cạnh nhau lại khác kiểu.
+  btnNew.classList.add('btn-primary');
+  btnNew.classList.remove('btn-secondary');
 }
 
 // --- CANVAS RENDERING & INTERACTIVES ---
@@ -1529,6 +1547,19 @@ async function exportToPdf() {
 }
 
 // --- STATUS BAR ---
+// Thông báo TẠM THỜI, không phải chữ thường trực: hiện rồi tự mờ đi sau vài
+// giây. Trước đây dòng cuối cùng nằm lì mãi ("Đã tải 5 thiết kế.") làm dải đáy
+// lúc nào cũng có chữ thừa — chủ tool 21/07. Vẫn giữ nguyên hàm này vì nó là
+// chỗ báo "Đang lưu…", "Đã xuất PDF…", "Đã xoá bản nháp…".
+const STATUS_HIDE_MS = 4000;
+let statusHideTimer = null;
 function updateStatus(message) {
-  dom.statusLeft.textContent = message;
+  const el = dom.statusLeft;
+  if (!el) return;
+  el.textContent = message;
+  el.classList.add('is-visible');
+  clearTimeout(statusHideTimer);
+  statusHideTimer = setTimeout(function () {
+    el.classList.remove('is-visible');
+  }, STATUS_HIDE_MS);
 }

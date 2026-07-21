@@ -189,7 +189,10 @@ button { font-family: inherit; cursor: pointer; }
    -------------------------------------------------------------------------- */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  min-height: 44px; padding: 0 18px;
+  /* 38px trên DESKTOP, 44px trên mobile (override cuối file). Quy tắc chạm 44px
+     là dành cho ngón tay; chuột chính xác hơn nên desktop để gọn cho đỡ nặng nề.
+     TRÙNG số với style.css — đổi thì đổi cả hai. */
+  min-height: 38px; padding: 0 16px;
   border-radius: var(--r-md);
   font-size: var(--fs-base); font-weight: 600;
   border: 1px solid transparent;
@@ -211,7 +214,7 @@ button { font-family: inherit; cursor: pointer; }
 
 .icon-btn {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 40px; height: 40px; border-radius: var(--r-md);
+  width: 38px; height: 38px; border-radius: var(--r-md);
   background: transparent; border: 1px solid transparent; color: var(--text-2);
   transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
 }
@@ -550,7 +553,7 @@ button { font-family: inherit; cursor: pointer; }
 /* --------------------------------------------------------------------------
    QUẢN LÝ THÀNH VIÊN (/members)
    -------------------------------------------------------------------------- */
-.btn-sm { min-height: 36px; padding: 0 13px; font-size: var(--fs-sm); }
+.btn-sm { min-height: 32px; padding: 0 12px; font-size: var(--fs-sm); }
 
 /* Mỗi khối nội dung là một THẺ bo góc (kiểu dashboard card) —
    dòng bên trong là list phân cách hairline, không phải hộp lồng hộp. */
@@ -580,7 +583,8 @@ button { font-family: inherit; cursor: pointer; }
 .member-table {
   display: grid;
   grid-template-columns:
-    minmax(200px, 2fr)      /* Thành viên (avatar + tên + email) */
+    28px                    /* Ô chọn (checkbox) */
+    minmax(190px, 2fr)      /* Thành viên (avatar + tên + email) */
     minmax(96px,  0.9fr)    /* Phòng ban */
     minmax(92px,  0.8fr)    /* Quyền */
     minmax(124px, 1fr)      /* Trạng thái */
@@ -605,16 +609,28 @@ button { font-family: inherit; cursor: pointer; }
 .member-head .ta-right { text-align: right; }
 
 .member-row {
+  position: relative;
   align-items: center;
   background: transparent; border: none;
   border-top: 1px solid var(--divider);
   padding: 13px 0;
   box-shadow: none;
+  transition: background-color var(--dur) var(--ease);
 }
 .member-row:first-child { border-top: none; }
+/* Thanh chỉ dấu bên trái. position:absolute → KHÔNG thành một ô của subgrid,
+   nên không phá bố cục 6 cột (xem ghi chú lưới ở trên). */
+.member-row::before {
+  content: ''; position: absolute; left: -10px; top: 4px; bottom: 4px;
+  width: 3px; border-radius: 3px; background: transparent;
+  transition: background-color var(--dur) var(--ease);
+}
 .member-row:hover { background: var(--surface-2); }
-.member-row.is-me { background: var(--brand-soft); }
-.member-row.is-me:hover { background: var(--brand-soft); }
+/* "Hàng của bạn" chỉ là thông tin, KHÔNG phải trạng thái thao tác → chỉ một vạch
+   nhạt, không tô nền. Cột cuối đã có chữ "Bạn" nói rõ rồi. */
+.member-row.is-me { background: transparent; }
+.member-row.is-me::before { background: var(--brand-300); }
+.member-row.is-me:hover { background: var(--surface-2); }
 
 /* Cột 1: avatar + danh tính đi liền nhau thành một khối */
 .member-row .m-user { display: flex; align-items: center; gap: 12px; min-width: 0; }
@@ -639,6 +655,194 @@ button { font-family: inherit; cursor: pointer; }
   gap: 8px; flex-wrap: wrap;
 }
 .member-row .m-self { color: var(--text-3); font-size: var(--fs-xs); font-weight: 700; padding-right: 4px; }
+
+/* --- Thao tác trên hàng: 1 hành động chính + menu "⋯" -----------------------
+   Trước đây bày 4 nút cạnh nhau trộn 3 kiểu (nút viền, chữ đỏ, nút đặc) nên rối
+   và cột bị kéo rộng (chủ tool 21/07). Giờ chỉ hiện việc hay dùng nhất, phần
+   còn lại nằm trong menu — cột gọn và mắt biết ngay phải bấm gì. */
+.m-more-wrap { position: relative; display: inline-flex; }
+.m-more {
+  width: 32px; height: 32px; border-radius: var(--r-sm);
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; border: 1px solid var(--border); color: var(--text-2);
+  cursor: pointer; font-size: 16px; line-height: 1;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.m-more:hover { background: var(--surface-3); border-color: var(--border-strong); color: var(--text); }
+.m-menu {
+  display: none; position: absolute; right: 0; top: calc(100% + 6px); z-index: 70;
+  min-width: 186px; padding: 6px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-md); box-shadow: var(--shadow-lg);
+}
+.m-menu.open { display: block; }
+.m-menu button {
+  display: flex; align-items: center; width: 100%; gap: 8px;
+  padding: 9px 10px; border: none; background: transparent; border-radius: var(--r-sm);
+  font: inherit; font-size: var(--fs-sm); font-weight: 600; color: var(--text-2);
+  text-align: left; cursor: pointer; white-space: nowrap;
+}
+.m-menu button:hover { background: var(--surface-3); color: var(--text); }
+.m-menu button.is-danger { color: var(--danger); }
+.m-menu button.is-danger:hover { background: var(--danger-soft); }
+.m-menu .m-menu-sep { height: 1px; margin: 5px 4px; background: var(--divider); }
+
+/* Ô chọn (dropdown) — portal.css trước giờ chỉ có style cho input, chưa có select.
+   Bám theo đúng .field input để hai loại ô nhìn như một. */
+.select-field {
+  width: 100%;
+  min-height: 40px; padding: 0 12px;
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  background: var(--surface-2); color: var(--text);
+  font-family: inherit; font-size: var(--fs-base); font-weight: 500;
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.select-field:hover { border-color: var(--border-strong); }
+.select-field:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-ring); background: var(--surface); }
+
+/* --- Chọn nhiều thành viên + thao tác hàng loạt --------------------------- */
+.m-check { display: flex; align-items: center; justify-content: center; }
+.m-check input[type="checkbox"] {
+  width: 17px; height: 17px; cursor: pointer; accent-color: var(--brand); margin: 0;
+}
+/* Đang chọn để thao tác hàng loạt — trạng thái MẠNH NHẤT trong ba, và phải thắng
+   .is-me (một người vừa là mình vừa đang được chọn thì phải thấy là "đang chọn").
+   box-shadow ngang để mảng nền thở ra hai bên mà KHÔNG thêm padding (padding ngang
+   làm lệch subgrid — xem ghi chú lưới ở trên). */
+.member-row.is-picked,
+.member-row.is-picked:hover,
+.member-row.is-me.is-picked { background: var(--brand-soft); }
+.member-row.is-picked::before,
+.member-row.is-me.is-picked::before { background: var(--brand); }
+.member-row.is-picked { box-shadow: -10px 0 0 var(--brand-soft), 10px 0 0 var(--brand-soft); }
+
+/* Thanh thao tác hàng loạt — chỉ hiện khi có người được chọn. position sticky
+   để cuộn danh sách dài vẫn thấy; KHÔNG dùng fixed (che mất dải chân trang). */
+.bulk-bar {
+  display: none;
+  position: sticky; top: calc(var(--header-height) + 16px); z-index: 60;
+  align-items: center; gap: 12px; flex-wrap: wrap;
+  margin-bottom: 14px; padding: 10px 14px;
+  background: var(--surface); border: 1px solid var(--brand-ring);
+  border-radius: var(--r-lg); box-shadow: var(--shadow-md);
+}
+.bulk-bar.open { display: flex; }
+.bulk-bar .bulk-count { font-weight: 800; font-size: var(--fs-sm); color: var(--brand); }
+.bulk-bar .bulk-sep { flex: 1; }
+
+/* Bố cục 2 cột trang Quản lý thành viên (chủ tool 21/07):
+   trái = danh sách người, phải = các con số tổng hợp.
+   Cột phải hẹp và DÍNH theo cuộn để lúc rà danh sách dài vẫn thấy tổng quan. */
+.members-layout {
+  display: grid; gap: 16px;
+  grid-template-columns: minmax(0, 1fr) 312px;   /* rộng ra từ 260 (chủ tool 21/07) */
+  align-items: start;
+}
+.members-main { min-width: 0; }   /* min-width:0 bắt buộc, thiếu là bảng đẩy cột phải tràn */
+.members-side {
+  display: flex; flex-direction: column; gap: 12px;
+  position: sticky; top: calc(var(--header-height) + 16px);
+}
+/* Màn hẹp: xếp dọc, số liệu lên trước cho thấy ngay bức tranh chung */
+@media (max-width: 1100px) {
+  .members-layout { grid-template-columns: 1fr; }
+  /* Khối tổng quan lên trên danh sách; 3 hàng trải ngang cho đỡ cao */
+  .members-side { position: static; order: -1; }
+  .ms-panel { padding-bottom: 14px; }
+  .ms-panel .ms-row {
+    display: inline-flex; width: calc(33.333% - 4px);
+    flex-direction: column; align-items: flex-start; gap: 4px;
+    border-top: none; padding: 12px 0 0;
+  }
+}
+/* MỘT khối duy nhất chứa cả 3 con số (chủ tool 21/07 — trước là 3 thẻ rời).
+   Mỗi hàng: nhãn bên trái, số bên phải; ngăn nhau bằng vạch mảnh chứ không
+   phải hộp lồng hộp — cùng ngôn ngữ với .seg của bảng thành viên. */
+.ms-panel {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-xl); box-shadow: var(--shadow-xs);
+  padding: 14px 16px 4px;
+}
+.ms-panel-head {
+  font-size: var(--fs-2xs); font-weight: 800; letter-spacing: 0.6px;
+  text-transform: uppercase; color: var(--text-3);
+  padding-bottom: 10px; border-bottom: 1px solid var(--border);
+}
+.ms-row {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding: 13px 0;
+  border-top: 1px solid var(--divider);
+}
+/* Hàng ngay sau tiêu đề: bỏ vạch trên, nếu không sẽ CHỒNG với border-bottom
+   của .ms-panel-head thành hai vạch. Không dùng :first-of-type — nó khớp vào
+   .ms-panel-head (cùng là thẻ div) chứ không phải hàng đầu tiên. */
+.ms-panel-head + .ms-row { border-top: none; }
+.ms-row .ms-label {
+  font-size: var(--fs-sm); font-weight: 600; color: var(--text-2);
+}
+.ms-row .ms-value {
+  font-size: var(--fs-xl); font-weight: 800; letter-spacing: -0.5px;
+  line-height: 1; font-variant-numeric: tabular-nums; color: var(--text);
+}
+.ms-row .ms-value.is-warn { color: var(--warning); }
+.ms-row .ms-value.is-ok   { color: var(--success); }
+
+/* Tiêu đề nhóm phụ trong khối tổng quan ("Theo phòng ban") */
+.ms-panel-head.ms-sub { margin-top: 6px; padding-top: 12px; border-top: 1px solid var(--border); border-bottom: none; }
+
+/* Hàng phòng ban BẤM ĐƯỢC để lọc danh sách — phải trông như bấm được, không
+   phải chỉ là con số. Hàng đang lọc được tô nền để biết bộ lọc còn bật. */
+/* ⚠️ NGUYÊN TẮC TRẠNG THÁI (chốt 21/07/2026 sau khi chủ tool báo "chọn/hover xấu"):
+   KHÔNG tô một mảng màu đặc kín cả hàng. Hàng ở đây rất rộng (hàng phòng ban, hàng
+   thành viên), mảng màu kín biến nó thành một khối nặng át hết nội dung bên trong.
+   Thay bằng THANH CHỈ DẤU BÊN TRÁI + nền nhạt hơn hẳn.
+   Và ba trạng thái phải KHÁC CẤP ĐỘ nhau, đừng dùng chung một màu:
+     hover      → nhẹ nhất, chỉ báo "chuột đang ở đây"
+     đang chọn  → đậm nhất, vì nó đổi việc đang làm (bộ lọc / thao tác hàng loạt)
+     "là bạn"   → chỉ là thông tin, phải NHẸ NHẤT trong ba, đã có chữ "Bạn" rồi */
+.ms-dept {
+  position: relative;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; padding: 10px 8px; margin: 0 -8px;
+  background: transparent; border: none; border-radius: var(--r-sm);
+  font: inherit; color: inherit; cursor: pointer; text-align: left;
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+/* Thanh chỉ dấu: position absolute nên KHÔNG chiếm ô nào trong layout cha */
+.ms-dept::before {
+  content: ''; position: absolute; left: 0; top: 50%;
+  width: 3px; height: 0; border-radius: 0 3px 3px 0;
+  background: var(--brand); transform: translateY(-50%);
+  transition: height var(--dur) var(--ease);
+}
+.ms-dept:hover { background: var(--surface-2); }
+.ms-dept:hover::before { height: 14px; }
+.ms-dept:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.ms-dept .msd-name { font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); }
+.ms-dept .msd-count {
+  min-width: 24px; height: 22px; padding: 0 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--r-pill); background: var(--surface-3); color: var(--text-2);
+  font-size: var(--fs-xs); font-weight: 800; font-variant-numeric: tabular-nums;
+}
+.ms-dept.is-on { background: var(--brand-soft); }
+.ms-dept.is-on::before { height: calc(100% - 10px); }
+.ms-dept.is-on .msd-name { color: var(--brand); font-weight: 800; }
+/* Badge nền BRAND ĐẶC trên nền đã tô nhạt là hai lớp màu chồng nhau, nhìn nặng.
+   Nhạt lại, để "đậm" dồn vào thanh chỉ dấu — một điểm nhấn thôi. */
+.ms-dept.is-on .msd-count { background: var(--brand-soft-2); color: var(--brand); }
+
+/* Dải báo "đang lọc" trên đầu danh sách bên trái */
+.filter-bar {
+  display: none; align-items: center; gap: 10px;
+  margin-bottom: 14px; padding: 10px 14px;
+  background: var(--brand-soft); border: 1px solid var(--brand-ring);
+  border-radius: var(--r-lg);
+  font-size: var(--fs-sm); font-weight: 600; color: var(--text);
+}
+.filter-bar.open { display: flex; }
+.filter-bar .fb-sep { flex: 1; }
 
 /* --- Đang tải: phản hồi TẠI CHỖ, không chen banner làm xê dịch bố cục ------
    Bảng mờ + khoá thao tác trong lúc chờ; kích thước không đổi nên không giật. */
@@ -693,6 +897,12 @@ button { font-family: inherit; cursor: pointer; }
    từng thuộc tính xuống dòng riêng kèm nhãn (data-label) vì hàng tiêu đề đã ẩn. */
 @media (max-width: 900px) {
   .member-head { display: none; }
+  /* Ngón tay cần 44px — desktop để 38/32 cho gọn, mobile trả về ngưỡng chạm.
+     Quy tắc 2 sổ bài học: 44px là cho MOBILE, desktop được nhỏ hơn. */
+  .btn { min-height: 44px; }
+  .btn-sm { min-height: 40px; }
+  .icon-btn { width: 44px; height: 44px; }
+
   /* Bỏ subgrid, mỗi thành viên xếp dọc thành một thẻ */
   .member-table { display: block; }
   .member-list { display: block; }
@@ -730,7 +940,13 @@ button { font-family: inherit; cursor: pointer; }
   /* Sát mép hơn (8px thay vì 12px) để rail, header và nội dung nằm gần nhau,
      đọc thành một khối thay vì 3 vùng rời. Đổi số này phải đổi luôn
      .app-shell padding-left (8 + 64 + 8 = 80) và .tool-shell bên style.css. */
-  left: 8px; top: 8px; bottom: 8px;
+  /* Rail CAO ĐÚNG BẰNG NỘI DUNG và căn giữa dọc (chủ tool 21/07: menu ít mục,
+     kéo cao full màn nhìn dài và trống). max-height để phòng khi thêm nhiều mục;
+     mobile tự khai lại top/bottom/transform nên drawer không bị ảnh hưởng. */
+  left: 8px; top: 50%; bottom: auto;
+  transform: translateY(-50%);
+  max-height: calc(100vh - 16px);
+  max-height: calc(100dvh - 16px);
   width: 64px; flex-shrink: 0;
   height: auto;
   background: var(--surface);
@@ -1076,9 +1292,15 @@ button:active, .btn:active, .icon-btn:active, .sidebar-nav a:active, .sidebar-fo
 .panel-head .panel-link { margin-left: auto; font-size: var(--fs-sm); font-weight: 700; color: var(--brand); }
 
 .mini-list { display: flex; flex-direction: column; }
-.mini-row { display: flex; align-items: center; gap: 12px; padding: 11px 8px; margin: 0 -8px; border-radius: var(--r-md); border-top: 1px solid var(--divider); }
+/* Là thẻ <a> (bấm vào hàng → /members) nên phải tự bỏ gạch chân + trả màu chữ */
+.mini-row {
+  display: flex; align-items: center; gap: 12px; padding: 11px 8px; margin: 0 -8px;
+  border-radius: var(--r-md); border-top: 1px solid var(--divider);
+  text-decoration: none; color: inherit; cursor: pointer;
+}
 .mini-row:first-child { border-top: none; }
 .mini-row:hover { background: var(--surface-2); }
+.mini-row:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
 .mini-row .avatar {
   width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
@@ -1117,4 +1339,79 @@ button:active, .btn:active, .icon-btn:active, .sidebar-nav a:active, .sidebar-fo
 }
 @media (max-width: 520px) {
   .topbar-user .tu-id { display: none; }
+}
+
+/* ==========================================================================
+   RAIL — HIỆU ỨNG + CHUYỂN TRANG (21/07/2026, theo yêu cầu chủ tool)
+   Khối này ĐƯỢC CHÉP SANG style.css (đổi .sidebar → .portal-sidebar).
+   Sửa ở đây thì sửa cả hai — hai file đang là bản sao của nhau.
+   ========================================================================== */
+
+/* Góc quay của vệt sáng chạy viền. Phải khai bằng @property thì mới nội suy
+   được (biến CSS thường không animate). */
+@property --rail-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* Chuyển trang: fade + nhích nhẹ thay vì chớp trắng rồi giật.
+   PHẢI để ngoài @media — @view-transition không hợp lệ khi lồng trong đó.
+   Chỉ chạy khi CẢ HAI trang cùng khai báo (portal.css + style.css đều có). */
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: tst-page-out 0.16s ease both; }
+::view-transition-new(root) { animation: tst-page-in 0.30s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes tst-page-out { to { opacity: 0; } }
+@keyframes tst-page-in  { from { opacity: 0; transform: translateY(8px); } }
+
+/* Vươn dài ra rồi đáp về đúng chiều cao. translateY(-50%) phải có trong MỌI
+   khung hình, nếu không rail mất căn giữa trong lúc chạy. */
+/* KHÔNG dùng scaleY: nó BÓP MÉO icon và chữ trong lúc chạy — chủ tool thấy
+   "giật" khi F5 (21/07). clip-path lộ dần từ giữa ra: khung trông như dài ra
+   mà nội dung bên trong không hề biến dạng. */
+@keyframes tst-rail-enter {
+  0%   { opacity: 0; clip-path: inset(42% 0 42% 0 round 20px); }
+  100% { opacity: 1; clip-path: inset(0 0 0 0 round 20px); }
+}
+@keyframes tst-rail-trace { to { --rail-angle: 360deg; } }
+
+/* Desktop-only: mobile rail là drawer, tối nền + vệt chạy ở đó là thừa. */
+@media (min-width: 901px) {
+  /* 1. Hover rail → tối nền cho mắt dồn vào menu.
+     Dùng body::after nên KHÔNG phải thêm thẻ vào 5 file HTML, và không bị
+     overflow:hidden của rail cắt mất. z-index 150 = trên topbar (80), dưới rail (200). */
+  body::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 150;
+    background: rgba(11, 13, 20, 0.38);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.32s var(--ease);
+  }
+  body:has(.sidebar:hover)::after,
+  body:has(.sidebar:focus-within)::after { opacity: 1; }
+
+  /* 2. Chạy 1 lần lúc vào trang */
+  .sidebar { animation: tst-rail-enter 0.62s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+  /* 3. Vệt sáng chạy quanh viền khi hover.
+     inset: 0 và bo 19px (không phải -1px/21px) vì rail có overflow:hidden —
+     đặt âm sẽ bị cắt mất; vệt chạy sát mép TRONG của viền. */
+  .sidebar::before {
+    content: '';
+    position: absolute; inset: 0; z-index: 1;
+    border-radius: 19px;
+    padding: 1.5px;
+    background: conic-gradient(from var(--rail-angle),
+                transparent 0deg, var(--brand) 45deg, var(--brand-400) 75deg, transparent 120deg);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.28s var(--ease);
+  }
+  .sidebar:is(:hover, :focus-within)::before {
+    opacity: 1;
+    animation: tst-rail-trace 2.4s linear infinite;
+  }
 }

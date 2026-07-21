@@ -223,10 +223,12 @@
   }
 
   async function removeVideo(v) {
-    if (!window.confirm('Xoá video "' + v.title + '"? Hành động này không hoàn tác được.')) return;
+    const dongY = await showAppConfirm('Video "' + v.title + '" sẽ bị xoá và không lấy lại được.',
+      { title: 'Xoá video?', tone: 'danger', confirmText: 'Xoá video', cancelText: 'Giữ lại' });
+    if (!dongY) return;
     const sb = TSTAuth.getClient();
     const { error } = await sb.from('videos').delete().eq('id', v.id);
-    if (error) { window.alert('Xoá chưa được: ' + error.message); return; }
+    if (error) { await showAppAlert(error.message, { title: 'Xoá chưa được', tone: 'danger' }); return; }
     await loadVideos();
   }
 

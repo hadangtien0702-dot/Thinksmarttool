@@ -3,17 +3,20 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
-## ⚠️ HAI NHÁNH SONG SONG (từ 2026-07-20) — ĐỌC TRƯỚC KHI ĐỘNG VÀO GIT
+## ⚠️ BA NHÁNH (cập nhật 2026-07-21) — ĐỌC TRƯỚC KHI ĐỘNG VÀO GIT
 
-| | `main` | `feat/login` |
-|---|---|---|
-| Vai trò | **BẢN LIVE cho đội sale dùng thật** | Portal đang phát triển |
-| Ở đâu | Đã push, Vercel auto-deploy | **CHỈ CHẠY LOCAL — CHƯA PUSH** |
-| Version | v1.11 · `proposal.js?v=11` | v1.11 · `portal.css?v=18`, `style.css?v=38` |
-| `config.js` | Khoá Supabase **TRỐNG** → chế độ mở, **không bắt đăng nhập** | **CÓ khoá thật** → bắt đăng nhập + chờ duyệt |
-| Nội dung | Chỉ Tool. `/`, `/login`, `/videos` → **302 về `/tool`** | Portal đầy đủ: trang chủ dashboard, /members, /videos |
+| | `main` | `feat/login` | `feat/mainV1.1` |
+|---|---|---|---|
+| Vai trò | **BẢN LIVE cho đội sale** | Portal (đã gộp vào V1.1) | **NHÁNH ĐANG LÀM** = main + portal |
+| Ở đâu | Đã push, Vercel auto-deploy | Đã push GitHub 20/07 | **LOCAL — CHƯA PUSH** |
+| Version | v1.11 · `proposal.js?v=11` | v1.12 | **v1.13** (xem "Version hiện tại" bên dưới) |
+| `config.js` | Khoá Supabase **TRỐNG** → chế độ mở | CÓ khoá thật | **CÓ khoá thật** → bắt đăng nhập |
+| Nội dung | Chỉ Tool. `/`,`/login`,`/videos` → **302 về `/tool`** | Portal | Portal + Tool, **đã GỠ redirect** |
 
-**🚨 TUYỆT ĐỐI KHÔNG merge `feat/login` vào `main` khi chưa duyệt xong tài khoản cho đội sale.**
+**✅ 21/07/2026 — CHỦ TOOL CHỐT: merge lên `main` và cho LIVE, chấp nhận bắt đăng nhập.**
+Cảnh báo bên dưới giữ lại để hiểu bối cảnh, nhưng quyết định đã thay đổi.
+
+~~🚨 TUYỆT ĐỐI KHÔNG merge `feat/login` vào `main` khi chưa duyệt xong tài khoản cho đội sale.~~
 Lý do: `config.js` trên feat/login có khoá Supabase → live sẽ bắt đăng nhập, cả đội sale bị chặn
 khỏi Tool ngay lập tức (họ chưa có tài khoản; ai đăng ký cũng kẹt ở "chờ admin duyệt").
 Muốn đưa lên live phải: (1) duyệt sẵn tài khoản cho toàn đội, HOẶC (2) tạm để `config.js` trống.
@@ -21,6 +24,24 @@ Muốn đưa lên live phải: (1) duyệt sẵn tài khoản cho toàn đội, 
 Khi cần sửa cho bản live: `git checkout main` → sửa → push (đừng mang theo thay đổi của feat/login).
 Redirect tạm ở `server.js` (main) dùng **302 chứ không 301** — 301 bị trình duyệt cache cứng, sau này
 portal xong muốn trả lại trang chủ sẽ rất cực để gỡ.
+
+## Version hiện tại trên `feat/mainV1.1` (2026-07-21, ĐÃ PUSH lên nhánh riêng)
+
+Badge UI **v1.14** (5 chỗ — `grep -rn "version-badge" public/*.html`). Cache-version của asset:
+
+| File | Version | File | Version |
+|---|---|---|---|
+| `portal.css` | `?v=32` | `style.css` | `?v=53` |
+| `js/core.js` | `?v=22` | `js/proposal.js` | `?v=19` |
+| `js/brochure.js` | `?v=6` | `js/animations.js` | `?v=4` |
+| `js/portal/auth.js` | `?v=3` | `js/portal/members.js` | `?v=10` |
+| `js/ui-dialog.js` | `?v=2` | `dialog.css` | `?v=3` |
+| `js/portal/config.js` | `?v=2` | `js/portal/videos.js` | `?v=2` |
+
+**⚠️ HAI FILE CSS LÀ BẢN SAO CỦA NHAU** — `portal.css` (portal) và `style.css` (Tool) chép tay lẫn
+nhau phần rail, nút, token. **Đây là nguồn lỗi lặp đi lặp lại** (logo rail sai 2 lần, nút lệch cỡ
+giữa 2 trang). Sửa bất kỳ thứ gì thuộc rail / hệ nút / token → PHẢI sửa CẢ HAI. Gộp phần dùng chung
+ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 
 ## Current state (as of 2026-07-17)
 - **Frontend is modular**: `public/app.js` is GONE, replaced by `public/js/`
@@ -45,6 +66,15 @@ portal xong muốn trả lại trang chủ sẽ rất cực để gỡ.
 - Font embedding on export is live. Design system + light/dark theme live.
 
 ## PENDING / open tasks
+-3. **CÔNG CỤ SẮP THÊM (chủ tool báo 21/07/2026)** — mục "Công cụ" sẽ KHÔNG chỉ có
+   Proposal/Brochure/Name Card nữa:
+   - **Tính tuổi bảo hiểm** cho khách (insurance age — nhiều hãng tính theo ngày sinh
+     gần nhất, không phải tuổi thật; hỏi rõ quy tắc từng hãng trước khi code).
+   - **Run quotes** (báo giá nhanh nhiều hãng).
+   Hệ quả cần nhớ khi thiết kế: 2 công cụ này **không mở file SVG** như 3 mục hiện có,
+   nên khung 3 cột (cây file · canvas · editor) không hợp. Nhiều khả năng cần layout
+   riêng cho từng công cụ trong cùng `tool.html`, hoặc route riêng. ĐỪNG hardcode
+   giả định "mọi mục trong Công cụ đều là file SVG" khi sửa `renderFileTree`.
 
 **Mở từ 2026-07-20 (cập nhật 21/07 sau khi merge thành `feat/mainV1.1`):**
 - **A. Danh sách xếp hạng Allianz đang là TẠM** — owner sẽ gửi bản chính thức sau. Sửa ở
@@ -56,8 +86,9 @@ portal xong muốn trả lại trang chủ sẽ rất cực để gỡ.
 - **B2. E2E luồng tài khoản VẪN CHƯA CHẠY** — cần tài khoản thật: đăng ký → chờ duyệt → duyệt →
   đăng nhập → xem video → **tạm khoá lúc người đó đang mở web rồi chuyển trang** (ca vừa vá
   21/07) → nhân viên vào `/members` phải bị từ chối.
-- **C. Danh sách phòng ban cố định** — hiện ô nhập tự do (`window.prompt` trong `members.js`).
-  Owner gửi danh sách thì đổi thành dropdown.
+- **C. ~~Danh sách phòng ban cố định~~ XONG 21/07** — chủ tool chốt **Sale · MKT · CS · Admin**
+  (mảng `PHONG_BAN` đầu `members.js` — thêm/bớt sửa đúng chỗ đó). `window.prompt` đã thay bằng
+  hộp thoại chọn trong trang, dùng chung cho sửa 1 người lẫn đổi hàng loạt.
 - **D. Video học "mồ côi"** — `videos.html` tự hiện mục của nó nhưng sidebar trang chủ/members/tool
   KHÔNG có link `/videos` → không có đường vào. Quyết: mở lại mục Video học trong nav, hay bỏ hẳn?
 - **E. Ô tìm kiếm mẫu trong Tool đã bị xoá** khỏi `tool.html` (bản update của owner) → không tìm mẫu
@@ -68,6 +99,18 @@ portal xong muốn trả lại trang chủ sẽ rất cực để gỡ.
 - **H. Nhân viên thường không tự sửa được tên/phòng ban** — policy UPDATE trên `profiles` đòi
   `is_admin()`. Muốn cho phép: thêm policy update `id = auth.uid()` (trigger `enforce_member_update`
   đã cấm đổi role/status nên vẫn an toàn). Chờ owner quyết.
+- **I. GỘP 2 FILE CSS** — `portal.css` và `style.css` đang chép tay lẫn nhau (rail, hệ nút, token).
+  Đã gây lỗi lặp: logo rail sai 2 lần (sửa file này quên file kia), nút lệch cỡ giữa 2 trang.
+  Nên tách phần dùng chung ra `shared.css` rồi cả hai cùng nạp. Việc trung bình, đáng làm sớm.
+- **J. Logo Name Card — ĐỠ 21/07, chưa xong hẳn.** Đã thay bitmap 472×179 bằng
+  `Logo Thinksmart White.png` 2370×896 (nét gấp 5, hết nhoè khi xuất 2x). Khung vẽ vẫn giữ
+  `width="472" height="179"` nên không xê dịch gì. **Vẫn là raster** — muốn sắc nét vô hạn thì
+  cần file gốc vector (.ai/.svg) từ chủ tool.
+- **K. Portal vẫn dùng `confirm()`/`alert()` mặc định trình duyệt** cho các bước xác nhận
+  (`members.js`). Tool đã có hộp thoại riêng theo design system từ 17/07 (`showAppDialog` trong
+  core.js) — nên làm tương tự cho portal để đồng bộ.
+- **L. Mẫu Allianz: nhánh `isAllianz` mới phủ Section 2.** Các phần khác của mẫu (Tính năng khoá lãi
+  suất, Phí chấm dứt hợp đồng sớm) chưa có ô chỉnh sửa riêng. Chờ chủ tool xác nhận có cần không.
 
 -1. ~~Verify save/clone/delete on the LIVE site~~ **RESOLVED 2026-07-17 (v1.02)**: live site giờ chạy
    **draftsMode 'browser'** — nháp lưu localStorage máy sale (xem log). Server ghi file chỉ còn cho local.
@@ -97,6 +140,188 @@ portal xong muốn trả lại trang chủ sẽ rất cực để gỡ.
 > **Ghi chú merge 21/07/2026:** `main` và `feat/login` chạy song song ngày 20/07 nên có HAI mục
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
+
+### 2026-07-21 (later 3 — logo vỡ ở Allianz + logo nét hơn cho Name Card, CHƯA PUSH)
+
+- **🚨 BẪY MỚI, PHẢI NHỚ: mẫu SVG mới xuất từ Illustrator có thể còn TRỎ RA FILE NGOÀI REPO.**
+  `Max-Funded Allianz.svg` có
+  `xlink:href="../../../../../../2024/Video/Asset/Logo/Thinksmart Insurance/Logo Thinksmart White.png"`
+  → trên web thành **icon ảnh vỡ** ở góc phải đầu trang (chủ tool báo 21/07). Illustrator chỉ nhúng
+  ảnh khi chọn "Embed"; ảnh nào để "Link" thì xuất ra vẫn là đường dẫn tương đối trên máy designer.
+  **Mỗi lần nhận mẫu mới BẮT BUỘC chạy kiểm:**
+  `grep -o 'xlink:href="[^"#][^"]*"' <file>.svg | grep -v '^xlink:href="data:'`
+  → phải KHÔNG ra kết quả nào (chỉ được còn `data:` và `#id` nội bộ).
+- Đã nhúng thẳng logo thành base64 cho **cả 2 bản** (`public/templates/` + `2-Templates/Allianz/`),
+  giữ nguyên `width/height/transform` nên vị trí không đổi. File: 2315 KB → 2384 KB.
+- **Name Card**: `image-3` chính là logo Thinksmart trắng nhưng chỉ 472×179 → thay bitmap bằng bản
+  2370×896, GIỮ NGUYÊN `width="472" height="179"` của thẻ `<image>` nên bố cục không xê dịch, chỉ
+  nét hơn khi xuất 2x. File: 55 KB → 155 KB. Sửa cả `public/templates/` lẫn `Name Card/Chung/`.
+  Đóng một phần PENDING J.
+- Nguồn logo: `E:/2024/Video/Asset/Logo/Thinksmart Insurance/Logo Thinksmart White.png` (2370×896,
+  92 KB). Đã đối chiếu byte-for-byte: payload trong cả 2 mẫu khớp đúng file này.
+- Kiểm chứng: mở thẳng 2 file SVG qua server → không còn tham chiếu ngoài, ảnh giải mã được
+  (`new Image()` → 2370×896), và gọi `/api/svgs/content` (đường đi thật của Tool) cũng trả về đúng.
+- **`config.js?v=1` → `?v=2` ở cả 5 trang.** Phiên này để trống khoá Supabase để vào kiểm chứng rồi
+  khôi phục file, NHƯNG quên bump version → trình duyệt chủ tool giữ bản trống trong cache, chạy
+  "chế độ mở" và trang chủ trắng trơn. **Quy tắc: sửa file nào thì bump version file đó, kể cả sửa
+  tạm rồi hoàn lại.** Ghi chú thêm: `index.html` cố ý `return` sớm khi chưa cấu hình Supabase nên
+  chế độ mở = trang chủ trắng, chỉ còn banner — chưa sửa, chờ chủ tool quyết.
+
+### 2026-07-21 (later 2 — 3 lỗi mẫu Allianz do chính phiên trước gây ra, CHƯA PUSH)
+
+Chủ tool báo 3 lỗi trên `Max-Funded Allianz.svg`, cả 3 đều là hệ quả của code viết ở phiên
+"later" ngay bên dưới mà **không mở app kiểm chứng**. `core.js?v=20`, `proposal.js?v=16`.
+
+- **1. Chữ tiểu bang dính vào nhau ("Texas").** Illustrator cắt một dòng thành nhiều tspan, mỗi
+  mảnh mang một class kerning riêng **chỉ đúng cho đúng chữ cái gốc của nó** — ở đây
+  `.cls-178 { letter-spacing: -.09em }` vốn dành cho chữ "T". `applyTextValue` dồn CẢ dòng vào
+  mảnh đầu → kerning đó áp cho toàn bộ chữ. Mẫu AIG/NLG không lỗi vì mảnh đầu của chúng không có
+  class kerning âm — **may chứ không phải đúng**.
+  Vá: thêm `boQuenKerning(el)` (core.js) đặt `style.letter-spacing = 'inherit'` cho mảnh vừa ghi
+  — dùng `inherit` chứ KHÔNG dùng `normal`, để tracking cố ý ở cấp `<text>` vẫn giữ nguyên.
+  Thêm `chuanHoaKerningDongDaGop(svgEl)` chạy lúc `loadSvgContent` cho các dòng ĐÃ bị gộp từ lần
+  lưu trước (dấu hiệu: có mảnh em cùng dòng và tất cả đều rỗng) — nếu không thì mở file ra đã sai
+  sẵn, chưa cần gõ gì.
+- **2. Số thu nhập hưu trí đè lên chữ "/năm".** Hai thẻ `<text>` RIÊNG, mỗi thẻ một `translate()`
+  cứng; số dài ra là tràn sang. Vá: `xepLaiHauTo(neo)` trong `proposal.js` — đo `getBBox().width`
+  thật trên canvas rồi đặt lại toạ độ cho CẢ HAI thẻ, giữ **tâm cụm** cố định (`neo.tam` đo một
+  lần theo bản vẽ gốc) nên số dài/ngắn thế nào khối chữ vẫn cân giữa thẻ nền. Khe hở
+  `KHE_TIEN_HAUTO = 6`. Gọi lúc gõ, lúc blur (auto-format tiền) và một lần lúc mở file trong
+  `document.fonts.ready` (chưa có font thì đo sai bề rộng).
+- **3. "Thời gian nhận dòng tiền" gõ mà canvas đứng im.** ⚠️ **BẪY GỐC RỄ, ĐỌC KỸ:** tool giữ
+  **HAI cây DOM** — `appState.activeSvgDoc` (bản dữ liệu, đem đi lưu/xuất) và bản **clone** trong
+  `dom.canvasWrapper` (bản hiển thị). `applyTextValue` ghi cả hai. Ô này không dùng được
+  `applyTextValue` (nó ghi vào mảnh mang `data-editor-id` = chữ "Tổng", sẽ đè mất cả câu) nên tôi
+  tự ghi tay — và **chỉ ghi vào cây dữ liệu, quên bản clone**. Vá: `ghiCumDongTien(x, cum)` ghi cả
+  hai, dò bản clone qua `[data-editor-id]` rồi ánh xạ theo **chỉ số mảnh** (`viTriManhChinh`,
+  `tongSoManh`) — có đối chiếu `tongSoManh` trước khi ghi để không ghi bậy khi cấu trúc lệch.
+- Ghi chú: comment cũ ("mỗi tspan có x cố định nên phải dồn cả cụm") **SAI** —
+  `optimizeSvgTexts()` đã gỡ hết `x` của các mảnh cùng dòng ngay lúc load. Đã sửa lại comment cho
+  đúng lý do thật (tránh ghi đè phần "Tổng dòng tiền dự kiến").
+- **`.claude/launch.json`: bỏ `env.PORT` cứng, thêm `"autoPort": true`** → nhiều phiên Claude chạy
+  song song không giành cổng 8000 nữa (server tự lấy cổng trống, `server.js` đọc `process.env.PORT`).
+- Kiểm chứng THẬT trên app (không chỉ `node --check`): đổi tiểu bang → `Massachusetts`,
+  `letter-spacing` computed = `normal`, bề rộng 100.7px (đúng giãn tự nhiên); nhập `$1,250,968` →
+  tiền `translate(302.61 510.9)` rộng 200.1, `/năm` `translate(508.72 510.9)` ⇒ khe hở đúng 6.01,
+  tâm cụm 423.3 y hệt bản gốc; gõ "trọn đời" → canvas hiện "…dự kiến nhận trọn đời". Đã đối chiếu
+  **cả `activeSvgDoc`** để chắc bản lưu/xuất cũng đúng, không chỉ bản hiển thị.
+- ⚠️ Ảnh chụp màn hình của Browser pane **treo 100%** với file SVG 2.3 MB (`computer screenshot`
+  và `zoom` đều timeout 30s). Cách thay thế đã dùng được: `javascript_tool` đọc thẳng
+  `getBBox()` / `getComputedStyle()` / `getAttribute('transform')`, và clone SVG + đổi `viewBox`
+  để cắt vùng cần xem ra file gửi chủ tool.
+- ⚠️ Tool trên nhánh này **bắt đăng nhập** (config.js có khoá thật) nên không tự vào kiểm chứng
+  được. Đã tạm để trống `config.js` → test → **khôi phục nguyên trạng** (`git status` sạch).
+  Lần sau muốn test nhanh thì làm đúng trình tự đó, và kiểm `git diff` trước khi commit.
+
+### 2026-07-21 (later — nhánh `feat/mainV1.1`, phiên dài nhất từ trước tới nay, CHƯA PUSH)
+
+**Merge 2 nhánh thành `feat/mainV1.1`** (`main` → nhánh mới → `merge --no-ff feat/login`):
+- **BẪY LỚN: `server.js` TỰ MERGE TRÓT LỌT, KHÔNG BÁO XUNG ĐỘT — nhưng khối redirect
+  `/`,`/login`,`/videos` → 302 `/tool` của main vẫn còn.** Giữ nguyên là portal chết ngay (vào
+  trang chủ bị đá sang Tool). Đã gỡ + ghi chú cách đặt lại nếu cần giấu portal lần nữa.
+  → Merge xong PHẢI đọc lại file "tự merge được", đừng chỉ xử lý file báo xung đột.
+- Xung đột `changelog.md`: hai nhánh cùng làm 20/07 → giữ CẢ HAI mục cùng ngày (xem ghi chú đầu Log).
+- `main` KHÔNG bị đụng (vẫn `fff501d`), live nguyên vẹn.
+
+**Rail / menu trái:**
+- Rail cao đúng nội dung + căn giữa dọc (trước kéo full màn, dài và trống).
+- **Logo rail bị ẩn — LỖI LẶP LẠI 2 LẦN**: `.sidebar-brand > span` quét trúng cả
+  `<span class="logo-icon">`. Sửa `portal.css` hôm 20/07 nhưng **quên `style.css`** (trang Tool
+  dùng bản sao riêng) → 21/07 chủ tool báo lại. Giờ cả hai đều `> span:not(.logo-icon)`.
+- Hover rail → **tối nền** (`body::after` + `:has()` — không phải thêm thẻ vào 5 file HTML).
+- Vào trang → rail lộ dần bằng **`clip-path`**. TRƯỚC dùng `scaleY` → **bóp méo icon/chữ**, chủ tool
+  thấy "giật". clip-path không biến dạng nội dung.
+- Hover → vệt sáng chạy quanh viền (`@property --rail-angle` + conic-gradient + mask). Chạy sát mép
+  TRONG vì rail có `overflow:hidden` (muốn bọc ngoài phải thêm lớp bọc ở cả 5 HTML).
+
+**Chuyển trang — YÊU CẦU THƯỜNG TRỰC của chủ tool (đã lưu vào memory):**
+- `@view-transition { navigation: auto }` khai ở CẢ `portal.css` lẫn `style.css` (thiếu một bên là
+  không chạy — hiệu ứng đòi cả trang đi lẫn trang đến cùng khai báo).
+- **Khai báo CSS thôi CHƯA ĐỦ**: hiệu ứng chụp KHUNG HÌNH ĐẦU của trang đích, mà portal giấu nội
+  dung chờ auth → người dùng thấy chớp trắng, tưởng không có animation. Phải cho nội dung trang
+  đích có nhịp hiện vào (`animations.js` nay phủ cả `.member-stats`, `.seg`, `.video-grid`).
+
+**Tool — layout & hệ nút:**
+- 4 vùng (header + 3 cột) thành **thẻ nổi bo 20px**, khe 8px; token `--tool-gap/--tool-radius/--tool-shadow`.
+  `.app-body` bỏ `calc(100vh - header)` → dùng flex, vì header giờ là thẻ RỜI có khe.
+- **Gỡ `.viewport-toolbar`** (thanh 46px chỉ để chứa cụm zoom) → zoom dời xuống `.canvas-status-bar`,
+  canvas cao thêm 46px. `--status-bar-height` 34→40px; 2 dải đáy dùng chung token nên tự khớp nhau.
+- Thông báo trạng thái thành **tạm thời** (tự mờ sau 4s) thay vì nằm lì "Đã tải N thiết kế".
+- **Đồng bộ nút giữa 2 file CSS**: `.btn` Tool 37px vs Portal 44px; `.btn-sm` 29/36; `.icon-btn` 38/40.
+  Chốt desktop 38/32/38 + override mobile 44 — quy tắc 44px là cho NGÓN TAY, desktop được nhỏ hơn.
+- **Class chết dọn sạch**: `.btn-lg` (chưa từng định nghĩa — nút màn chào giả cỡ bằng style inline),
+  `.glass-btn`, `.glass-btn-primary`, và khối `#btn-new-proposal` **15 dòng `!important`** ép nút
+  thành 149×48 trong khi nút cạnh nó 121×38.
+
+**Cây thư mục Tool:**
+- `tachTenMau()` (core.js) chuẩn hoá tên hiển thị: trong cây BỎ tên hãng (nhóm đã ghi rồi), thanh
+  tiêu đề hiện "Hãng — Chương trình". Bản nháp mang tên khách thì giữ nguyên. Áp cho cả Brochure.
+- Hãng to/đậm hơn chương trình (14px/800 vs 12.5px/500) — **đảo ngược quyết định hôm trước**; lý do
+  chủ tool đưa ra: sale nghĩ theo HÃNG trước rồi mới tới sản phẩm.
+- Gỡ tiêu đề "CÔNG CỤ" + số đếm (giữ `#file-count` ẩn vì `main.js` vẫn ghi vào đó — xoá hẳn là vỡ).
+
+**Mẫu Allianz (Max-Funded IUL) — nhận file từ chủ tool:**
+- **Tên file sai chính tả `Max-Funded Aliianz.svg` (2 chữ i) là LỖI CHỨC NĂNG**, không chỉ thẩm mỹ:
+  live nhận diện hãng bằng TÊN FILE (`server.js:104`) → "aliianz" không khớp "allianz" → rơi vào
+  nhóm "Khác" + đổ nhầm danh sách xếp hạng của AIG. Đã đổi tên + chép sang `public/templates/`.
+- Chuẩn hoá dữ liệu mẫu: `Chau Dang Khoa`→`Nguyen Van An`; `Standard Non-Tobacco`→`Standard Nontobacco`
+  (chính tả riêng của Allianz); `Washington DC`→`Texas` (DC KHÔNG phải bang — danh sách 50 bang đã
+  kiểm đủ, không thiếu không thừa); `Female`→`Male` (khớp tên nam); footer `TONY PHU`/`Jason Huynh`
+  + SĐT thật → `Ten Tro Ly`/`Ten Agent` + `(000) 000-0000`. CEO + SĐT công ty GIỮ (mẫu sạch cũng có).
+- **Nhánh sắp xếp riêng `isAllianz`**: ghép nhãn↔giá trị theo **NEO CHỮ** (nhãn tiếng Việt đứng ngay
+  TRÊN giá trị) thay vì ngưỡng toạ độ của IUL. Trước đó dán nhãn sai hết ("Giá trị tích luỹ — Cột 2"
+  thực ra là Tổng dòng tiền dự kiến). Ghép đúng 7/7. Thêm ô mới chỉ cần thêm 1 dòng vào bảng `NHAN`.
+- Ô **"Thời gian nhận dòng tiền"** nhập được CHỮ ("trọn đời") lẫn số ("trong 25 năm"). Câu này gồm
+  5 tspan ANH EM có `x` CỐ ĐỊNH → phải **dồn cả cụm vào 1 tspan rồi làm rỗng các tspan sau**;
+  `applyTextValue` dùng không được ở đây.
+- Căn giữa số La Mã I/II/III; khe "THU NHẬP HƯU TRÍ ↔ MIỄN THUẾ" 1px → 17px (quá tay) → **9px**.
+
+**Term Life:** mỗi cột = 1 hàng gộp **[số năm | phí mỗi tháng]**, ghép theo X GẦN NHẤT (không theo
+thứ tự mảng — thiếu một ô là lệch cả loạt). Ô số năm KHÔNG chạy định dạng tiền tệ (nếu không "10 năm"
+biến thành "$10").
+
+**Name Card:** 4 icon raster (globe 23×22, phone 24×16, YouTube 21×35…) tỉ lệ 1:1 mà app xuất 2x nên
+nhoè → **thay bằng vector viết trong code**. Icon nằm trong `<defs>`, gọi qua `<use>` (mỗi cái 2 lần)
+nên chỉ cần thay ruột trong `<defs>`, không phải sửa 8 chỗ gọi. File 58.278 → 55.512 bytes.
+Logo Thinksmart vẫn raster 1:1 — cần file gốc của chủ tool.
+
+**Trang Quản lý thành viên:**
+- Bảng 7 cột bằng **`subgrid`** — mỗi hàng tự dựng lưới thì cột "Thao tác" (số nút đổi theo quyền)
+  kéo các cột khác lệch tới 70px. Hệ quả: KHÔNG được thêm padding/border trái-phải cho phần tử subgrid.
+- Chọn nhiều + thao tác hàng loạt; chỉ tick được người mình THỰC SỰ quản lý được; lọc trước khi gọi
+  DB để không gửi lệnh chắc chắn bị trigger từ chối.
+- Phòng ban CỐ ĐỊNH **Sale · MKT · CS · Admin** (`PHONG_BAN` đầu `members.js`) + hộp thoại chọn,
+  bỏ hẳn `window.prompt`.
+- Bố cục **2 cột**: trái = 3 danh sách; phải (312px, sticky) = khối "Tổng quan" GỘP 1 ô + đếm theo
+  phòng ban **bấm để lọc nhanh** + nút "Thêm thành viên". Số đếm phòng ban luôn tính trên TOÀN BỘ,
+  không theo bộ lọc (nếu không, bấm lọc xong mọi phòng khác tụt về 0).
+- Hàng thao tác: **1 hành động chính + menu "⋯"** (trước bày 4 nút trộn 3 kiểu, cột bị kéo rộng).
+- **"Thêm thành viên" KHÔNG tạo tài khoản trực tiếp được**: cần khoá `service_role` của Supabase,
+  tuyệt đối không nhúng vào web (ai xem mã nguồn cũng có toàn quyền DB). Luồng đúng: gửi link đăng ký
+  → họ tự tạo → admin duyệt.
+- Trạng thái tải: nút đổi nhãn + bảng mờ, **không chen banner** (banner làm xê dịch bố cục); khung
+  xương lần tải đầu cao ĐÚNG 66px = bằng hàng thật nên thay dữ liệu vào không nhảy.
+- **Bẫy đã dính**: gỡ thẻ "Tạm khoá" khỏi HTML mà `members.js` vẫn ghi số vào đó → `.textContent`
+  trên `null` làm CHẾT cả hàm tải, trang trắng. Đã bọc null-safe.
+
+**Trang chủ:** gỡ thẻ "Mẫu thiết kế"; hàng "Thành viên mới" thành thẻ `<a>` bấm được sang `/members`.
+
+**Đồng bộ `2-Templates/` (thư mục BỊ GITIGNORE):**
+- Cả 4 master ở máy này còn dữ liệu test cũ (`Trương thị thanh hảo`, SĐT thật) trong khi
+  `public/templates/` đã sạch từ 17/07. Lý do: **`2-Templates/` bị gitignore nên bản dọn làm ở máy
+  khác không bao giờ về được qua git**, mà server local lại quét thư mục này TRƯỚC.
+  → Live vẫn sạch, chỉ máy local bẩn. Đã chép đè; bản cũ ở `_Archive/2026-07-21_2-Templates-truoc-dong-bo/`.
+
+**BÀI HỌC ĐO ĐẠC — sai 4 lần trong một phiên, đều CÙNG MỘT KIỂU: đo trên phần tử TỰ DỰNG thay vì
+phần tử THẬT trên trang:**
+1. Dựng nút bằng class mà **quên `id`** → không thấy khối `#btn-new-proposal !important` → báo sai
+   "hai nút giống hệt nhau" (thực tế 149×48 vs 121×38). Chủ tool phải mở DevTools chỉ ra.
+2. Đo `.member-list` ĐẦU TIÊN — nó nằm trong khối "Chờ duyệt" `display:none` → mọi số đo ra 0.
+3. Đo bố cục SVG khi **chưa nạp `style.css`** nên trang chạy bằng font thay thế → số đo lệch hoàn
+   toàn (số La Mã "lệch 0.7px" thực tế là 4.2px).
+4. Vá toạ độ SVG bằng **pixel màn hình mà quên chia hệ số thu phóng** (1.5119) → vá quá tay, phải sửa lại.
+→ QUY TẮC: ưu tiên đo phần tử thật trên trang. Nếu buộc phải dựng thì kèm ĐỦ id + class + ngữ cảnh
+  cha, nạp đúng CSS/font, và luôn kiểm `innerWidth` + `display` trước khi tin con số.
 
 ### 2026-07-21 (nhánh `feat/login` — v1.13, vá lỗ hổng guard trạng thái tài khoản)
 - **LỖ HỔNG THẬT: trạng thái tài khoản chỉ kiểm lúc ĐĂNG NHẬP, không kiểm lại khi vào trang.**

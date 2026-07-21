@@ -1,0 +1,85 @@
+/* ==========================================================================
+   HỘP THOẠI DÙNG CHUNG — đi kèm public/js/ui-dialog.js
+   Nạp cho CẢ Tool (style.css) LẪN Portal (portal.css). Chỉ dùng biến token có
+   trong CẢ HAI file đó, và không phụ thuộc class nào của riêng bên nào
+   (ô nhập tự định kiểu, không mượn .text-input-field của Tool).
+   ĐỪNG chép nội dung file này sang style.css/portal.css — để một bản duy nhất.
+   ========================================================================== */
+/* ⚠️ TRẠNG THÁI MẶC ĐỊNH PHẢI LÀ "HIỆN RA", hiệu ứng chỉ là phần thêm.
+   Bản trước để opacity:0 rồi chờ transition đưa về 1. Nếu trình duyệt không chạy
+   khung hình (tab ở nền, máy yếu, cửa sổ bị thu nhỏ) thì transition KHÔNG tiến
+   triển → hộp thoại kẹt ở trong suốt, người dùng bị một modal VÔ HÌNH chặn cả
+   trang mà không hiểu vì sao. Đã đo được đúng cảnh này 21/07.
+   Dùng animation cho lúc mở: chạy được thì đẹp, không chạy được thì vẫn hiện. */
+.app-dialog-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(10, 10, 22, 0.5); /* scrim 50% — đủ tách nền cả 2 theme */
+  z-index: 900;                      /* trên mọi thanh sticky của portal lẫn tool */
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+/* KHÔNG animate opacity lúc mở. Animation bị đóng băng (tab nền, máy yếu) sẽ ghim
+   giá trị ở khung hình ĐẦU — tức opacity 0 — và hộp thoại biến mất hoàn toàn.
+   Đã đo được đúng cảnh đó 21/07. Chỉ animate transform: kẹt thì cùng lắm lệch 8px,
+   vẫn đọc và bấm được. Nền scrim hiện ngay, không cần mờ dần. */
+
+.app-dialog {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-lg);
+  width: min(420px, 92vw);
+  padding: 22px;
+}
+.app-dialog-backdrop.open .app-dialog { animation: dlg-hop-hien 180ms var(--ease-out); }
+
+/* Lúc đóng: mờ dần rồi mới gỡ khỏi trang. Nếu animation không chạy thì phần tử
+   vẫn bị gỡ đúng hạn bởi setTimeout trong ui-dialog.js — không kẹt lại được. */
+.app-dialog-backdrop.dang-dong { animation: dlg-nen-an 160ms var(--ease) forwards; }
+
+@keyframes dlg-hop-hien { from { transform: translateY(8px) scale(0.97); } }
+@keyframes dlg-nen-an   { to   { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .app-dialog-backdrop.dang-dong,
+  .app-dialog-backdrop.open .app-dialog { animation: none; }
+}
+
+.app-dialog-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.app-dialog-icon {
+  width: 38px; height: 38px; border-radius: var(--r-md);
+  display: flex; align-items: center; justify-content: center;
+  background: var(--brand-soft); color: var(--brand);
+  flex-shrink: 0;
+}
+.app-dialog.tone-success .app-dialog-icon { background: var(--success-soft); color: var(--success); }
+.app-dialog.tone-warning .app-dialog-icon { background: var(--warning-soft); color: var(--warning); }
+.app-dialog.tone-danger  .app-dialog-icon { background: var(--danger-soft);  color: var(--danger); }
+.app-dialog-title { font-size: var(--fs-md); font-weight: 800; color: var(--text); letter-spacing: -0.2px; }
+.app-dialog-message { font-size: var(--fs-base); color: var(--text-2); line-height: 1.55; white-space: pre-line; }
+
+.app-dialog-input {
+  width: 100%; margin-top: 14px;
+  padding: 10px 12px;
+  background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: var(--r-md);
+  font: inherit; font-size: var(--fs-base);
+}
+.app-dialog-input:focus {
+  outline: none; background: var(--surface);
+  border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-ring);
+}
+
+.app-dialog-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+
+/* Nút chính cho hành động PHÁ HUỶ — đỏ đặc, để không bấm nhầm theo quán tính.
+   Khác .btn-danger của portal.css (nút chữ đỏ nền trong suốt) nên đặt tên riêng. */
+.app-dialog .btn-danger-solid {
+  background-color: var(--danger); color: #fff; border-color: transparent;
+}
+.app-dialog .btn-danger-solid:hover { filter: brightness(1.08); }
+
+@media (max-width: 900px) {
+  .app-dialog { padding: 18px; }
+  .app-dialog-actions .btn { padding: 12px 16px; } /* touch target ≥44px */
+}
