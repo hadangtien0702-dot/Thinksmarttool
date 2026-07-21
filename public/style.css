@@ -1726,6 +1726,109 @@ body.no-editor .sidebar-right { display: none; }
 .dual-input-row .dual-age { flex: 0 0 40%; }
 
 /* --------------------------------------------------------------------------
+   22b. SO SÁNH LIVING BENEFITS (js/sosanh.js) — bảng 5 cột trong #library-view.
+   CHỈ dùng token của design system (surface/text/brand/success/warning/danger)
+   → tự đúng ở cả theme sáng lẫn tối, KHÔNG bê màu đỏ nâu của file nguồn vào.
+   -------------------------------------------------------------------------- */
+.ss-wrap { max-width: 1080px; margin: 0 auto; padding: 28px 24px 48px; }
+
+.ss-head-block h2 { margin: 0; font-size: var(--fs-xl); font-weight: 800; letter-spacing: -0.3px; color: var(--text); }
+.ss-head-block p { margin: 6px 0 0; font-size: var(--fs-sm); color: var(--text-3); }
+.ss-actions { display: flex; gap: 8px; margin: 14px 0 18px; }
+
+.ss-table { border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; background: var(--surface); box-shadow: var(--shadow-sm); }
+.ss-thead {
+  display: grid; grid-template-columns: 2.1fr 1fr 1fr 1fr 1fr;
+  background: var(--surface-3); border-bottom: 1px solid var(--border);
+}
+.ss-th {
+  padding: 12px 10px; text-align: center; font-size: var(--fs-xs); font-weight: 800;
+  letter-spacing: 0.4px; text-transform: uppercase; color: var(--text-2);
+  display: flex; flex-direction: column; gap: 2px; justify-content: center; line-height: 1.3;
+}
+.ss-th small { font-weight: 600; font-size: var(--fs-2xs); color: var(--text-3); text-transform: none; letter-spacing: 0; }
+.ss-th-co { text-align: left; align-items: flex-start; padding-left: 18px; }
+
+.ss-row { border-bottom: 1px solid var(--divider); }
+.ss-row:last-child { border-bottom: 0; }
+/* Cả hàng là MỘT nút (mở chi tiết) — reset kiểu button mặc định */
+.ss-row-main {
+  display: grid; grid-template-columns: 2.1fr 1fr 1fr 1fr 1fr; align-items: stretch;
+  width: 100%; background: transparent; border: 0; padding: 0; margin: 0;
+  font: inherit; color: inherit; text-align: left; cursor: pointer;
+  transition: background-color var(--dur) var(--ease);
+}
+.ss-row-main:hover { background: var(--surface-2); }
+.ss-row-main:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.ss-row.open .ss-row-main { background: var(--brand-soft); }
+
+.ss-co { display: flex; align-items: center; gap: 12px; padding: 12px 10px 12px 18px; min-width: 0; }
+/* Logo hãng luôn trên nền TRẮNG cố ý (nhiều logo nền đặc) — cả 2 theme */
+.ss-logo {
+  width: 74px; height: 30px; flex: none; border-radius: var(--r-xs);
+  background: #fff; border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+  font-size: var(--fs-xs); font-weight: 800; color: #333;
+}
+.ss-logo img { max-width: 66px; max-height: 24px; object-fit: contain; display: block; }
+.ss-co-txt { min-width: 0; }
+.ss-co-name { display: block; font-size: var(--fs-base); font-weight: 700; color: var(--text); line-height: 1.25; }
+.ss-meter { display: inline-flex; align-items: center; gap: 4px; margin-top: 5px; }
+.ss-seg { width: 18px; height: 5px; border-radius: 3px; background: var(--surface-3); }
+.ss-seg.on { background: var(--success); }
+.ss-meter i { font-style: normal; font-size: var(--fs-2xs); font-weight: 600; color: var(--text-3); margin-left: 4px; }
+.ss-chev { margin-left: auto; color: var(--text-3); font-size: 12px; transition: transform var(--dur) var(--ease); }
+.ss-row.open .ss-chev { transform: rotate(90deg); color: var(--brand); }
+
+.ss-cell { display: flex; align-items: center; justify-content: center; padding: 10px 8px; border-left: 1px solid var(--divider); }
+.ss-badge {
+  display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+  font-size: var(--fs-xs); font-weight: 800; padding: 5px 11px; border-radius: var(--r-pill);
+}
+.ss-ok { color: var(--success); background: var(--success-soft); }
+.ss-no { color: var(--danger);  background: var(--danger-soft); }
+.ss-wr { color: var(--warning); background: var(--warning-soft); }
+
+.ss-detail { display: none; padding: 4px 16px 18px; background: var(--surface-2); border-top: 1px dashed var(--border); }
+.ss-row.open .ss-detail { display: block; }
+.ss-detail-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 12px; }
+.ss-dcard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden; display: flex; flex-direction: column; }
+.ss-dh {
+  padding: 8px 12px; font-size: var(--fs-2xs); font-weight: 800; letter-spacing: 0.3px;
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  background: var(--surface-3); color: var(--text-2);
+}
+/* Mỗi quyền lợi một vạch màu mảnh bên trái — điểm nhấn duy nhất, không tô cả khối */
+.ss-dh-term { box-shadow: inset 3px 0 0 var(--danger); }
+.ss-dh-chr  { box-shadow: inset 3px 0 0 var(--warning); }
+.ss-dh-cri  { box-shadow: inset 3px 0 0 var(--success); }
+.ss-dh-inj  { box-shadow: inset 3px 0 0 var(--brand); }
+.ss-mini { font-weight: 800; font-size: var(--fs-2xs); color: var(--text-3); }
+.ss-db { padding: 10px 12px; font-size: var(--fs-sm); color: var(--text-2); line-height: 1.55; flex: 1; }
+.ss-empty .ss-db { color: var(--text-3); font-style: italic; }
+
+.ss-foot { display: grid; grid-template-columns: 1fr 1.4fr; gap: 16px; margin-top: 20px; }
+.ss-legend, .ss-note { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px 18px; }
+.ss-legend h3, .ss-note h3 {
+  margin: 0 0 12px; font-size: var(--fs-xs); font-weight: 800; letter-spacing: 0.6px;
+  text-transform: uppercase; color: var(--brand);
+}
+.ss-legend div { display: flex; align-items: center; gap: 10px; font-size: var(--fs-sm); color: var(--text-2); margin-bottom: 9px; }
+.ss-legend div:last-child { margin-bottom: 0; }
+.ss-note p { margin: 0 0 9px; font-size: var(--fs-sm); color: var(--text-2); line-height: 1.55; }
+.ss-note p:last-child { margin-bottom: 0; }
+
+@media (max-width: 900px) {
+  .ss-wrap { padding: 18px 12px 40px; }
+  .ss-thead, .ss-row-main { grid-template-columns: 1.6fr 0.9fr 0.9fr 0.9fr 0.9fr; }
+  .ss-th small { display: none; }
+  .ss-logo { display: none; }                 /* mobile: chật — ưu tiên tên hãng */
+  .ss-badge { padding: 4px 8px; }
+  .ss-detail-grid { grid-template-columns: 1fr; }
+  .ss-foot { grid-template-columns: 1fr; }
+}
+
+/* --------------------------------------------------------------------------
    22. APP DIALOG — ĐÃ CHUYỂN sang public/dialog.css (dùng chung với Portal).
    Đừng chép lại vào đây: portal.css và style.css chép tay lẫn nhau đã là nguồn
    lỗi lặp đi lặp lại; hộp thoại để MỘT bản duy nhất. Nạp trong <head> mỗi trang.

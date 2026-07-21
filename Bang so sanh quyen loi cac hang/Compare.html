@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ThinkSmart · So Sánh Living Benefits 2026</title>
+<meta name="hz:canvas-width" content="1280" />
+<style>
+:root{
+  --maroon:#6e1620;
+  --maroon-2:#8a1f26;
+  --maroon-dark:#4d0f16;
+  --red:#c0392b;
+  --ink:#22201f;
+  --muted:#6b6b6b;
+  --line:#e7e2e2;
+  --bg:#f5f1ee;
+  --card:#ffffff;
+  /* benefit accents */
+  --t-term:#c0392b;   --t-term-bg:#fdeceb;
+  --t-chr:#c9931f;    --t-chr-bg:#fdf6e3;
+  --t-cri:#2e7d52;    --t-cri-bg:#e9f5ee;
+  --t-inj:#2f57b6;    --t-inj-bg:#eaf0fb;
+  --ok:#2e7d52;   --ok-bg:#e6f4ec;
+  --no:#b23b3b;   --no-bg:#f7ebeb;
+  --wr:#c9931f;   --wr-bg:#fbf2dc;
+  --shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(70,10,15,.06);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:"Be Vietnam Pro",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  background:var(--bg);color:var(--ink);
+  -webkit-font-smoothing:antialiased;line-height:1.5;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 18px 60px}
+
+/* ---------- Header ---------- */
+.top{
+  background:linear-gradient(135deg,var(--maroon-dark),var(--maroon) 45%,var(--maroon-2));
+  color:#fff;border-radius:0 0 22px 22px;box-shadow:var(--shadow);
+  padding:22px 26px 26px;
+}
+.top-inner{max-width:1180px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.logo-badge{
+  width:46px;height:46px;border-radius:12px;flex:none;
+  background:radial-gradient(circle at 30% 25%,#fff,#f2d7d7);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;color:var(--maroon);font-size:22px;letter-spacing:-1px;
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.6);
+}
+.brand h1{margin:0;font-size:15px;font-weight:800;letter-spacing:3px}
+.brand .sub{font-size:10px;letter-spacing:5px;color:#f0c9c9;margin-top:2px;font-weight:600}
+.title-row{margin-top:16px}
+.title-row h2{margin:0;font-size:23px;font-weight:800;letter-spacing:-.2px}
+.title-row h2 em{font-style:italic;color:#ffd9a0}
+.title-row p{margin:6px 0 0;color:#f2cfcf;font-size:13.5px}
+.pill-int{
+  display:inline-block;margin-top:12px;background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.25);color:#ffe;font-size:11px;
+  padding:4px 11px;border-radius:20px;letter-spacing:1px;font-weight:600;
+}
+
+/* ---------- Toolbar ---------- */
+.toolbar{
+  background:var(--card);border-radius:16px;box-shadow:var(--shadow);
+  padding:14px 16px;margin-top:-18px;position:relative;z-index:5;
+  display:flex;flex-direction:column;gap:12px;
+}
+.tb-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.search{
+  flex:1;min-width:200px;display:flex;align-items:center;gap:8px;
+  background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:9px 13px;
+}
+.search input{border:0;background:transparent;outline:none;font-size:14px;width:100%;font-family:inherit;color:var(--ink)}
+.search svg{flex:none;opacity:.5}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{
+  border:1px solid var(--line);background:#fff;color:var(--ink);
+  padding:8px 13px;border-radius:20px;font-size:12.5px;font-weight:600;cursor:pointer;
+  transition:.15s;display:flex;align-items:center;gap:7px;font-family:inherit;
+}
+.chip .dot{width:9px;height:9px;border-radius:50%}
+.chip:hover{border-color:#c9bcbc}
+.chip.active{color:#fff;border-color:transparent}
+.chip[data-f="all"].active{background:var(--maroon)}
+.chip[data-f="term"].active{background:var(--t-term)}
+.chip[data-f="chr"].active{background:var(--t-chr)}
+.chip[data-f="cri"].active{background:var(--t-cri)}
+.chip[data-f="inj"].active{background:var(--t-inj)}
+.tb-actions{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.btn-min{
+  background:transparent;border:1px solid var(--line);border-radius:9px;
+  padding:8px 12px;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;font-family:inherit;
+}
+.btn-min:hover{color:var(--maroon);border-color:#c9bcbc}
+.filter-note{font-size:12px;color:var(--muted)}
+.filter-note b{color:var(--maroon)}
+
+/* ---------- Grid header ---------- */
+.grid-head{
+  display:grid;grid-template-columns:2.1fr 1fr 1fr 1fr 1fr;gap:0;
+  margin-top:18px;border-radius:14px 14px 0 0;overflow:hidden;
+  position:sticky;top:0;z-index:4;box-shadow:0 2px 8px rgba(70,10,15,.08);
+}
+.gh{
+  padding:13px 12px;font-weight:700;font-size:12.5px;text-align:center;
+  color:#fff;display:flex;flex-direction:column;gap:2px;justify-content:center;line-height:1.25;
+}
+.gh.company{background:var(--maroon-dark);text-align:left;align-items:flex-start;padding-left:18px}
+.gh small{font-weight:500;opacity:.82;font-size:10.5px}
+.gh[data-c="term"]{background:var(--t-term)}
+.gh[data-c="chr"]{background:var(--t-chr)}
+.gh[data-c="cri"]{background:var(--t-cri)}
+.gh[data-c="inj"]{background:var(--t-inj)}
+
+/* ---------- Rows ---------- */
+.rows{background:var(--card);border-radius:0 0 14px 14px;box-shadow:var(--shadow);overflow:hidden}
+.row{border-bottom:1px solid var(--line);transition:.12s}
+.row:last-child{border-bottom:0}
+.row.dim{opacity:.34;filter:grayscale(.5)}
+.row-main{
+  display:grid;grid-template-columns:2.1fr 1fr 1fr 1fr 1fr;align-items:stretch;
+  cursor:pointer;
+}
+.row:hover{background:#fbf7f5}
+.co{
+  display:flex;align-items:center;gap:12px;padding:14px 12px 14px 18px;
+}
+.co-badge{
+  width:38px;height:38px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:14px;color:#fff;letter-spacing:-.5px;
+}
+.co-txt{min-width:0}
+.co-name{font-weight:700;font-size:14px;line-height:1.2}
+.co-meter{display:flex;align-items:center;gap:5px;margin-top:5px}
+.co-meter .seg{width:20px;height:5px;border-radius:3px;background:var(--line)}
+.co-meter .seg.on{background:var(--ok)}
+.co-meter .lbl{font-size:10.5px;color:var(--muted);margin-left:3px;font-weight:600}
+.cell{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:10px 8px;border-left:1px solid var(--line);position:relative;
+}
+.badge{
+  display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;
+  padding:5px 11px;border-radius:20px;white-space:nowrap;
+}
+.badge.ok{color:var(--ok);background:var(--ok-bg)}
+.badge.no{color:var(--no);background:var(--no-bg)}
+.badge.wr{color:var(--wr);background:var(--wr-bg)}
+.badge .ic{font-size:12px}
+.cell.hl{outline:2px solid rgba(0,0,0,.06);outline-offset:-2px}
+.cell.hl.term{background:var(--t-term-bg)}
+.cell.hl.chr{background:var(--t-chr-bg)}
+.cell.hl.cri{background:var(--t-cri-bg)}
+.cell.hl.inj{background:var(--t-inj-bg)}
+.chev{
+  position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  opacity:0;transition:.15s;color:var(--muted);font-size:11px;
+}
+.co{position:relative}
+.co .chev{opacity:.5}
+.row.open .co .chev{transform:translateY(-50%) rotate(90deg);color:var(--maroon)}
+
+/* ---------- Detail panel ---------- */
+.detail{display:none;background:#fbf8f6;border-top:1px dashed var(--line);padding:6px 18px 20px}
+.row.open .detail{display:block;animation:fade .2s ease}
+@keyframes fade{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.detail-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
+.dcard{background:#fff;border:1px solid var(--line);border-radius:12px;padding:0;overflow:hidden;display:flex;flex-direction:column}
+.dcard .dh{padding:9px 12px;font-size:12px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:6px}
+.dcard[data-c="term"] .dh{background:var(--t-term)}
+.dcard[data-c="chr"] .dh{background:var(--t-chr)}
+.dcard[data-c="cri"] .dh{background:var(--t-cri)}
+.dcard[data-c="inj"] .dh{background:var(--t-inj)}
+.dcard .db{padding:11px 12px;font-size:12.5px;color:#33302f;line-height:1.5;flex:1}
+.dcard.empty .db{color:#9a9a9a;font-style:italic;display:flex;align-items:center}
+.mini-badge{font-size:10px;font-weight:800;padding:2px 7px;border-radius:12px;background:rgba(255,255,255,.25);letter-spacing:.5px}
+.no-result{padding:40px;text-align:center;color:var(--muted);font-size:14px;display:none}
+
+/* ---------- Legend + note ---------- */
+.foot{margin-top:22px;display:grid;grid-template-columns:1fr 1.4fr;gap:16px}
+.legend,.note{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:16px 18px}
+.legend h3,.note h3{margin:0 0 12px;font-size:13px;letter-spacing:1px;color:var(--maroon);text-transform:uppercase}
+.leg-item{display:flex;align-items:center;gap:10px;font-size:13px;margin-bottom:9px;color:#3a3736}
+.note p{margin:0 0 9px;font-size:12.5px;color:#54504f;line-height:1.55}
+.note p:last-child{margin-bottom:0}
+.note .mark{color:var(--maroon);font-weight:700}
+.credit{text-align:center;margin-top:26px;color:#a79a9a;font-size:11.5px;letter-spacing:.3px}
+
+@media(max-width:820px){
+  .foot{grid-template-columns:1fr}
+  .detail-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:660px){
+  .gh small{display:none}
+  .grid-head,.row-main{grid-template-columns:1.5fr .8fr .8fr .8fr .8fr}
+  .badge{padding:5px 7px;font-size:0}
+  .badge .ic{font-size:15px}
+  .gh{font-size:10.5px;padding:10px 4px}
+  .co{padding-left:12px;gap:9px}
+  .co-badge{width:32px;height:32px;font-size:12px}
+  .co-name{font-size:12.5px}
+  .detail-grid{grid-template-columns:1fr}
+  .tb-actions{margin-left:0}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <div class="logo-badge">TS</div>
+      <div>
+        <h1>THINKSMART</h1>
+        <div class="sub">INSURANCE</div>
+      </div>
+    </div>
+    <div class="title-row">
+      <h2>So Sánh <em>Living Benefits</em> — Các Công Ty Bảo Hiểm Lớn Tại Mỹ</h2>
+      <p>Bảng tra nhanh cho Sale · 16 hãng · 4 nhóm quyền lợi · Cập nhật 2026</p>
+      <span class="pill-int">🔒 Internal Use Only — Bấm vào từng hãng để xem chi tiết</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="tb-row">
+      <label class="search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="search" type="text" placeholder="Tìm tên hãng bảo hiểm…" />
+      </label>
+      <div class="tb-actions">
+        <button class="btn-min" id="expandAll">Mở rộng tất cả</button>
+        <button class="btn-min" id="collapseAll">Thu gọn tất cả</button>
+      </div>
+    </div>
+    <div class="tb-row">
+      <div class="chips" id="chips">
+        <button class="chip active" data-f="all">Tất cả hãng</button>
+        <button class="chip" data-f="term"><span class="dot" style="background:var(--t-term)"></span>Terminal Illness</button>
+        <button class="chip" data-f="chr"><span class="dot" style="background:var(--t-chr)"></span>Chronic Illness</button>
+        <button class="chip" data-f="cri"><span class="dot" style="background:var(--t-cri)"></span>Critical Illness</button>
+        <button class="chip" data-f="inj"><span class="dot" style="background:var(--t-inj)"></span>Critical Injury</button>
+      </div>
+      <div class="filter-note" id="filterNote"></div>
+    </div>
+  </div>
+
+  <!-- Grid header -->
+  <div class="grid-head">
+    <div class="gh company">Công Ty Bảo Hiểm<small>Mức độ bao phủ</small></div>
+    <div class="gh" data-c="term">Terminal Illness<small>Bệnh Giai Đoạn Cuối</small></div>
+    <div class="gh" data-c="chr">Chronic Illness<small>Bệnh Mạn Tính</small></div>
+    <div class="gh" data-c="cri">Critical Illness<small>Bệnh Nghiêm Trọng</small></div>
+    <div class="gh" data-c="inj">Critical Injury<small>Tai Nạn Trọng Thương</small></div>
+  </div>
+
+  <!-- Rows -->
+  <div class="rows" id="rows"></div>
+  <div class="no-result" id="noResult">Không tìm thấy hãng nào khớp.</div>
+
+  <!-- Footer -->
+  <div class="foot">
+    <div class="legend">
+      <h3>Chú thích</h3>
+      <div class="leg-item"><span class="badge ok"><span class="ic">✓</span></span> <span><b>Có quyền lợi</b> — hãng cung cấp rider này</span></div>
+      <div class="leg-item"><span class="badge no"><span class="ic">✕</span></span> <span><b>Không có</b> — không cung cấp / không có rider</span></div>
+      <div class="leg-item"><span class="badge wr"><span class="ic">!</span></span> <span><b>Chưa xác nhận</b> — thiếu thông tin chi tiết công khai</span></div>
+      <div class="leg-item"><span class="co-meter"><span class="seg on"></span><span class="seg on"></span><span class="seg"></span><span class="seg"></span></span> <span>Thanh mức độ bao phủ = số quyền lợi hãng có (trên 4)</span></div>
+    </div>
+    <div class="note">
+      <h3>📌 Lưu ý quan trọng</h3>
+      <p>— Ngoại trừ các công ty mà <span class="mark">ThinkSmart Insurance</span> đang trực tiếp đại diện, thông tin của những hãng còn lại chỉ mang tính <b>tham khảo</b> để hỗ trợ so sánh tổng quan, và không được mặc định là chính xác tuyệt đối.</p>
+      <p>— Quyền lợi, điều khoản và giới hạn chi trả thực tế sẽ được áp dụng theo <b>loại hợp đồng bảo hiểm, rider và quy định chính thức</b> của từng công ty tại thời điểm phát hành hợp đồng.</p>
+    </div>
+  </div>
+
+  <div class="credit">ThinkSmart Insurance · Bảng So Sánh Quyền Lợi Living Benefits 2026 · Internal Use Only</div>
+</div>
+
+<script>
+const BEN = [
+  {key:'term', label:'Terminal Illness', vi:'Bệnh Giai Đoạn Cuối'},
+  {key:'chr',  label:'Chronic Illness',  vi:'Bệnh Mạn Tính'},
+  {key:'cri',  label:'Critical Illness', vi:'Bệnh Nghiêm Trọng'},
+  {key:'inj',  label:'Critical Injury',  vi:'Tai Nạn Trọng Thương'},
+];
+
+// status: 'ok' | 'no' | 'wr'   detail: text or ''
+const DATA = [
+ {name:'National Life Group', color:'#2b2b2b',
+  term:{s:'ok', d:'Được ứng trước tối đa 100% số tiền bảo hiểm — không quá $1M. Cần bác sĩ xác nhận tuổi thọ còn lại từ 24 tháng → 12 tháng hoặc ít hơn.'},
+  chr:{s:'ok', d:'Đền tối đa 24%/năm, rút dần cho đến hết — không quá $1.5M tổng cộng.'},
+  cri:{s:'ok', d:'Được ứng trước tối đa 100% số tiền bảo hiểm — không quá $1M. Tùy mức độ bệnh và tuổi thọ còn lại.'},
+  inj:{s:'ok', d:'Được ứng trước tối đa 100% số tiền bảo hiểm — không quá $1M. Tùy mức độ bệnh và tuổi thọ còn lại.'}},
+
+ {name:'Corebridge Financial', color:'#5b2b8a',
+  term:{s:'ok', d:'Được ứng trước tối đa 100% số tiền bảo hiểm — không quá $2M. Cần xác nhận tuổi thọ còn lại dưới 24 tháng.'},
+  chr:{s:'ok', d:'Được ứng trước tối đa 100% số tiền bảo hiểm — không quá $2M.'},
+  cri:{s:'ok', d:'Được ứng trước tối đa 100% số tiền bảo hiểm — không quá $2M. Tùy mức độ bệnh và tuổi thọ còn lại.'},
+  inj:{s:'no', d:''}},
+
+ {name:'Transamerica', color:'#0a3d7a',
+  term:{s:'ok', d:'Được ứng trước tối đa 100% số tiền bảo hiểm — không quá $1.5M. Cần xác nhận tuổi thọ còn lại 12 tháng hoặc ít hơn.'},
+  chr:{s:'ok', d:'Được ứng trước tối đa 90% số tiền bảo hiểm — không quá $1.5M. Mỗi năm tối đa 24%, trong vòng 12 tháng.'},
+  cri:{s:'ok', d:'Được ứng trước tối đa 90% số tiền bảo hiểm — không quá $1.5M. Tùy mức độ bệnh và tuổi thọ còn lại.'},
+  inj:{s:'no', d:''}},
+
+ {name:'Ameritas', color:'#c0392b',
+  term:{s:'ok', d:'Được ứng trước tối đa 75% số tiền bảo hiểm — không quá $1M. Cần xác nhận tuổi thọ còn lại 12 tháng hoặc ít hơn.'},
+  chr:{s:'ok', d:'Đền tối đa 50% — không quá $1M. Thanh toán một lần (lump sum).'},
+  cri:{s:'ok', d:'Đền tối đa 25% — không quá $250K. Áp dụng cho 15 loại bệnh đủ điều kiện.'},
+  inj:{s:'no', d:''}},
+
+ {name:'Lincoln Financial', color:'#c0392b',
+  term:{s:'ok', d:'Đền một lần — không mất phí thêm. Cần giấy chứng nhận bệnh giai đoạn cuối.'},
+  chr:{s:'ok', d:'Đền một phần hoặc toàn bộ — không phí thêm. Có thể bổ sung sau khi cấp hợp đồng (tùy underwriting).'},
+  cri:{s:'ok', d:'Đền một lần khi xảy ra sự kiện đủ điều kiện. Có phí hành chính khi nhận tiền.'},
+  inj:{s:'no', d:''}},
+
+ {name:'F&G', color:'#e0a500',
+  term:{s:'ok', d:'Được ứng trước tối đa 100% số tiền bảo hiểm — không quá $1M. Cần xác nhận tuổi thọ còn lại dưới 24 tháng.'},
+  chr:{s:'ok', d:'Đền tối đa 25%/năm, rút dần đến hết — không quá $1M tổng. Không chấm dứt sau lần đầu.'},
+  cri:{s:'ok', d:'Được ứng trước tối đa 100% số tiền bảo hiểm — không quá $1M. Gồm: nhồi máu cơ tim, đột quỵ, ghép tạng lớn, liệt, ALS, u não, bỏng nặng, suy thận, ung thư xâm lấn.'},
+  inj:{s:'no', d:''}},
+
+ {name:'Nationwide', color:'#1a3a6b',
+  term:{s:'ok', d:'Đền tối thiểu $10K — tối đa $250K. Tùy tuổi, giới tính và lãi suất tại thời điểm yêu cầu.'},
+  chr:{s:'ok', d:'Đền tối đa 20% quyền lợi tử vong.'},
+  cri:{s:'ok', d:'Đền tối đa 10% mệnh giá hoặc $25K — lấy số nhỏ hơn.'},
+  inj:{s:'no', d:''}},
+
+ {name:'Columbus Life', color:'#1c6ea4',
+  term:{s:'ok', d:'Đền mức thấp hơn giữa: $250K hoặc 60% Face Amount.'},
+  chr:{s:'ok', d:'Đền mức thấp hơn giữa: $250K hoặc 40% Face Amount.'},
+  cri:{s:'ok', d:'Đền mức thấp hơn giữa: $25K hoặc 10% Face Amount.'},
+  inj:{s:'no', d:''}},
+
+ {name:'Allianz', color:'#003781',
+  term:{s:'ok', d:'Được ứng trước tối đa 100% số tiền bảo hiểm — không quá $1M. Tối thiểu $10K. Cần xác nhận tuổi thọ còn lại từ 12 tháng hoặc ít hơn.'},
+  chr:{s:'ok', d:'Đền mỗi lần: tối thiểu 5% hoặc $75K, tối đa 25% hoặc $250K. Không quá $1M tổng cộng. Mỗi 12 tháng một lần.'},
+  cri:{s:'no', d:''},
+  inj:{s:'no', d:''}},
+
+ {name:'New York Life', color:'#005a9c',
+  term:{s:'ok', d:'Đền một lần — rider chấm dứt sau khi nhận tiền. Cần xác nhận tuổi thọ còn lại 12 tháng hoặc ít hơn.'},
+  chr:{s:'ok', d:'Chỉ có dưới dạng rider mua kèm tính phí thêm. Phải đăng ký chọn thêm khi nộp hồ sơ.'},
+  cri:{s:'no', d:''},
+  inj:{s:'no', d:''}},
+
+ {name:'Pacific Life', color:'#1b3f6b',
+  term:{s:'ok', d:'Được ứng trước tối đa 75% số tiền bảo hiểm — không quá $500K.'},
+  chr:{s:'ok', d:'Đền tối đa $3M — hàng năm hoặc hàng tháng. Phải đăng ký chọn thêm khi nộp hồ sơ.'},
+  cri:{s:'no', d:''},
+  inj:{s:'no', d:''}},
+
+ {name:'Farmers Insurance', color:'#0d2f6b',
+  term:{s:'wr', d:'Chưa xác nhận — trên website có đề cập nhưng không nói cụ thể.'},
+  chr:{s:'no', d:''}, cri:{s:'no', d:''}, inj:{s:'no', d:''}},
+
+ {name:'MetLife', color:'#0a7d3c',
+  term:{s:'wr', d:'Không có thông tin công khai.'},
+  chr:{s:'no', d:''}, cri:{s:'no', d:''}, inj:{s:'no', d:''}},
+
+ {name:'MassMutual', color:'#1a3a6b',
+  term:{s:'wr', d:'Có thể có theo quy định tiểu bang, nhưng không được quảng cáo rõ.'},
+  chr:{s:'no', d:''}, cri:{s:'no', d:''}, inj:{s:'no', d:''}},
+
+ {name:'Allstate', color:'#004b8d',
+  term:{s:'no', d:'Chỉ bán dưới dạng hợp đồng riêng như thẻ BHSK, không phải rider đi kèm hợp đồng nhân thọ.'},
+  chr:{s:'no', d:''}, cri:{s:'no', d:''}, inj:{s:'no', d:''}},
+
+ {name:'State Farm', color:'#c8102e',
+  term:{s:'no', d:'Không có rider living benefits.'},
+  chr:{s:'no', d:''}, cri:{s:'no', d:''}, inj:{s:'no', d:''}},
+];
+
+const BADGE = {
+  ok:{cls:'ok', ic:'✓', txt:'Có'},
+  no:{cls:'no', ic:'✕', txt:'Không'},
+  wr:{cls:'wr', ic:'!', txt:'Chưa rõ'},
+};
+
+function initials(name){
+  const clean = name.replace('&',' ');
+  const p = clean.trim().split(/\s+/);
+  if(p.length===1) return p[0].slice(0,2).toUpperCase();
+  return (p[0][0]+p[1][0]).toUpperCase();
+}
+
+const rowsEl = document.getElementById('rows');
+
+DATA.forEach((c,i)=>{
+  const score = BEN.reduce((n,b)=> n + (c[b.key].s==='ok'?1:0), 0);
+  const segs = [0,1,2,3].map(k=>`<span class="seg ${k<score?'on':''}"></span>`).join('');
+
+  const cells = BEN.map(b=>{
+    const st = c[b.key].s; const bd = BADGE[st];
+    return `<div class="cell" data-c="${b.key}">
+        <span class="badge ${bd.cls}"><span class="ic">${bd.ic}</span>${bd.txt}</span>
+      </div>`;
+  }).join('');
+
+  const dcards = BEN.map(b=>{
+    const cell = c[b.key]; const st = cell.s; const bd = BADGE[st];
+    const body = cell.d ? cell.d : (st==='no' ? 'Không cung cấp quyền lợi này.' : '—');
+    return `<div class="dcard ${cell.d?'':'empty'}" data-c="${b.key}">
+        <div class="dh">${b.label} <span class="mini-badge">${bd.ic} ${bd.txt}</span></div>
+        <div class="db">${body}</div>
+      </div>`;
+  }).join('');
+
+  const row = document.createElement('div');
+  row.className='row';
+  row.dataset.name = c.name.toLowerCase();
+  BEN.forEach(b=> row.dataset[b.key] = c[b.key].s );
+  row.innerHTML = `
+    <div class="row-main">
+      <div class="co">
+        <div class="co-badge" style="background:${c.color}">${initials(c.name)}</div>
+        <div class="co-txt">
+          <div class="co-name">${c.name}</div>
+          <div class="co-meter">${segs}<span class="lbl">${score}/4 quyền lợi</span></div>
+        </div>
+        <span class="chev">▶</span>
+      </div>
+      ${cells}
+    </div>
+    <div class="detail"><div class="detail-grid">${dcards}</div></div>`;
+
+  row.querySelector('.row-main').addEventListener('click', ()=> row.classList.toggle('open'));
+  rowsEl.appendChild(row);
+});
+
+/* ---- Filtering ---- */
+let activeFilter='all';
+const chips=document.getElementById('chips');
+const filterNote=document.getElementById('filterNote');
+const searchEl=document.getElementById('search');
+
+function apply(){
+  const q=searchEl.value.trim().toLowerCase();
+  let visible=0, haveBenefit=0;
+  document.querySelectorAll('.row').forEach(r=>{
+    const matchSearch = !q || r.dataset.name.includes(q);
+    r.style.display = matchSearch ? '' : 'none';
+    if(matchSearch) visible++;
+    // clear cell highlight
+    r.querySelectorAll('.cell').forEach(cl=>cl.classList.remove('hl','term','chr','cri','inj'));
+    r.classList.remove('dim');
+    if(activeFilter!=='all' && matchSearch){
+      const has = r.dataset[activeFilter]==='ok';
+      if(has){ haveBenefit++;
+        const cell=r.querySelector(`.cell[data-c="${activeFilter}"]`);
+        cell.classList.add('hl',activeFilter);
+      } else { r.classList.add('dim'); }
+    }
+  });
+  document.getElementById('noResult').style.display = visible? 'none':'block';
+  if(activeFilter==='all'){
+    filterNote.innerHTML = `Đang hiển thị <b>${visible}</b> hãng`;
+  } else {
+    const b=BEN.find(x=>x.key===activeFilter);
+    filterNote.innerHTML = `<b>${haveBenefit}</b> hãng có <b>${b.label}</b> (${b.vi})`;
+  }
+}
+chips.addEventListener('click',e=>{
+  const b=e.target.closest('.chip'); if(!b) return;
+  activeFilter=b.dataset.f;
+  chips.querySelectorAll('.chip').forEach(x=>x.classList.toggle('active',x===b));
+  apply();
+});
+searchEl.addEventListener('input',apply);
+document.getElementById('expandAll').addEventListener('click',()=>document.querySelectorAll('.row').forEach(r=>r.classList.add('open')));
+document.getElementById('collapseAll').addEventListener('click',()=>document.querySelectorAll('.row').forEach(r=>r.classList.remove('open')));
+apply();
+</script>
+</body>
+</html>

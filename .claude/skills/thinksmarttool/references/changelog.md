@@ -141,6 +141,30 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
 
+### 2026-07-21 (later 15 — bảng So sánh Living Benefits hoàn chỉnh, v1.16)
+
+Chủ tool đưa `Bang so sanh quyen loi cac hang/Compare.html` (dữ liệu 16 hãng × 4 quyền
+lợi + chi tiết + lưu ý pháp lý) với chỉ đạo: **chỉ lấy THÔNG TIN, không lấy style; thiết
+kế theo design system của mình; dạng bảng 5 cột** (1 hãng + 4 quyền lợi).
+
+- **Module mới `public/js/sosanh.js`** (một file một công cụ, đúng convention): dữ liệu
+  `SS_DATA` chép NGUYÊN VĂN từ Compare.html (⚠️ chữ đội sale đọc cho khách — đừng tự
+  "chuẩn hoá" con số/điều khoản), nav section + `openCompareTable()` vẽ bảng vào
+  `#library-view` → dùng chung vòng đời với brochure (hideLibraryPreview tự dọn).
+- Nav gọn lại: MỘT mục "Living Benefits — 16 hãng" (bỏ 16 mục logo của later 14;
+  hàm cũ trong brochure.js đã gỡ, để lại comment trỏ sang sosanh.js).
+- Bảng: 5 cột đúng yêu cầu, hàng = <button> mở 4 thẻ chi tiết; logo hãng (16 PNG cùng
+  folder, qua /api/download) nằm trong chip nền TRẮNG cố ý (nhiều logo nền đặc);
+  thanh mức độ x/4; badge Có/Không/Chưa rõ dùng token success/danger/warning;
+  chú thích + 2 đoạn lưu ý pháp lý giữ nguyên văn. CSS mục 22b trong style.css,
+  toàn token → theme tối tự đúng (đã đo computed style cả 2 theme).
+- ⚠️ **BẪY: KHÔNG dùng `loading="lazy"` cho ảnh chèn vào #library-view** — pane
+  trình duyệt phiên nay không chạy khung hình nên lazy-load không bao giờ kích hoạt
+  (0/16 logo hiện). Bỏ lazy → 16/16. 16 logo ~200 KB, eager là hợp lý.
+- Kiểm: 16 hàng, 5 cột, 64 badge (31 Có / 30 Không / 3 Chưa rõ — khớp dữ liệu nguồn
+  từng con số), mở/đóng chi tiết + mở rộng/thu gọn tất cả chạy, logo 16/16.
+- Versions: sosanh.js v1, brochure v9, style v54, config v7, badge **v1.16**.
+
 ### 2026-07-21 (later 14 — mục mới "So sánh quyền lợi / Compare" trên cây công cụ, v1.15)
 
 Chủ tool yêu cầu thêm công cụ "so sánh quyền lợi các hãng". Đã nối vào KHUNG THƯ VIỆN có
