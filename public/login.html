@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/portal.css?v=1">
+  <link rel="stylesheet" href="/portal.css?v=24">
 </head>
 <body>
   <script>
@@ -60,11 +60,13 @@
       </div>
 
       <!-- Trạng thái: đăng ký xong, chờ admin duyệt -->
+      <!-- Dùng cho CẢ 2 trường hợp: vừa đăng ký chờ duyệt, và bị tạm khoá/xoá
+           (requireLogin đá về đây kèm ?state=pending|blocked). -->
       <div id="pending-state" style="display:none">
-        <div class="notice info">
-          <span>⏳</span>
-          <div><b>Tài khoản đã tạo — đang chờ admin duyệt.</b><br>
-          Báo admin duyệt tài khoản, sau đó đăng nhập lại để vào trang.</div>
+        <div class="notice info" id="pending-notice">
+          <span id="pending-icon">⏳</span>
+          <div><b id="pending-title">Tài khoản đã tạo — đang chờ admin duyệt.</b><br>
+          <span id="pending-detail">Báo admin duyệt tài khoản, sau đó đăng nhập lại để vào trang.</span></div>
         </div>
         <button class="btn btn-secondary btn-block" id="btn-back-login">Về màn hình đăng nhập</button>
       </div>
@@ -72,13 +74,13 @@
   </div>
 
   <footer class="portal-footer" style="justify-content:center">
-    <span class="version-badge">v1.10</span>
-    <span>Thinksmart Insurance — lưu hành nội bộ</span>
+    <span class="version-badge">v1.13</span>
+    <span>20/07/2026 · Thinksmart Insurance — lưu hành nội bộ</span>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/portal/config.js?v=1"></script>
-  <script src="/js/portal/auth.js?v=1"></script>
+  <script src="/js/portal/auth.js?v=3"></script>
   <script>
     (function () {
       'use strict';
@@ -94,6 +96,22 @@
       // Chỉ nhận đường dẫn nội bộ, chặn open-redirect kiểu //evil.com
       let next = params.get('next') || '/';
       if (!/^\/(?!\/)/.test(next)) next = '/';
+
+      // requireLogin đá về đây khi tài khoản không còn hiệu lực — nói rõ lý do,
+      // đừng để người dùng tưởng mình gõ sai mật khẩu.
+      function showAccountState(state) {
+        const set = function (id, text) { document.getElementById(id).textContent = text; };
+        if (state === 'blocked') {
+          document.getElementById('pending-notice').className = 'notice warn';
+          set('pending-icon', '🔒');
+          set('pending-title', 'Tài khoản đã bị tạm khoá.');
+          set('pending-detail', 'Liên hệ admin để được mở khoá.');
+        }
+        document.getElementById('auth-forms').style.display = 'none';
+        document.getElementById('pending-state').style.display = 'block';
+      }
+      const stateParam = params.get('state');
+      if (stateParam === 'pending' || stateParam === 'blocked') showAccountState(stateParam);
 
       let mode = 'login';
       const tabLogin = document.getElementById('tab-login');
@@ -141,10 +159,17 @@
 
       async function afterLogin() {
         const profile = await TSTAuth.getProfile(true);
-        if (profile && !profile.approved) {
+        // Đọc `status` chứ không phải cột `approved` cũ: cần phân biệt "chờ duyệt"
+        // với "bị khoá" để báo đúng lý do (cả hai đều approved=false).
+        // Không đọc được hồ sơ → KHÔNG cho vào (fail-closed).
+        if (!profile) {
           await sb.auth.signOut();
-          document.getElementById('auth-forms').style.display = 'none';
-          document.getElementById('pending-state').style.display = 'block';
+          showError('Không đọc được hồ sơ tài khoản. Thử lại, nếu vẫn lỗi thì báo admin.');
+          return;
+        }
+        if (profile.status !== 'active') {
+          await sb.auth.signOut();
+          showAccountState(profile.status === 'pending' ? 'pending' : 'blocked');
           return;
         }
         location.replace(next);

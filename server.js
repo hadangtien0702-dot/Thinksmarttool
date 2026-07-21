@@ -8,17 +8,11 @@ const PORT = process.env.PORT || 3000;
 // Body parser
 app.use(express.json({ limit: '50mb' }));
 
-// ---------------------------------------------------------------------------
-// BẢN LIVE TẠM THỜI CHỈ PHỤC VỤ TOOL.
-// Trang chủ portal / Video học / Đăng nhập vẫn đang phát triển dở (nhánh
-// feat/login), chưa muốn đội sale nhìn thấy → đưa hết về /tool.
-// Dùng 302 (tạm thời), KHÔNG dùng 301: 301 bị trình duyệt cache cứng, gỡ ra
-// rất cực khi portal hoàn thiện và muốn trả lại trang chủ.
-// PHẢI đặt TRƯỚC express.static, vì static sẽ tự trả public/index.html cho "/".
-// ---------------------------------------------------------------------------
-['/', '/login', '/videos'].forEach((route) => {
-  app.get(route, (req, res) => res.redirect(302, '/tool'));
-});
+// GỠ 21/07/2026 khi merge feat/login vào mainV1.1: trước đó "/", "/login",
+// "/videos" bị redirect 302 về /tool vì portal còn dở, chưa muốn đội sale thấy.
+// Portal đã xong (login + phân quyền + quản lý thành viên) nên trả lại trang chủ.
+// Nếu cần giấu portal lần nữa: đặt lại khối redirect TRƯỚC express.static
+// (static sẽ tự trả public/index.html cho "/" nếu đặt sau).
 
 // Static files from "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
@@ -358,7 +352,7 @@ app.get('/api/download', (req, res) => {
 // KHÔNG dùng dấu "/" cuối: các đường dẫn tương đối trong tool.html (style.css,
 // js/..., templates/...) phải resolve về gốc "/" mới đúng.
 // ---------------------------------------------------------------------------
-const PORTAL_PAGES = { '/tool': 'tool.html', '/login': 'login.html', '/videos': 'videos.html' };
+const PORTAL_PAGES = { '/tool': 'tool.html', '/login': 'login.html', '/videos': 'videos.html', '/members': 'members.html' };
 Object.entries(PORTAL_PAGES).forEach(([route, file]) => {
   // Express non-strict: "/tool" match cả "/tool/" — tự redirect bỏ dấu "/" cuối
   app.get(route, (req, res) => {

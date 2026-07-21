@@ -7,118 +7,260 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/portal.css?v=1">
+  <link rel="stylesheet" href="/vendor/animate.min.css">
+  <link rel="stylesheet" href="/portal.css?v=24">
 </head>
 <body>
   <script>
     try { if (localStorage.getItem('tst-theme') === 'dark') document.body.classList.add('dark-theme'); } catch (e) {}
   </script>
 
-  <header class="portal-header">
-    <a class="portal-brand" href="/">
-      <span class="logo-icon">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
-        </svg>
-      </span>
-      <b>Thinksmart</b><span>Insurance</span>
-    </a>
+  <!-- Chưa cấu hình Supabase → thông báo, không dựng dashboard -->
+  <div id="config-notice" class="notice warn" style="display:none;margin:20px">
+    <span>⚙️</span>
+    <div><b>Hệ thống tài khoản chưa bật.</b> Trang đang chạy chế độ mở (không cần đăng nhập).
+    Admin xem file <code>SETUP-SUPABASE.md</code> trong repo để bật Login + phân quyền.
+    <a href="/tool">Vào công cụ →</a></div>
+  </div>
 
-    <nav class="portal-nav" aria-label="Điều hướng chính">
-      <a href="/" class="active">Trang chủ</a>
-      <a href="/videos">Video học</a>
-      <a href="/tool">Công cụ</a>
-      <a href="#" aria-disabled="true" onclick="return false"><span class="nav-text-optional">Forum</span> <span class="nav-soon">Sắp có</span></a>
-    </nav>
+  <div class="app-shell" id="app-shell" style="display:none">
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
-    <div class="header-spacer"></div>
-
-    <button class="icon-btn" id="btn-theme-toggle" aria-label="Đổi giao diện sáng tối">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-    </button>
-    <button class="user-chip" id="user-chip" aria-haspopup="menu">
-      <span class="avatar" id="chip-avatar">?</span>
-      <span class="chip-name" id="chip-name">Tài khoản</span>
-    </button>
-    <div class="user-menu" id="user-menu" role="menu">
-      <div class="menu-id">
-        <b id="menu-name">—</b>
-        <span id="menu-email"></span><br>
-        <span class="menu-role" id="menu-role">Nhân viên</span>
-      </div>
-      <button id="btn-logout" role="menuitem">Đăng xuất</button>
-    </div>
-  </header>
-
-  <main class="portal-main">
-    <div id="config-notice" class="notice warn" style="display:none">
-      <span>⚙️</span>
-      <div><b>Hệ thống tài khoản chưa bật.</b> Trang đang chạy chế độ mở (không cần đăng nhập).
-      Admin xem file <code>SETUP-SUPABASE.md</code> trong repo để bật Login + phân quyền.</div>
-    </div>
-
-    <section class="home-hero">
-      <div class="eyebrow">Trang nội bộ Thinksmart Insurance</div>
-      <h1 id="hero-greeting">Chào mừng bạn quay lại!</h1>
-      <p>Nơi làm việc chung của đội sale: học qua video, tạo báo giá &amp; danh thiếp cho khách, và trao đổi cùng đồng đội.</p>
-    </section>
-
-    <section class="area-grid" aria-label="Các khu vực">
-      <a class="area-card is-learn" href="/videos">
-        <span class="area-icon">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+    <aside class="sidebar" id="sidebar">
+      <a class="sidebar-brand" href="/">
+        <span class="logo-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+          </svg>
         </span>
-        <h2>Video học</h2>
-        <p>Thư viện video đào tạo cho sale: sản phẩm, kịch bản tư vấn, kỹ năng chốt hợp đồng.</p>
-        <span class="area-go">Vào học →</span>
+        <span><b>Thinksmart</b> <span>Insurance</span></span>
       </a>
 
-      <a class="area-card is-tool" href="/tool">
-        <span class="area-icon">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-        </span>
-        <h2>Công cụ</h2>
-        <p>Tạo Báo giá, Brochure và Name Card chuẩn thương hiệu để gửi khách trong vài phút.</p>
-        <span class="area-go">Mở công cụ →</span>
-      </a>
+      <nav class="sidebar-nav" aria-label="Điều hướng chính">
+        <a href="/" class="active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5"/><path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10"/><path d="M9 21v-6h6v6"/></svg>
+          <span class="nav-text">Trang chủ</span>
+        </a>
+        <a href="/tool">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          <span class="nav-text">Công cụ</span>
+        </a>
+        <a href="/members" id="nav-members" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span class="nav-text">Quản lý thành viên</span>
+          <span class="nav-badge" id="nav-pending-badge" style="display:none">0</span>
+        </a>
+      </nav>
 
-      <div class="area-card is-forum is-disabled" aria-disabled="true">
-        <span class="area-icon">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        </span>
-        <h2>Forum</h2>
-        <p>Đăng tin nội bộ, chia sẻ kinh nghiệm và hỏi đáp cùng cả đội. Đang xây — ra mắt Đợt 2.</p>
-        <span class="area-go">Sắp ra mắt</span>
+      <div class="sidebar-foot">
+        <button id="btn-theme-toggle" aria-label="Đổi giao diện sáng tối">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <span class="nav-text">Giao diện sáng/tối</span>
+        </button>
+        <button class="logout" id="btn-logout-side">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span class="nav-text">Đăng xuất</span>
+        </button>
       </div>
-    </section>
-  </main>
+    </aside>
 
-  <footer class="portal-footer">
-    <span class="version-badge">v1.10</span>
-    <span>19/07/2026 · Thinksmart Insurance — lưu hành nội bộ</span>
-  </footer>
+    <div class="app-main">
+      <header class="topbar">
+        <button class="menu-toggle" id="menu-toggle" aria-label="Mở menu">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="topbar-greeting">
+          <h1 id="hero-greeting">Chào mừng bạn quay lại!</h1>
+          <p id="hero-date"></p>
+        </div>
+        <div class="spacer"></div>
+        <div class="topbar-user">
+          <span class="avatar" id="chip-avatar">?</span>
+          <div class="tu-id">
+            <b id="chip-name">Tài khoản</b>
+            <span id="chip-role">Nhân viên</span>
+          </div>
+        </div>
+      </header>
+
+      <main class="dash">
+        <section class="stat-row" aria-label="Số liệu tổng quan">
+          <div class="stat-card" id="stat-members" style="display:none">
+            <span class="st-icon v-violet">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </span>
+            <div class="st-body">
+              <div class="st-label">Thành viên</div>
+              <div class="st-value" id="val-members">—</div>
+            </div>
+          </div>
+
+          <div class="stat-card" id="stat-pending" style="display:none">
+            <span class="st-icon v-amber">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            </span>
+            <div class="st-body">
+              <div class="st-label">Chờ duyệt</div>
+              <div class="st-value" id="val-pending">—</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <span class="st-icon v-rose">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </span>
+            <div class="st-body">
+              <div class="st-label">Mẫu thiết kế</div>
+              <div class="st-value" id="val-templates">—</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="dash-grid" id="dash-grid">
+          <div class="hero-action">
+            <span class="ha-eyebrow">Công cụ bán hàng</span>
+            <h2>Tạo báo giá cho khách</h2>
+            <p>Soạn Báo giá, Brochure và Name Card chuẩn thương hiệu Thinksmart, xuất PDF gửi khách chỉ trong vài phút.</p>
+            <a class="btn-white" href="/tool">
+              Mở công cụ
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+          </div>
+
+          <div class="panel" id="panel-members" style="display:none">
+            <div class="panel-head">
+              <h2>Thành viên mới</h2>
+              <a class="panel-link" href="/members">Quản lý →</a>
+            </div>
+            <div class="mini-list" id="recent-members"></div>
+            <div class="empty-mini" id="recent-empty" style="display:none">Chưa có thành viên nào.</div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="portal-footer">
+        <span class="version-badge">v1.13</span>
+        <span>20/07/2026 · Thinksmart Insurance — lưu hành nội bộ</span>
+      </footer>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/portal/config.js?v=1"></script>
-  <script src="/js/portal/auth.js?v=1"></script>
+  <script src="/js/portal/auth.js?v=3"></script>
   <script>
     (async function () {
-      TSTAuth.initShell();
-
+      // Chế độ mở: chưa cấu hình Supabase → chỉ hiện thông báo, không dựng dashboard
       if (!TSTAuth.configured) {
         document.getElementById('config-notice').style.display = 'flex';
         return;
       }
 
-      // Cần đăng nhập mới vào trang chủ nội bộ
       const { profile } = await TSTAuth.requireLogin();
+      document.getElementById('app-shell').style.display = 'flex';
+      TSTAuth.initShell(); // theme + điền avatar/tên vào chip
 
-      // Lời chào theo buổi + tên
-      const h = new Date().getHours();
+      const ROLE_LABEL = { super_admin: 'Super Admin', admin: 'Admin', user: 'Nhân viên' };
+      const role = (profile && profile.role) || 'user';
+      const isStaff = role === 'admin' || role === 'super_admin';
+
+      // Super Admin dùng được MỌI công cụ (chủ tool quyết 20/07/2026) — không ẩn gì.
+
+      // ---- Lời chào theo buổi + ngày ----
+      const now = new Date();
+      const h = now.getHours();
       const buoi = h < 11 ? 'buổi sáng' : h < 14 ? 'buổi trưa' : h < 18 ? 'buổi chiều' : 'buổi tối';
-      const name = profile && profile.full_name ? ', ' + profile.full_name.trim().split(/\s+/).pop() : '';
-      document.getElementById('hero-greeting').textContent = 'Chào ' + buoi + name + '!';
+      const ten = profile && profile.full_name ? ', ' + profile.full_name.trim().split(/\s+/).pop() : '';
+      document.getElementById('hero-greeting').textContent = 'Chào ' + buoi + ten + '!';
+      const thu = ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'][now.getDay()];
+      document.getElementById('hero-date').textContent =
+        thu + ', ' + String(now.getDate()).padStart(2, '0') + '/' + String(now.getMonth() + 1).padStart(2, '0') + '/' + now.getFullYear();
+
+      // ---- Chip quyền ----
+      document.getElementById('chip-role').textContent = ROLE_LABEL[role] || 'Nhân viên';
+
+      // ---- Menu mobile ----
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('sidebar-backdrop');
+      function closeMenu() { sidebar.classList.remove('open'); backdrop.classList.remove('open'); }
+      document.getElementById('menu-toggle').addEventListener('click', function () {
+        sidebar.classList.toggle('open'); backdrop.classList.toggle('open');
+      });
+      backdrop.addEventListener('click', closeMenu);
+
+      // ---- Đăng xuất (nút ở sidebar) ----
+      document.getElementById('btn-logout-side').addEventListener('click', TSTAuth.signOut);
+
+      const sb = TSTAuth.getClient();
+
+      // ---- Thẻ số liệu: Video + Mẫu (mọi người); Thành viên + Chờ duyệt (admin) ----
+      function setVal(id, v) { document.getElementById(id).textContent = v; }
+
+      // Mẫu thiết kế (endpoint công khai)
+      fetch('/api/svgs').then(function (r) { return r.json(); }).then(function (d) {
+        if (d && d.success) setVal('val-templates', (d.svgs || []).length);
+      }).catch(function () {});
+
+      if (isStaff) {
+        document.getElementById('nav-members').style.display = '';
+        document.getElementById('stat-members').style.display = '';
+        document.getElementById('stat-pending').style.display = '';
+        document.getElementById('panel-members').style.display = '';
+
+        sb.from('profiles').select('*', { count: 'exact', head: true }).neq('status', 'deleted').then(function (res) {
+          setVal('val-members', res.count == null ? '—' : res.count);
+        });
+        sb.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending').then(function (res) {
+          const n = res.count || 0;
+          setVal('val-pending', n);
+          if (n > 0) {
+            const b = document.getElementById('nav-pending-badge');
+            b.textContent = n; b.style.display = '';
+          }
+        });
+
+        // Thành viên mới nhất
+        sb.from('profiles')
+          .select('full_name, email, role, status, created_at')
+          .neq('status', 'deleted')
+          .order('created_at', { ascending: false })
+          .limit(5)
+          .then(function (res) {
+            const rows = res.data || [];
+            const box = document.getElementById('recent-members');
+            if (!rows.length) { document.getElementById('recent-empty').style.display = 'block'; return; }
+            box.innerHTML = rows.map(function (p) {
+              const name = p.full_name && p.full_name.trim() ? p.full_name.trim() : '(chưa đặt tên)';
+              const ini = (name.charAt(0) || '?').toUpperCase();
+              return '<div class="mini-row">' +
+                '<span class="avatar">' + escapeHtml(ini) + '</span>' +
+                '<div class="mr-id"><b>' + escapeHtml(name) + '</b><span>' + escapeHtml(p.email || '') + '</span></div>' +
+                '<span class="mr-when">' + relDate(p.created_at) + '</span>' +
+              '</div>';
+            }).join('');
+          });
+      } else {
+        // Nhân viên: thẻ hành động chiếm trọn hàng
+        document.getElementById('dash-grid').style.gridTemplateColumns = '1fr';
+      }
+
+      function relDate(iso) {
+        const d = new Date(iso);
+        if (isNaN(d)) return '';
+        const days = Math.floor((Date.now() - d.getTime()) / 86400000);
+        if (days <= 0) return 'Hôm nay';
+        if (days === 1) return 'Hôm qua';
+        if (days < 7) return days + ' ngày trước';
+        return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+      }
+      function escapeHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+      }
     })();
   </script>
+  <script src="/vendor/gsap.min.js"></script>
+  <script src="/js/animations.js?v=3"></script>
 </body>
 </html>

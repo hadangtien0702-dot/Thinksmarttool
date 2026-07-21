@@ -480,8 +480,10 @@ async function loadSvgContent(fileInfo) {
       // Update UI title (mark master templates, and lock their Save button)
       const isMaster = isMasterFile(fileInfo);
       const cleanName = fileInfo.name.replace(/\.svg$/i, '');
-      dom.activeFileTitle.textContent = isMaster ? `${cleanName} — MẪU GỐC` : cleanName;
-      dom.activeFileTitle.classList.add('is-active');
+      if (dom.activeFileTitle) {
+        dom.activeFileTitle.textContent = isMaster ? `${cleanName} — MẪU GỐC` : cleanName;
+        dom.activeFileTitle.classList.add('is-active');
+      }
       dom.btnSaveTop.disabled = isMaster;
       clearDirty();
       updateHeaderActions();
@@ -854,8 +856,10 @@ function resetCanvasToWelcome() {
   hideLibraryPreview();
   setEditorVisible(false);
   updateHeaderActions();
-  dom.activeFileTitle.textContent = 'Chưa chọn thiết kế';
-  dom.activeFileTitle.classList.remove('is-active');
+  if (dom.activeFileTitle) {
+    dom.activeFileTitle.textContent = 'Chưa chọn thiết kế';
+    dom.activeFileTitle.classList.remove('is-active');
+  }
   if (dom.btnExportJpeg) dom.btnExportJpeg.disabled = true;
   if (dom.btnExportPdf) dom.btnExportPdf.disabled = true;
 }

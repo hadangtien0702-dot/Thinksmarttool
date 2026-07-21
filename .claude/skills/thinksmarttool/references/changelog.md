@@ -46,20 +46,28 @@ portal xong muốn trả lại trang chủ sẽ rất cực để gỡ.
 
 ## PENDING / open tasks
 
-**Mở từ 2026-07-20:**
+**Mở từ 2026-07-20 (cập nhật 21/07 sau khi merge thành `feat/mainV1.1`):**
 - **A. Danh sách xếp hạng Allianz đang là TẠM** — owner sẽ gửi bản chính thức sau. Sửa ở
   `RATE_CLASSES_BY_CARRIER.Allianz` trong `public/js/proposal.js` (nhớ bump `proposal.js?v=`).
-- **B. `feat/login` chưa push** — chờ duyệt sẵn tài khoản cho đội sale rồi mới tính đưa lên live
-  (xem cảnh báo 2 nhánh ở đầu file).
+- **B. ~~`feat/login` chưa push~~ XONG 21/07**: đã push `feat/login` (v1.12) rồi merge `--no-ff`
+  vào nhánh mới **`feat/mainV1.1`** (v1.13). Nhánh này CHƯA push, CHƯA deploy — `main` vẫn
+  nguyên và live vẫn chỉ phục vụ Tool. Khi merge đã **GỠ khối redirect `/`,`/login`,`/videos`
+  → `/tool`** trong `server.js` (nếu cần giấu portal lần nữa thì đặt lại TRƯỚC `express.static`).
+- **B2. E2E luồng tài khoản VẪN CHƯA CHẠY** — cần tài khoản thật: đăng ký → chờ duyệt → duyệt →
+  đăng nhập → xem video → **tạm khoá lúc người đó đang mở web rồi chuyển trang** (ca vừa vá
+  21/07) → nhân viên vào `/members` phải bị từ chối.
 - **C. Danh sách phòng ban cố định** — hiện ô nhập tự do (`window.prompt` trong `members.js`).
   Owner gửi danh sách thì đổi thành dropdown.
-- **D. Video học "mồ côi"** — nav đã ẩn ở trang chủ/members/tool nhưng `videos.html` vẫn tự hiện mục
-  của nó → không có đường vào. Quyết: làm xong rồi mở lại, hay bỏ hẳn?
+- **D. Video học "mồ côi"** — `videos.html` tự hiện mục của nó nhưng sidebar trang chủ/members/tool
+  KHÔNG có link `/videos` → không có đường vào. Quyết: mở lại mục Video học trong nav, hay bỏ hẳn?
 - **E. Ô tìm kiếm mẫu trong Tool đã bị xoá** khỏi `tool.html` (bản update của owner) → không tìm mẫu
   theo tên được nữa; `main.js` còn handler chết trỏ tới `#search-input`. Khôi phục hay bỏ hẳn?
 - **F. JS chết trong core.js/main.js** — handler cho UI đã gỡ từ lâu (`#text-search-input`, meta
   inspector, tab màu, preset nền). Null-guard nên không lỗi, chỉ là code không bao giờ chạy.
 - **G. 2 tài khoản test trong DB** (`mkt@gmail.com`, `test1@gmail.com`) — dọn khi không cần nữa.
+- **H. Nhân viên thường không tự sửa được tên/phòng ban** — policy UPDATE trên `profiles` đòi
+  `is_admin()`. Muốn cho phép: thêm policy update `id = auth.uid()` (trigger `enforce_member_update`
+  đã cấm đổi role/status nên vẫn an toàn). Chờ owner quyết.
 
 -1. ~~Verify save/clone/delete on the LIVE site~~ **RESOLVED 2026-07-17 (v1.02)**: live site giờ chạy
    **draftsMode 'browser'** — nháp lưu localStorage máy sale (xem log). Server ghi file chỉ còn cho local.
@@ -85,6 +93,85 @@ portal xong muốn trả lại trang chủ sẽ rất cực để gỡ.
    FB post templates, client management…). Keep the structure modular.
 
 ## Log
+
+> **Ghi chú merge 21/07/2026:** `main` và `feat/login` chạy song song ngày 20/07 nên có HAI mục
+> cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
+> `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
+
+### 2026-07-21 (nhánh `feat/login` — v1.13, vá lỗ hổng guard trạng thái tài khoản)
+- **LỖ HỔNG THẬT: trạng thái tài khoản chỉ kiểm lúc ĐĂNG NHẬP, không kiểm lại khi vào trang.**
+  `requireLogin()` cũ chỉ hỏi "có session không". Chỉ `tool.html` + `members.js` tự kiểm thêm;
+  `/` và `/videos` KHÔNG. Hậu quả thật: admin bấm "Tạm khoá" nhưng phiên cũ của người đó còn hạn
+  → họ vẫn đi lại trong portal tới khi phiên hết. (RLS vẫn chặn dữ liệu — `is_approved()` đòi
+  status='active' — nên không rò nội dung, nhưng sai về mặt kiểm soát truy cập.)
+- **Lỗi thứ 2 — guard FAIL-OPEN**: `if (p && p.status !== 'active')` — p null (lỗi mạng/RLS) thì
+  bỏ qua cả điều kiện → CHO VÀO. Guard hỏng phải ĐÓNG.
+- **Sửa: dồn về `requireLogin()` trong `auth.js`** (chỗ duy nhất mọi trang đều đi qua):
+  status ≠ 'active' → `signOut('/login?state=' + pending|blocked)`; profile null → `blockPage()`
+  phủ toàn trang + nút Thử lại, **KHÔNG đăng xuất** (lỗi mạng mà đá người ta ra là quá tay).
+  `signOut(to)` nhận đích tuỳ chọn, chỉ chấp nhận đường dẫn nội bộ `^\/(?!\/)`.
+- **BẪY suýt dính**: `signOut` được gắn thẳng làm event listener (`addEventListener('click',
+  TSTAuth.signOut)`) → tham số `to` nhận Event object. Phải kiểm `typeof to === 'string'`,
+  không thì nút Đăng xuất chuyển hướng bậy.
+- `login.html`: `#pending-state` giờ dùng cho CẢ 2 trạng thái (pending ⏳ / blocked 🔒) qua
+  `showAccountState()`; `afterLogin()` đọc `status` thay vì cột `approved` cũ (cần phân biệt
+  "chờ duyệt" với "bị khoá" — cả hai đều approved=false) + fail-closed khi profile null.
+- Verified không cần tài khoản: `?state=blocked/pending/rác` đúng 3 kiểu; `/videos`,`/members`
+  chưa login → redirect kèm `?next=`; open-redirect `//evil.com` + `https://evil.com` → `/login`;
+  Event object → `/login`. `auth.js?v=3`, `portal.css?v=24`, badge v1.13.
+- **CHƯA test được (cần tài khoản thật — chủ tool chạy)**: đăng ký → chờ duyệt → duyệt → đăng nhập
+  → xem video → **tạm khoá lúc đang mở web rồi chuyển trang** (chính là ca vừa vá) → nhân viên vào
+  `/members` phải bị từ chối.
+- **Điểm chờ chủ tool quyết**: policy UPDATE trên `profiles` đòi `is_admin()` ⇒ **nhân viên thường
+  KHÔNG tự sửa được tên/phòng ban của mình**. Muốn cho phép: thêm policy update `id = auth.uid()`
+  (trigger sẵn có đã cấm đổi role/status nên vẫn an toàn).
+
+### 2026-07-20 (nhánh `feat/login` — v1.12, PUSH GIT KHÔNG DEPLOY)
+- **Bối cảnh:** chủ tool làm tiếp Portal trên nhánh `feat/login` (local:8000, Supabase ĐÃ bật thật —
+  key nằm trong `public/js/portal/config.js`). Push lên GitHub để về nhà làm tiếp; **`main` giữ
+  nguyên**, `tool.thinksmartinsurance.com` không đổi.
+- **BÀI HỌC LỚN NHẤT PHIÊN NÀY — Windows tắt Animation effects làm mọi animation vô hiệu.**
+  Chủ tool "sửa hoài không thấy khác gì": registry `HKCU\Control Panel\Desktop\WindowMetrics\MinAnimate = 0`
+  → Chrome báo `prefers-reduced-motion: reduce` → block ở `portal.css` ép mọi transition xuống
+  `0.01ms` và `animations.js` return ngay. Đo được: `.sidebar` transition-duration `1e-05s` thay vì
+  `0.34s`. Bật lại: `ms-settings:easeofaccess-visualeffects` → Animation effects On → **khởi động lại
+  Chrome** (đọc thiết lập lúc khởi động, reload không đủ).
+- **Logo rail bị ẩn mất** (đầu rail trống hoác): `.sidebar-brand > span` quét trúng cả
+  `<span class="logo-icon">`. Sửa: `> span:not(.logo-icon)` ở 3 rule (2 desktop + 1 mobile override).
+- **`clearProps: 'all'` của GSAP XOÁ SẠCH thuộc tính `style`** — kể cả `display:none` do phân quyền
+  đặt. Hậu quả thật: Super Admin thấy thẻ "Tạo báo giá"; Nhân viên thường thấy thẻ số liệu +
+  panel dành riêng Admin sau khi entrance chạy xong. Đo bằng thí nghiệm: style `display:none` → `""`.
+  Sửa: `clearProps: 'transform,opacity'` (đã kiểm chứng giữ nguyên display), và phần tử bị ẩn thì
+  KHÔNG tween.
+- **`gsap.from()` lộ 1 khung hình ở trạng thái CUỐI** rồi mới kéo về đầu → giật một cái lúc hiện.
+  Sửa: `gsap.set()` đặt trạng thái đầu ngay khi script chạy (shell còn `display:none`, chưa vẽ),
+  rồi `gsap.to()` tới trạng thái cuối.
+- **CSS transition đánh nhau với GSAP**: `.stat-card` có `transition: transform .25s`, GSAP ghi
+  transform mỗi khung hình → mỗi lần ghi lại bị nội suy → trễ + snap. Sửa: `body.is-entering`
+  tắt transition vùng đang tween (portal.css), animations.js bật/tắt class.
+- **Animation rút gọn theo yêu cầu chủ tool**: bỏ 3 nhóm lệch nhịp, còn 1 nhịp — opacity + y 10px,
+  0.32s, stagger 0.04s (tổng ~480ms).
+- **Bảng thành viên chia 6 cột** (chủ tool: "một hàng ngang khó nhìn"): Thành viên · Phòng ban ·
+  Quyền · Trạng thái · Tham gia · Thao tác, có hàng tiêu đề. **BẮT BUỘC dùng `subgrid`** —
+  mỗi hàng tự dựng lưới riêng thì cột "Thao tác" (số nút đổi theo trạng thái+quyền) kéo co các cột
+  còn lại lệch tới 70px (đã đo). `.member-table` là nơi DUY NHẤT định nghĩa chiều rộng cột;
+  `.member-head`/`.member-list`/`.member-row` đều `grid-template-columns: subgrid`.
+  Hệ quả: **đừng thêm padding/border trái-phải** cho 3 cái đó — subgrid thụt vào là lệch lại.
+  ≤900px: bỏ subgrid, thành thẻ xếp dọc có nhãn `data-label`; nút thao tác nâng lên 44px.
+- **Bỏ banner "Đang tải danh sách…"** (chủ tool chê): banner chen vào giữa trang, đẩy nội dung rồi
+  biến mất → giật bố cục mỗi lần bấm Tải lại. Thay bằng `setLoading()`: nút đổi nhãn + khoá, bảng
+  mờ 0.5 + `pointer-events:none`. Đo: chiều cao bảng 224px không đổi trước/trong khi tải.
+  Lần tải ĐẦU dùng khung xương `.sk` cao đúng 66px = bằng hàng thật nên thay vào không nhảy.
+  `#load-msg` giờ CHỈ dùng báo lỗi.
+- **Super Admin dùng được MỌI công cụ** (chủ tool quyết): gỡ **5 chỗ** chặn —
+  `tool.html` (đá về `/members`, nặng nhất), `index.html` ×2 (ẩn nav + ẩn hero, ép lưới 1 cột),
+  `videos.html`, `members.js`. Gỡ thiếu chỗ tool.html thì bấm "Công cụ" vẫn bị văng ra.
+- Versions: `portal.css?v=23`, `animations.js?v=3`, `members.js?v=6`, badge **v1.12** (5 chỗ).
+- **GOTCHA công cụ đo**: (1) `resize_window` preset "desktop" báo thành công nhưng viewport VẪN 375px
+  → luôn kiểm `innerWidth` trước khi tin số đo; (2) browser pane không chạy rAF khi ở nền → tween
+  GSAP không bao giờ complete, phải `tl.progress(1, false)` để tua đồng bộ; (3) đo CSS mới phải
+  `link.disabled = true` rồi mới inject — không thì rule CŨ vẫn thắng và đo ra kết quả sai.
+
 ### 2026-07-20 (owner quay lại tự làm; tách 2 nhánh: main cho sale, feat/login local)
 
 **ĐÃ PUSH LÊN LIVE (main) — 2 lần, đều tách riêng, không dính feat/login:**

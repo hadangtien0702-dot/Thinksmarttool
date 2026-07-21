@@ -152,8 +152,10 @@ function openLibraryGroup(items, groupName) {
   setEditorVisible(false);
   updateHeaderActions();
 
-  dom.activeFileTitle.textContent = groupName + ` (${items.length} files)`;
-  dom.activeFileTitle.classList.add('is-active');
+  if (dom.activeFileTitle) {
+    dom.activeFileTitle.textContent = groupName + ` (${items.length} files)`;
+    dom.activeFileTitle.classList.add('is-active');
+  }
   dom.btnSaveTop.disabled = true;
 
   dom.canvasWrapper.innerHTML = '';
@@ -245,8 +247,10 @@ function openLibraryItem(item) {
   setEditorVisible(false);
   updateHeaderActions();
 
-  dom.activeFileTitle.textContent = item.name;
-  dom.activeFileTitle.classList.add('is-active');
+  if (dom.activeFileTitle) {
+    dom.activeFileTitle.textContent = item.name;
+    dom.activeFileTitle.classList.add('is-active');
+  }
   dom.btnSaveTop.disabled = true;
 
   dom.canvasWrapper.innerHTML = '';
