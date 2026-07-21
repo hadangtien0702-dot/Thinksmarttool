@@ -141,6 +141,32 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
 
+### 2026-07-21 (later 13 — cập nhật brochure AIG IUL từ 2 PDF export mới)
+
+Chủ tool xuất 2 file `3-Export-PDF/Brochue - 01/02.pdf` (vector, 1 trang/file) và nhờ thay
+bộ brochure AIG IUL. Cấu trúc brochure: `Brochure/AIG/AIG IUL.jpg` (trang 1) +
+`AIG IUL (2).jpg` (trang 2) để xem, `AIG IUL.pdf` để nút Tải về. **Quy trình đã dùng,
+tái dùng cho lần sau:**
+
+1. **Sao lưu bản cũ trước** (Brochure/ nằm NGOÀI git — không có lưới an toàn).
+2. **PDF tải về**: ghép 2 PDF vector bằng `pdf-lib` (npm cài vào scratchpad, KHÔNG đụng
+   package.json dự án) → giữ nguyên vector như bản cũ, 249 KB / 2 trang.
+3. **JPG xem trước**: PDF là vector thuần (0 ảnh nhúng) nên phải RENDER: trang tạm
+   `public/tmp-render/render.html` + pdf.js CDN, render 1600×2263 (khớp chuẩn cũ),
+   toDataURL JPEG 0.92, kéo base64 về qua javascript_tool (kết quả lớn tự lưu file
+   tool-results → decode bằng Node). Xoá tmp-render ngay sau khi xong.
+   ⚠️ **BẪY: pane trình duyệt phiên này không chạy khung hình** → pdf.js `page.render()`
+   treo vĩnh viễn vì chờ requestAnimationFrame. Vá: `window.requestAnimationFrame =
+   cb => setTimeout(cb, 0)` TRƯỚC khi render. Cùng gốc với vụ screenshot treo + dialog
+   kẹt opacity (later 2, later 8).
+4. Kiểm: đọc ảnh bằng mắt (đúng thiết kế mới), `/api/download` trả byte khớp 100%
+   file trên đĩa cho cả 3 file.
+
+**Lưu ý phạm vi:** `Brochure/` bị gitignore → bản cập nhật này chỉ nằm trên máy chủ tool
+(localhost) — giống mọi brochure từ trước tới nay, KHÔNG lên live domain.
+Đã đưa vào git theo lệnh chủ tool: thư mục `Bang so sanh quyen loi cac hang/` (16 PNG,
+nằm ở gốc repo nên KHÔNG được serve lên domain) + 2 PDF nguồn trong 3-Export-PDF.
+
 ### 2026-07-21 (later 12 — bỏ đuôi .jpg trên tiêu đề brochure + dịch tiêu đề IUL thêm 5)
 
 - **Bỏ đuôi file trên tiêu đề brochure** (chủ tool gạch đỏ .jpg 21/07): openLibraryItem
