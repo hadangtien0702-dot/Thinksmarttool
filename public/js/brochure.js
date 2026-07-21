@@ -249,8 +249,12 @@ function openLibraryItem(item) {
   setEditorVisible(false);
   updateHeaderActions();
 
+  // Tên hiển thị KHÔNG kèm đuôi file (.jpg/.pdf…) — chủ tool gạch bỏ 21/07:
+  // đội sale đọc "NLG IUL" chứ không cần biết định dạng. Tên file thật giữ nguyên.
+  const tenSach = String(item.name).replace(/\.(jpe?g|png|pdf|svg|webp)$/i, '');
+
   if (dom.activeFileTitle) {
-    dom.activeFileTitle.textContent = item.name;
+    dom.activeFileTitle.textContent = tenSach;
     dom.activeFileTitle.classList.add('is-active');
   }
   dom.btnSaveTop.disabled = true;
@@ -265,7 +269,7 @@ function openLibraryItem(item) {
   } else {
     showLibraryPreview(item);
   }
-  updateStatus(`Đang xem: ${item.name}`);
+  updateStatus(`Đang xem: ${tenSach}`);
 }
 
 function showLibraryMultiPagePreview(item) {

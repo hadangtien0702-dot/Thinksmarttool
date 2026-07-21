@@ -141,6 +141,16 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
 
+### 2026-07-21 (later 12 — bỏ đuôi .jpg trên tiêu đề brochure + dịch tiêu đề IUL thêm 5)
+
+- **Bỏ đuôi file trên tiêu đề brochure** (chủ tool gạch đỏ .jpg 21/07): openLibraryItem
+  (brochure.js) hiển thị tên đã strip .jpg/.jpeg/.png/.pdf/.svg/.webp ở CẢ header lẫn
+  thanh trạng thái — đội sale đọc "NLG IUL", không cần biết định dạng. Tên file thật
+  giữ nguyên (tải về vẫn đúng đuôi). Kiểm trên app: tiêu đề "NLG IUL" sạch. brochure.js?v=7.
+- **Dịch tiêu đề INDEXED UNIVERSAL LIFE thêm 5 trái** theo mắt chủ tool (lần 2, tổng 10):
+  x -116.65 → -121.65, lề giờ 53.3 / 76.1. 2 mẫu IUL × 2 bản, đo cả hai ra cùng số.
+- config.js?v=5 (pha cache sau lượt tạm mở chế độ mở để kiểm chứng brochure).
+
 ### 2026-07-21 (later 11 — dịch tiêu đề IUL sang trái 5 theo mắt chủ tool)
 
 Chủ tool nhìn bản in thấy dòng INDEXED UNIVERSAL LIFE vẫn lệch phải, yêu cầu dịch trái
