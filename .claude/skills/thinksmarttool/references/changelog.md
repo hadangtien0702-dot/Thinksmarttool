@@ -141,6 +141,26 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
 
+### 2026-07-21 (later 10 — xoá vệt đen mép trái mẫu NLG IUL)
+
+Chủ tool báo vệt đen dọc mép trái trang, khoảng ngang thẻ khách hàng, nhờ "đắp màu
+xanh + trắng lên". Soi ra nguyên nhân KHÔNG cần đắp: một thẻ `<image>` 662×601
+(76 KB) bị designer **kéo ra ngoài mép trái thay vì xoá** — nằm ở
+`translate(-118.74 218.51) scale(.2)`, tức gần hết ngoài canvas nhưng **thò vào
+trang 13.7 đơn vị** (x −118.7 → 13.7, y 218.5 → 338.7), và mép phải của ảnh đó màu
+đen. Không id, không `<use>` nào trỏ tới → xoá thẳng thẻ, nền xanh/trắng thật lộ ra
+đúng như chủ tool muốn, file nhẹ thêm 102 KB (2360 → 2258 KB).
+
+**Cách dò ra (tái dùng được):** quét mọi `rect/path/image/polygon` có bbox chạm dải
+mép trang (x < 25 hoặc > W−25), lọc phần tử tối màu (`fill` R+G+B < 150) hoặc là
+`image`, bỏ qua nền to (rộng > 560). Đã quét đủ 4 mẫu proposal: chỉ NLG IUL dính;
+các vệt ở mẫu khác đều là LOGO ở đầu trang (đúng thiết kế, không đụng).
+
+**Bài học:** mẫu xuất từ Illustrator có thể chứa **phần tử bỏ quên ngoài canvas** —
+không thấy trên artboard của designer nhưng SVG không cắt gì cả, thò vào trang là
+hiện. Cùng họ với bẫy "ảnh Link chưa Embed" (later 3). Khi nhận mẫu mới: chạy quét
+mép trang như trên, và để ý cả phần tử nằm HẲN ngoài canvas (chiếm dung lượng vô ích).
+
 ### 2026-07-21 (later 9 — tiêu đề IUL: thu nhỏ 40px → 38.09px, trả lại đúng lề gốc)
 
 Chủ tool báo tiếp sau "later 8": dịch trái xong dòng "INDEXED UNIVERSAL LIFE" vẫn
