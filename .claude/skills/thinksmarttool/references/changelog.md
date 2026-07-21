@@ -141,6 +141,33 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
 
+### 2026-07-21 (later 8 — canh giữa lại dòng tiêu đề sau khi sửa chính tả)
+
+Chủ tool báo ngay sau bản vá chính tả: thêm chữ "E" vào INDEXD làm dòng
+"INDEXED UNIVERSAL LIFE" **dài ra và lệch sang phải** (nó neo TRÁI nên chỉ nở về bên
+phải). **Bài học: sửa chữ trên bản vẽ thì phải kiểm lại bố cục ngay, đừng chỉ kiểm
+"chữ đã đúng chưa".**
+
+- Vá: `x="-111.65"` → `x="-123.33"` ở mảnh `INDEXED UNIVER` (dịch trái 11.68), trả về
+  đúng tâm thiết kế **296.24**. Lề hai bên sau khi sửa: 51.6 / 54.4 — cân mắt.
+  Áp cho AIG IUL + IUL–NLG, mỗi mẫu 2 bản = 4 file. Hai mẫu ra CÙNG con số.
+
+**⚠️ BẪY ĐO ĐẠC — ĐỌC KỸ, ĐÃ MẤT MẤY LƯỢT VÌ NÓ:**
+Khi mở file SVG THẲNG trên trình duyệt (không qua tool), **KHÔNG được quy đổi toạ độ
+bằng `svg.getBoundingClientRect().width / viewBox.width`**. Trang báo giá rất cao
+(595×1341) nên trình duyệt canh theo CHIỀU CAO và chừa lề trắng hai bên ngang → tỉ lệ
+ngang tính kiểu đó **sai hoàn toàn**. Triệu chứng đã gặp: đổi `x` đi 4.32 mà đo ra chỉ
+dịch 1.6, và bề rộng chữ đo ra 180 trong khi thực tế là 489.
+
+Cách đúng: `const M = svg.getScreenCTM().inverse()` rồi
+`svg.createSVGPoint()` + `.matrixTransform(M)`. Nó tự xử lý viewBox,
+preserveAspectRatio và lề trắng. **Mọi phép đo toạ độ trên SVG từ nay dùng cách này.**
+(Trong tool thì cách cũ tình cờ đúng vì canvas khớp bề ngang — nên bẫy chỉ lộ ra khi
+mở file trực tiếp.)
+
+Thêm một điểm: `getBoundingClientRect()` trên thẻ `<tspan>` BAO NGOÀI cho số không tin
+được; phải lấy **hợp bao của các mảnh tspan con** (bỏ mảnh rỗng) mới ra đúng biên chữ.
+
 ### 2026-07-21 (later 7 — sửa lỗi chính tả trong bản vẽ)
 
 Chủ tool báo nhãn ghi **"Xếp hạng ức khoẻ"**, thiếu chữ "s".
