@@ -141,6 +141,16 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
 
+### 2026-07-21 (later 11 — dịch tiêu đề IUL sang trái 5 theo mắt chủ tool)
+
+Chủ tool nhìn bản in thấy dòng INDEXED UNIVERSAL LIFE vẫn lệch phải, yêu cầu dịch trái
+5px — quyết định THẨM MỸ của chủ tool, làm theo. x mảnh đầu dòng 2: -111.65 → -116.65
+(2 mẫu IUL × 2 bản). Lề sau khi dịch: trái 58.3 / phải 71.1 (trước: 63.3 / 66.1).
+Cỡ chữ giữ 38.09px. Lưu ý ngữ cảnh: screenshot chủ tool gửi lúc yêu cầu vẫn còn vệt đen
+đã xoá ở later 10 → màn hình họ là bản cache cũ; đã dịch theo yêu cầu và gửi hình cắt
+từ file thật để đối chiếu. Nếu sau khi refresh chủ tool thấy lệch trái quá thì chỉ cần
+trả x về -111.65.
+
 ### 2026-07-21 (later 10 — xoá vệt đen mép trái mẫu NLG IUL)
 
 Chủ tool báo vệt đen dọc mép trái trang, khoảng ngang thẻ khách hàng, nhờ "đắp màu
