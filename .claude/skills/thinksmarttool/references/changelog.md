@@ -25,18 +25,29 @@ Khi cần sửa cho bản live: `git checkout main` → sửa → push (đừng 
 Redirect tạm ở `server.js` (main) dùng **302 chứ không 301** — 301 bị trình duyệt cache cứng, sau này
 portal xong muốn trả lại trang chủ sẽ rất cực để gỡ.
 
-## Version hiện tại trên `feat/mainV1.1` (2026-07-21, ĐÃ PUSH lên nhánh riêng)
+## Version hiện tại (2026-07-21 cuối ngày — ĐÃ PUSH cả `main` lẫn `feat/mainV1.1`)
 
-Badge UI **v1.14** (5 chỗ — `grep -rn "version-badge" public/*.html`). Cache-version của asset:
+Hai nhánh **cùng ở commit `c91d04b`**, cây làm việc sạch. `main` = bản LIVE
+(tool.thinksmartinsurance.com), đang **BẮT ĐĂNG NHẬP** (config.js có khoá Supabase thật —
+chủ tool chốt 21/07, xem ghi chú ở đầu file).
+
+Badge UI **v1.17** (5 chỗ — `grep -rn "version-badge" public/*.html`). Cache-version của asset:
 
 | File | Version | File | Version |
 |---|---|---|---|
-| `portal.css` | `?v=32` | `style.css` | `?v=53` |
-| `js/core.js` | `?v=23` | `js/proposal.js` | `?v=21` |
-| `js/brochure.js` | `?v=6` | `js/animations.js` | `?v=4` |
-| `js/portal/auth.js` | `?v=3` | `js/portal/members.js` | `?v=10` |
-| `js/ui-dialog.js` | `?v=2` | `dialog.css` | `?v=3` |
-| `js/portal/config.js` | `?v=4` | `js/portal/videos.js` | `?v=2` |
+| `style.css` | `?v=57` | `portal.css` | `?v=32` |
+| `dialog.css` | `?v=3` | `js/ui-dialog.js` | `?v=2` |
+| `js/core.js` | `?v=24` | `js/proposal.js` | `?v=21` |
+| `js/brochure.js` | `?v=9` | `js/sosanh.js` | `?v=2` |
+| `js/main.js` | `?v=6` | `js/namecard.js` | `?v=5` |
+| `js/animations.js` | `?v=4` | `js/portal/auth.js` | `?v=3` |
+| `js/portal/config.js` | `?v=8` | `js/portal/members.js` | `?v=10` |
+| `js/portal/videos.js` | `?v=2` | | |
+
+**Quy tắc bump (đã dính lỗi vì quên):** sửa file nào bump `?v=` file đó — **kể cả khi chỉ
+sửa TẠM rồi hoàn lại** (đục `config.js` để test xong khôi phục vẫn phải bump, không thì
+trình duyệt chủ tool giữ bản tạm trong cache). Cùng một file mà mỗi trang HTML khai một số
+version khác nhau là bug thầm lặng — dò bằng script quét cả 5 file HTML, đừng sửa tay từng trang.
 
 **⚠️ HAI FILE CSS LÀ BẢN SAO CỦA NHAU** — `portal.css` (portal) và `style.css` (Tool) chép tay lẫn
 nhau phần rail, nút, token. **Đây là nguồn lỗi lặp đi lặp lại** (logo rail sai 2 lần, nút lệch cỡ
@@ -66,6 +77,24 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 - Font embedding on export is live. Design system + light/dark theme live.
 
 ## PENDING / open tasks
+
+> **BẮT ĐẦU PHIÊN MỚI ĐỌC 4 DÒNG NÀY:** hai nhánh `main` và `feat/mainV1.1` cùng ở `c91d04b`,
+> cây làm việc sạch, đã push. Live `tool.thinksmartinsurance.com` **BẮT ĐĂNG NHẬP** (chủ tool
+> chốt 21/07) — ai chưa có tài khoản đã duyệt là không vào được. Việc nên hỏi ngay: **A1** và **A2**.
+> Muốn kiểm chứng trên máy: tạm để trống `config.js` → test → khôi phục → **bump `config.js?v=`**
+> (quên bump là chủ tool dính bản trống trong cache, đã xảy ra rồi).
+
+**Việc gấp — mở đầu phiên nên hỏi chủ tool:**
+- **A1. Bảng So sánh: 16 PNG trong folder chỉ là LOGO hãng**, không phải nội dung so sánh. Bảng vẫn
+  DÙNG ĐƯỢC vì dữ liệu 16 hãng × 4 quyền lợi đã lấy đủ từ `Compare.html`; logo chỉ là ảnh minh hoạ
+  trong mỗi thẻ. Nếu chủ tool muốn nhúng thêm bảng so sánh dạng ảnh/PDF → thả vào folder, giữ kiểu
+  tên `NN_Ten_Hang.png`.
+- **A2. Đội sale có vào được live không?** Chủ tool nói KHÔNG cần tài khoản admin1/admin2 nữa, nhưng
+  CHƯA xác nhận cả đội đã đăng ký + được duyệt. Nếu bị chặn: để trống `config.js` + bump version +
+  push là mở lại trong ~1 phút.
+- **A3. `3-Export-PDF/` chưa gitignore** → PDF chủ tool xuất ra hiện lên mỗi lần commit. Hỏi có ignore
+  không (file gửi khách không nên nằm trên repo công khai).
+
 -3. **CÔNG CỤ SẮP THÊM (chủ tool báo 21/07/2026)** — mục "Công cụ" sẽ KHÔNG chỉ có
    Proposal/Brochure/Name Card nữa:
    - **Tính tuổi bảo hiểm** cho khách (insurance age — nhiều hãng tính theo ngày sinh

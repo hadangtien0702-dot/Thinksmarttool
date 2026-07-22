@@ -68,3 +68,36 @@ The 5 contact icons are **tiny raster (bitmap) images** (~22–35px) embedded in
 images). Fix = replace with vector icons — preferably by the user re-exporting from Illustrator with icons
 kept **vector** (Export SVG → Images: Preserve), or in code (harder: per-icon ratios, YouTube uses a mask,
 2 overlapping card copies, color match). See `references/changelog.md` for the live status.
+
+---
+
+## 4. SO SÁNH QUYỀN LỢI CÁC HÃNG (`public/js/sosanh.js`) — thêm 21/07/2026
+
+Công cụ **KHÔNG mở file SVG** đầu tiên của tool. Đây là bản mẫu tham khảo cho các công cụ sắp
+tới (Tính tuổi bảo hiểm, Run quotes) — xem PENDING -3.
+
+**Cách hoạt động**
+- Nav: mục "So sánh quyền lợi / Compare" → một mục con duy nhất "Living Benefits — 16 hãng".
+- Bấm vào → `openCompareTable()` vẽ HTML thẳng vào `#library-view` (dùng chung vòng đời với
+  brochure preview: `hideLibraryPreview()` tự dọn khi mở file khác). Không dùng canvas SVG,
+  không hiện panel "Sửa chữ bản vẽ".
+- Bảng **5 cột**: 1 cột hãng + 4 nhóm Living Benefits. Mỗi hãng là **một thẻ bo tròn riêng**
+  (không phải bảng kẻ ô) — chủ tool chốt ngôn ngữ này 21/07. Bấm một thẻ → bung 4 thẻ chi tiết
+  điều khoản ngay bên trong.
+
+**Dữ liệu — ĐỌC KỸ TRƯỚC KHI SỬA**
+- Nằm trong hằng `SS_DATA` ở đầu `sosanh.js`. Mỗi ô: `{ s:'ok'|'no'|'wr', d:'chi tiết' }`
+  (`ok` = có · `no` = không · `wr` = chưa xác nhận).
+- Nguồn gốc: `Bang so sanh quyen loi cac hang/Compare.html` do chủ tool cung cấp. Chép **nguyên
+  văn**, không rút gọn.
+- ⚠️ **Đây là điều khoản bảo hiểm đội sale đọc cho khách nghe.** Sửa con số/điều kiện phải có
+  nguồn từ chủ tool. Tuyệt đối không tự "làm gọn cho dễ đọc" hay tự suy ra giá trị thiếu.
+- Muốn thêm hãng: thêm một object vào `SS_DATA` + bỏ file logo `NN_Ten_Hang.png` vào folder
+  (số đầu tên quyết định thứ tự, dùng cho cả sắp xếp lẫn tra logo).
+
+**Logo**: 16 PNG trong `Bang so sanh quyen loi cac hang/`, nạp qua `/api/download?...&inline=1`.
+Đặt trong chip **nền trắng cố ý** — nhiều logo có nền đặc, để trong suốt sẽ chìm ở theme tối.
+⚠️ KHÔNG dùng `loading="lazy"` cho ảnh trong `#library-view` (xem changelog later 15).
+
+**CSS**: mục **22b** trong `style.css` (`.ss-*`). Toàn token của design system → theme tối tự
+đúng. Riêng màu chữ badge phải đặt tay vì cặp token mặc định không đạt AA — xem PENDING Z.
