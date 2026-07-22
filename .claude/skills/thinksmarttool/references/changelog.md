@@ -8,10 +8,14 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 | | `main` | `feat/login` | `feat/mainV1.1` |
 |---|---|---|---|
 | Vai trò | **BẢN LIVE cho đội sale** | Portal (đã gộp vào V1.1) | **NHÁNH ĐANG LÀM** = main + portal |
-| Ở đâu | Đã push, Vercel auto-deploy | Đã push GitHub 20/07 | **LOCAL — CHƯA PUSH** |
-| Version | v1.11 · `proposal.js?v=11` | v1.12 | **v1.13** (xem "Version hiện tại" bên dưới) |
-| `config.js` | Khoá Supabase **TRỐNG** → chế độ mở | CÓ khoá thật | **CÓ khoá thật** → bắt đăng nhập |
-| Nội dung | Chỉ Tool. `/`,`/login`,`/videos` → **302 về `/tool`** | Portal | Portal + Tool, **đã GỠ redirect** |
+| Ở đâu | Đã push, Vercel auto-deploy | Đã push GitHub 20/07 | Đã push GitHub 21/07 |
+| Version | **v1.18** (22/07) | v1.12 | v1.17 |
+| `config.js` | **CÓ khoá thật** → bắt đăng nhập (chốt 21/07) | CÓ khoá thật | **CÓ khoá thật** → bắt đăng nhập |
+| Nội dung | Portal + Tool. **Bảng So sánh bị ẨN** (`SS_SHOW_IN_NAV=false`) | Portal | Portal + Tool, bảng So sánh **BẬT** (đang làm) |
+
+**🚦 QUY TẮC PUSH (chủ tool chốt 22/07/2026):** `main` chỉ nhận phần **ĐÃ DUYỆT XONG**. Việc đang
+làm dở ở lại `feat/mainV1.1`. Đã dính lỗi 21/07: push bảng So sánh chưa xong lên live, đội sale
+nhìn thấy tưởng bản chính thức — xem log 22/07.
 
 **✅ 21/07/2026 — CHỦ TOOL CHỐT: merge lên `main` và cho LIVE, chấp nhận bắt đăng nhập.**
 Cảnh báo bên dưới giữ lại để hiểu bối cảnh, nhưng quyết định đã thay đổi.
@@ -25,18 +29,24 @@ Khi cần sửa cho bản live: `git checkout main` → sửa → push (đừng 
 Redirect tạm ở `server.js` (main) dùng **302 chứ không 301** — 301 bị trình duyệt cache cứng, sau này
 portal xong muốn trả lại trang chủ sẽ rất cực để gỡ.
 
-## Version hiện tại trên `feat/mainV1.1` (2026-07-21, ĐÃ PUSH lên nhánh riêng)
+## Version hiện tại trên `main` (BẢN LIVE — 2026-07-22)
 
-Badge UI **v1.14** (5 chỗ — `grep -rn "version-badge" public/*.html`). Cache-version của asset:
+Badge UI **v1.18** (5 chỗ — `grep -rn "version-badge" public/*.html`). Cache-version của asset:
 
 | File | Version | File | Version |
 |---|---|---|---|
-| `portal.css` | `?v=32` | `style.css` | `?v=53` |
-| `js/core.js` | `?v=23` | `js/proposal.js` | `?v=21` |
-| `js/brochure.js` | `?v=6` | `js/animations.js` | `?v=4` |
-| `js/portal/auth.js` | `?v=3` | `js/portal/members.js` | `?v=10` |
-| `js/ui-dialog.js` | `?v=2` | `dialog.css` | `?v=3` |
-| `js/portal/config.js` | `?v=4` | `js/portal/videos.js` | `?v=2` |
+| `style.css` | `?v=57` | `portal.css` | `?v=32` |
+| `dialog.css` | `?v=3` | `js/ui-dialog.js` | `?v=2` |
+| `js/core.js` | `?v=24` | `js/proposal.js` | `?v=21` |
+| `js/brochure.js` | `?v=9` | `js/sosanh.js` | **`?v=3`** |
+| `js/main.js` | `?v=6` | `js/namecard.js` | `?v=5` |
+| `js/animations.js` | `?v=4` | `js/portal/auth.js` | `?v=3` |
+| `js/portal/config.js` | `?v=8` | `js/portal/members.js` | `?v=10` |
+| `js/portal/videos.js` | `?v=2` | | |
+
+**Quy tắc bump (đã dính lỗi vì quên):** sửa file nào bump `?v=` file đó — **kể cả khi chỉ
+sửa TẠM rồi hoàn lại**. Cùng một file mà mỗi trang HTML khai một số version khác nhau là bug thầm
+lặng — dò bằng script quét cả 5 file HTML, đừng sửa tay từng trang.
 
 **⚠️ HAI FILE CSS LÀ BẢN SAO CỦA NHAU** — `portal.css` (portal) và `style.css` (Tool) chép tay lẫn
 nhau phần rail, nút, token. **Đây là nguồn lỗi lặp đi lặp lại** (logo rail sai 2 lần, nút lệch cỡ
@@ -144,6 +154,39 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > **Ghi chú merge 21/07/2026:** `main` và `feat/login` chạy song song ngày 20/07 nên có HAI mục
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
+
+### 2026-07-22 (ẨN bảng So sánh khỏi bản LIVE — v1.18, chỉ trên `main`)
+
+**Bối cảnh — bài học quy trình, đọc kỹ:** cuối ngày 21/07 bảng So sánh (v1.15→v1.17) được push
+chung một cục lên `main` theo thói quen "EOD push", trong khi **tính năng CHƯA XONG**. Chủ tool
+phát hiện sáng 22/07: "phần này chưa xong đã public lên vậy em?". Live có bắt đăng nhập nên khách
+ngoài không thấy, nhưng **đội sale đã duyệt tài khoản thì thấy** → rủi ro thật: họ tưởng là bản
+chính thức rồi đem số liệu quyền lợi đi tư vấn cho khách.
+
+**→ QUY TẮC MỚI (chủ tool chốt 22/07):** chỉ push lên `main` những phần **đã duyệt xong**.
+Phần đang làm dở giữ ở `feat/mainV1.1`. Không gộp việc dở vào commit cuối ngày nữa.
+
+**Cách ẩn (cố ý chọn cách nhẹ nhất):** thêm cờ `SS_SHOW_IN_NAV` ở đầu `public/js/sosanh.js`,
+`renderCompareNavSection` early-return `0` khi cờ tắt. **Code giữ nguyên 100%** — không xoá, không
+comment-out cả khối, để bản offline làm tiếp không bị lệch.
+- Trên `main`: `SS_SHOW_IN_NAV = false`. Trên `feat/mainV1.1`: giữ `true`.
+- ⚠️ **Một dòng này sẽ xung đột khi merge `feat/mainV1.1` → `main`.** Xung đột CÓ CHỦ Ý — lúc merge
+  phải dừng lại tự hỏi "bảng So sánh xong chưa?" rồi mới chọn giá trị. Đừng nhắm mắt lấy bên nào.
+- Khi bảng hoàn thiện: đổi `false` → `true` + bump `sosanh.js?v=` trong `tool.html`.
+
+**Version sau khi ẩn (`main`):** badge **v1.18** (5 file HTML), `js/sosanh.js?v=3`. Các file khác
+giữ nguyên như v1.17.
+
+**Đã kiểm chứng thật, không chỉ đọc code:** login chặn không vào được `/tool` bằng trình duyệt
+(không được nhập tài khoản của chủ tool), nên eval thẳng file server đang phục vụ:
+`fetch /js/sosanh.js?v=3` → `new Function(src)` → gọi `renderCompareNavSection(container, '')`.
+Kết quả: `SS_SHOW_IN_NAV=false`, trả về `0`, container **rỗng** → `main.js:31` cộng 0, tổng số mẫu
+trên cây không bị lệch. Badge v1.18 hiện đúng trên trang login.
+
+**Lối vào còn lại (chấp nhận, không surface trên UI):** `/api/library` vẫn trả section `soSanh` và
+`/api/download` vẫn phục vụ folder `Bang so sanh quyen loi cac hang/` — **bắt buộc phải giữ** vì
+16 logo hãng load qua đó. Không nơi nào trong `public/js/` đọc key `soSanh` (đã grep), nên không
+hiện ra cây nav; chỉ ai biết URL mới mò tới `Compare.html`. Không đáng bịt lúc này.
 
 ### 2026-07-21 (later 16 — bảng So sánh dựng lại theo ngôn ngữ thẻ bo tròn, v1.17)
 
