@@ -1051,14 +1051,40 @@ body.dark-theme .ms-row .ms-value.is-danger { color: #F87171; }
   .btn-sm { min-height: 40px; }
   .icon-btn { width: 44px; height: 44px; }
 
+  /* Nút "↻ Tải lại" ẨN trên điện thoại (chủ tool 22/07: *"trên iPhone không cần
+     nút này, người ta trượt lên là tự động load"*). Đúng: vuốt-để-tải-lại của
+     Safari/Chrome nạp lại trang, mà nạp lại trang thì `load()` chạy luôn — nút
+     này chỉ lặp lại một cử chỉ hệ điều hành đã có. Thanh tiêu đề mobile lại
+     chật, để nút vào là chữ vỡ hai dòng ("↻ / Tải lại" — xem ảnh chụp 22/07).
+     ⚠️ ẨN bằng CSS chứ KHÔNG xoá khỏi HTML: members.js còn đổi nhãn nút này
+     thành "Đang tải…" (hàm báo trạng thái nạp) — xoá đi là chạm vào null. */
+  #btn-refresh { display: none; }
+
   /* Bỏ subgrid, mỗi thành viên xếp dọc thành một thẻ */
   .member-table { display: block; }
   .member-list { display: block; }
+  /* Ô tick nằm CÙNG HÀNG với avatar + tên, không phải một hàng riêng.
+     Trước đây thẻ xếp dọc 1 cột nên `.m-check` thành một dòng của chính nó →
+     dấu tick lơ lửng giữa thẻ, không dính vào ai (chủ tool 22/07: "vô duyên").
+     Ô tick là thuộc tính CỦA NGƯỜI ĐÓ nên phải đứng cạnh danh tính người đó.
+     2 cột: [tick | nội dung], mọi ô còn lại kéo hết bề ngang. */
   .member-row {
-    grid-template-columns: 1fr;
-    gap: 8px;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px 10px;
     padding: 14px 0;
+    align-items: start;
   }
+  .member-row .m-check {
+    grid-column: 1; grid-row: 1;
+    display: flex; align-items: center; justify-content: center;
+    /* Ngón tay: ô tick mặc định chỉ ~16px. Nới vùng chạm bằng min-width/height
+       thay vì phóng to chính cái ô (phóng to trông thô). */
+    min-width: 30px; min-height: 34px;
+  }
+  .member-row .m-check .m-pick { width: 20px; height: 20px; }
+  .member-row .m-user { grid-column: 2; grid-row: 1; }
+  .member-row .m-cell,
+  .member-row .member-actions { grid-column: 1 / -1; }
   .member-row .m-cell::before {
     content: attr(data-label) ':';
     flex: 0 0 92px;

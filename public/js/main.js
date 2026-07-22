@@ -281,15 +281,20 @@ function initMobileUI() {
   const btnEditorClose = document.getElementById('btn-editor-close');
   const backdrop = document.getElementById('mobile-backdrop');
 
-  const closeAll = () => document.body.classList.remove('nav-open', 'editor-open');
+  const closeAll = () => {
+    document.body.classList.remove('nav-open', 'editor-open', 'export-open');
+    capNhatThanhDay();
+  };
 
   if (btnNav) btnNav.addEventListener('click', () => {
-    document.body.classList.remove('editor-open');
+    document.body.classList.remove('editor-open', 'export-open');
     document.body.classList.toggle('nav-open');
+    capNhatThanhDay();
   });
   if (btnEditor) btnEditor.addEventListener('click', () => {
-    document.body.classList.remove('nav-open');
+    document.body.classList.remove('nav-open', 'export-open');
     document.body.classList.toggle('editor-open');
+    capNhatThanhDay();
   });
   if (btnEditorClose) btnEditorClose.addEventListener('click', closeAll);
   if (backdrop) backdrop.addEventListener('click', closeAll);
@@ -302,6 +307,123 @@ function initMobileUI() {
       }
     });
   }
+
+  initThanhDay();
+}
+
+// --- THANH THAO TÁC ĐÁY (mobile) -------------------------------------------
+// 4 nút này KHÔNG chứa logic riêng: chúng bấm hộ các nút thật đã có sẵn. Nhờ vậy
+// dirty-tracking, xác nhận ghi đè, nạp jsPDF lúc cần… chỉ tồn tại MỘT bản.
+// (Bài học: hai bản sao của cùng một luồng thì sớm muộn cũng lệch nhau.)
+function initThanhDay() {
+  const dock = document.getElementById('tool-dock');
+  if (!dock) return;
+
+  const bamHo = (id) => {
+    const that = document.getElementById(id);
+    if (that && !that.disabled) that.click();
+  };
+
+  const dTree = document.getElementById('dock-tree');
+  const dEdit = document.getElementById('dock-edit');
+  const dSave = document.getElementById('dock-save');
+  const dExport = document.getElementById('dock-export');
+
+  if (dTree) dTree.addEventListener('click', () => bamHo('btn-mobile-nav'));
+  if (dEdit) dEdit.addEventListener('click', () => {
+    // Chưa mở bản vẽ nào thì nút này làm việc của "Tạo bản cho khách" —
+    // xem nhãn động trong capNhatThanhDay().
+    if (document.body.classList.contains('no-editor')) bamHo('btn-new-proposal');
+    else bamHo('btn-mobile-editor');
+  });
+  if (dSave) dSave.addEventListener('click', () => bamHo('btn-save-top'));
+
+  // "Xuất" mở bảng chọn định dạng (JPEG / PDF) ngay trên thanh đáy
+  const sheet = document.getElementById('dock-export-sheet');
+  const dongBangXuat = () => {
+    document.body.classList.remove('export-open');
+    if (sheet) sheet.setAttribute('aria-hidden', 'true');
+    if (dExport) dExport.setAttribute('aria-expanded', 'false');
+  };
+  if (dExport) dExport.addEventListener('click', () => {
+    const dangMo = document.body.classList.toggle('export-open');
+    if (sheet) sheet.setAttribute('aria-hidden', String(!dangMo));
+    dExport.setAttribute('aria-expanded', String(dangMo));
+  });
+  const bindXuat = (id, dich) => {
+    const b = document.getElementById(id);
+    if (b) b.addEventListener('click', () => { dongBangXuat(); bamHo(dich); });
+  };
+  bindXuat('dock-export-jpeg', 'btn-export-jpeg');
+  bindXuat('dock-export-pdf', 'btn-export-pdf');
+  const huy = document.getElementById('dock-export-cancel');
+  if (huy) huy.addEventListener('click', dongBangXuat);
+
+  // Bấm ra ngoài / bấm Esc thì đóng bảng chọn định dạng
+  document.addEventListener('click', (e) => {
+    if (!document.body.classList.contains('export-open')) return;
+    if (e.target.closest('#dock-export-sheet') || e.target.closest('#dock-export')) return;
+    dongBangXuat();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.body.classList.contains('export-open')) dongBangXuat();
+  });
+
+  capNhatThanhDay();
+}
+
+// Đồng bộ thanh đáy theo ngữ cảnh. Gọi từ updateHeaderActions() (core.js) — cùng
+// choke point với nút header, nên không cần MutationObserver.
+// Nguồn sự thật là TRẠNG THÁI CỦA CÁC NÚT THẬT, không phải đoán lại từ appState:
+// đoán lại là hai nơi cùng suy luận một việc, kiểu gì cũng có ngày lệch nhau.
+function capNhatThanhDay() {
+  const dock = document.getElementById('tool-dock');
+  if (!dock) return;
+
+  const dEdit = document.getElementById('dock-edit');
+  const dSave = document.getElementById('dock-save');
+  const dExport = document.getElementById('dock-export');
+  const dTree = document.getElementById('dock-tree');
+
+  const btnSave = document.getElementById('btn-save-top');
+  const btnJpeg = document.getElementById('btn-export-jpeg');
+
+  const coBanVe = !document.body.classList.contains('no-editor');
+  // Nút Lưu ở header bị ẩn khi đang mở MẪU GỐC (mẫu gốc không lưu đè được)
+  const luuDuoc = !!btnSave && btnSave.style.display !== 'none' && !btnSave.disabled;
+  const xuatDuoc = !!btnJpeg && !btnJpeg.disabled;
+
+  // Nhãn nút giữa đổi theo việc đang cần làm: chưa mở gì thì việc tiếp theo là
+  // TẠO BẢN, mở rồi thì là ĐIỀN. Đặt tên nút trùng tên bước của workflow
+  // (Chọn mẫu → Điền → Lưu nháp → Xuất) như màn chào đang in.
+  if (dEdit) {
+    const nhan = dEdit.querySelector('span');
+    if (nhan) nhan.textContent = coBanVe ? 'Điền thông tin' : 'Tạo bản mới';
+    // LUÔN bấm được. ⚠️ Đừng suy ra trạng thái từ `btnNew.style.display`: nút
+    // "Tạo bản cho khách" ở header bị ẩn khi chưa mở file vì lý do THỊ GIÁC
+    // (màn chào đã có nút y hệt, hai nút giống nhau cùng lúc gây phân vân —
+    // chủ tool hỏi 21/07), chứ không phải vì việc đó không làm được. Lần ráp
+    // đầu tôi đọc display rồi tắt nút → thanh đáy xám ngắt ngay màn chào.
+    dEdit.disabled = false;
+    dEdit.setAttribute('aria-current', String(document.body.classList.contains('editor-open')));
+  }
+  if (dTree) dTree.setAttribute('aria-current', String(document.body.classList.contains('nav-open')));
+  if (dSave) dSave.disabled = !luuDuoc;
+  if (dExport) dExport.disabled = !xuatDuoc;
+
+  // Bảng chọn định dạng không được sống sót khi bản vẽ đã đóng
+  if (!xuatDuoc && document.body.classList.contains('export-open')) {
+    document.body.classList.remove('export-open');
+    const sheet = document.getElementById('dock-export-sheet');
+    if (sheet) sheet.setAttribute('aria-hidden', 'true');
+    if (dExport) dExport.setAttribute('aria-expanded', 'false');
+  }
+
+  // MỘT primary duy nhất, gán ĐỘNG (quy tắc 44 sổ bài học): việc cần làm nhất
+  // là Điền/Tạo khi nút đó dùng được, còn không thì là Mẫu.
+  const cta = (dEdit && !dEdit.disabled) ? dEdit : dTree;
+  [dTree, dEdit, dSave, dExport].forEach((b) => { if (b) b.classList.remove('dock-cta'); });
+  if (cta) cta.classList.add('dock-cta');
 }
 
 // --- TOUCH GESTURES trên canvas: 1 ngón kéo = pan, 2 ngón chụm = zoom ---

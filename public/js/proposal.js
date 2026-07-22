@@ -469,6 +469,22 @@ function populateProposalTextsEditor(svgEl, textElements) {
     });
   });
 
+  // MOBILE: chỉ mở sẵn nhóm 1, gấp nhóm 2 và 3.
+  // Đo 22/07: mở cả ba thì danh sách dài 1846px, mà bàn phím bật lên chỉ chừa
+  // ~125px để nhìn — cuộn tìm ô giữa khe đó rất khổ. Gấp lại thì ba tiêu đề nhóm
+  // nằm gọn một màn, bấm nhóm nào mở nhóm đó.
+  // CỐ Ý dùng lại đúng cơ chế gấp/mở SẴN CÓ thay vì thêm hàng chip điều hướng —
+  // ít cơ chế hơn thì ít chỗ để quên đồng bộ hơn. Bấm chữ trên bản vẽ vẫn tự bung
+  // đúng nhóm (xem initEventListeners trong main.js), nên không kẹt ai ở đâu cả.
+  if (window.matchMedia('(max-width: 900px)').matches) {
+    [planGroup, agentGroup].forEach(group => {
+      const items = group.querySelector('.text-group-items');
+      const arrow = group.querySelector('.group-arrow');
+      items.style.display = 'none';
+      arrow.style.transform = 'rotate(-90deg)';
+    });
+  }
+
   // Helper to tag dynamic client info elements so they persist after edits
   function tagClientInfoElements(svgEl, textElementsList) {
     // Files saved by older versions carry client-* ids on the <text> wrapper, but the editor

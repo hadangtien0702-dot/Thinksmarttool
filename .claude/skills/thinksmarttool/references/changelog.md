@@ -66,6 +66,122 @@ Admin"* · Bỏ lọc → cả 2 nút tắt, về 72 · đang ở trang 3 (25–
 từ đầu hàm sẽ trỏ vào phần tử đã rời khỏi DOM — bấm không có tác dụng, nhìn như sản phẩm hỏng.
 Phải **query lại nút ngay trước khi bấm**. (Lần đầu tôi tưởng lọc không reset trang, hoá ra thế.)
 
+### 2026-07-22 (later 17 — 3 lỗi chủ tool bắt được TRÊN IPHONE THẬT + chặn rò rỉ)
+
+Chủ tool chụp màn hình iPhone 14 Pro Max (430×932) sau đợt 16. Cả 3 lỗi đều là thứ **chỉ lộ khi
+dùng thật**, không phép quét tự động nào bắt được.
+
+**1. Hai nút "Xuất JPEG/PDF" trong bảng chọn định dạng — chữ tối trên nền tối.**
+Nguyên nhân: dáng nút khai ở `.sidebar-actions-footer .btn-export-main` — **selector HAI class**.
+Thanh đáy mobile tái dùng hai nút này trong `#dock-export-sheet` (ngoài footer) nên:
+- ăn được NỀN đậm (`.btn-export-jpeg` một class → khớp ở mọi nơi),
+- KHÔNG ăn được `color: #fff` (hai class → chỉ khớp trong footer).
+→ Đã tách: thuộc tính DÁNG về thẳng `.btn-export-main`; chỉ `flex: 1 1 0` (bố cục riêng của footer)
+ở lại dưới selector footer. Đo lại: JPEG **5.36**, PDF **5.70–8.98** — đạt AA cả hai.
+🚨 **Quy tắc rút ra: tái dùng một class trang trí ở ngữ cảnh mới thì phải kiểm CÁC RULE CHA của nó.**
+Nền thì theo sang, chữ thì không — kiểu hỏng nửa vời này nhìn qua tưởng nút vẫn "có style".
+
+**2. Nút "↻ Tải lại" ở `/members` — bỏ trên mobile.** Chủ tool: *"trên iPhone không cần nút này,
+người ta trượt lên sẽ tự động load"*. Đúng: vuốt-để-tải-lại của Safari nạp lại trang → `load()` chạy
+luôn. Nút chỉ lặp lại cử chỉ hệ điều hành đã có, mà thanh tiêu đề mobile chật nên chữ vỡ 2 dòng
+("↻ / Tải lại"). → `#btn-refresh { display: none }` ở ≤900px.
+⚠️ **ẨN bằng CSS, KHÔNG xoá khỏi HTML** — `members.js` còn đổi nhãn nút này thành "Đang tải…".
+
+**3. Ô tick trong thẻ thành viên "vô duyên".** Thẻ mobile xếp dọc 1 cột → `.m-check` thành một dòng
+riêng, dấu tick lơ lửng giữa thẻ không dính vào ai. Ô tick là thuộc tính CỦA NGƯỜI ĐÓ nên phải đứng
+cạnh danh tính người đó. → `grid-template-columns: auto minmax(0,1fr)`, `.m-check` và `.m-user` cùng
+`grid-row: 1`, các ô còn lại `grid-column: 1 / -1`. Đo: lệch tâm tick↔avatar = **0px**.
+
+**🔒 Chặn rò rỉ (việc quan trọng nhất trong lượt này):** `git status` lộ ra **`Accout Tool.xlsx` nằm
+ở GỐC repo** — cùng nguồn với `Account/Accout Tool.csv` (48 mật khẩu dạng chữ). Luật `Account/` trong
+`.gitignore` KHÔNG bắt được vì file ở ngoài thư mục đó. Repo này PUBLIC → một `git add -A` là lộ.
+Đã kiểm `git log --all -- "Accout Tool.xlsx"` → **chưa từng bị commit**, không phải đi xoá lịch sử.
+Đã thêm `/Accou*t*.xlsx` + `/Accou*t*.csv` (neo `/` để KHÔNG đụng `product/Thinksmart-Product-Hub.xlsx`
+đang được theo dõi). Kiểm bằng `git check-ignore -v` cả hai chiều.
+→ **Nhắc lại quy tắc: dữ liệu người thật thì gitignore TRƯỚC, xử lý sau — và luật theo THƯ MỤC không
+đủ, chủ tool hay để file ngay ở gốc.**
+
+**Version:** `style.css?v=75`, `portal.css?v=45` (bump ở cả 4 file HTML dùng portal.css).
+
+**Kiểm chứng:** 430px — nút Tải lại `display:none`, tick nằm TRÁI avatar và cùng tâm (lệch 0px),
+các ô còn lại kéo hết bề ngang. 1500px — nút Tải lại hiện lại (`flex`), bảng vẫn `subgrid` 7 cột,
+hàng vẫn 52px, `.m-check` `grid-column: auto` (rule mobile không rò sang). Không tràn ngang cả hai.
+Hàng thành viên dựng bằng markup **chép nguyên văn từ `rowHtml()`** rồi thả vào trang thật (trang
+chưa đăng nhập nên không có dữ liệu) — không tự bịa cấu trúc rút gọn.
+
+### 2026-07-22 (later 16 — DỰNG LẠI BỐ CỤC MOBILE cho tool.html)
+
+Chủ tool: *"em phải đặt mình là một người sử dụng chứ không phải người build app"* — sau khi tôi
+báo "đã tối ưu mobile" mà thực chất chỉ đi chỉnh cho đủ 44px. Đi lại một vòng việc thật của sale
+(mở mẫu → điền → xuất) trên màn 375 mới ra được vấn đề thật.
+
+**5 điều tìm ra khi ĐÓNG VAI NGƯỜI DÙNG (không phải khi đọc code):**
+1. Nút bắt buộc bấm đầu tiên ("Mở danh sách mẫu") ở toạ độ **(32,28)** — góc ngón cái với khó nhất.
+   Còn dải đáy dễ bấm nhất thì dành cho 3 nút zoom hầu như không dùng. **Ưu tiên bị đảo ngược.**
+2. Bàn phím (~336px, phủ từ y=476) ăn 2/3 bảng sửa chữ. Còn ~125px = chưa đầy 1,5 ô, trong khi
+   form có **19 ô dài 1846px**. Nút Xuất bị che hoàn toàn.
+3. **Gõ mà không thấy bản vẽ** — bảng sửa cao 66% + lớp phủ đen 45% → bản vẽ hở 220px và bị làm tối.
+   Đây là lỗi nặng nhất: công cụ giấu mất chính thứ nó làm ra.
+4. Nhãn ô nhập 11.5px trong khi ô nhập 16px — **nhãn nhỏ hơn giá trị nó giải thích**. Nguy hiểm vì
+   "Phí đóng mỗi tháng" / "Tổng số tiền đóng (20 năm)" nằm sát nhau.
+5. Bản mobile là bản desktop bị giấu bớt: stepper chỉ 4 bước nhưng bước 1 không có nút; rail ẩn
+   hẳn nên **không đăng xuất/đổi mật khẩu được trên điện thoại**; và 2 rule CSS rút gọn header còn
+   trỏ vào `.brand-info`/`.header-brand` — **class đã bị xoá từ lần thiết kế lại header**, bằng
+   chứng là chưa ai mở bản mobile ra nhìn kể từ hôm đó.
+
+**ĐÃ LÀM (chủ tool duyệt qua bản dựng bấm thử trước khi cho sửa thật):**
+- **Thanh thao tác đáy `#tool-dock`** (mới, trong `tool.html`): Mẫu · Điền thông tin · Lưu nháp · Xuất.
+  4 nút **KHÔNG chứa logic** — chỉ `.click()` hộ `#btn-mobile-nav` / `#btn-mobile-editor` /
+  `#btn-save-top` / `#btn-export-*`, để dirty-tracking + xác nhận ghi đè + nạp jsPDF chỉ có MỘT bản.
+  Đồng bộ bằng `capNhatThanhDay()` (main.js) gọi từ **`updateHeaderActions()`** — cùng choke point
+  với nút header, KHÔNG dựng MutationObserver.
+- **Bỏ lớp phủ khi mở bảng sửa chữ** (giữ cho ngăn kéo trái) + hạ bảng 66% → **52%**, và cho nó ngồi
+  TRÊN thanh đáy (`bottom: var(--dock-h)`). Bản vẽ còn thấy **276px, không bị làm tối**.
+- **Dải zoom đáy → con toast nổi**: `.canvas-status-bar` thành khối trong suốt `pointer-events:none`,
+  chỉ hiện khi có thông báo ("Đang lưu…", "Đã xuất PDF"). Zoom bỏ hẳn — `zoomToFit` tự chạy khi mở
+  file, chụm 2 ngón vẫn zoom được.
+- **Nhãn `.text-meta` 11.5 → 13px** + đậm màu một bậc (chỉ mobile).
+- **Gấp sẵn nhóm 2 và 3** trong `populateProposalTextsEditor` khi ≤900px → danh sách **1846 → 725px**.
+  Cố ý DÙNG LẠI cơ chế gấp/mở sẵn có thay vì thêm hàng chip điều hướng.
+- Nút Xuất trong bảng sửa chữ `display:none` trên mobile (đã dời ra thanh đáy) — **ẩn chứ không xoá**,
+  vì thanh đáy bấm hộ chính hai nút đó.
+
+**BA LỖI CHỈ LỘ RA LÚC RÁP VÀO APP THẬT (bản dựng riêng không có):**
+1. `.tool-dock` là `position:fixed` → **không chiếm chỗ trong dòng chảy**, nên `.canvas-viewport` vẫn
+   kéo dài xuống hết màn: toast rơi vào y=765 sau lưng thanh đáy (y=753), và `zoomToFit` tính khung
+   lớn hơn thật. Sửa: `.app-body { padding-bottom: var(--dock-h) }`.
+2. Sửa xong lại **trừ hai lần** — toast lơ lửng cách thanh đáy 68px thay vì 10px. `.app-body` đã đẩy
+   rồi thì `bottom: 10px` là đủ.
+3. **Thứ tự gọi hàm**: `updateHeaderActions()` đứng TRƯỚC dòng bật nút export trong core.js → thanh
+   đáy đọc `btnExportJpeg.disabled` còn là `true` → mở bản vẽ mà nút Xuất vẫn xám. Đã dời 2 dòng
+   export lên trước.
+   → **Bài học: gắn vào choke point thì phải kiểm luôn choke point đó chạy ở ĐOẠN NÀO của hàm.**
+
+**Một chỗ suýt sai vì suy diễn từ CSS thay vì từ ý nghĩa:** tôi tắt nút "Tạo bản mới" ở thanh đáy khi
+`btnNew.style.display === 'none'`. Nhưng nút header đó bị ẩn vì lý do **THỊ GIÁC** (màn chào đã có nút
+y hệt), không phải vì việc đó không làm được → thanh đáy xám ngắt ngay màn chào.
+
+**CÒN LẠI, chưa làm:** bàn phím iOS **vẫn che thanh đáy** (iOS giữ `position:fixed` theo khung layout;
+`interactive-widget=resizes-content` Safari chưa hỗ trợ). Muốn xử phải dùng VisualViewport API — chờ
+chủ tool quyết có đáng không. Và **mục 5 (không đăng xuất/đổi mật khẩu được trên mobile) CHƯA sửa** —
+nó thuộc rail điều hướng, không thuộc màn Công cụ.
+
+**Version:** `style.css?v=74`, `js/core.js?v=25`, `js/proposal.js?v=22`, `js/main.js?v=7`.
+
+**Kiểm chứng** (mirror `tool.html` thật, chỉ stub `config.js` để qua cổng đăng nhập, xoá sau khi đo):
+- 375px, mở AIG IUL: thanh đáy y=753 cao 59 · bảng sửa y=332 cao 422, đáy 754 = **ngồi khít trên
+  thanh đáy** · bản vẽ hở **276px** · `backdrop opacity = 0` · nhãn 13px / ô nhập 16px · danh sách
+  **725px** · nhóm 1 mở, nhóm 2-3 gấp · **0 phần tử chạm dưới 44px** · không tràn ngang.
+- Nhãn nút đổi đúng theo ngữ cảnh: chưa mở file → "Tạo bản mới"; mở rồi → "Điền thông tin".
+  Mở MẪU GỐC: Lưu **tắt** (đúng — mẫu gốc không lưu đè), Xuất **bật**.
+- 1500px desktop: thanh đáy + bảng chọn định dạng `display:none` · dải đáy 40px · zoom **26px** ·
+  nút Xuất trong bảng sửa vẫn hiện · nhãn **11.5px** · cả 3 nhóm mở · rail hiện · `padding-bottom: 0`
+  → **desktop không xê dịch một pixel nào**.
+
+⚠️ **Đo bảng sửa chữ phải BAKE class vào `<body>` rồi nạp lại trang.** Đo ngay sau khi JS thêm class
+cho ra vị trí giữa chừng hiệu ứng (y=833 thay vì 332) — pane ẩn không chạy rAF nên transition không
+bao giờ xong. Dính đúng bẫy này 3 lần trong phiên (xem quy tắc 43 sổ bài học).
+
 ### 2026-07-22 (later 15 — mèo nằm ngủ dưới thẻ chào)
 
 Chủ tool: *"thêm cho anh vài con mèo đang nằm ở đây cho vui vẻ"*. 3 con mèo SVG nằm ngay dưới

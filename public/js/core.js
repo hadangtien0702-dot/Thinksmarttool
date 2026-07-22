@@ -34,14 +34,21 @@ let appState = {
 };
 
 // --- DIRTY STATE (nhắc Lưu Nháp — sale hay bị khách gọi cắt ngang rồi quên) ---
+// Chấm cam phải hiện ở CẢ nút header LẪN nút "Lưu nháp" của thanh đáy mobile:
+// trên điện thoại nút header bị ẩn, chỉ còn thanh đáy — không mirror thì sale
+// mất hẳn lời nhắc "còn thay đổi chưa lưu", đúng cái dirty-tracking sinh ra để làm.
 function markDirty() {
   appState.isDirty = true;
   if (dom.btnSaveTop) dom.btnSaveTop.classList.add('has-unsaved');
+  const d = document.getElementById('dock-save');
+  if (d) d.classList.add('has-unsaved');
 }
 
 function clearDirty() {
   appState.isDirty = false;
   if (dom.btnSaveTop) dom.btnSaveTop.classList.remove('has-unsaved');
+  const d = document.getElementById('dock-save');
+  if (d) d.classList.remove('has-unsaved');
 }
 
 // Cảnh báo khi sắp rời khỏi bản khách còn thay đổi chưa lưu (đổi file khác trên cây).
@@ -470,11 +477,16 @@ async function loadSvgContent(fileInfo) {
       }
       dom.btnSaveTop.disabled = isMaster;
       clearDirty();
-      updateHeaderActions();
 
       // Enable export buttons (JPEG + PDF)
+      // ⚠️ PHẢI đứng TRƯỚC updateHeaderActions(): thanh thao tác đáy (mobile) đọc
+      // `btnExportJpeg.disabled` để quyết định bật/tắt nút "Xuất", mà nó được gọi
+      // từ trong updateHeaderActions. Để sau thì nó đọc trúng giá trị CŨ (true) →
+      // mở bản vẽ ra mà nút Xuất vẫn xám. Đo được lúc ráp 22/07.
       if (dom.btnExportJpeg) dom.btnExportJpeg.disabled = false;
       if (dom.btnExportPdf) dom.btnExportPdf.disabled = false;
+
+      updateHeaderActions();
 
       // Setup Canvas
       renderSvgOnCanvas();
@@ -917,6 +929,11 @@ function updateHeaderActions() {
   // khi mở bản khách nên hai nút cạnh nhau lại khác kiểu.
   btnNew.classList.add('btn-primary');
   btnNew.classList.remove('btn-secondary');
+
+  // Thanh thao tác đáy (mobile) bám CÙNG choke point này thay vì tự dựng
+  // observer riêng — mọi luồng đổi ngữ cảnh (mở file, đóng file, brochure,
+  // So sánh) đều đã đi qua updateHeaderActions rồi.
+  if (typeof capNhatThanhDay === 'function') capNhatThanhDay();
 }
 
 // --- CANVAS RENDERING & INTERACTIVES ---

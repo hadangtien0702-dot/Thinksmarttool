@@ -1398,9 +1398,16 @@ body.no-editor .sidebar-right { display: none; }
 .library-sub { font-size: var(--fs-sm); color: var(--text-2); font-variant-numeric: tabular-nums; }
 .library-download { margin-top: 10px; text-decoration: none; padding: 11px 26px; }
 
-/* Prominent export buttons (JPEG + PDF) — footer khai báo ở mục 6 */
-.sidebar-actions-footer .btn-export-main {
-  flex: 1 1 0;
+/* Prominent export buttons (JPEG + PDF) — footer khai báo ở mục 6
+   🚨 DÁNG NÚT phải khai trên CHÍNH class `.btn-export-main`, KHÔNG lồng dưới
+   `.sidebar-actions-footer`. Bài học 22/07: khi thanh thao tác đáy mobile tái
+   dùng hai nút này trong `#dock-export-sheet`, chúng ăn được NỀN ĐẬM (rule
+   `.btn-export-jpeg` một class) nhưng KHÔNG ăn được `color:#fff` (rule hai
+   class, chỉ khớp trong footer) → chữ tối trên nền tối, chủ tool chụp màn hình
+   báo lỗi tương phản. Chỉ thứ thuộc về BỐ CỤC TRONG FOOTER mới được để dưới
+   selector footer. (Quy tắc 31 sổ bài học: helper trình bày không tự đúng ở
+   mọi ngữ cảnh.) */
+.btn-export-main {
   min-width: 0;
   font-size: var(--fs-base);
   font-weight: 700;
@@ -1412,6 +1419,9 @@ body.no-editor .sidebar-right { display: none; }
   box-shadow: var(--shadow-sm);
   transition: transform var(--dur) var(--ease), filter var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
+/* Chỉ trong footer hai nút mới chia đôi hàng ngang; trong bảng chọn định dạng
+   của thanh đáy chúng xếp DỌC và tự rộng 100%. */
+.sidebar-actions-footer .btn-export-main { flex: 1 1 0; }
 /* Một màu đặc, không gradient (chủ tool 21/07). Dùng --ft-jpeg-2 (đậm hơn) để
    chữ trắng đủ tương phản; --ft-jpeg-1 sáng quá cho nền chữ trắng. */
 .btn-export-jpeg { background: var(--ft-jpeg-2); }
@@ -1603,13 +1613,19 @@ body.no-editor .sidebar-right { display: none; }
 
 @media (max-width: 900px) {
   :root {
-    --header-height: 56px;
-  /* Ngón tay cần 44px — desktop để 38/32 cho gọn, mobile trả về ngưỡng chạm.
-     Quy tắc 2 sổ bài học: 44px là cho MOBILE, desktop được nhỏ hơn. */
-  .btn { min-height: 44px; }
-  .btn-sm { min-height: 40px; }
-  .icon-btn { width: 44px; height: 44px; }
-
+    /* iPhone tai thỏ / Dynamic Island: trang khai `viewport-fit=cover` (xem thẻ
+       meta trong tool.html) nên nội dung tràn LÊN dưới thanh trạng thái. Cộng
+       inset vào chiều cao header để header không nằm dưới nó — và .sidebar-left
+       (khai `top: var(--header-height)`) tự tụt theo, không phải sửa riêng.
+       Máy không có tai thỏ thì inset = 0 → y hệt như cũ. */
+    --header-height: calc(56px + env(safe-area-inset-top, 0px));
+    /* Cao hơn desktop (40px) để chứa vừa nút zoom 44px — xem .canvas-status-bar
+       .toolbar-btn phía dưới. .sidebar-version-footer dùng chung token này nhưng
+       mobile đã khai lại height:auto nên không bị ảnh hưởng. */
+    --status-bar-height: 52px;
+    /* Chiều cao thanh thao tác đáy. Nhiều chỗ phải trừ đi nó (bảng sửa chữ,
+       ngăn kéo trái, toast trạng thái) → để MỘT biến, đừng rải số. */
+    --dock-h: calc(58px + env(safe-area-inset-bottom, 0px));
     --sidebar-left-width: min(320px, 86vw);
     /* Mobile full-bleed: bỏ khe + bo góc của kiểu "thẻ nổi" (desktop). Sidebar
        trái thành drawer, phải thành bottom-sheet — chúng tự bo góc riêng, thẻ
@@ -1618,13 +1634,30 @@ body.no-editor .sidebar-right { display: none; }
     --tool-radius: 0px;
     --tool-shadow: none;
   }
+  /* Ngón tay cần 44px — desktop để 38/32 cho gọn, mobile trả về ngưỡng chạm.
+     Quy tắc 2 sổ bài học: 44px là cho MOBILE, desktop được nhỏ hơn.
+     ⚠️ Ba rule này TRƯỚC ĐÂY nằm lọt bên trong khối :root ngay trên. Trình duyệt
+     hiểu thành CSS nesting (`:root .btn`) nên vẫn chạy — nhưng chạy nhờ ăn may
+     specificity 0,2,0 chứ không phải nhờ ý định. Đưa ra ngoài cho đúng nghĩa;
+     rule nào cần thắng một rule 2 class thì khai đủ 2 class (xem nút zoom). */
+  .btn { min-height: 44px; }
+  .btn-sm { min-height: 40px; }
+  .icon-btn { width: 44px; height: 44px; }
+
   .tool-shell { padding: 0; }
-  .app-header { border: none; border-bottom: 1px solid var(--border); }
   .sidebar-left, .sidebar-right, .canvas-viewport { border: none; }
 
-  /* ---- Header gọn: ẩn chữ thương hiệu + tên file, nút chỉ còn icon ---- */
+  /* ---- Header gọn: rút breadcrumb còn 1 nhánh, nút chỉ còn icon ----
+     GỘP LÀM MỘT KHỐI (trước đây .app-header khai ở hai chỗ trong cùng media
+     query): `padding` viết tắt ở khối sau xoá sạch padding-top của khối trước —
+     đúng cái đang giữ header thoát khỏi tai thỏ. */
   .app-header {
-    padding: 0 10px;
+    border: none; border-bottom: 1px solid var(--border);
+    /* Đẩy nội dung xuống dưới thanh trạng thái. Đi CẶP với --header-height ở trên
+       (đã cộng cùng lượng inset) vì box-sizing: border-box — thiếu một trong hai
+       thì hoặc header bị che, hoặc nội dung bị bóp lại. */
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: 0;
     padding-left: max(10px, env(safe-area-inset-left));   /* landscape có tai thỏ */
     padding-right: max(10px, env(safe-area-inset-right));
     gap: 8px;
@@ -1632,16 +1665,29 @@ body.no-editor .sidebar-right { display: none; }
   .header-left { min-width: 0; gap: 8px; }
   .logo-icon { width: 34px; height: 34px; }
   .logo-icon svg { width: 18px; height: 18px; }
-  .brand-info { display: none; }
-  /* Header không còn logo-icon (brand nằm ở sidebar, sidebar ẩn trên mobile)
-     → brand chữ trong .header-brand phải hiện lại làm nhận diện duy nhất */
-  .tool-shell .header-brand .brand-info { display: flex; }
+
+  /* Breadcrumb "Thinksmart / Công cụ Báo giá" dài 156px trên màn 375 → vỡ 2 dòng
+     trong header cao 56px, đo được 22/07. Bỏ nhánh gốc + dấu gạch, giữ nhánh
+     ĐANG Ở — ô logo ngay bên trái đã là nhận diện thương hiệu và cũng chính là
+     link về trang chủ, nên chữ "Thinksmart" ở đây là thừa trên màn hẹp.
+     (Hai rule .brand-info / .header-brand cũ ở chỗ này đã XOÁ: header được
+     thiết kế lại sang .header-brand-logo + .header-breadcrumb từ lâu, không còn
+     phần tử nào mang hai class đó — grep 22/07 xác nhận 0 chỗ dùng.) */
+  .header-breadcrumb { min-width: 0; }
+  .header-breadcrumb .crumb-root,
+  .header-breadcrumb .crumb-sep { display: none; }
+  .header-breadcrumb .crumb-active {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
   .header-center { display: none; }
   .header-right { gap: 6px; margin-left: auto; }
   .header-right .btn {
     font-size: 0;          /* giấu chữ, giữ icon (svg có width/height riêng) */
     gap: 0;
     padding: 12px;         /* 18px icon + 24 padding + 2 border = 44px touch target */
+    /* Phép tính trên ra đúng 44 trên giấy, đo thật lại là 43.3 (icon 16px chứ
+       không phải 18 + làm tròn viền). Chốt sàn bằng min-width cho chắc. */
+    min-width: 44px;
   }
   .header-right .btn svg { width: 18px; height: 18px; }
 
@@ -1663,14 +1709,18 @@ body.no-editor .sidebar-right { display: none; }
   }
   body.nav-open .sidebar-left { transform: translateX(0); }
 
-  /* ---- Sidebar phải → bottom sheet trượt từ cạnh dưới ---- */
+  /* ---- Sidebar phải → bottom sheet trượt từ cạnh dưới ----
+     Ngồi TRÊN thanh thao tác (bottom: var(--dock-h)), không đè lên nó: Lưu nháp
+     và Xuất phải bấm được ngay cả khi đang mở bảng sửa chữ.
+     66% → 52%: cùng với việc bỏ lớp phủ, bản vẽ giữ được nửa trên màn hình để
+     sale thấy chữ mình vừa gõ hiện lên. Đây là điểm sửa chính của đợt này. */
   .sidebar-right {
     position: fixed;
-    left: 0; right: 0; bottom: 0;
+    left: 0; right: 0; bottom: var(--dock-h);
     width: 100%;
-    height: min(66vh, 580px);
-    height: min(66dvh, 580px);
-    transform: translateY(105%);
+    height: min(52vh, 460px);
+    height: min(52dvh, 460px);
+    transform: translateY(calc(105% + var(--dock-h)));
     transition: transform 260ms var(--ease);
     z-index: 300;
     border-left: none;
@@ -1679,6 +1729,9 @@ body.no-editor .sidebar-right { display: none; }
     box-shadow: var(--shadow-lg);
   }
   body.editor-open .sidebar-right { transform: translateY(0); }
+
+  /* Ngăn kéo trái cũng dừng trên thanh đáy, nếu không dòng cuối cây file bị che */
+  .sidebar-left { bottom: var(--dock-h); }
 
   /* ---- Backdrop mờ khi drawer / sheet đang mở ---- */
   .mobile-backdrop {
@@ -1691,32 +1744,92 @@ body.no-editor .sidebar-right { display: none; }
     pointer-events: none;
     transition: opacity 200ms var(--ease);
   }
-  body.nav-open .mobile-backdrop,
-  body.editor-open .mobile-backdrop { opacity: 1; pointer-events: auto; }
+  /* CHỈ ngăn kéo trái mới làm mờ nền. Bảng sửa chữ thì KHÔNG.
+     Lý do (đo 22/07): mở bảng sửa chữ ra thì bản vẽ chỉ còn hở 220px phía trên
+     VÀ bị phủ đen 45% — sale gõ tên khách, gõ mệnh giá mà không nhìn thấy nó
+     lên bản vẽ, phải đóng bảng ra kiểm rồi mở lại. Trên desktop hai thứ nằm
+     cạnh nhau nên lỗi này không tồn tại. Bỏ lớp phủ + hạ chiều cao bảng (dưới)
+     là để bản vẽ luôn SÁNG và luôn THẤY ở nửa trên trong lúc gõ. */
+  body.nav-open .mobile-backdrop { opacity: 1; pointer-events: auto; }
 
   /* ---- Canvas: tự xử lý cảm ứng (1 ngón kéo, 2 ngón chụm zoom) ---- */
   .canvas-container { touch-action: none; }
 
-  /* ---- Kích thước chạm chuẩn ≥44px (Apple HIG / Material) ---- */
+  /* ---- Kích thước chạm chuẩn ≥44px (Apple HIG / Material) ----
+     ⚠️ PHẢI khai đủ `.canvas-status-bar .toolbar-btn`, không được để mỗi
+     `.toolbar-btn`. Media query KHÔNG cộng specificity: rule desktop
+     `.canvas-status-bar .toolbar-btn {26px}` (0,2,0) vẫn thắng rule mobile
+     một class (0,1,0) → ba nút zoom nằm im ở 26px suốt từ lúc làm mobile.
+     Đo 22/07 trên màn 375: đúng 26×26. */
   .toolbar-btn { width: 44px; height: 44px; }
+  .canvas-status-bar .toolbar-btn { width: 44px; height: 44px; }
   .icon-btn { width: 44px; height: 44px; }
-  .tree-file-item { padding-top: 12px; padding-bottom: 12px; }
+  /* Ngăn kéo trái là chỗ sale bấm nhiều nhất trên điện thoại → mọi hàng bấm được
+     phải đủ 44px. Đo 22/07: hàng file 42.8px (thiếu 1.2), hàng thư mục 33px.
+     Dùng min-height thay vì cộng padding: padding không kéo nổi hàng thư mục
+     lên 44 mà lại làm hàng file phình quá. */
+  .tree-file-item { min-height: 44px; padding-top: 10px; padding-bottom: 10px; }
+  .tree-folder-header { min-height: 44px; }
+
+  /* Link về trang chủ trong header — cao 36px, dưới ngưỡng chạm. Nới bằng
+     min-height chứ không bằng padding để không đẩy breadcrumb lệch tâm. */
+  .header-brand-logo { min-height: 44px; }
   .tree-file-delete { padding: 10px; margin: -6px 0; } /* vùng chạm to, không làm dòng cao thêm */
 
   /* ---- iOS: input < 16px sẽ bị tự phóng to khi focus → nâng lên 16px ---- */
   .text-input-field, #search-input { font-size: 16px; }
 
+  /* Nhãn ô nhập: 11.5px → 13px, và đậm màu lên một bậc.
+     Trước đây nhãn (11.5px) NHỎ HƠN chính giá trị nó giải thích (16px) — nhìn
+     vào đọc được số mà không biết đang điền ô nào. Nguy hiểm thật chứ không
+     phải chuyện đẹp xấu: "Phí đóng mỗi tháng" và "Tổng số tiền đóng (20 năm)"
+     nằm sát nhau, lẫn hai ô đó là con số gửi khách sai. Sàn của Apple là 11pt. */
+  .text-meta { font-size: 13px; color: var(--text-2); }
+
   /* ---- Status bar: bỏ mẹo giữ Space (không áp dụng cho cảm ứng) ---- */
   #status-right { display: none; }
 
-  /* ---- Safe area (iPhone tai thỏ / thanh home): meta đã có viewport-fit=cover ---- */
+  /* ---- Dải đáy cũ (zoom + trạng thái) → NỔI thành con toast ----
+     Thanh thao tác đáy đã chiếm chỗ này. Zoom bỏ hẳn: mở bản vẽ là app tự
+     zoomToFit, còn muốn phóng thì chụm hai ngón vẫn chạy (initTouchGestures).
+     NHƯNG #status-left vẫn phải sống — nó là chỗ báo "Đang lưu…", "Đã xuất PDF".
+     Nên dải này thành khối nổi trong suốt, chỉ hiện khi có thông báo. */
   .canvas-status-bar {
-    height: calc(var(--status-bar-height) + env(safe-area-inset-bottom, 0px));
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    /* `bottom: 10px` là ĐỦ — `.app-body` đã có padding-bottom bằng chiều cao
+       thanh đáy (dưới), nên đáy .canvas-viewport vốn đã nằm trên thanh đáy rồi.
+       Trừ thêm --dock-h lần nữa là trừ hai lần: đo lúc ráp ra toast lơ lửng
+       cách thanh đáy 68px thay vì 10px. */
+    position: absolute; left: 0; right: 0; bottom: 10px;
+    height: auto; padding: 0 14px;
+    background: transparent; border-top: none;
+    justify-content: center;
+    pointer-events: none;    /* không chắn thao tác kéo/thả trên canvas */
+    z-index: 7;
   }
-  .sidebar-actions-footer {
-    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); /* nút Xuất trong bottom-sheet không đè thanh home */
+  .canvas-status-bar .toolbar-group { display: none; }
+  .canvas-status-bar .status-msg {
+    flex: 0 1 auto; max-width: 100%;
+    background: var(--text); color: var(--surface);
+    font-size: 13px; font-weight: 600;
+    padding: 9px 15px; border-radius: var(--r-pill);
+    box-shadow: var(--shadow-md);
   }
+  /* Bảng sửa chữ thì LÀ position:fixed thật (không nằm trong dòng chảy), nên khi
+     nó mở, toast phải tự nhảy lên trên nó — chỗ này mới cần cộng tay. */
+  body.editor-open .canvas-status-bar {
+    bottom: calc(min(52dvh, 460px) + 10px);
+  }
+
+  /* Vùng làm việc dừng TRÊN thanh đáy. Thiếu dòng này thì bản vẽ vẫn căn giữa
+     theo cả chiều cao màn (kể cả phần bị thanh đáy che) → zoomToFit tính ra
+     khung lớn hơn thật, đáy bản vẽ nằm sau thanh đáy. */
+  .app-body { padding-bottom: var(--dock-h); }
+
+  /* Nút Xuất trong bảng sửa chữ: ẨN trên mobile — đã dời ra thanh đáy.
+     Để lại thì bàn phím che mất đúng lúc cần (đo 22/07: bàn phím ~336px phủ từ
+     y=476, chân bảng nằm dưới đó). Ẩn chứ KHÔNG xoá: hai nút thật vẫn nằm trong
+     DOM để thanh đáy bấm hộ, mọi logic xuất giữ nguyên một bản. */
+  .sidebar-actions-footer { display: none; }
   .sidebar-version-footer {
     /* Chân drawer trái: bỏ chiều cao cố định để chừa được safe-area (tai thỏ /
        thanh home iPhone), nếu không chữ bị thanh home đè lên. */
@@ -1730,6 +1843,78 @@ body.no-editor .sidebar-right { display: none; }
   .library-item-card { width: 100%; }
   .library-card-preview { height: auto; min-height: 220px; max-height: 60vh; padding: 12px; }
   .library-thumb, .library-thumb-pdf { max-width: 94%; width: auto; }
+
+  /* ======================================================================
+     THANH THAO TÁC ĐÁY (markup trong tool.html: #tool-dock)
+     Nằm TRÊN mọi thứ (z-index 320 > bảng sửa 300 > ngăn kéo 300 > phủ 250)
+     để 4 việc chính luôn bấm được, kể cả khi bảng sửa chữ đang mở.
+     ====================================================================== */
+  .tool-dock {
+    display: flex; align-items: stretch; gap: 6px;
+    position: fixed; left: 0; right: 0; bottom: 0;
+    z-index: 320;
+    padding: 6px 8px;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+  .dock-btn {
+    flex: 1 1 0; min-width: 0; min-height: 46px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    font-family: var(--font-sans); font-size: var(--fs-xs); font-weight: 700;
+    color: var(--text-2);
+    background: transparent; border: 1px solid transparent; border-radius: var(--r-md);
+    cursor: pointer;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .dock-btn svg { width: 21px; height: 21px; flex: 0 0 auto; }
+  .dock-btn span {
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .dock-btn:active { background: var(--surface-3); }
+  .dock-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+  /* Mục đang mở (Mẫu / Điền thông tin) — đổi nền để biết mình đang ở đâu */
+  .dock-btn[aria-current="true"] { background: var(--brand-soft); color: var(--brand); }
+  /* Việc cần làm nhất = nút đặc, rộng hơn một nhịp. Quy tắc 44 sổ bài học:
+     TỐI ĐA MỘT primary, và gán ĐỘNG — main.js dời class này theo ngữ cảnh. */
+  .dock-cta { flex: 1.3 1 0; background: var(--brand); color: var(--brand-contrast); }
+  .dock-cta:active { background: var(--brand-active); }
+  .dock-cta[aria-current="true"] { background: var(--brand-active); color: var(--brand-contrast); }
+  /* Nút chưa dùng được thì MỜ chứ không ẩn: thanh 4 nút mà số nút nhảy qua lại
+     theo ngữ cảnh sẽ làm ngón cái bấm nhầm chỗ do quen tay. */
+  .dock-btn:disabled { opacity: .38; cursor: default; }
+  .dock-btn:disabled:active { background: transparent; }
+  #dock-save.has-unsaved { position: relative; }
+  #dock-save.has-unsaved::after {
+    content: ''; position: absolute; top: 5px; right: 50%; margin-right: -18px;
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--attention); border: 2px solid var(--surface);
+  }
+
+  /* Bảng chọn định dạng khi bấm "Xuất" */
+  .dock-sheet {
+    display: flex; flex-direction: column; gap: 8px;
+    position: fixed; left: 8px; right: 8px; bottom: calc(var(--dock-h) + 8px);
+    z-index: 321;
+    padding: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-lg);
+    opacity: 0; visibility: hidden;
+    transform: translateY(8px);
+    transition: opacity 160ms var(--ease), transform 160ms var(--ease), visibility 160ms;
+  }
+  body.export-open .dock-sheet { opacity: 1; visibility: visible; transform: translateY(0); }
+  .dock-sheet .btn { width: 100%; min-height: 48px; }
+}
+
+/* Thanh thao tác đáy KHÔNG tồn tại trên desktop — ở đó 3 cột đã bày sẵn mọi thứ.
+   Khai riêng ngoài media query cho rõ ý định (mặc định ẩn, mobile mới bật). */
+@media (min-width: 901px) {
+  .tool-dock, .dock-sheet { display: none; }
 }
 
 /* --------------------------------------------------------------------------

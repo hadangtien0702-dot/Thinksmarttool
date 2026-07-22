@@ -16,6 +16,13 @@ Thumbs.db
 Account/
 *.sql
 
+# Cùng dữ liệu đó nhưng để ở GỐC repo, ngoài thư mục Account/ → luật trên không
+# bắt được. Phát hiện 22/07: "Accout Tool.xlsx" nằm ngay gốc (chưa từng bị commit,
+# đã kiểm bằng `git log --all -- "Accout Tool.xlsx"`). Neo bằng "/" để KHÔNG đụng
+# tới product/Thinksmart-Product-Hub.xlsx đang được theo dõi bình thường.
+/Accou*t*.xlsx
+/Accou*t*.csv
+
 # Archived / superseded files - local only
 _Archive/
 
