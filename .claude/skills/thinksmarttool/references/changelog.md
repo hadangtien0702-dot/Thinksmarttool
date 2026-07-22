@@ -66,6 +66,34 @@ Admin"* · Bỏ lọc → cả 2 nút tắt, về 72 · đang ở trang 3 (25–
 từ đầu hàm sẽ trỏ vào phần tử đã rời khỏi DOM — bấm không có tác dụng, nhìn như sản phẩm hỏng.
 Phải **query lại nút ngay trước khi bấm**. (Lần đầu tôi tưởng lọc không reset trang, hoá ra thế.)
 
+### 2026-07-22 (later 15 — mèo nằm ngủ dưới thẻ chào)
+
+Chủ tool: *"thêm cho anh vài con mèo đang nằm ở đây cho vui vẻ"*. 3 con mèo SVG nằm ngay dưới
+thẻ "Chọn mẫu để bắt đầu", màu lấy từ token và đục nhẹ (0.36–0.5) nên là trang trí chứ không
+tranh chú ý. Thở nhè nhẹ biên độ 2px; có `prefers-reduced-motion` thì nằm im.
+`aria-hidden` + `pointer-events: none` — canvas có kéo/thả và Space-kéo, mèo mà ăn được chuột là
+chặn đúng thao tác chính. Màn thấp (<760px) hoặc hẹp (<560px) thì ẩn, không lấn nội dung.
+
+**🚨 BÀI HỌC LỚN — TÔI CHỌN CƠ CHẾ PHỨC TẠP QUÁ MỨC, RỒI TỐN 6 LƯỢT ĐO ĐỂ GỠ.**
+Bản đầu: đặt mèo ngoài thẻ chào, ở mép dưới canvas → phải biết "canvas có đang mở bản vẽ không"
+→ thêm class `co-file-dang-mo` trên body → 7 chỗ bật/tắt `#no-selection` nằm rải 3 file, vá cả 7
+thì sẽ có chỗ quên → dựng `MutationObserver` để tự đồng bộ → rồi `opacity` + `transition`.
+Kết quả: đo mãi không ra, cascade nói `opacity:0` mà computed trả `1`, đổi 3 kiểu bake class vẫn
+mâu thuẫn.
+
+**Cách đúng đơn giản hơn nhiều: ĐẶT MÈO BÊN TRONG `#no-selection`.** Thẻ chào ẩn thì mèo tự ẩn —
+0 dòng JS, 0 class, 0 observer, 0 thứ để quên đồng bộ. `top: 100%` cho nó rơi xuống ngay dưới
+thẻ, đúng khoảng trống chủ tool khoanh.
+→ **Khi thấy mình đang dựng observer/cờ trạng thái chỉ để một thứ TRANG TRÍ ẩn đúng lúc: dừng
+lại hỏi có thể để nó NẰM TRONG phần tử đã ẩn/hiện sẵn không.** Vòng đời cho không, luôn đúng.
+→ Và: **đo mãi mâu thuẫn cũng có thể là dấu hiệu THIẾT KẾ SAI, không chỉ là công cụ đo tồi.**
+
+**Kiểm chứng** (trang tạm chỉ HTML+CSS, không JS): 3 mèo nằm trong `#no-selection` (`contains`
+= true → tự ẩn theo), `pointer-events:none` (bấm giữa dải mèo trúng `canvas-container` chứ không
+trúng mèo), `aria-hidden=true`, cách đáy thẻ 25px, còn cách đáy canvas 92px, không tràn.
+
+**Version:** `style.css?v=72`, `js/main.js?v=8`.
+
 ## Version hiện tại (2026-07-21 cuối ngày — ĐÃ PUSH cả `main` lẫn `feat/mainV1.1`)
 
 Hai nhánh **cùng ở commit `c91d04b`**, cây làm việc sạch. `main` = bản LIVE

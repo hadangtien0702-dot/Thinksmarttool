@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/vendor/animate.min.css">
-  <link rel="stylesheet" href="style.css?v=70">
+  <link rel="stylesheet" href="style.css?v=72">
   <link rel="stylesheet" href="/dialog.css?v=4">
 </head>
 <body>
@@ -163,6 +163,42 @@
             <!-- Active SVG will be injected here -->
           </div>
           <div class="no-selection-message" id="no-selection">
+
+            <!-- Mấy con mèo nằm ngủ dưới thẻ chào (chủ tool xin 22/07: "thêm vài con mèo
+                 đang nằm ở đây cho vui vẻ"). Thuần trang trí.
+                 ĐẶT BÊN TRONG #no-selection LÀ CỐ Ý: thẻ chào ẩn đi khi mở bản vẽ, mèo tự
+                 ẩn theo — không cần class trên body, không cần MutationObserver, không có
+                 gì để quên đồng bộ. Bản đầu tôi làm bằng class + observer: phức tạp hơn,
+                 và mèo có thể nằm đè lên thiết kế đi gửi khách nếu đồng bộ hụt.
+                 `aria-hidden` + `pointer-events:none` → máy đọc màn hình bỏ qua, không bao
+                 giờ chắn thao tác kéo/thả trên canvas. -->
+            <div class="cat-strip" aria-hidden="true">
+            <svg class="cat cat-1" viewBox="0 0 120 62" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- mèo cuộn tròn, quay lưng ra -->
+              <path d="M8 58c0-18 12-30 30-30s30 8 38 16c8 8 18 8 26 6l4 8H8z" fill="currentColor" opacity=".9"/>
+              <path d="M30 30c-2-8 0-14 4-16 2 6 6 8 8 8s6-2 8-8c4 2 6 8 4 16" fill="currentColor"/>
+              <circle cx="36" cy="40" r="1.6" fill="var(--surface)"/>
+              <path d="M42 42c2 1.5 4 1.5 6 0" stroke="var(--surface)" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M96 50c8 2 14 0 18-4" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+            </svg>
+            <svg class="cat cat-2" viewBox="0 0 96 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- mèo duỗi dài -->
+              <path d="M6 46c0-12 10-20 22-20h34c12 0 22 8 22 20H6z" fill="currentColor" opacity=".9"/>
+              <path d="M18 26c-2-6-1-11 2-13 1 5 4 7 6 7s5-2 6-7c3 2 4 7 2 13" fill="currentColor"/>
+              <circle cx="22" cy="34" r="1.4" fill="var(--surface)"/>
+              <circle cx="29" cy="34" r="1.4" fill="var(--surface)"/>
+              <path d="M84 40c6-2 8-8 6-13" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/>
+            </svg>
+            <svg class="cat cat-3" viewBox="0 0 74 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- mèo con cuộn tròn -->
+              <path d="M5 40c0-14 9-22 21-22s22 8 22 22H5z" fill="currentColor" opacity=".9"/>
+              <path d="M16 18c-1-5 0-9 2-10 1 4 3 5 4 5s3-1 4-5c2 1 3 5 2 10" fill="currentColor"/>
+              <path d="M20 28c1.5 1 3 1 4.5 0" stroke="var(--surface)" stroke-width="1.3" stroke-linecap="round"/>
+              <path d="M48 36c8 1 14-2 18-8" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+              <!-- zZz -->
+              <path class="cat-zzz" d="M56 12h7l-7 8h7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+          </div>
             <div class="welcome-emblem" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>

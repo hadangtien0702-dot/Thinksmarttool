@@ -842,6 +842,46 @@ body.dark-theme .tree-file-item.active { color: var(--text); }
 body.dark-theme .grid-backdrop { background-image: radial-gradient(circle, rgba(255, 255, 255, 0.07) 1px, transparent 1px); }
 .canvas-wrapper { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
 
+/* --------------------------------------------------------------------------
+   MÈO NẰM NGỦ DƯỚI THẺ CHÀO — thuần trang trí (chủ tool xin 22/07)
+   --------------------------------------------------------------------------
+   Nằm BÊN TRONG #no-selection nên tự ẩn khi mở bản vẽ — không cần JS đồng bộ.
+   `top: 100%` = ngay dưới đáy thẻ chào; thẻ đã căn giữa canvas nên mèo rơi vào
+   khoảng trống nửa dưới, đúng chỗ chủ tool khoanh.
+   `pointer-events: none` bắt buộc: canvas có kéo/thả và Space-kéo để di chuyển,
+   mèo mà ăn được chuột là chặn đúng thao tác chính của công cụ.
+   -------------------------------------------------------------------------- */
+.cat-strip {
+  position: absolute; top: 100%; left: 50%;
+  transform: translateX(-50%);
+  margin-top: 26px;
+  display: flex; align-items: flex-end; justify-content: center;
+  gap: clamp(24px, 5vw, 56px);
+  pointer-events: none;
+  width: max-content; max-width: 100%;
+}
+.cat { display: block; color: var(--brand-300, #C4B5FD); }
+.cat-1 { width: clamp(64px, 7vw, 96px);  opacity: 0.5; }
+.cat-2 { width: clamp(52px, 6vw, 78px);  opacity: 0.36; color: var(--text-3); }
+.cat-3 { width: clamp(42px, 5vw, 62px);  opacity: 0.45; }
+body.dark-theme .cat   { color: var(--brand-400); }
+body.dark-theme .cat-2 { color: var(--text-3); }
+
+/* Thở nhè nhẹ — biên độ 2px, đủ để thấy là còn sống, không đủ để kéo mắt khỏi việc chính */
+@keyframes cat-tho { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-2px) } }
+.cat-1 { animation: cat-tho 4.2s ease-in-out infinite; }
+.cat-2 { animation: cat-tho 5.1s ease-in-out infinite 0.6s; }
+.cat-3 { animation: cat-tho 3.8s ease-in-out infinite 1.2s; }
+@keyframes cat-zzz { 0%, 60% { opacity: 0 } 80% { opacity: .85 } 100% { opacity: 0 } }
+.cat-zzz { animation: cat-zzz 4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .cat-1, .cat-2, .cat-3, .cat-zzz { animation: none; }
+}
+/* Màn thấp: thẻ chào đã chiếm gần hết chiều cao, thả mèo ra là tràn — cho ngủ chỗ khác */
+@media (max-height: 760px), (max-width: 560px) {
+  .cat-strip { display: none; }
+}
+
 .no-selection-message {
   position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
