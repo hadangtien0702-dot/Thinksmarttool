@@ -432,7 +432,14 @@ aside {
 .portal-sidebar .sidebar-brand b { font-size: var(--fs-md); font-weight: 800; letter-spacing: -0.2px; color: var(--text); }
 .portal-sidebar .sidebar-brand span span { color: var(--text-3); font-weight: 600; font-size: var(--fs-sm); }
 
-.portal-sidebar .sidebar-nav { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.portal-sidebar .sidebar-nav { display: flex; flex-direction: column; gap: 4px; margin-top: 8px;
+  /* Khe hở trước vạch ngăn của .sidebar-foot. Mục nav đang chọn có bóng đổ tím
+     `0 8px 24px rgba(109,40,217,.35)` toả XUỐNG; vạch ngăn màu --divider rất nhạt
+     nằm cách đúng 0px nên bị bóng phủ mất. Chỉ lộ ở trang /members — trang DUY NHẤT
+     mà mục cuối cùng của nav đang active — nên nhìn như hai trang không đồng nhất.
+     12px đủ để vạch nằm ngoài vùng đậm của bóng. (chủ tool phát hiện 22/07) */
+  margin-bottom: 16px;
+}
 .portal-sidebar .sidebar-nav a {
   display: flex; align-items: center; gap: 12px;
   min-height: 44px; padding: 0 12.5px; border-radius: var(--r-md);
@@ -488,7 +495,12 @@ aside {
 
 .portal-sidebar .sidebar-foot {
   margin-top: auto; display: flex; flex-direction: column; gap: 4px;
-  padding-top: 10px; border-top: 1px solid var(--divider);
+  padding-top: 10px;
+  /* --border-strong chứ KHÔNG --divider: mục nav đang chọn có bóng tím toả xuống
+     (`0 8px 24px`, vùng đậm tới ~14px). Vạch #EEF0F4 nằm dưới lớp tím đó là mất
+     hút — chỉ lộ ở trang /members nên nhìn như 2 trang không đồng nhất.
+     Nới khe lên 16px (ở .sidebar-nav) VÀ đậm vạch lên, cần cả hai. */
+  border-top: 1px solid var(--border-strong);
 }
 .portal-sidebar .sidebar-foot button {
   display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;

@@ -190,6 +190,35 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
 
+### 2026-07-22 (later 12 — vạch ngăn menu: trang có trang không)
+
+Chủ tool: *"sao 2 thanh menu khi chọn là không đồng nhất — cái có gạch cái không"*.
+
+**Nguyên nhân (đo được, không đoán):** `.sidebar-foot` có `border-top: 1px solid var(--divider)`
+= `#EEF0F4`, rất nhạt. Mục nav đang chọn có **bóng đổ tím** `0 8px 24px rgba(109,40,217,.35)`
+toả XUỐNG, mà vạch ngăn nằm cách mục cuối đúng **0px** → bóng phủ trùm, vạch mất hút.
+**Chỉ lộ ở `/members`** — trang DUY NHẤT mà **mục cuối cùng của nav đang active**. Trang chủ,
+Công cụ, Video học đều có mục active nằm ở trên nên vạch không bị bóng chạm tới.
+
+**Sửa — cần CẢ HAI, một mình không đủ:**
+1. `.sidebar-nav { margin-bottom: 16px }` — vùng đậm của bóng với tới ~14px (`8 + 24/4`), nên
+   12px vẫn chưa thoát; 16px mới ra ngoài. (Đã thử 12px và ĐO ra chưa đạt trước khi tăng.)
+2. Vạch đổi `--divider` (`#EEF0F4`) → `--border-strong` (`#D5D9E3`) để sống được dưới lớp tím.
+
+**Sửa CẢ `portal.css` LẪN `style.css`** — hai file là bản sao của nhau (cảnh báo đầu file này).
+
+**Kiểm chứng:** dựng lại CẢ HAI trang thật (giữ nguyên file, chỉ thay thẻ `<script src>` bằng
+stub) rồi đo: `/members` (mục cuối ACTIVE) và trang chủ (mục cuối KHÔNG active) giờ **trùng khít**
+— khe hở 16px, vạch `rgb(213,217,227)`, dày 1px.
+
+**BÀI HỌC:** trước khi sửa tôi đã đo computed style của `.sidebar-foot` trên cả 2 trang → **giống
+hệt nhau** (`1px solid rgb(238,240,244)`). Nếu dừng ở đó thì kết luận "không có gì khác nhau,
+chắc chủ tool nhìn nhầm" — SAI. Khác biệt không nằm ở phần tử đó mà ở **hàng xóm của nó**: bóng
+đổ của phần tử phía trên. → **Phần tử giống nhau mà trông khác nhau thì soi CÁI BÊN CẠNH**, nhất
+là `box-shadow`/`filter` — chúng tràn ra ngoài hộp của chính mình.
+
+**Version:** `portal.css?v=43`, `style.css?v=70`.
+
 ### 2026-07-22 (later 11 — VÁ lỗi lật trang bị chồng lấn, do chính later 10 gây ra)
 
 Chủ tool: *"bấm qua trang thì nó bị nhảy ở phần này"* — ảnh chụp cho thấy tiêu đề trang, ô tìm và
