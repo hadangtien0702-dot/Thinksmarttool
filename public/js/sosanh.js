@@ -151,26 +151,12 @@ function ssLogoUrl(file) {
   return '/api/download?path=' + encodeURIComponent('Bang so sanh quyen loi cac hang/' + file) + '&inline=1';
 }
 
-// --- CỜ BẬT/TẮT MỤC NAV — THEO MÔI TRƯỜNG, KHÔNG THEO NHÁNH GIT ---
-//
-// Từ 22/07/2026 dự án chỉ còn MỘT nhánh `main` duy nhất (chủ tool chốt: "một bản đầy đủ,
-// offline chạy ở local, online chạy ở domain chính"). Nên cờ này KHÔNG thể dựa vào nhánh nữa.
-//
-// Vì sao bảng So sánh phải khác nhau giữa 2 nơi: nó CHƯA ĐƯỢC CHỦ TOOL DUYỆT XONG. Để hiện trên
-// domain chính thì 69 người đội sale tưởng là bản chính thức rồi đem số liệu quyền lợi đi tư vấn
-// cho khách — đó là rủi ro thật, không phải chuyện thẩm mỹ.
-//
-// Cách cũ (cờ true/false khác nhau giữa 2 nhánh) ĐÃ HỎNG và phải bỏ: xung đột git chỉ nổ theo
-// chiều nhánh→main; merge ngược main→nhánh thì git ghi đè LẶNG LẼ, bảng biến mất khỏi localhost
-// mà không báo gì (dính đúng 22/07). Dựa vào tên miền thì không có cửa nào sai.
-//
-// 👉 KHI CHỦ TOOL DUYỆT XONG BẢNG SO SÁNH: xoá cả khối này, thay bằng `const SS_SHOW_IN_NAV = true;`
-const SS_SHOW_IN_NAV = (function () {
-  var h = (location.hostname || '').toLowerCase();
-  // '' là khi mở file trực tiếp bằng file:// — vẫn tính là máy cá nhân
-  return h === 'localhost' || h === '127.0.0.1' || h === '::1' || h === ''
-      || h.endsWith('.local') || h.startsWith('192.168.') || h.startsWith('10.');
-})();
+// --- MỤC NAV: HIỆN Ở MỌI NƠI ---
+// 22/07/2026 chủ tool DUYỆT XONG bảng So sánh và yêu cầu cho nhân viên/user xem trên
+// domain chính. Trước đó cờ này tính theo `location.hostname` (chỉ hiện ở localhost) vì
+// bảng chưa duyệt — nay bỏ hẳn cơ chế đó, hiện ở cả offline lẫn online.
+// Giữ lại biến (thay vì xoá) để sau này cần tắt tạm chỉ phải sửa MỘT dòng.
+const SS_SHOW_IN_NAV = true;
 
 // --- NAV SECTION (gọi từ renderFileTree trong js/main.js) ---
 // MỘT MỤC PHẲNG, KHÔNG dropdown (chủ tool 22/07/2026): các mục khác (Proposal,

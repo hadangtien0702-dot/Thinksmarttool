@@ -19,13 +19,11 @@ Chủ tool chốt: *"chỉ dùng 1 bản đầy đủ — offline chạy ở loc
 **⚠️ ĐỪNG TẠO NHÁNH MỚI để giấu tính năng chưa xong.** Cách đó đã hỏng và đã bỏ (xem dưới).
 Muốn thứ gì đó chỉ chạy ở local thì dùng **`location.hostname`**, như `SS_SHOW_IN_NAV`.
 
-### Bảng So sánh — hiện ở local, ẩn ở domain chính
+### Bảng So sánh — ĐÃ DUYỆT, hiện ở MỌI NƠI (22/07 chiều)
 
-`SS_SHOW_IN_NAV` đầu `public/js/sosanh.js` giờ tính theo **tên miền**, không theo nhánh:
-localhost / 127.0.0.1 / 192.168.* / file:// → **HIỆN**; mọi tên miền khác → **ẨN**.
-Lý do phải ẩn trên live: bảng **chưa được chủ tool duyệt xong**, để 69 sale nhìn thấy là họ
-tưởng bản chính thức rồi đem số liệu quyền lợi đi tư vấn cho khách.
-👉 **Khi duyệt xong: xoá cả khối đó, thay bằng `const SS_SHOW_IN_NAV = true;`**
+Chủ tool duyệt xong và yêu cầu cho nhân viên/user xem trên domain chính:
+`SS_SHOW_IN_NAV = true`. Cơ chế tính theo `location.hostname` (chỉ hiện ở localhost) đã **bỏ**.
+Giữ lại biến thay vì xoá — sau này cần tắt tạm chỉ phải sửa MỘT dòng.
 
 ### 🚨 VÌ SAO BỎ CÁCH CŨ (cờ khác nhau giữa 2 nhánh) — đừng làm lại
 
