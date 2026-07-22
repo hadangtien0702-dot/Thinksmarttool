@@ -66,6 +66,41 @@ Admin"* · Bỏ lọc → cả 2 nút tắt, về 72 · đang ở trang 3 (25–
 từ đầu hàm sẽ trỏ vào phần tử đã rời khỏi DOM — bấm không có tác dụng, nhìn như sản phẩm hỏng.
 Phải **query lại nút ngay trước khi bấm**. (Lần đầu tôi tưởng lọc không reset trang, hoá ra thế.)
 
+### 2026-07-22 (later 19 — đợt 2 đổi tên thư mục: ĐỀ XUẤT XONG, chủ tool chốt TẠM DỪNG)
+
+Chủ tool xin sơ đồ tên cho đợt 2. Khảo sát để đề xuất thì lòi ra thứ quan trọng hơn cả sơ đồ:
+
+**🛑 TÊN THƯ MỤC Ở DỰ ÁN NÀY LÀ HÀNG RÀO BẢO VỆ, KHÔNG PHẢI NHÃN.**
+**41 chỗ** khoá cứng tên thư mục trong `server.js` + `core.js` + `namecard.js` + `sosanh.js`, trong
+đó mấy chỗ là chốt an toàn so khớp bằng TIỀN TỐ CHUỖI:
+- `server.js:159` — chặn ghi đè `2-templates/` · `name card/` · `public/templates/`
+- `server.js:242` — chỉ cho xoá trong `4-clients/`
+- `core.js:78` `isMasterFile()` — khoá nút Lưu khi đang mở mẫu gốc
+- `core.js:752, 826` — nhận diện bản nháp để cho phép xoá
+
+→ Đổi tên `2-Templates` mà sót MỘT dòng trong số đó thì **mẫu gốc AIG/NLG trở nên ghi đè được**:
+sale mở mẫu gốc, sửa, bấm Lưu → mất mẫu gốc của công ty, **không có thông báo lỗi nào**.
+→ Vì vậy đổi tên KHÔNG phải việc dọn dẹp mà là sửa vào chốt an toàn.
+
+**Đã trình chủ tool:** bắt buộc **bước 0** (gom 41 chỗ về MỘT hằng số dùng chung) rồi mới đổi tên
+được an toàn — và **chi phí nằm ở bước 0, không nằm ở số lượng tên đổi** (đổi 1 hay 6 thư mục đều
+phải làm bước 0 y hệt), nên nếu làm thì cứ chọn đích đến thật sự muốn.
+
+**Sơ đồ đã đề xuất** (lưu lại phòng khi sau này mở lại):
+```
+data/     templates/ clients/ namecard/ brochure/ compare/ exports/   ← tool đọc/ghi
+private/  accounts/                                                   ← không bao giờ lên repo
+scripts/  3 file .bat + build-fonts.py
+docs/     CAU-TRUC.md + SETUP-SUPABASE.md
+```
+Chữ thường · tiếng Anh · không dấu · không khoảng trắng (bám theo `public/` `product/` `supabase/`
+vốn đã đúng). Bỏ số vì thứ tự `1-`…`5-` GIỜ ĐÃ SAI (số 1 trống, số 3 là đầu ra chứ không phải một
+bước) — số nói sai còn tệ hơn không đánh số. Gốc dự án 12 → 8 mục.
+
+**➡️ CHỦ TOOL CHỐT: TẠM DỪNG, không làm.** *"tạm thời ngưng không cần làm bước này nha em"*.
+Đã ghi cảnh báo vào `CAU-TRUC.md` mục cuối. **Phiên sau đừng tự ý đi "dọn cho gọn"** — chủ tool đã
+xem sơ đồ và chọn dừng, không phải chưa biết.
+
 ### 2026-07-22 (later 18 — DỌN CẤU TRÚC DỰ ÁN, đợt 1/2)
 
 Chủ tool: *"vào folder này sắp xếp lại toàn bộ thư mục, dự án, file… anh thấy nó rất lộn xộn"*.

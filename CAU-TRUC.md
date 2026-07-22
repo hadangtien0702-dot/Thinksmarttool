@@ -90,12 +90,37 @@ cập nhật `changelog.md`. Chi tiết ở `.claude/skills/thinksmarttool/refer
 
 ---
 
-## Còn lộn xộn — đợt 2, chờ duyệt
+## 🛑 ĐỪNG ĐỔI TÊN THƯ MỤC — chủ tool đã quyết TẠM DỪNG (22/07/2026)
 
 Tên thư mục hiện không theo quy tắc nào: nhóm có đánh số (`2-Templates`, `3-Export-PDF`,
-`4-Clients`, `5-Design-Sections` — và số 1 giờ đã trống) trộn với nhóm không đánh số (`Account`,
-`Brochure`, `Name Card`, `Bang so sanh quyen loi cac hang`), lẫn tiếng Việt không dấu với tiếng Anh,
-có tên chứa khoảng trắng.
+`4-Clients`, `5-Design-Sections` — số 1 giờ đã trống) trộn với nhóm không đánh số (`Account`,
+`Brochure`, `Name Card`, `Bang so sanh quyen loi cac hang`), lẫn Việt không dấu với Anh, có khoảng
+trắng. **Nhìn thì rất muốn dọn. ĐỪNG.**
 
-Muốn thống nhất thì **phải sửa `server.js` kèm theo** (4 thư mục ở bảng đỏ) và kiểm chứng lại cả ba
-công cụ. Chưa làm — cần chủ tool duyệt sơ đồ tên mới trước.
+### Vì sao: tên thư mục ở đây là HÀNG RÀO BẢO VỆ, không phải nhãn
+
+Có **41 chỗ** khoá cứng tên thư mục trong `server.js`, `public/js/core.js`, `namecard.js`,
+`sosanh.js`. Vài chỗ trong đó là chốt an toàn, so khớp bằng **tiền tố chuỗi**:
+
+| Chỗ | Việc nó làm | Sót thì sao |
+|---|---|---|
+| `server.js:159` | chặn ghi đè `2-templates/`, `name card/`, `public/templates/` | **Mẫu gốc AIG/NLG ghi đè được** — sale sửa rồi bấm Lưu là mất mẫu gốc công ty |
+| `server.js:242` | chỉ cho xoá trong `4-clients/` | xoá hỏng, hoặc tệ hơn |
+| `core.js:78` `isMasterFile()` | khoá nút Lưu khi mở mẫu gốc | UI cho phép làm việc đáng lẽ bị cấm |
+| `core.js:752, 826` | nhận diện bản nháp → cho phép xoá | nhầm mẫu gốc thành bản nháp |
+
+Hỏng kiểu này **không có thông báo lỗi** — chỉ là một hôm nào đó mẫu gốc biến mất.
+
+### Nếu sau này thật sự muốn đổi tên
+
+Bắt buộc **bước 0 trước**: gom 41 chỗ đó về MỘT hằng số dùng chung, mọi nơi đọc từ đó. Xong bước 0
+thì đổi tên chỉ còn sửa một dòng. Đổi 1 thư mục hay 6 thư mục đều phải làm bước 0 y hệt —
+**chi phí nằm ở bước 0, không nằm ở số lượng tên đổi.**
+
+Lệnh đếm lại các chỗ khoá cứng:
+```
+grep -rn "'2-Templates'\|'4-Clients'\|'Name Card'\|'Brochure'\|2-templates/\|4-clients/\|name card\|Bang so sanh quyen loi cac hang" server.js public/js/*.js
+```
+
+Sơ đồ tên đã đề xuất (gom vào `data/` · `private/` · `scripts/` · `docs/`, gốc 12 → 8 mục) nằm ở
+`changelog.md` mục 22/07 later 19 — chủ tool xem rồi và chọn **tạm dừng**, không phải chưa biết.
