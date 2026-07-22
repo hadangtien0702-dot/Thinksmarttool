@@ -190,6 +190,55 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
 
+### 2026-07-22 (later 8 — trang Thành viên: ô TÌM + làm gọn danh sách)
+
+Danh sách lên 51 người sau khi tạo 48 tài khoản → chủ tool: *"scroll nó bị dài"* + xin ô tìm
+đặt chung hàng với thanh thao tác hàng loạt.
+
+**1. Ô TÌM trong thanh công cụ, LUÔN HIỆN.** Bẫy: `.bulk-bar` vốn `display:none`, chỉ `.open`
+mới hiện — nhét ô tìm vào đó thì chưa chọn ai là ô tìm biến mất theo. Sửa: thanh LUÔN `flex`,
+chỉ nhóm `.bulk-actions` (đếm + 6 nút) mới ẩn/hiện. Viền đổi màu khi `.open` để vẫn giữ tín
+hiệu "đang ở chế độ thao tác hàng loạt".
+
+**Tìm BỎ DẤU** — bắt buộc, không phải cho đẹp: tên trong DB luôn có dấu, sale gõ nhanh thì
+không bỏ dấu → không xử lý là tìm gần như không ra ai. `khongDau()` dùng
+`normalize('NFD')` + strip `̀-ͯ`, **`đ/Đ` phải xử riêng** vì NFD không tách được nó.
+Khớp cả `full_name` lẫn `email`.
+
+**Lọc TRONG BỘ NHỚ, không gọi lại Supabase.** Tách `load()` (fetch) khỏi `veDanhSach()` (render);
+gõ phím chỉ chạy `veDanhSach()`. Mỗi phím một truy vấn thì vừa chậm vừa tốn quota.
+
+⚠️ **Gõ tìm là XOÁ luôn danh sách đang chọn** (`dangChon.clear()`). Nếu giữ, người dùng lọc còn
+5 người rồi bấm "Duyệt" sẽ tác động lên cả những người họ KHÔNG còn nhìn thấy — nguy hiểm thầm lặng.
+
+Chi tiết nhỏ dễ sót: `type="search"` trên Chrome có nút X riêng, bấm nó chỉ bắn sự kiện `search`
+chứ KHÔNG bắn `input` → phải bắt cả hai. Đã ẩn nút X mặc định
+(`::-webkit-search-cancel-button`) và dùng nút riêng cho đồng bộ 2 theme.
+
+**2. Làm gọn hàng — CHỖ TÔI ĐOÁN SAI LÚC ĐẦU.** Nghĩ avatar 40px là thủ phạm nên thu còn 32px:
+đo ra chỉ ngắn **12%** (68→60px). Đo tiếp từng ô mới thấy **khối tên+email 2 dòng cao 40px mới
+là đáy** — vì hai dòng đó KHÔNG khai `line-height` nên ăn `1.55` của body
+(14×1.55 + 12.5×1.55 ≈ 41px). Đặt `line-height` chặt cho đúng hai dòng đó (1.25 / 1.3) + `.m-cell`
+1.3 → **68 → 54px, ngắn 20%**, tiết kiệm ~695px trên 51 người. Chữ không bị cắt.
+→ **Bài học: muốn giảm chiều cao thì ĐO TỪNG Ô tìm cái cao nhất, đừng đoán theo cái to nhất
+bằng mắt.** Avatar to nhất nhưng không phải cao nhất.
+Đáy hiện tại: khối danh tính 34px và nút thao tác 32px. Muốn ngắn nữa phải gộp tên+email về
+MỘT dòng (mất khả năng rà mắt) — chưa làm, chờ chủ tool.
+
+**3. Hàng tiêu đề cột DÍNH khi cuộn** (`position: sticky`). 51 hàng mà mất tiêu đề thì không
+biết cột nào là cột nào. Offset không hardcode: JS đo `.bulk-bar.offsetHeight` bằng
+`ResizeObserver` rồi ghi vào biến CSS `--bulk-h` — hardcode sẽ sai khi thanh xuống dòng ở màn
+hẹp, hoặc khi nhóm nút hàng loạt hiện ra làm nó cao thêm.
+
+**Version:** `portal.css?v=36`, `portal/members.js?v=12`.
+
+**Kiểm chứng** (trang tạm, dùng LẠI markup thật lấy từ `members.html` + hàm `khongDau` chép
+nguyên từ `members.js`, đã xoá sau khi đo): chưa chọn ai → thanh `flex`, nhóm nút `none`; chọn
+rồi → cả hai `flex`. Tìm `duong`→2 người có dấu "Dương", `dinh`→"Đinh Thị Hiền" (đ→d),
+`kenny`→khớp qua email, `xxx`→0. Hàng 68→54px, chữ không cắt. Cuộn 1200px: `--bulk-h` đo được
+61px, hàng tiêu đề dính ở top 151px, **không đè lên** thanh công cụ (top 80px).
+❗ CHƯA chạy trên trang `/members` thật (cần đăng nhập Super Admin).
+
 ### 2026-07-22 (later 7 — tạo hàng loạt 48 tài khoản sale + tính năng ĐỔI MẬT KHẨU)
 
 **🔒 VIỆC ĐẦU TIÊN LÀM, TRƯỚC MỌI THỨ KHÁC: chặn rò rỉ.** Chủ tool đưa

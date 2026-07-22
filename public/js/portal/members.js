@@ -25,6 +25,17 @@
   let danhSach = [];   // hồ sơ SAU khi lọc — mọi thao tác hàng loạt chạy trên đây
   let toanBo  = [];    // hồ sơ gốc, chưa lọc — dùng để đếm theo phòng ban
   let locPhongBan = null;  // null = không lọc
+  let timKiem = '';        // chuỗi tìm kiếm ĐÃ BỎ DẤU, rỗng = không tìm
+
+  // Bỏ dấu tiếng Việt để gõ "duong" vẫn ra "Dương". Sale gõ nhanh, ít khi bỏ dấu
+  // đúng, và tên trong danh sách thì luôn có dấu → không bỏ dấu là tìm gần như
+  // không ra ai. `đ/Đ` phải xử riêng vì NFD không tách được nó.
+  function khongDau(s) {
+    return String(s == null ? '' : s)
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+      .toLowerCase().trim();
+  }
 
   // ---- Tiện ích ---------------------------------------------------------------
   function initial(name) {
@@ -239,15 +250,31 @@
     const rank = { super_admin: 0, admin: 1, user: 2 };
     tatCa.sort(function (a, b) { return (rank[a.role] || 9) - (rank[b.role] || 9); });
     toanBo = tatCa;
+    veDanhSach();
+  }
+
+  // Vẽ lại danh sách từ `toanBo` — KHÔNG gọi lại Supabase. Gõ tìm kiếm mà mỗi phím
+  // một lượt truy vấn thì vừa chậm vừa tốn quota; dữ liệu đã có sẵn trong bộ nhớ rồi.
+  function veDanhSach() {
+    const tatCa = toanBo;
 
     // Đếm theo phòng ban dựa trên TOÀN BỘ (không phụ thuộc bộ lọc đang bật),
     // nếu không thì bấm lọc xong mọi con số khác tụt về 0.
     veDemPhongBan(tatCa);
 
-    // Danh sách hiển thị = đã lọc. Mọi thao tác hàng loạt chạy trên danh sách này.
-    const rows = locPhongBan
+    // Danh sách hiển thị = đã lọc phòng ban + đã lọc theo ô tìm.
+    // Mọi thao tác hàng loạt chạy trên danh sách này.
+    let rows = locPhongBan
       ? tatCa.filter(function (r) { return (r.department || '').trim() === locPhongBan; })
       : tatCa;
+    if (timKiem) {
+      rows = rows.filter(function (r) {
+        return khongDau(r.full_name).indexOf(timKiem) !== -1
+            || khongDau(r.email).indexOf(timKiem) !== -1;
+      });
+    }
+    const oHit = $('mem-hit');
+    if (oHit) oHit.textContent = timKiem ? (rows.length + ' kết quả') : '';
     danhSach = rows;
     $('filter-bar').classList.toggle('open', !!locPhongBan);
     if (locPhongBan) $('filter-name').textContent = locPhongBan;
@@ -464,6 +491,41 @@
     const logout = $('btn-logout-side');
     if (logout) logout.addEventListener('click', TSTAuth.signOut);
     TSTAuth.initDoiMatKhau();
+
+    // Ô tìm thành viên. Lọc ngay trong bộ nhớ nên gõ tới đâu thấy tới đó, không debounce.
+    const oTim = $('mem-search');
+    const nutXoa = $('mem-search-clear');
+    if (oTim) {
+      oTim.addEventListener('input', function () {
+        timKiem = khongDau(oTim.value);
+        // Bỏ chọn những người vừa bị lọc ra khỏi màn hình — nếu giữ, người dùng bấm
+        // "Duyệt" sẽ tác động lên cả người họ KHÔNG còn nhìn thấy. Nguy hiểm thầm lặng.
+        dangChon.clear();
+        if (nutXoa) nutXoa.style.display = oTim.value ? 'flex' : 'none';
+        veDanhSach();
+      });
+      // type="search" trên Chrome có nút X riêng, bấm nó chỉ bắn 'search' chứ không 'input'
+      oTim.addEventListener('search', function () { oTim.dispatchEvent(new Event('input')); });
+      oTim.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && oTim.value) { e.stopPropagation(); oTim.value = ''; oTim.dispatchEvent(new Event('input')); }
+      });
+    }
+    // Đo chiều cao THẬT của thanh công cụ rồi ghi vào biến CSS --bulk-h, để hàng
+    // tiêu đề cột dính đúng ngay dưới nó. Hardcode con số sẽ sai khi thanh xuống
+    // dòng ở màn hẹp, hoặc khi nhóm nút hàng loạt hiện ra làm nó cao thêm.
+    const thanh = $('bulk-bar');
+    if (thanh && window.ResizeObserver) {
+      new ResizeObserver(function () {
+        document.documentElement.style.setProperty('--bulk-h', thanh.offsetHeight + 'px');
+      }).observe(thanh);
+    }
+
+    if (nutXoa) {
+      nutXoa.style.display = 'none';
+      nutXoa.addEventListener('click', function () {
+        oTim.value = ''; oTim.dispatchEvent(new Event('input')); oTim.focus();
+      });
+    }
     // Super Admin dùng được MỌI công cụ (chủ tool quyết 20/07/2026) — giữ mục Công cụ.
   }
 

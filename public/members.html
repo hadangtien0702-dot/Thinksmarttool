@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/vendor/animate.min.css">
-  <link rel="stylesheet" href="/portal.css?v=34">
+  <link rel="stylesheet" href="/portal.css?v=36">
   <link rel="stylesheet" href="/dialog.css?v=4">
 </head>
 <body>
@@ -96,16 +96,30 @@
                trong members.js (nút + làm mờ bảng) — cố ý không dùng banner nữa. -->
           <div id="load-msg" class="notice error" style="display:none"></div>
 
-          <!-- Thao tác hàng loạt — chỉ hiện khi đã chọn ít nhất 1 người -->
-          <div class="bulk-bar" id="bulk-bar" role="region" aria-label="Thao tác hàng loạt">
-            <span class="bulk-count" id="bulk-count">Đã chọn 0</span>
-            <button class="btn btn-primary btn-sm" data-bulk="approve">Duyệt</button>
-            <button class="btn btn-secondary btn-sm" data-bulk="dept">Đổi phòng ban</button>
-            <button class="btn btn-danger btn-sm" data-bulk="suspend">Tạm khoá</button>
-            <button class="btn btn-primary btn-sm" data-bulk="reactivate">Mở khoá</button>
-            <button class="btn btn-danger btn-sm" data-bulk="delete" id="bulk-delete">Xoá</button>
-            <span class="bulk-sep"></span>
-            <button class="btn btn-secondary btn-sm" id="bulk-clear">Bỏ chọn</button>
+          <!-- Thanh công cụ danh sách (22/07/2026).
+               Ô TÌM luôn hiện; nhóm nút hàng loạt chỉ hiện khi đã chọn ít nhất 1 người.
+               Trước đây cả thanh bị ẩn khi chưa chọn ai → ô tìm cũng biến mất theo,
+               nên ô tìm phải nằm NGOÀI .bulk-actions. -->
+          <div class="bulk-bar" id="bulk-bar" role="region" aria-label="Tìm và thao tác hàng loạt">
+            <div class="mem-search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="search" id="mem-search" autocomplete="off"
+                     placeholder="Tìm theo tên hoặc email…" aria-label="Tìm thành viên">
+              <button type="button" id="mem-search-clear" title="Xoá ô tìm" aria-label="Xoá ô tìm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <span class="mem-hit" id="mem-hit" aria-live="polite"></span>
+            <div class="bulk-actions" id="bulk-actions">
+              <span class="bulk-count" id="bulk-count">Đã chọn 0</span>
+              <button class="btn btn-primary btn-sm" data-bulk="approve">Duyệt</button>
+              <button class="btn btn-secondary btn-sm" data-bulk="dept">Đổi phòng ban</button>
+              <button class="btn btn-danger btn-sm" data-bulk="suspend">Tạm khoá</button>
+              <button class="btn btn-primary btn-sm" data-bulk="reactivate">Mở khoá</button>
+              <button class="btn btn-danger btn-sm" data-bulk="delete" id="bulk-delete">Xoá</button>
+              <span class="bulk-sep"></span>
+              <button class="btn btn-secondary btn-sm" id="bulk-clear">Bỏ chọn</button>
+            </div>
           </div>
 
           <!-- Bố cục 2 cột (chủ tool 21/07): trái = danh sách, phải = các con số -->
@@ -267,7 +281,7 @@
   <script src="/js/portal/config.js?v=8"></script>
   <script src="/js/portal/auth.js?v=4"></script>
   <script src="/js/ui-dialog.js?v=3"></script>
-  <script src="/js/portal/members.js?v=11"></script>
+  <script src="/js/portal/members.js?v=12"></script>
   <script src="/vendor/gsap.min.js"></script>
   <script src="/js/animations.js?v=4"></script>
 </body>
