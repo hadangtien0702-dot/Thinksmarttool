@@ -32,9 +32,14 @@ const DLG_ICONS = {
 
 function showAppDialog(opts) {
   return new Promise((resolve) => {
-    const kieu = opts.type || 'alert';        // alert | confirm | prompt
+    const kieu = opts.type || 'alert';        // alert | confirm | prompt | form
+    // `form`: NHIỀU ô nhập (thêm 22/07/2026 cho luồng đổi mật khẩu). Cố ý mở rộng hộp
+    // thoại dùng chung thay vì viết hộp thoại thứ hai — xem ghi chú "để MỘT bản duy nhất"
+    // ở cuối style.css mục 22. Trả về object {tên ô: giá trị}, huỷ thì trả null.
+    const oNhap = Array.isArray(opts.fields) ? opts.fields : null;
+    const laForm = kieu === 'form' && oNhap && oNhap.length;
     const laPrompt = kieu === 'prompt';
-    const coHuy = laPrompt || kieu === 'confirm';
+    const coHuy = laPrompt || laForm || kieu === 'confirm';
     const tone = opts.tone || 'info';
     const oNenTruoc = document.activeElement;
     const icon = DLG_ICONS[laPrompt ? 'prompt' : tone] || DLG_ICONS.info;
@@ -52,6 +57,14 @@ function showAppDialog(opts) {
         </div>
         <div class="app-dialog-message">${dlgEscape(opts.message || '')}</div>
         ${laPrompt ? `<input type="text" class="app-dialog-input" aria-label="${dlgEscape(opts.title || 'Nhập thông tin')}" placeholder="${dlgEscape(opts.placeholder || '')}" value="${dlgEscape(opts.initialValue || '')}">` : ''}
+        ${laForm ? oNhap.map((f, i) => `
+          <label class="app-dialog-field">
+            <span>${dlgEscape(f.label || '')}</span>
+            <input type="${dlgEscape(f.type || 'text')}" class="app-dialog-input" data-o="${i}"
+                   autocomplete="${dlgEscape(f.autocomplete || 'off')}"
+                   placeholder="${dlgEscape(f.placeholder || '')}">
+          </label>`).join('') : ''}
+        ${laForm ? '<div class="app-dialog-error" role="alert" aria-live="polite"></div>' : ''}
         <div class="app-dialog-actions">
           ${coHuy ? `<button type="button" class="btn btn-secondary app-dialog-cancel">${dlgEscape(opts.cancelText || 'Huỷ')}</button>` : ''}
           <button type="button" class="btn ${lopNutChinh} app-dialog-confirm">${dlgEscape(opts.confirmText || 'OK')}</button>
@@ -76,8 +89,31 @@ function showAppDialog(opts) {
       resolve(ketQua);
     };
     // alert: đóng kiểu nào cũng trả true. confirm: chỉ nút chính mới là true.
-    const dongY = () => dong(laPrompt ? (input ? input.value : '') : true);
-    const huy = () => dong(laPrompt ? null : (kieu === 'confirm' ? false : true));
+    const oError = backdrop.querySelector('.app-dialog-error');
+    function docForm() {
+      const v = {};
+      backdrop.querySelectorAll('.app-dialog-input[data-o]').forEach((el) => {
+        v[oNhap[Number(el.dataset.o)].name] = el.value;
+      });
+      return v;
+    }
+    const dongY = () => {
+      if (laForm) {
+        const v = docForm();
+        // opts.validate trả chuỗi lỗi → GIỮ hộp thoại mở và báo tại chỗ. Đóng hộp thoại
+        // rồi mới báo lỗi thì người dùng mất hết những gì vừa gõ, phải nhập lại từ đầu.
+        const loi = typeof opts.validate === 'function' ? opts.validate(v) : null;
+        if (loi) {
+          if (oError) oError.textContent = loi;
+          const dau = backdrop.querySelector('.app-dialog-input[data-o]');
+          if (dau) dau.focus();
+          return;
+        }
+        return dong(v);
+      }
+      return dong(laPrompt ? (input ? input.value : '') : true);
+    };
+    const huy = () => dong((laPrompt || laForm) ? null : (kieu === 'confirm' ? false : true));
 
     btnOk.addEventListener('click', dongY);
     if (btnHuy) btnHuy.addEventListener('click', huy);
@@ -98,7 +134,8 @@ function showAppDialog(opts) {
     // phụ thuộc animation chạy hay không — xem ghi chú đầu public/dialog.css.
     backdrop.classList.add('open');
     // Hành động phá huỷ: để tiêu điểm ở nút HUỶ, đừng mồi sẵn nút xoá
-    ((tone === 'danger' && btnHuy) ? btnHuy : (input || btnOk)).focus();
+    ((tone === 'danger' && btnHuy) ? btnHuy
+      : (input || backdrop.querySelector('.app-dialog-input[data-o]') || btnOk)).focus();
     if (input && opts.initialValue) input.select();
   });
 }
@@ -108,6 +145,13 @@ function showAppAlert(message, opts = {}) {
 }
 function showAppConfirm(message, opts = {}) {
   return showAppDialog({ ...opts, type: 'confirm', message, title: opts.title || 'Xác nhận', tone: opts.tone || 'warning' });
+}
+// Hộp thoại nhiều ô nhập. fields: [{name, label, type, placeholder, autocomplete}]
+// validate(values) → trả chuỗi lỗi để giữ hộp thoại mở, hoặc null/'' là hợp lệ.
+// Trả về object {name: value}, người dùng huỷ thì trả null.
+function showAppForm(opts = {}) {
+  return showAppDialog({ ...opts, type: 'form', title: opts.title || 'Nhập thông tin',
+                         confirmText: opts.confirmText || 'Lưu' });
 }
 function showAppPrompt(message, opts = {}) {
   return showAppDialog({ ...opts, type: 'prompt', message, title: opts.title || 'Nhập thông tin', confirmText: opts.confirmText || 'OK' });

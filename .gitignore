@@ -11,6 +11,11 @@ Thumbs.db
 # Client proposals contain customer info - keep out of public repo
 4-Clients/
 
+# Danh sách nhân sự + SQL tạo tài khoản: có HỌ TÊN, EMAIL, MẬT KHẨU của đội sale.
+# TUYỆT ĐỐI không đẩy lên repo public. (thêm 22/07/2026)
+Account/
+*.sql
+
 # Archived / superseded files - local only
 _Archive/
 

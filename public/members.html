@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/vendor/animate.min.css">
-  <link rel="stylesheet" href="/portal.css?v=32">
-  <link rel="stylesheet" href="/dialog.css?v=3">
+  <link rel="stylesheet" href="/portal.css?v=43">
+  <link rel="stylesheet" href="/dialog.css?v=4">
 </head>
 <body>
   <script>
@@ -50,11 +50,15 @@
       </nav>
 
       <div class="sidebar-foot">
-        <button id="btn-theme-toggle" aria-label="Đổi giao diện sáng tối">
+        <button id="btn-theme-toggle" title="Đổi giao diện sáng tối" aria-label="Đổi giao diện sáng tối">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           <span class="nav-text">Giao diện sáng/tối</span>
         </button>
-        <button class="logout" id="btn-logout-side">
+        <button id="btn-change-pw" title="Đổi mật khẩu" aria-label="Đổi mật khẩu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span class="nav-text">Đổi mật khẩu</span>
+        </button>
+        <button class="logout" id="btn-logout-side" title="Đăng xuất" aria-label="Đăng xuất">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           <span class="nav-text">Đăng xuất</span>
         </button>
@@ -92,16 +96,40 @@
                trong members.js (nút + làm mờ bảng) — cố ý không dùng banner nữa. -->
           <div id="load-msg" class="notice error" style="display:none"></div>
 
-          <!-- Thao tác hàng loạt — chỉ hiện khi đã chọn ít nhất 1 người -->
-          <div class="bulk-bar" id="bulk-bar" role="region" aria-label="Thao tác hàng loạt">
-            <span class="bulk-count" id="bulk-count">Đã chọn 0</span>
-            <button class="btn btn-primary btn-sm" data-bulk="approve">Duyệt</button>
-            <button class="btn btn-secondary btn-sm" data-bulk="dept">Đổi phòng ban</button>
-            <button class="btn btn-danger btn-sm" data-bulk="suspend">Tạm khoá</button>
-            <button class="btn btn-primary btn-sm" data-bulk="reactivate">Mở khoá</button>
-            <button class="btn btn-danger btn-sm" data-bulk="delete" id="bulk-delete">Xoá</button>
-            <span class="bulk-sep"></span>
-            <button class="btn btn-secondary btn-sm" id="bulk-clear">Bỏ chọn</button>
+          <!-- Thanh công cụ danh sách (22/07/2026).
+               Ô TÌM luôn hiện; nhóm nút hàng loạt chỉ hiện khi đã chọn ít nhất 1 người.
+               Trước đây cả thanh bị ẩn khi chưa chọn ai → ô tìm cũng biến mất theo,
+               nên ô tìm phải nằm NGOÀI .bulk-actions. -->
+          <div class="bulk-bar" id="bulk-bar" role="region" aria-label="Tìm và thao tác hàng loạt">
+            <div class="mem-search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="search" id="mem-search" autocomplete="off"
+                     placeholder="Tìm theo tên hoặc email…" aria-label="Tìm thành viên">
+              <button type="button" id="mem-search-clear" title="Xoá ô tìm" aria-label="Xoá ô tìm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <span class="mem-hit" id="mem-hit" aria-live="polite"></span>
+            <!-- Nhóm nút hàng loạt — thiết kế lại 22/07 (chủ tool: "nhìn vào thấy nó bị rối").
+                 3 nguyên tắc:
+                 1) MỘT kiểu nút cho việc thường, MỘT kiểu cho việc phá huỷ. Bản cũ 5 nút
+                    dùng 4 kiểu (đặc tím, viền, chữ đỏ trần) nên mắt không phân được nhóm.
+                 2) TỐI ĐA MỘT nút primary. Bản cũ "Duyệt" và "Mở khoá" cùng tím đặc, đọc như
+                    hai việc chính ngang nhau. Giờ primary do JS gán ĐỘNG cho việc cần làm nhất.
+                 3) Nút nào không áp dụng được cho nhóm đang chọn thì ẨN HẲN, kèm số người
+                    thực sự bị tác động. Bản cũ luôn bày đủ 5 nút, bấm vào mới báo "không có ai
+                    phù hợp" — bắt người dùng thử-và-sai.
+                 Việc phá huỷ tách sang phải bằng .bulk-sep, không đứng lẫn việc thường. -->
+            <div class="bulk-actions" id="bulk-actions">
+              <span class="bulk-count" id="bulk-count">Đã chọn 0</span>
+              <button class="btn btn-secondary btn-sm bulk-act" data-bulk="approve">Duyệt<span class="bulk-n"></span></button>
+              <button class="btn btn-secondary btn-sm bulk-act" data-bulk="reactivate">Mở khoá<span class="bulk-n"></span></button>
+              <button class="btn btn-secondary btn-sm bulk-act" data-bulk="dept">Đổi phòng ban<span class="bulk-n"></span></button>
+              <span class="bulk-sep"></span>
+              <button class="btn btn-warn-outline btn-sm bulk-act" data-bulk="suspend">Tạm khoá<span class="bulk-n"></span></button>
+              <button class="btn btn-danger-outline btn-sm bulk-act" data-bulk="delete" id="bulk-delete">Xoá<span class="bulk-n"></span></button>
+              <button class="btn btn-ghost btn-sm" id="bulk-clear">Bỏ chọn</button>
+            </div>
           </div>
 
           <!-- Bố cục 2 cột (chủ tool 21/07): trái = danh sách, phải = các con số -->
@@ -129,6 +157,7 @@
               </div>
               <div class="member-list" id="list-pending"></div>
             </div>
+            <div class="pager" id="pager-pending" style="display:none"></div>
           </div>
 
           <!-- Đang hoạt động -->
@@ -145,6 +174,7 @@
               </div>
               <div class="member-list" id="list-active"></div>
             </div>
+            <div class="pager" id="pager-active" style="display:none"></div>
             <div class="empty-state" id="empty-active" style="display:none">
               <b>Chưa có thành viên nào đang hoạt động.</b>
               <span>Khi có người đăng ký, họ sẽ hiện ở mục “Chờ duyệt” phía trên.</span>
@@ -165,6 +195,7 @@
               </div>
               <div class="member-list" id="list-suspended"></div>
             </div>
+            <div class="pager" id="pager-suspended" style="display:none"></div>
           </div>
 
             </div><!-- /members-main -->
@@ -253,7 +284,7 @@
       </main>
 
       <footer class="portal-footer">
-        <span class="version-badge">v1.18</span>
+        <span class="version-badge">v1.19</span>
         <span>20/07/2026 · Thinksmart Insurance — lưu hành nội bộ</span>
       </footer>
     </div>
@@ -261,9 +292,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/portal/config.js?v=8"></script>
-  <script src="/js/portal/auth.js?v=3"></script>
-  <script src="/js/ui-dialog.js?v=2"></script>
-  <script src="/js/portal/members.js?v=10"></script>
+  <script src="/js/portal/auth.js?v=4"></script>
+  <script src="/js/ui-dialog.js?v=3"></script>
+  <script src="/js/portal/members.js?v=15"></script>
   <script src="/vendor/gsap.min.js"></script>
   <script src="/js/animations.js?v=4"></script>
 </body>

@@ -3,50 +3,52 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
-## ⚠️ BA NHÁNH (cập nhật 2026-07-21) — ĐỌC TRƯỚC KHI ĐỘNG VÀO GIT
+## ⚠️ BA NHÁNH (cập nhật 2026-07-22, SAU KHI MERGE LÊN LIVE) — ĐỌC TRƯỚC KHI ĐỘNG VÀO GIT
 
 | | `main` | `feat/login` | `feat/mainV1.1` |
 |---|---|---|---|
-| Vai trò | **BẢN LIVE cho đội sale** | Portal (đã gộp vào V1.1) | **NHÁNH ĐANG LÀM** = main + portal |
-| Ở đâu | Đã push, Vercel auto-deploy | Đã push GitHub 20/07 | Đã push GitHub 21/07 |
-| Version | **v1.18** (22/07) | v1.12 | v1.17 |
-| `config.js` | **CÓ khoá thật** → bắt đăng nhập (chốt 21/07) | CÓ khoá thật | **CÓ khoá thật** → bắt đăng nhập |
-| Nội dung | Portal + Tool. **Bảng So sánh bị ẨN** (`SS_SHOW_IN_NAV=false`) | Portal | Portal + Tool, bảng So sánh **BẬT** (đang làm) |
+| Vai trò | **BẢN LIVE cho đội sale (69 người)** | Portal (đã gộp vào V1.1) | Nhánh phát triển |
+| Trạng thái | **v1.19 — đã merge V1.1, đã push 22/07** | Đã push GitHub 20/07 | Đã gộp hết vào main |
+| `config.js` | **CÓ khoá thật** → bắt đăng nhập | CÓ khoá thật | CÓ khoá thật |
+| Bảng So sánh | **ẨN** (`SS_SHOW_IN_NAV=false`) | — | **HIỆN** (`=true`) |
+| Đổi mật khẩu | **CÓ** (từ v1.19) | — | CÓ |
+
+**✅ 22/07/2026 — ĐÃ PUSH LÊN LIVE (v1.19).** Chủ tool duyệt sau khi xem trên localhost. Gồm:
+tính năng Đổi mật khẩu, tạo tài khoản hàng loạt, trang Thành viên (ô tìm · phân trang 12/trang ·
+thanh thao tác thiết kế lại), bỏ dòng dung lượng trên thẻ Brochure, vá vạch ngăn menu.
+**Bảng So sánh vẫn ẨN** — chủ tool chưa duyệt xong.
+
+**🔒 KHI MERGE `feat/mainV1.1` → `main` LẦN SAU:** sẽ lại xung đột ở đúng dòng
+`SS_SHOW_IN_NAV` trong `public/js/sosanh.js`. **XUNG ĐỘT NÀY LÀ CỐ Ý.** Gặp nó thì dừng lại tự
+hỏi *"chủ tool đã duyệt bảng So sánh chưa?"* — chưa thì giữ `false`. Đừng nhắm mắt lấy bên nào.
 
 **🚦 QUY TẮC PUSH (chủ tool chốt 22/07/2026):** `main` chỉ nhận phần **ĐÃ DUYỆT XONG**. Việc đang
-làm dở ở lại `feat/mainV1.1`. Đã dính lỗi 21/07: push bảng So sánh chưa xong lên live, đội sale
-nhìn thấy tưởng bản chính thức — xem log 22/07.
+làm dở ở lại nhánh phát triển. Đã dính lỗi 21/07: push bảng So sánh chưa xong lên live, đội sale
+nhìn thấy tưởng bản chính thức.
 
-**✅ 21/07/2026 — CHỦ TOOL CHỐT: merge lên `main` và cho LIVE, chấp nhận bắt đăng nhập.**
-Cảnh báo bên dưới giữ lại để hiểu bối cảnh, nhưng quyết định đã thay đổi.
+## Version hiện tại (2026-07-21 cuối ngày — ĐÃ PUSH cả `main` lẫn `feat/mainV1.1`)
 
-~~🚨 TUYỆT ĐỐI KHÔNG merge `feat/login` vào `main` khi chưa duyệt xong tài khoản cho đội sale.~~
-Lý do: `config.js` trên feat/login có khoá Supabase → live sẽ bắt đăng nhập, cả đội sale bị chặn
-khỏi Tool ngay lập tức (họ chưa có tài khoản; ai đăng ký cũng kẹt ở "chờ admin duyệt").
-Muốn đưa lên live phải: (1) duyệt sẵn tài khoản cho toàn đội, HOẶC (2) tạm để `config.js` trống.
+Hai nhánh **cùng ở commit `c91d04b`**, cây làm việc sạch. `main` = bản LIVE
+(tool.thinksmartinsurance.com), đang **BẮT ĐĂNG NHẬP** (config.js có khoá Supabase thật —
+chủ tool chốt 21/07, xem ghi chú ở đầu file).
 
-Khi cần sửa cho bản live: `git checkout main` → sửa → push (đừng mang theo thay đổi của feat/login).
-Redirect tạm ở `server.js` (main) dùng **302 chứ không 301** — 301 bị trình duyệt cache cứng, sau này
-portal xong muốn trả lại trang chủ sẽ rất cực để gỡ.
-
-## Version hiện tại trên `main` (BẢN LIVE — 2026-07-22)
-
-Badge UI **v1.18** (5 chỗ — `grep -rn "version-badge" public/*.html`). Cache-version của asset:
+Badge UI **v1.17** (5 chỗ — `grep -rn "version-badge" public/*.html`). Cache-version của asset:
 
 | File | Version | File | Version |
 |---|---|---|---|
 | `style.css` | `?v=57` | `portal.css` | `?v=32` |
 | `dialog.css` | `?v=3` | `js/ui-dialog.js` | `?v=2` |
 | `js/core.js` | `?v=24` | `js/proposal.js` | `?v=21` |
-| `js/brochure.js` | `?v=9` | `js/sosanh.js` | **`?v=3`** |
+| `js/brochure.js` | `?v=9` | `js/sosanh.js` | `?v=2` |
 | `js/main.js` | `?v=6` | `js/namecard.js` | `?v=5` |
 | `js/animations.js` | `?v=4` | `js/portal/auth.js` | `?v=3` |
 | `js/portal/config.js` | `?v=8` | `js/portal/members.js` | `?v=10` |
 | `js/portal/videos.js` | `?v=2` | | |
 
 **Quy tắc bump (đã dính lỗi vì quên):** sửa file nào bump `?v=` file đó — **kể cả khi chỉ
-sửa TẠM rồi hoàn lại**. Cùng một file mà mỗi trang HTML khai một số version khác nhau là bug thầm
-lặng — dò bằng script quét cả 5 file HTML, đừng sửa tay từng trang.
+sửa TẠM rồi hoàn lại** (đục `config.js` để test xong khôi phục vẫn phải bump, không thì
+trình duyệt chủ tool giữ bản tạm trong cache). Cùng một file mà mỗi trang HTML khai một số
+version khác nhau là bug thầm lặng — dò bằng script quét cả 5 file HTML, đừng sửa tay từng trang.
 
 **⚠️ HAI FILE CSS LÀ BẢN SAO CỦA NHAU** — `portal.css` (portal) và `style.css` (Tool) chép tay lẫn
 nhau phần rail, nút, token. **Đây là nguồn lỗi lặp đi lặp lại** (logo rail sai 2 lần, nút lệch cỡ
@@ -76,6 +78,24 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 - Font embedding on export is live. Design system + light/dark theme live.
 
 ## PENDING / open tasks
+
+> **BẮT ĐẦU PHIÊN MỚI ĐỌC 4 DÒNG NÀY:** hai nhánh `main` và `feat/mainV1.1` cùng ở `c91d04b`,
+> cây làm việc sạch, đã push. Live `tool.thinksmartinsurance.com` **BẮT ĐĂNG NHẬP** (chủ tool
+> chốt 21/07) — ai chưa có tài khoản đã duyệt là không vào được. Việc nên hỏi ngay: **A1** và **A2**.
+> Muốn kiểm chứng trên máy: tạm để trống `config.js` → test → khôi phục → **bump `config.js?v=`**
+> (quên bump là chủ tool dính bản trống trong cache, đã xảy ra rồi).
+
+**Việc gấp — mở đầu phiên nên hỏi chủ tool:**
+- **A1. Bảng So sánh: 16 PNG trong folder chỉ là LOGO hãng**, không phải nội dung so sánh. Bảng vẫn
+  DÙNG ĐƯỢC vì dữ liệu 16 hãng × 4 quyền lợi đã lấy đủ từ `Compare.html`; logo chỉ là ảnh minh hoạ
+  trong mỗi thẻ. Nếu chủ tool muốn nhúng thêm bảng so sánh dạng ảnh/PDF → thả vào folder, giữ kiểu
+  tên `NN_Ten_Hang.png`.
+- **A2. Đội sale có vào được live không?** Chủ tool nói KHÔNG cần tài khoản admin1/admin2 nữa, nhưng
+  CHƯA xác nhận cả đội đã đăng ký + được duyệt. Nếu bị chặn: để trống `config.js` + bump version +
+  push là mở lại trong ~1 phút.
+- **A3. `3-Export-PDF/` chưa gitignore** → PDF chủ tool xuất ra hiện lên mỗi lần commit. Hỏi có ignore
+  không (file gửi khách không nên nằm trên repo công khai).
+
 -3. **CÔNG CỤ SẮP THÊM (chủ tool báo 21/07/2026)** — mục "Công cụ" sẽ KHÔNG chỉ có
    Proposal/Brochure/Name Card nữa:
    - **Tính tuổi bảo hiểm** cho khách (insurance age — nhiều hãng tính theo ngày sinh
@@ -155,38 +175,589 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
 
-### 2026-07-22 (ẨN bảng So sánh khỏi bản LIVE — v1.18, chỉ trên `main`)
+### 2026-07-22 (later 13 — ĐỢT 2: thêm 21 tài khoản sale)
 
-**Bối cảnh — bài học quy trình, đọc kỹ:** cuối ngày 21/07 bảng So sánh (v1.15→v1.17) được push
-chung một cục lên `main` theo thói quen "EOD push", trong khi **tính năng CHƯA XONG**. Chủ tool
-phát hiện sáng 22/07: "phần này chưa xong đã public lên vậy em?". Live có bắt đăng nhập nên khách
-ngoài không thấy, nhưng **đội sale đã duyệt tài khoản thì thấy** → rủi ro thật: họ tưởng là bản
-chính thức rồi đem số liệu quyền lợi đi tư vấn cho khách.
+Chủ tool đưa `Account/Danh-sach-sale 2.xlsx` (69 người, bản mở rộng của danh sách 1).
 
-**→ QUY TẮC MỚI (chủ tool chốt 22/07):** chỉ push lên `main` những phần **đã duyệt xong**.
-Phần đang làm dở giữ ở `feat/mainV1.1`. Không gộp việc dở vào commit cuối ngày nữa.
+**KHÔNG gõ lại từ ảnh chụp.** Chủ tool gửi ảnh bảng tính trước; tôi từ chối và xin file, vì đây là
+**email đăng nhập**: sai một ký tự (`raddie` → `radie`, hay sai dấu trong `Nguyễn Diễm Linh`) là
+tài khoản tạo ra không ai vào được, mà chỉ phát hiện khi người đó thử đăng nhập. Ảnh còn bị cắt ở
+dòng 70 nên không biết còn bao nhiêu người phía dưới.
 
-**Cách ẩn (cố ý chọn cách nhẹ nhất):** thêm cờ `SS_SHOW_IN_NAV` ở đầu `public/js/sosanh.js`,
-`renderCompareNavSection` early-return `0` khi cờ tắt. **Code giữ nguyên 100%** — không xoá, không
-comment-out cả khối, để bản offline làm tiếp không bị lệch.
-- Trên `main`: `SS_SHOW_IN_NAV = false`. Trên `feat/mainV1.1`: giữ `true`.
-- ⚠️ **Một dòng này sẽ xung đột khi merge `feat/mainV1.1` → `main`.** Xung đột CÓ CHỦ Ý — lúc merge
-  phải dừng lại tự hỏi "bảng So sánh xong chưa?" rồi mới chọn giá trị. Đừng nhắm mắt lấy bên nào.
-- Khi bảng hoàn thiện: đổi `false` → `true` + bump `sosanh.js?v=` trong `tool.html`.
+**Đối chiếu 2 danh sách trước khi sinh gì cả:** 48 → 69, **21 người mới**, **0 người bị xoá**,
+**0 người đổi họ tên**. Sạch.
 
-**Version sau khi ẩn (`main`):** badge **v1.18** (5 file HTML), `js/sosanh.js?v=3`. Các file khác
-giữ nguyên như v1.17.
+**⚠️ CHỈ SINH MẬT KHẨU CHO 21 NGƯỜI MỚI, KHÔNG SINH CHO CẢ 69.** Nếu sinh đủ 69 thì file CSV sẽ
+có mật khẩu mới cho 48 người cũ — nhưng SQL **bỏ qua** họ (email đã tồn tại), nên 48 mật khẩu đó
+**SAI HOÀN TOÀN**. Chủ tool gửi đi là 48 người không đăng nhập được và không ai hiểu vì sao.
+→ Quy tắc: chạy lại một quy trình sinh dữ liệu trên tập lớn hơn thì phải **lọc ra phần chênh
+lệch trước**, đừng sinh lại cả tập.
 
-**Đã kiểm chứng thật, không chỉ đọc code:** login chặn không vào được `/tool` bằng trình duyệt
-(không được nhập tài khoản của chủ tool), nên eval thẳng file server đang phục vụ:
-`fetch /js/sosanh.js?v=3` → `new Function(src)` → gọi `renderCompareNavSection(container, '')`.
-Kết quả: `SS_SHOW_IN_NAV=false`, trả về `0`, container **rỗng** → `main.js:31` cộng 0, tổng số mẫu
-trên cây không bị lệch. Badge v1.18 hiện đúng trên trang login.
+File: `Account/tao-21-tai-khoan-moi.sql` + `Account/mat-khau-21-sale-moi.csv` (đều đã gitignore).
+SQL có thêm dòng `raise notice` ghi rõ "MAT KHAU TRONG CSV KHONG DUNG CHO NGUOI NAY" nếu gặp email
+đã tồn tại, và truy vấn kiểm tra cuối file (21 dòng, cột `tinh_trang` phải là `OK`) + tổng kết
+`phong_sale` phải ra **69**.
 
-**Lối vào còn lại (chấp nhận, không surface trên UI):** `/api/library` vẫn trả section `soSanh` và
-`/api/download` vẫn phục vụ folder `Bang so sanh quyen loi cac hang/` — **bắt buộc phải giữ** vì
-16 logo hãng load qua đó. Không nơi nào trong `public/js/` đọc key `soSanh` (đã grep), nên không
-hiện ra cây nav; chỉ ai biết URL mới mò tới `Compare.html`. Không đáng bịt lúc này.
+Kiểm chứng file sinh ra: 21 dòng, 21 email duy nhất, 21 mật khẩu duy nhất, 0 dấu nháy lẻ,
+`$$` cân bằng, **0 người cũ lẫn vào**.
+
+**Nhắc:** `Account/Accout Tool.csv` chính là `mat-khau-48-sale.csv` đợt 1 do chủ tool đổi tên —
+vẫn chứa 48 mật khẩu plaintext. Gửi xong cho từng người thì xoá.
+
+### 2026-07-22 (later 12 — vạch ngăn menu: trang có trang không)
+
+Chủ tool: *"sao 2 thanh menu khi chọn là không đồng nhất — cái có gạch cái không"*.
+
+**Nguyên nhân (đo được, không đoán):** `.sidebar-foot` có `border-top: 1px solid var(--divider)`
+= `#EEF0F4`, rất nhạt. Mục nav đang chọn có **bóng đổ tím** `0 8px 24px rgba(109,40,217,.35)`
+toả XUỐNG, mà vạch ngăn nằm cách mục cuối đúng **0px** → bóng phủ trùm, vạch mất hút.
+**Chỉ lộ ở `/members`** — trang DUY NHẤT mà **mục cuối cùng của nav đang active**. Trang chủ,
+Công cụ, Video học đều có mục active nằm ở trên nên vạch không bị bóng chạm tới.
+
+**Sửa — cần CẢ HAI, một mình không đủ:**
+1. `.sidebar-nav { margin-bottom: 16px }` — vùng đậm của bóng với tới ~14px (`8 + 24/4`), nên
+   12px vẫn chưa thoát; 16px mới ra ngoài. (Đã thử 12px và ĐO ra chưa đạt trước khi tăng.)
+2. Vạch đổi `--divider` (`#EEF0F4`) → `--border-strong` (`#D5D9E3`) để sống được dưới lớp tím.
+
+**Sửa CẢ `portal.css` LẪN `style.css`** — hai file là bản sao của nhau (cảnh báo đầu file này).
+
+**Kiểm chứng:** dựng lại CẢ HAI trang thật (giữ nguyên file, chỉ thay thẻ `<script src>` bằng
+stub) rồi đo: `/members` (mục cuối ACTIVE) và trang chủ (mục cuối KHÔNG active) giờ **trùng khít**
+— khe hở 16px, vạch `rgb(213,217,227)`, dày 1px.
+
+**BÀI HỌC:** trước khi sửa tôi đã đo computed style của `.sidebar-foot` trên cả 2 trang → **giống
+hệt nhau** (`1px solid rgb(238,240,244)`). Nếu dừng ở đó thì kết luận "không có gì khác nhau,
+chắc chủ tool nhìn nhầm" — SAI. Khác biệt không nằm ở phần tử đó mà ở **hàng xóm của nó**: bóng
+đổ của phần tử phía trên. → **Phần tử giống nhau mà trông khác nhau thì soi CÁI BÊN CẠNH**, nhất
+là `box-shadow`/`filter` — chúng tràn ra ngoài hộp của chính mình.
+
+**Version:** `portal.css?v=43`, `style.css?v=70`.
+
+### 2026-07-22 (later 11 — VÁ lỗi lật trang bị chồng lấn, do chính later 10 gây ra)
+
+Chủ tool: *"bấm qua trang thì nó bị nhảy ở phần này"* — ảnh chụp cho thấy tiêu đề trang, ô tìm và
+tiêu đề cột đè lên mấy hàng đầu.
+
+**Nguyên nhân — BA TẦNG DÍNH CHỒNG NHAU:** `.topbar` (135px) → `.bulk-bar` (73px) →
+`.member-head` (tôi thêm ở later 8). Lật trang xong `seg.scrollIntoView({block:'start'})` đưa
+nhóm lên **sát mép trên cửa sổ** — mà mép trên đang bị 3 tầng đó che → hàng đầu chui xuống dưới.
+
+**Sửa 2 chỗ, cố ý chọn cách BỎ BỚT thay vì cộng thêm bù trừ:**
+1. **Bỏ `position: sticky` khỏi `.member-head`.** Nó thêm vào later 8 để cuộn 51 người vẫn thấy
+   tên cột — nhưng later 10 (phân trang 12 hàng/trang) đã bỏ hẳn việc phải cuộn danh sách. Giữ
+   lại vừa thừa vừa đẻ lỗi. **Ít tầng dính = ít lỗi chồng lấn.**
+2. **Thay `scrollIntoView` bằng `scrollTo` có trừ chiều cao thanh dính**, đo tại thời điểm bấm
+   (`.topbar` + `#bulk-bar`, chỉ tính cái nào đang thật sự `position: sticky`). Không hardcode:
+   thanh công cụ cao thấp khác nhau tuỳ có đang chọn người hay không.
+
+**Kiểm chứng:** cuộn xuống 600px rồi bấm sang trang 3 → rows 25–36, đáy tầng dính ở 163px, tiêu
+đề nhóm 196 · tiêu đề cột 226 · hàng đầu 252 — **không cái nào bị che**, còn hở 33px.
+
+**🚨 BÀI HỌC ĐO ĐẠC — PANE HẸP LÀM CHẠY NHẦM BỐ CỤC MOBILE.** Trang thử đầu tiên cho ra
+`.member-table` `display:block`, `.member-head` `display:none`, hàng cao **253px** → tưởng subgrid
+vỡ. Thật ra pane rộng **981px**, dưới ngưỡng `@media (max-width: 900px)`… không, dưới **1100px**
+và trúng nhánh 900px của bảng → **CSS đang chạy bố cục MOBILE** (bảng xếp dọc, ẩn tiêu đề cột).
+Màn hình chủ tool ~2000px thì ra bảng ngang. `resize_window` lên 1500px mới đo được bố cục thật
+(hàng 52px, `display:grid`).
+→ **Trước khi kết luận "layout vỡ", kiểm `window.innerWidth` xem đang ở nhánh media query nào.**
+
+**Bài học thứ hai:** trang thử đầu tiên tôi CẮT một đoạn HTML từ `members.html` → cấu trúc DOM
+méo, `.topbar` đo ra **2106px**. Dựng lại bằng cách **giữ NGUYÊN file thật, chỉ thay các thẻ
+`<script src>` bằng stub** → `.topbar` ra đúng 135px. Cắt HTML là làm hỏng thứ mình đang cần đo.
+
+**Version:** `portal.css?v=41`, `portal/members.js?v=15`.
+
+### 2026-07-22 (later 10 — PHÂN TRANG danh sách thành viên)
+
+Chủ tool: *"phần này phải scroll, chuyển qua dạng slide được không"* → phân trang, **12 hàng/trang**
+(hàng cao 54px × 12 ≈ 650px, vừa một màn hình cùng tiêu đề + thanh công cụ, không phải cuộn).
+⚠️ Đừng tăng bừa lên 20–30 rồi lại phải cuộn — mất đúng thứ vừa sửa.
+
+Phân trang **RIÊNG cho từng nhóm** (`pending` / `active` / `suspended`), mỗi nhóm một thanh lật
+trang, nhóm ≤ 1 trang thì thanh tự ẩn. Có nút ‹ ›, dãy số trang rút gọn bằng `…`, và dòng
+"13–24 trên 51". Lật trang xong tự `scrollIntoView` về đầu nhóm.
+
+**🚨 HAI CHỖ PHÂN TRANG SUÝT LÀM HỎNG — phải sửa kèm, không phải việc phụ:**
+
+1. **"Chọn tất cả" phải ăn CẢ NHÓM, không phải trang đang xem.** Bản cũ duyệt
+   `tbl.querySelectorAll('.m-pick')` = các ô ĐANG HIỂN THỊ. Có phân trang thì nó chỉ chọn 12
+   người, trong khi tiêu đề vẫn ghi "Thành viên 51" → người dùng tưởng đã chọn hết 51 rồi bấm
+   "Tạm khoá". Sửa: chọn theo **DỮ LIỆU** của cả nhóm (`nhom[khoa]`), rồi mới đồng bộ ô tick.
+2. **Ô "chọn tất cả" phải phản ánh CẢ NHÓM.** Tính theo hàng hiển thị thì lật sang trang chưa
+   chọn ai là ô tự bỏ tick, dù 40 người ở trang khác vẫn đang được chọn.
+
+`danhSach` giữ NGUYÊN danh sách đã lọc (không cắt theo trang) nên `nguoiHopLe()` và mọi thao tác
+hàng loạt vẫn chạy đúng trên toàn bộ người đã chọn, kể cả người ở trang khác.
+
+Kẹp số trang khi vẽ (`if (trang > soTrang) trang = soTrang`): xoá/lọc bớt người có thể làm trang
+hiện tại không còn tồn tại → không kẹp là màn hình trắng trơn mà không hiểu vì sao.
+Gõ ô tìm → reset về trang 1.
+Thanh lật trang dùng **uỷ quyền sự kiện** trên `#page-content` — nút được dựng lại sau mỗi lần
+vẽ nên gắn handler trực tiếp vào nút là mất.
+
+**Kiểm chứng** (trang tạm, chạy HÀM THẬT `veNhom`/`soNut`/`onPagerClick`/`onPickChange`/
+`capNhatThanhHangLoat` chép từ members.js, 51 người giả):
+- 5 trang, trang cuối 3 người, `1–12 trên 51` → `49–51 trên 51`, nút ‹ khoá ở trang 1, › khoá ở
+  trang cuối, dãy số rút gọn có `…`.
+- Chọn tất cả → **51** người (không phải 12), thanh ghi "Đã chọn 51", 12 ô tick + 12 hàng tô sáng.
+- Lật sang trang 3 → vẫn 12 ô tick, ô chọn-tất-cả vẫn tick, đếm vẫn 51.
+- Bỏ tick 1 người → 50, ô chọn-tất-cả chuyển **lửng** (indeterminate).
+- Về trang 1 → người vừa bỏ KHÔNG bị hồi sinh, tổng vẫn 50.
+
+**BÀI HỌC VỀ CÁCH KIỂM CHỨNG:** lần đầu trang thử báo "lật trang là mất sạch tick" — tưởng bug
+sản phẩm. Đọc lại `rowHtml` THẬT thì nó CÓ khôi phục cả `checked` lẫn class `is-picked`; thiếu là
+ở **bản rút gọn tôi tự viết trong trang thử**. → Trang thử mà đơn giản hoá phần đang cần kiểm thì
+nó kiểm chính bản rút gọn đó, không kiểm sản phẩm. Đã sửa trang thử cho khớp rồi mới đo lại.
+
+**Version:** `portal.css?v=40`, `portal/members.js?v=14`.
+
+### 2026-07-22 (later 9 — thiết kế lại thanh thao tác hàng loạt)
+
+Chủ tool: *"nút ở thanh này em thiết kế lại cho dễ dùng hơn, anh nhìn vào thấy nó bị rối"*.
+Chẩn đoán: **5 nút dùng 4 kiểu khác nhau** (đặc tím · viền · chữ đỏ trần · đặc tím) và **2 nút
+primary tím cạnh tranh nhau** (Duyệt + Mở khoá) → mắt không phân được nhóm nào là nhóm nào.
+
+**Sửa theo 3 nguyên tắc:**
+1. **Hai họ nút, hết.** Việc thường = `btn-secondary`/`btn-primary`; việc phá huỷ = nút VIỀN màu
+   (`btn-warn-outline` cam = đảo ngược được, `btn-danger-outline` đỏ = mất dữ liệu).
+   Bỏ `btn-danger` cũ (chữ đỏ **không viền**) — nó nhìn như đường link lạc giữa các nút, đó chính
+   là cái "rối". Có viền thì vẫn là NÚT, chỉ khác MÀU: hình dạng nói "bấm được", màu nói "cẩn thận".
+2. **Tối đa MỘT primary, gán ĐỘNG** theo việc cần làm nhất (duyệt > mở khoá > đổi phòng ban).
+   **Không bao giờ** để việc phá huỷ làm primary.
+3. **Nút không áp dụng được thì ẨN HẲN**, kèm số người thực sự bị tác động. `nguoiHopLe()` vốn đã
+   tính sẵn (dùng chặn gọi DB thừa) → dùng luôn nó để quyết định hiển thị. Bản cũ luôn bày đủ 5
+   nút, bấm mới báo "không có ai phù hợp" = bắt người dùng thử-và-sai.
+   Số chỉ hiện khi KHÁC tổng đang chọn. Việc phá huỷ đẩy sang phải bằng `.bulk-sep`.
+
+**Kết quả đo (chạy HÀM THẬT `capNhatThanhHangLoat` chép từ members.js trên trang tạm):**
+| Chọn ai | Nút hiện ra |
+|---|---|
+| 1 người đang hoạt động | Đổi phòng ban *(primary)* · Tạm khoá · Xoá — **3 nút thay vì 5** |
+| 3 người chờ duyệt | Duyệt *(primary)* · Đổi phòng ban · Xoá |
+| 2 người tạm khoá | Mở khoá *(primary)* · Đổi phòng ban · Xoá |
+| Trộn 2+5+1 | Duyệt **2** · Mở khoá **1** · Đổi phòng ban · Tạm khoá **5** · Xoá |
+Luôn đúng MỘT primary trong mọi tình huống.
+
+**BẪY CSS TỰ GÂY RA — `currentColor` TỰ THAM CHIẾU:** viết
+`background: currentColor` cùng rule với `color: var(--surface)` thì `currentColor` lấy `color`
+của **CHÍNH phần tử đó** → lấy luôn giá trị vừa ghi đè → nền trùng chữ, huy hiệu thành cục đặc
+không đọc được (**đo ra tỉ lệ 1.00**). Cách đúng: nút khai `--acc`, huy hiệu đọc `var(--acc)`.
+
+**LẠI DÍNH BẪY ĐO ĐẠC — suýt sửa nhầm CSS đang đúng.** Đo theme tối bằng
+`classList.toggle('dark-theme')` rồi `getComputedStyle` → ra màu theme SÁNG, dù soi
+`document.styleSheets` thấy rule dark CÓ khớp, CÓ ưu tiên cao hơn, KHÔNG `!important`.
+Cascade nói phải thắng mà computed lại sai → **nghi công cụ đo, không nghi CSS**. Nạp lại trang
+với class bật NGAY TỪ ĐẦU → ra đúng màu. Pane Browser đơ style-recalc sau khi đổi class bằng JS.
+
+**Tương phản sau khi sửa** (nạp trang riêng cho từng theme):
+| | sáng | tối |
+|---|---|---|
+| Chữ nút Tạm khoá | 5.63 | 8.33 |
+| Chữ nút Xoá | 6.47 | 6.52 |
+| Huy hiệu số | 5.63 – 8.98 | 5.09 – 8.98 |
+| Chip "Đã chọn" | 8.14 | 8.43 |
+Dùng lại bộ màu của bảng So sánh (`#96590A`/`#B91C1C`, tối `#E9A23B`/`#F87171`) — token
+`--warning`/`--danger` đo ra 3.62 và 3.73, **không dùng thẳng cho chữ được**.
+
+**⚠️ HAI LỖI CÓ SẴN CỦA APP, CHƯA SỬA — cần chủ tool quyết vì đụng TOÀN BỘ nút:**
+- `.btn-primary` ở **theme tối**: chữ trắng trên `--brand-400` = **3.55** (cần 4.5).
+- `.btn-secondary`: viền `--border-strong` chỉ **1.41** (sáng) / **1.62** (tối), dưới ngưỡng 3:1.
+`git diff main..HEAD` xác nhận đợt này KHÔNG đụng vào 2 lớp đó.
+
+**Version:** `portal.css?v=39`, `portal/members.js?v=13`.
+
+### 2026-07-22 (later 8 — trang Thành viên: ô TÌM + làm gọn danh sách)
+
+Danh sách lên 51 người sau khi tạo 48 tài khoản → chủ tool: *"scroll nó bị dài"* + xin ô tìm
+đặt chung hàng với thanh thao tác hàng loạt.
+
+**1. Ô TÌM trong thanh công cụ, LUÔN HIỆN.** Bẫy: `.bulk-bar` vốn `display:none`, chỉ `.open`
+mới hiện — nhét ô tìm vào đó thì chưa chọn ai là ô tìm biến mất theo. Sửa: thanh LUÔN `flex`,
+chỉ nhóm `.bulk-actions` (đếm + 6 nút) mới ẩn/hiện. Viền đổi màu khi `.open` để vẫn giữ tín
+hiệu "đang ở chế độ thao tác hàng loạt".
+
+**Tìm BỎ DẤU** — bắt buộc, không phải cho đẹp: tên trong DB luôn có dấu, sale gõ nhanh thì
+không bỏ dấu → không xử lý là tìm gần như không ra ai. `khongDau()` dùng
+`normalize('NFD')` + strip `̀-ͯ`, **`đ/Đ` phải xử riêng** vì NFD không tách được nó.
+Khớp cả `full_name` lẫn `email`.
+
+**Lọc TRONG BỘ NHỚ, không gọi lại Supabase.** Tách `load()` (fetch) khỏi `veDanhSach()` (render);
+gõ phím chỉ chạy `veDanhSach()`. Mỗi phím một truy vấn thì vừa chậm vừa tốn quota.
+
+⚠️ **Gõ tìm là XOÁ luôn danh sách đang chọn** (`dangChon.clear()`). Nếu giữ, người dùng lọc còn
+5 người rồi bấm "Duyệt" sẽ tác động lên cả những người họ KHÔNG còn nhìn thấy — nguy hiểm thầm lặng.
+
+Chi tiết nhỏ dễ sót: `type="search"` trên Chrome có nút X riêng, bấm nó chỉ bắn sự kiện `search`
+chứ KHÔNG bắn `input` → phải bắt cả hai. Đã ẩn nút X mặc định
+(`::-webkit-search-cancel-button`) và dùng nút riêng cho đồng bộ 2 theme.
+
+**2. Làm gọn hàng — CHỖ TÔI ĐOÁN SAI LÚC ĐẦU.** Nghĩ avatar 40px là thủ phạm nên thu còn 32px:
+đo ra chỉ ngắn **12%** (68→60px). Đo tiếp từng ô mới thấy **khối tên+email 2 dòng cao 40px mới
+là đáy** — vì hai dòng đó KHÔNG khai `line-height` nên ăn `1.55` của body
+(14×1.55 + 12.5×1.55 ≈ 41px). Đặt `line-height` chặt cho đúng hai dòng đó (1.25 / 1.3) + `.m-cell`
+1.3 → **68 → 54px, ngắn 20%**, tiết kiệm ~695px trên 51 người. Chữ không bị cắt.
+→ **Bài học: muốn giảm chiều cao thì ĐO TỪNG Ô tìm cái cao nhất, đừng đoán theo cái to nhất
+bằng mắt.** Avatar to nhất nhưng không phải cao nhất.
+Đáy hiện tại: khối danh tính 34px và nút thao tác 32px. Muốn ngắn nữa phải gộp tên+email về
+MỘT dòng (mất khả năng rà mắt) — chưa làm, chờ chủ tool.
+
+**3. Hàng tiêu đề cột DÍNH khi cuộn** (`position: sticky`). 51 hàng mà mất tiêu đề thì không
+biết cột nào là cột nào. Offset không hardcode: JS đo `.bulk-bar.offsetHeight` bằng
+`ResizeObserver` rồi ghi vào biến CSS `--bulk-h` — hardcode sẽ sai khi thanh xuống dòng ở màn
+hẹp, hoặc khi nhóm nút hàng loạt hiện ra làm nó cao thêm.
+
+**Version:** `portal.css?v=36`, `portal/members.js?v=12`.
+
+**Kiểm chứng** (trang tạm, dùng LẠI markup thật lấy từ `members.html` + hàm `khongDau` chép
+nguyên từ `members.js`, đã xoá sau khi đo): chưa chọn ai → thanh `flex`, nhóm nút `none`; chọn
+rồi → cả hai `flex`. Tìm `duong`→2 người có dấu "Dương", `dinh`→"Đinh Thị Hiền" (đ→d),
+`kenny`→khớp qua email, `xxx`→0. Hàng 68→54px, chữ không cắt. Cuộn 1200px: `--bulk-h` đo được
+61px, hàng tiêu đề dính ở top 151px, **không đè lên** thanh công cụ (top 80px).
+❗ CHƯA chạy trên trang `/members` thật (cần đăng nhập Super Admin).
+
+### 2026-07-22 (later 7 — tạo hàng loạt 48 tài khoản sale + tính năng ĐỔI MẬT KHẨU)
+
+**🔒 VIỆC ĐẦU TIÊN LÀM, TRƯỚC MỌI THỨ KHÁC: chặn rò rỉ.** Chủ tool đưa
+`Account/Danh-sach-sale 1.xlsx` (48 người: tên gọi · họ tên · email công ty). Thư mục
+`Account/` **chưa có trong `.gitignore`** mà repo này PUBLIC trên GitHub → một lệnh
+`git add -A` là lộ danh sách nhân sự. Đã thêm `Account/` **và `*.sql`** vào `.gitignore`
+(file SQL chứa mật khẩu dạng chữ thường). Kiểm `git log --all -- Account/` → **chưa từng
+bị commit lần nào**, không phải đi xoá lịch sử.
+→ **Quy tắc: dữ liệu người thật vào repo thì gitignore TRƯỚC, xử lý sau.**
+
+**Tạo tài khoản:** sinh `Account/tao-48-tai-khoan.sql` + `Account/mat-khau-48-sale.csv`
+(cả hai đã bị ignore). Chủ tool chốt: **mật khẩu riêng từng người** (không dùng mật khẩu
+chung), tất cả `role='user'`, `status='active'`, `department='Sale'`.
+
+Chi tiết kỹ thuật của file SQL — mấy chỗ bỏ qua là hỏng:
+- `insert into auth.users` phải để **5 cột token = `''` chứ KHÔNG để NULL**
+  (`confirmation_token`, `recovery_token`, `email_change`, `email_change_token_new`,
+  `email_change_token_current`) — GoTrue đọc NULL vào kiểu string sẽ lỗi
+  *"converting NULL to string is unsupported"* lúc đăng nhập.
+- Phải chèn thêm **`auth.identities`** (provider `email`, `provider_id` = user id).
+  Thiếu bảng này thì tài khoản HIỆN trong Dashboard nhưng đăng nhập báo sai mật khẩu.
+- `email_confirmed_at = now()` để khỏi bắt xác nhận email.
+- Trigger `on_auth_user_created` tự tạo dòng `profiles` (`status='pending'`) → sau đó
+  `update` lên `active`. Trigger `enforce_member_update` **cho qua khi `auth.uid()` is
+  null** (SQL Editor) nên update này không bị chặn.
+- Bọc trong `do $$ ... $$` có vòng lặp + kiểm tồn tại → **chạy lại an toàn**, email đã
+  có thì bỏ qua, không ghi đè mật khẩu người đang dùng.
+- Mật khẩu sinh bằng `secrets` (CSPRNG), bảng chữ **bỏ ký tự dễ nhầm** `0/O`, `1/l/I` —
+  sale phải gõ tay từ tin nhắn.
+- ⚠️ Đã dặn chủ tool **chạy thử 1 dòng trước**: `auth.users` là bảng NỘI BỘ của Supabase,
+  cấu trúc đổi giữa các phiên bản GoTrue; hỏng 1 dòng dễ sửa hơn hỏng 48.
+
+**Tính năng ĐỔI MẬT KHẨU** (chủ tool yêu cầu cùng lúc — grep trước đó xác nhận portal
+KHÔNG hề có `updateUser`/`resetPasswordForEmail`, tức mật khẩu admin đặt sẽ tồn tại
+vĩnh viễn):
+- `ui-dialog.js`: mở rộng hộp thoại DÙNG CHUNG thêm `type: 'form'` + `fields[]` +
+  `validate()`. **Cố ý mở rộng thay vì viết hộp thoại thứ hai** — file này có ghi chú
+  "hộp thoại để MỘT bản duy nhất". `validate` trả chuỗi lỗi thì **giữ hộp thoại mở** và
+  báo tại chỗ; đóng rồi mới báo là người dùng mất hết chữ vừa gõ.
+- `auth.js`: `doiMatKhau()` + `initDoiMatKhau()`. **Bắt buộc nhập lại mật khẩu hiện tại
+  và xác minh bằng `signInWithPassword` TRƯỚC khi `updateUser`** — Supabase KHÔNG tự
+  kiểm tra việc này, chỉ cần còn phiên là đổi được; bỏ bước đó thì ai mượn máy lúc màn
+  hình đang mở là chiếm luôn tài khoản.
+- Nút ở chân sidebar **cả 4 trang** (index · members · videos · tool). `index.html`
+  trước đây chưa nạp hộp thoại dùng chung → nạp thêm `dialog.css` + `ui-dialog.js`.
+  Trên `tool.html` nút ẩn mặc định, chỉ hiện khi đã cấu hình Supabase (giống nút Đăng xuất).
+- Sidebar giờ có 3 nút → thêm `nth-child(3)` cho hiệu ứng so le, **sửa CẢ `portal.css`
+  LẪN `style.css`** (hai file là bản sao của nhau — cảnh báo ở đầu changelog).
+
+**Version:** `dialog.css?v=4`, `ui-dialog.js?v=3`, `portal/auth.js?v=4`, `portal.css?v=33`,
+`portal/members.js?v=11`, `style.css?v=68`. Đã quét 5 file HTML: không file nào bị khai
+2 version khác nhau.
+
+**Kiểm chứng:** SQL — 48 dòng, 48 email duy nhất, 48 mật khẩu duy nhất, 0 dấu nháy lẻ
+(không vỡ chuỗi), `$$` cân bằng. Hộp thoại — chạy thật trên trang tạm: 3 ô đều
+`type=password`, đúng 3 nhãn, có nút Huỷ, tiêu điểm vào ô đầu, ô lỗi rỗng thì `display:none`
+(không nhảy layout); 6 tình huống validate chặn đúng hết; **gõ sai bấm Lưu → hộp thoại Ở
+LẠI, báo đúng lỗi, giữ nguyên chữ đã gõ**; sửa đúng bấm lại → đóng.
+❗ CHƯA test được luồng đổi mật khẩu trên Supabase thật (cần tài khoản đăng nhập).
+
+**✅ KẾT QUẢ THẬT — chủ tool đã chạy SQL trên DB production ngày 22/07, CHẠY ĐƯỢC:**
+- `department='Sale'`: **48/48 tài khoản, tất cả `status='active'`**.
+- `thieu_dinh_danh = 0` → phần chèn `auth.identities` đúng, không ai bị "sai mật khẩu".
+- Tổng `profiles` = 54 (48 sale + 2 tài khoản chủ tool + 1 MKT + 3 test cũ đã `deleted`).
+- **`gus@thinksmartinsurance.com` ĐÃ TỒN TẠI từ trước** (`role='admin'`, `full_name='Cong Thai'`)
+  → vòng lặp BỎ QUA đúng như thiết kế, không ghi đè. Hệ quả phải nhớ: **mật khẩu dòng gus@
+  trong file CSV KHÔNG dùng được**, tài khoản đó giữ mật khẩu cũ. Chủ tool chốt giữ nguyên.
+- Bài học xác nhận: cơ chế "email đã có thì bỏ qua" là ĐÚNG — nếu ghi đè thì đã đá văng tài
+  khoản admin đang dùng của chủ tool.
+
+**Việc còn lại của chủ tool:** gửi mật khẩu 1-1 cho từng người, rồi XOÁ 3 file trong `Account/`
+(`tao-48-tai-khoan.sql`, `mat-khau-48-sale.csv`, `kiem-tra-48-tai-khoan.sql`).
+
+### 2026-07-22 (later 6 — tô màu kín cả tiêu đề THẺ CHI TIẾT)
+
+Chủ tool: *"tương tự ở bên trong đây nữa nha em"*. Áp cùng cách xử lý của ô đầu cột cho tiêu đề
+4 thẻ chi tiết (`.ss-dh-*`): bỏ vạch trái 3px, **tô màu kín cả ô** + chữ lấy màu của nhóm bệnh.
+Nhờ vậy khi bung một hãng ra, 4 thẻ chi tiết ăn khớp màu với 4 cột phía trên → mắt nối được
+"thẻ này thuộc cột nào" mà không phải đọc lại nhãn.
+⚠️ **KHÔNG thêm tiếng Anh ở đây** — tiếng Anh là ngoại lệ riêng của hàng tiêu đề cột (later 4).
+
+**HỆ QUẢ DÂY CHUYỀN PHẢI XỬ THEO — badge "Có/Không" trong tiêu đề thẻ bị chìm.** Badge dùng lại
+3 lớp `.ss-ok/.ss-no/.ss-wr` vốn có nền SOFT; giờ nó nằm trên nền tiêu đề cũng SOFT → đo được
+**1.00–1.23**, coi như tàng hình, viên thuốc biến thành chữ trôi nổi. Còn một chuyện rối nghĩa
+nữa: màu tiêu đề mã hoá **NHÓM BỆNH**, màu badge mã hoá **TRẠNG THÁI** — "Có" xanh nằm thẳng
+trên nền đỏ Terminal Illness đọc như mâu thuẫn.
+
+**Sửa 2 nhịp, vì nhịp đầu tôi ĐO SAI CHỖ:**
+1. Cho badge nền đặc `--surface` → đo lại vẫn **1.10–1.21**. Lý do: `--surface` trắng mà nền soft
+   cũng gần trắng, nền-với-nền thì mãi không tách. **Tôi đo nền-với-nền, trong khi thứ thật sự
+   vẽ ra ranh giới của một con chip là VIỀN.**
+2. Viền `var(--border)` xám nhạt cũng chìm nốt → dùng **`border: 1.5px solid currentColor`**:
+   viền tự lấy màu trạng thái, vừa tách hẳn khỏi nền tiêu đề vừa nhắc lại màu trạng thái.
+
+**Đo lại đủ 9 tổ hợp (cột bệnh × trạng thái) CÓ THẬT trên trang, cả 2 theme:**
+| | theme sáng | theme tối |
+|---|---|---|
+| Chữ badge (ngưỡng 4.5) | 5.44 – 6.47 | 6.52 – 10.35 |
+| Viền vs nền tiêu đề (ngưỡng 3.0) | 4.75 – 5.86 | 5.40 – 9.25 |
+| Chữ tiêu đề thẻ (ngưỡng 4.5) | 4.90 – 8.14 | 5.83 – 8.71 |
+
+**Version:** `style.css?v=67` (chỉ CSS; `sosanh.js` vẫn `?v=7`).
+
+### 2026-07-22 (later 5 — gộp hàng tiêu đề + tô màu KÍN ô đầu cột)
+
+**1. Nhãn "Chỉ dùng nội bộ" + 2 nút Mở rộng/Thu gọn về CÙNG MỘT HÀNG.** Trước xếp dọc, ngốn 2
+tầng chiều cao chỉ để chứa 1 nhãn + 2 nút → đẩy bảng xuống thấp. `.ss-head-block` thành flex
+`space-between`: nhãn trái, nhóm nút phải (thẳng mép phải của bảng). Khối tiêu đề còn **32px**.
+Nhớ gỡ `margin-bottom` của `.ss-eyebrow` và `margin-top` của `.ss-actions` — hai margin đó dành
+cho kiểu xếp dọc, để lại là lệch tâm.
+
+**2. Ô đầu 4 cột bệnh: TÔ MÀU KÍN CẢ Ô**, bỏ vạch 3px (chủ tool: *"muốn line màu nó được fill
+cho toàn bộ chứ không chỉ là 1 line"*). Vạch mảnh quá yếu để nhận ra cột nào khi mắt chạy dọc 16
+hàng; nền màu biến hàng tiêu đề thành 4 vùng phân biệt rõ. Chữ cũng lấy màu của cột.
+Cột "Công ty bảo hiểm" giữ nền trung tính — nó không thuộc 4 nhóm bệnh.
+
+| Cột | Nền | Chữ (sáng) | Chữ (tối) |
+|---|---|---|---|
+| Terminal | `--danger-soft` | `#B91C1C` | `#F87171` |
+| Chronic | `--warning-soft` | `#96590A` | `#E9A23B` |
+| Critical Illness | `--success-soft` | `#0F7A38` | `#4ADE80` |
+| Critical Injury | `--brand-soft` | `#5B21B6` | `#C4B5FD` |
+
+**🚨 BẪY `opacity` — TỰ GÂY RA RỒI TỰ ĐO RA:** bản đầu cho dòng tiếng Việt `opacity: 0.85` để
+"nhạt hơn một nấc", kèm comment tự trấn an *"dùng opacity để khỏi phải đo thêm 8 cặp màu"*. Đo
+thì rớt AA 3 chỗ: vàng **3.80**, xanh lá **3.75** (theme sáng), đỏ **4.11** (theme tối).
+**`opacity` trộn chữ vào ĐÚNG cái nền đang cần tương phản với nó** — nó không phải "làm nhạt màu
+chữ", nó là "kéo màu chữ về phía màu nền". Bỏ opacity, phân cấp thị giác để cho **cỡ chữ
+(12 vs 13px)** và **độ đậm (600 vs 800)** lo — hai thứ đó không đụng tới tương phản.
+Đo lại sau khi sửa, cả 2 theme, cả 2 dòng: **4.90 – 8.14**, đạt hết.
+
+**Version:** `style.css?v=64` (chỉ CSS, `sosanh.js` giữ `?v=7`).
+
+**Kiểm chứng:** tâm nhãn và tâm nhóm nút lệch **0px** theo trục Y (cùng hàng thật), nút nằm bên
+phải nhãn; 4 ô tiêu đề `box-shadow: none` (vạch cũ đã đi), nền đúng 4 màu, cao 78/80px (tô kín);
+cột Công ty bảo hiểm nền trong suốt.
+
+### 2026-07-22 (later 4 — tên 4 nhóm bệnh: NGOẠI LỆ song ngữ duy nhất trong bảng)
+
+Chủ tool: *"phần bệnh thì thêm cho anh tiếng Anh — **chỉ thêm ở phần này thôi biết chưa? không
+thêm ở phần khác**"*. Format theo đúng ảnh mẫu: **tiếng Anh dòng trên, tiếng Việt trong NGOẶC
+dòng dưới** (`Terminal Illness` / `(Bệnh Giai Đoạn Cuối)`).
+
+**🔒 PHẠM VI — ĐỌC KỸ, ĐÂY LÀ CHỖ DỄ LÀM HỎNG NHẤT.** Bảng này giờ có 3 tầng quy ước ngôn ngữ:
+| Chỗ | Ngôn ngữ |
+|---|---|
+| Mục nav / menu (`Compare / So sánh quyền lợi`) | **Song ngữ `EN / VI`** một dòng, gạch chéo |
+| **Tên 4 nhóm bệnh ở đầu cột** | **Song ngữ**: EN dòng trên, `(VI)` dòng dưới |
+| Mọi thứ còn lại trong bảng | **CHỈ tiếng Việt** |
+
+"Mọi thứ còn lại" = `Công ty bảo hiểm`, 2 nút Mở rộng/Thu gọn, `Chỉ dùng nội bộ`, thanh
+`4/4 quyền lợi`, `Chú thích`, `Lưu ý quan trọng`, **và tiêu đề thẻ chi tiết** (thẻ chi tiết vẫn
+chỉ ghi `Bệnh Giai Đoạn Cuối`, KHÔNG kèm tiếng Anh — chủ tool chỉ ra ảnh hàng tiêu đề cột).
+
+Class đặt là `.ss-th-en` / `.ss-th-vi` — **tiền tố `-th-` là CỐ Ý**, buộc phạm vi vào đúng hàng
+tiêu đề để không ai vô tình dùng lại rồi song ngữ hoá cả bảng lần nữa (đã xảy ra hôm nay: helper
+`ssNhan` bị bê lên cả nav).
+
+**Version:** `style.css?v=62`, `js/sosanh.js?v=7`.
+
+**Kiểm chứng:** 4 cột bệnh ra đúng `Terminal Illness | (Bệnh Giai Đoạn Cuối)` …; 5 chỗ khác kiểm
+lại vẫn thuần Việt (`Công ty bảo hiểm`, `Mở rộng tất cả`, `Chỉ dùng nội bộ`, `4/4 quyền lợi`,
+`Chú thích`, thẻ chi tiết `Bệnh Giai Đoạn Cuối Có`); hàng tiêu đề không tràn ngang.
+
+**⚠️ BẪY ĐO ĐẠC (lại dính, lại thoát nhờ đo tiếp):** trên pane rộng 981px thì 3/4 dòng tiếng Việt
+bị xuống 2 dòng → nhìn như lỗi. Đo bề rộng THẬT của từng dòng chữ (clone phần tử, ép
+`white-space:nowrap` rồi đo) mới ra: khi bảng được hiển thị ở `max-width:1240px` thì mỗi cột bệnh
+có **174px** chỗ chứa chữ, dòng dài nhất `(Tai Nạn Trọng Thương)` chỉ **130px** → thừa 44px, vừa
+một dòng. **Đó là hẹp pane, không phải lỗi bố cục.** Nếu sau này chủ tool báo header vỡ dòng thật
+thì mới cần nới `--ss-cols` (đang `2.1fr 1fr 1fr 1fr 1fr`).
+
+### 2026-07-22 (later 3 — bảng So sánh: icon thay chữ, MỘT ngôn ngữ, bỏ tiêu đề)
+
+**1. 🔴 ĐẢO QUYẾT ĐỊNH SONG NGỮ — NHƯNG CHỈ TRONG BẢNG NÀY.** Chủ tool: *"bảng này chỉ sử dụng
+1 ngôn ngữ tiếng Việt cho gọn gàng"*. Sáng cùng ngày chốt song ngữ, xem bản thật xong thì đổi:
+5 cột × 16 hàng mà nhãn nào cũng gánh 2 ngôn ngữ thì rối, đọc chậm.
+⚠️ **ĐỪNG SỬA NGƯỢC LẠI:** quy ước `English / Tiếng Việt` VẪN ĐÚNG cho **mục nav / menu**
+(`Compare / So sánh quyền lợi`, `Proposal / Báo giá`…). Chỉ NỘI DUNG BẢNG là tiếng Việt.
+Đã xoá helper `ssNhan()` và 3 class `.ss-en/.ss-vi/.ss-sep`.
+
+**2. Ô trong bảng: CHỈ CÒN ICON, bỏ chữ** (chủ tool: *"icon check xanh lá cho yes và ngược lại
+đỏ cho No — tinh gọn"*). Trước là 64 viên thuốc "✓ Có"/"✕ Không" → mắt phải ĐỌC từng ô; nay icon
+tròn 30px + màu → quét một phát thấy cả bảng. Bù lại phần chữ đã mất: mỗi icon có `title`
+(tooltip) + `aria-label`, và khối **Chú thích** cuối bảng giải nghĩa cả 3 icon.
+Trong **thẻ chi tiết** thì VẪN giữ chữ "Có/Không" — mỗi hãng chỉ 4 thẻ, không lặp 64 lần.
+
+⚠️ **"Không" TRƯỚC ĐÂY CỐ Ý ĐỂ XÁM TRUNG TÍNH** (hãng không cung cấp ≠ hãng có lỗi) — chủ tool
+chốt đổi sang ĐỎ. Đừng "sửa lại cho trung tính", đó là quyết định có chủ ý.
+
+**3. Bỏ tiêu đề + đoạn mô tả** khỏi đầu bảng (`h2` + `p`, CSS xoá luôn): thanh tiêu đề của app
+đã hiện "Living Benefits — 16 hãng" rồi, lặp lại ngay dưới là thừa và đẩy bảng xuống thấp.
+**GIỮ** nhãn "Chỉ dùng nội bộ" — đó là cảnh báo phạm vi sử dụng, không phải chữ trang trí.
+
+**MÀU + TƯƠNG PHẢN (đo thật, không tính tay):**
+| | icon (ngưỡng 3:1) | chữ trong thẻ chi tiết (ngưỡng 4.5:1) |
+|---|---|---|
+| Có `#0F7A38` | sáng 4.90 · tối 10.67 | 4.90 · 8.33 |
+| Không `#B91C1C` | sáng 5.65 · tối 6.89 | 5.65 · 5.62 |
+| Chưa rõ `#96590A` | sáng 5.04 · tối 8.44 | 5.04 · 6.60 |
+
+**Vì sao KHÔNG dùng thẳng token `--danger` #DC2626:** đo được **4.22** — đủ cho ICON nhưng 3 lớp
+màu này DÙNG LẠI cho chữ 12px đậm trong thẻ chi tiết, mà chữ cần 4.5. Đỏ đậm hơn một nấc
+(`#B91C1C`) đạt cả hai. Tương tự `--warning` #C2740B chỉ 3.23 → dùng `#96590A`.
+→ **Bài học: khi một bộ class màu được dùng cho CẢ icon LẪN chữ thì phải lấy ngưỡng CAO HƠN
+(4.5), đừng lấy ngưỡng của icon.**
+
+**Version:** `style.css?v=61`, `js/sosanh.js?v=6`.
+
+**Kiểm chứng** (file tạm `public/_ss-preview.html`, đã xoá): quét toàn bộ `.ss-wrap.innerText`
+tìm 14 từ tiếng Anh cũ (Yes/No/Unclear/Expand/Collapse/Insurance Company/Terminal Illness/…) →
+**không còn từ nào**; ô trong bảng `textContent` **rỗng** + có `<svg>` + `title="Có"` +
+`aria-label="Có"`; đầu cột ra đúng 5 nhãn tiếng Việt; `4/4 quyền lợi`; `h2`/`p` không còn tồn
+tại, `.ss-eyebrow` = "Chỉ dùng nội bộ"; tương phản đo bằng luminance CÓ trộn alpha ở CẢ 2 theme
+→ **đạt hết**.
+❗ CHƯA kiểm mobile: `resize_window` không ăn (`innerWidth` vẫn 981 thay vì 375) — đúng cái bẫy
+đã ghi ở bài học "không tin số đo sau resize". Theo nguyên tắc desktop-trước-mobile-sau thì để
+sau. ❗ CHƯA xem bằng mắt trong `/tool` thật (login chặn).
+
+### 2026-07-22 (later 2 — bỏ chi tiết thừa trên thẻ brochure + nhãn nav phải giống mọi mục)
+
+**1. Bỏ dòng "PDF · 249 KB" khỏi thẻ Brochure** (`library-card-meta` + `library-card-ext` trong
+`brochure.js`, CSS đã xoá luôn — grep xác nhận không còn chỗ nào dùng). Cùng lý do đã bỏ đuôi file
+khỏi tiêu đề hôm 21/07: **đội sale chỉ cần "NLG IUL" + nút Tải về**, định dạng/dung lượng là chi
+tiết kỹ thuật gây nhiễu. ⚠️ Dòng meta cũ giữ `margin-bottom:16px` — xoá nó là tiêu đề dính nút
+Tải về, nên đã dồn khoảng hở sang `.library-card-title` (6px → **18px**), đo lại đúng 18px.
+`formatBytes()` trong core.js giờ không còn ai gọi — CHƯA xoá (có thể dùng lại), nếu dọn thì nhớ.
+
+**2. NHÃN NAV PHẢI VIẾT BẰNG CHỮ TRƠN, KHÔNG DÙNG `ssNhan()`.** Chủ tool: *"sao nó lại khác với
+các phần khác vậy em"*. Nguyên nhân: tôi dùng helper song ngữ cho cả mục nav → `.ss-vi` tô
+`--text-3` + weight 600 nên phần "So sánh quyền lợi" **xám nhạt**, trong khi "Proposal / Báo giá"
+đậm đều một màu. Sắc độ nhạt chỉ hợp TRONG BẢNG (cần phân tầng thị giác giữa 2 ngôn ngữ), không
+hợp trên cây nav (cần đồng nhất với các mục anh em). Đã trả về chuỗi text trơn
+`'Compare / So sánh quyền lợi'` + ghi cảnh báo ngay trên helper.
+
+**Kiểm chứng (lại dùng file tạm `public/_ss-preview.html`, đã xoá sau khi xong):** dựng CẠNH NHAU
+mục Proposal thật (markup y hệt `makeCollapsibleFolder`) và mục Compare mới rồi đo computed style
+— trùng khít: cỡ chữ **14px**, weight **800**, màu **rgb(17,20,32)**, **0 span con** bị tô khác,
+chiều cao **48px**, padding `9px 10px`, bo góc `10px`, icon `30px`. Khác duy nhất: không có
+`.tree-folder-arrow` (đúng ý chủ tool, xem later 1) và `margin-bottom` 4px thay vì 18px — do nó là
+`:last-child`, rule `.nav-section:last-child` áp cho mục cuối bất kỳ, không phải lệch.
+Thẻ brochure: `.library-card-meta` không còn tồn tại, khoảng hở dưới tiêu đề = 18px.
+
+**Version:** `style.css?v=59`, `js/sosanh.js?v=5`, `js/brochure.js?v=11`.
+
+**BÀI HỌC:** một helper trình bày (`ssNhan`) tiện thì dễ bị bê đi dùng ở mọi nơi — nhưng **cùng
+một nội dung ở hai ngữ cảnh khác nhau cần cách trình bày khác nhau**. Nav cần ĐỒNG NHẤT với hàng
+xóm; bảng cần PHÂN TẦNG nội bộ. Trước khi tái sử dụng một helper trình bày, hỏi: *ở chỗ mới này,
+hàng xóm của nó trông thế nào?*
+
+### 2026-07-22 (later — GỠ bảng So sánh khỏi CANVAS + song ngữ đúng quy ước)
+
+Chủ tool review bảng So sánh, 5 điểm. Sửa hết trên `feat/mainV1.1`.
+
+**1. QUY ƯỚC NHÃN SONG NGỮ TOÀN APP — "English / Tiếng Việt", tiếng Anh TRƯỚC, một dòng,
+gạch chéo.** Chủ tool: *"em xem các menu khác làm sao thì làm y chang như vậy"*. Bằng chứng
+trong code: `Proposal / Báo giá`, `Brochure / Tài liệu`, `Name Card / Danh thiếp`. Mục của tôi
+là `So sánh quyền lợi / Compare` → **NGƯỢC**, và header cột lại xếp chồng EN trên VI dưới
+(`<small>`). Đã sửa hết qua helper `ssNhan(en, vi)` trong `sosanh.js` + `.ss-en/.ss-sep/.ss-vi`
+trong CSS (mỗi vế `nowrap` để cột hẹp xuống dòng đúng chỗ gạch chéo).
+⚠️ **Chỉ NHÃN song ngữ. ĐOẠN NỘI DUNG điều khoản giữ tiếng Việt** — chủ tool chốt; bản tiếng Anh
+phải do chủ tool cấp, không tự dịch số liệu bảo hiểm (xem quy tắc "không tự sửa số liệu").
+
+**2. Mục nav bỏ dropdown** → `nav-section-flat`: một mục phẳng bấm thẳng là mở. Lý do: các mục
+khác có mũi tên xổ vì bên trong có nhiều mẫu con; So sánh chỉ có MỘT bảng → dropdown chứa đúng
+một dòng là bắt bấm hai lần cho một việc. Trạng thái đang mở: `.tree-folder-header.is-open`.
+
+**3+5. 🚨 BÀI HỌC KIẾN TRÚC: CANVAS ≠ KHUNG TÀI LIỆU.** Chủ tool: *"không được lạm dụng canvas
+vì nó để dành cho các phần có chỉnh sửa nội dung trực tiếp"* + *"scroll bằng chuột nó không di
+chuyển được"*. Đúng, và **PENDING -3 đã cảnh báo từ 21/07 mà tôi vẫn làm ngược**. Nguyên nhân
+gốc đo được:
+- `.canvas-container { overflow: hidden; cursor: grab; user-select: none; }`
+- `main.js:138` bắt `wheel` rồi `e.preventDefault()` **vô điều kiện** → lăn chuột luôn bị đổi
+  thành zoom canvas, không bao giờ cuộn.
+- Hệ quả: không cuộn được, con trỏ là bàn tay kéo, **sale không bôi đen copy điều khoản được**.
+
+→ Thêm **`#doc-viewport`** trong `tool.html` (anh em ruột của `#canvas-container`, cùng nằm trong
+`.canvas-viewport`) + class **`doc-mode`** trên `<body>`:
+```
+body.doc-mode .doc-viewport { display: block; }         /* cuộn thường, user-select:text */
+body.doc-mode .canvas-container,
+body.doc-mode .canvas-status-bar { display: none; }     /* ẩn cả dải zoom: nút chết còn tệ hơn không có nút */
+```
+Vì `canvas-container` bị `display:none` nên handler `wheel` của nó không còn nhận sự kiện → cuộn
+chuột chạy tự nhiên. Bật ở `openCompareTable()`, tắt ở **`exitDocMode()`** gọi từ
+**`hideLibraryPreview()`** (brochure.js) — chỗ DUY NHẤT mọi luồng "mở thứ khác" đều đi qua
+(`loadSvgContent`, `resetCanvasToWelcome`), khỏi phải nhớ gọi tay từng nơi.
+
+**→ QUY TẮC CHO 2 CÔNG CỤ SẮP LÀM (Tính tuổi bảo hiểm, Run quotes): dùng `doc-mode`, ĐỪNG đụng
+canvas.** Canvas chỉ dành cho công cụ mở file SVG + sửa nội dung trực tiếp (Proposal, Name Card).
+
+**4. Chữ quá nhỏ** → `.ss-wrap` có thang chữ RIÊNG `--ss-fs-*`, không dùng `--fs-*` của app
+(thang đó là cỡ chữ GIAO DIỆN, nhỏ có chủ đích). Tiêu đề cột 10.5→**13px**, tên hãng 14→**16**,
+badge 11.5→**13**, tiêu đề thẻ chi tiết 10.5→**13**, nội dung điều khoản 12.5→**14.5**.
+Bỏ `text-transform: uppercase` ở tiêu đề cột (nhãn gạch chéo đọc dạng Title Case dễ hơn).
+`max-width` 1120→1240. **Lý do phải đủ lớn NGAY: đã bỏ zoom canvas nên không phóng to được nữa.**
+
+**Version:** `style.css?v=58`, `js/sosanh.js?v=4`, `js/brochure.js?v=10`. Badge vẫn v1.17
+(nhánh này chưa live).
+
+**Kiểm chứng — và CÁCH LÀM KHI BỊ LOGIN CHẶN (quan trọng, dùng lại được):**
+Thử tạm để trống `config.js` để vào `/tool` → **bị chặn, và đúng ra là phải bị chặn**: đó là
+vô hiệu hoá xác thực để xem trang bị khoá. Đã khôi phục `config.js` nguyên vẹn ngay
+(`git checkout`, net change = 0 nên KHÔNG cần bump version).
+→ Cách thay thế SẠCH: dựng file tạm `public/_ss-preview.html` mirror đúng khung giữa của
+`tool.html` (canvas-container + doc-viewport + status bar), stub các hàm của `core.js`, nạp
+`style.css` + `sosanh.js` THẬT rồi gọi `openCompareTable()`. **Xoá file sau khi xong.**
+Đo được: `doc-mode` bật, canvas `display:none`, dải zoom `display:none`, doc-viewport
+`overflow-y:auto` + `scrollHeight > clientHeight` (cuộn được), `user-select:text`,
+`cursor:auto`; cỡ chữ đúng 13/16/13/13/14.5px; nhãn ra đúng `Insurance Company/Công ty bảo hiểm`,
+`Terminal Illness/Bệnh Giai Đoạn Cuối`, `✓Yes/Có`, `Compare/So sánh quyền lợi`; nav trả `1`,
+**không có** `.tree-folder-arrow` và **không có** `.tree-folder-content`; mở/thu 16 hàng OK;
+`.ss-thead` vẫn `position:sticky`; gọi `hideLibraryPreview()` → doc-mode tắt, canvas trở lại.
+❗ CHƯA xem được bằng mắt trong `/tool` thật (login chặn) — chủ tool cần liếc lại một lần.
+
+### 2026-07-22 (bảng So sánh bị ẨN khỏi bản LIVE — quy tắc push mới)
+
+Chủ tool sáng 22/07: *"phần này chưa xong đã public lên vậy em?"* — đúng. Cuối ngày 21/07 bảng So
+sánh (v1.15→v1.17) bị push chung một cục lên `main` theo thói quen "EOD push" trong khi **chưa
+xong**. Live có bắt đăng nhập nên khách ngoài không thấy, nhưng **đội sale đã duyệt tài khoản thì
+thấy** → rủi ro thật: tưởng bản chính thức rồi đem số liệu quyền lợi đi tư vấn.
+
+**🚦 QUY TẮC PUSH MỚI (chủ tool chốt 22/07):** `main` chỉ nhận phần **ĐÃ DUYỆT XONG**. Việc đang
+làm dở ở lại `feat/mainV1.1`. Không gộp việc dở vào commit cuối ngày nữa.
+
+**Cách ẩn:** cờ `SS_SHOW_IN_NAV` ở đầu `public/js/sosanh.js`, `renderCompareNavSection`
+early-return `0` khi tắt. Code giữ nguyên 100%, không xoá dòng nào.
+- `main` (live): `false` — đã push `5df89c0`, badge **v1.18**, `js/sosanh.js?v=3`.
+- `feat/mainV1.1` (nhánh này): `true` — bảng hiện bình thường, `js/sosanh.js?v=3`, badge vẫn v1.17.
+- ⚠️ **Một dòng này CỐ Ý gây xung đột khi merge V1.1 → main.** Lúc merge phải dừng lại tự hỏi
+  "bảng So sánh duyệt xong chưa?" rồi mới chọn giá trị. Đừng nhắm mắt lấy bên nào.
+- Khi bảng hoàn thiện: `main` đổi `false` → `true` + bump `sosanh.js?v=`.
+
+**Cách kiểm chứng khi login chặn** (dùng lại được cho mọi thứ nằm sau cổng đăng nhập): không vào
+được `/tool` bằng trình duyệt và KHÔNG được nhập tài khoản của chủ tool → thay vào đó eval thẳng
+file server đang phục vụ trong console: XHR đồng bộ lấy `/js/sosanh.js?v=3` → `new Function(stub +
+src)` với stub các hàm của `core.js` (`makeCollapsibleFolder`, `NAV_ICONS`, `appState`…) → gọi
+`renderCompareNavSection(container, '')` và soi container. Kết quả: `main` trả `0` + container
+rỗng; nhánh này trả `1` + đúng mục "So sánh quyền lợi / Compare" › "Living Benefits — 16 hãng".
+Đây là chạy code THẬT, không phải đọc code.
+
+**Chốt ngôn ngữ (chủ tool 22/07):** bảng So sánh dùng **song ngữ Anh trên / Việt dưới**
+(`TERMINAL ILLNESS` / `Bệnh Giai Đoạn Cuối`) — áp cho header cột, tên quyền lợi và phần điều khoản
+khi mở rộng hàng. Chưa xác nhận có mở rộng quy tắc này sang Proposal/Brochure hay không.
 
 ### 2026-07-21 (later 16 — bảng So sánh dựng lại theo ngôn ngữ thẻ bo tròn, v1.17)
 

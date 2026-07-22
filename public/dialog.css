@@ -70,6 +70,19 @@
   border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-ring);
 }
 
+/* Hộp thoại nhiều ô nhập (form) — thêm 22/07/2026 cho luồng đổi mật khẩu */
+.app-dialog-field { display: block; margin-top: 14px; }
+.app-dialog-field > span {
+  display: block; margin-bottom: 6px;
+  font-size: var(--fs-sm); font-weight: 700; color: var(--text-2);
+}
+.app-dialog-field .app-dialog-input { margin-top: 0; }
+.app-dialog-error {
+  margin-top: 12px; min-height: 0;
+  font-size: var(--fs-sm); font-weight: 600; color: var(--danger); line-height: 1.5;
+}
+.app-dialog-error:empty { display: none; }   /* rỗng thì không chiếm chỗ, tránh nhảy layout */
+
 .app-dialog-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
 
 /* Nút chính cho hành động PHÁ HUỶ — đỏ đặc, để không bấm nhầm theo quán tính.

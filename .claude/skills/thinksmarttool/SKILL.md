@@ -34,7 +34,7 @@ HTML/CSS/JS in `public/` · **Local:** `http://localhost:8000` · **Live:** `thi
 | File | When to read |
 |------|--------------|
 | `references/architecture.md` | Folder structure, `server.js` API, data flow, server vs static mode, `public/js/` module layout (one file per tool) |
-| `references/tools.md` | How each tool works: Proposal (master→clone), Brochure (download library), Name Card (tagged fields) |
+| `references/tools.md` | How each tool works: Proposal (master→clone), Brochure (download library), Name Card (tagged fields), **So sánh quyền lợi** (bảng 16 hãng, `js/sosanh.js`) |
 | `references/conventions.md` | Cache-version bumping, git/privacy rules, workflow (local-first, EOD push), fonts, verifying changes |
 | `references/deployment.md` | GitHub repo, Vercel (serverless), the two URLs, publish/deploy steps |
 | `references/design-lessons.md` | **Design lessons that compound daily** + how to use the project's 2 design skills. Read before ANY UI work; append lessons at session end. |

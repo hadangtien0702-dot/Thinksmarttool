@@ -25,6 +25,28 @@
   let danhSach = [];   // hồ sơ SAU khi lọc — mọi thao tác hàng loạt chạy trên đây
   let toanBo  = [];    // hồ sơ gốc, chưa lọc — dùng để đếm theo phòng ban
   let locPhongBan = null;  // null = không lọc
+  let timKiem = '';        // chuỗi tìm kiếm ĐÃ BỎ DẤU, rỗng = không tìm
+
+  // --- PHÂN TRANG (22/07: chủ tool "phải scroll", xin chuyển sang dạng lật trang) ---
+  // 12 hàng/trang: hàng cao 54px → 12×54 ≈ 650px, vừa một màn hình cùng tiêu đề và
+  // thanh công cụ mà không phải cuộn. Đổi số này là đổi luôn cảm giác dùng, đừng
+  // tăng bừa lên 20-30 rồi lại phải cuộn — mất đúng thứ vừa sửa.
+  const MOI_TRANG = 12;
+  const trang = { pending: 1, active: 1, suspended: 1 };
+  // Dữ liệu TỪNG NHÓM sau khi lọc — giữ NGUYÊN VẸN, không cắt theo trang.
+  // Ô "chọn tất cả" và mọi thao tác hàng loạt đọc từ đây, nên chúng vẫn tác động lên
+  // CẢ NHÓM chứ không chỉ trang đang xem (xem ghi chú ở onPickChange).
+  const nhom = { pending: [], active: [], suspended: [] };
+
+  // Bỏ dấu tiếng Việt để gõ "duong" vẫn ra "Dương". Sale gõ nhanh, ít khi bỏ dấu
+  // đúng, và tên trong danh sách thì luôn có dấu → không bỏ dấu là tìm gần như
+  // không ra ai. `đ/Đ` phải xử riêng vì NFD không tách được nó.
+  function khongDau(s) {
+    return String(s == null ? '' : s)
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+      .toLowerCase().trim();
+  }
 
   // ---- Tiện ích ---------------------------------------------------------------
   function initial(name) {
@@ -239,15 +261,31 @@
     const rank = { super_admin: 0, admin: 1, user: 2 };
     tatCa.sort(function (a, b) { return (rank[a.role] || 9) - (rank[b.role] || 9); });
     toanBo = tatCa;
+    veDanhSach();
+  }
+
+  // Vẽ lại danh sách từ `toanBo` — KHÔNG gọi lại Supabase. Gõ tìm kiếm mà mỗi phím
+  // một lượt truy vấn thì vừa chậm vừa tốn quota; dữ liệu đã có sẵn trong bộ nhớ rồi.
+  function veDanhSach() {
+    const tatCa = toanBo;
 
     // Đếm theo phòng ban dựa trên TOÀN BỘ (không phụ thuộc bộ lọc đang bật),
     // nếu không thì bấm lọc xong mọi con số khác tụt về 0.
     veDemPhongBan(tatCa);
 
-    // Danh sách hiển thị = đã lọc. Mọi thao tác hàng loạt chạy trên danh sách này.
-    const rows = locPhongBan
+    // Danh sách hiển thị = đã lọc phòng ban + đã lọc theo ô tìm.
+    // Mọi thao tác hàng loạt chạy trên danh sách này.
+    let rows = locPhongBan
       ? tatCa.filter(function (r) { return (r.department || '').trim() === locPhongBan; })
       : tatCa;
+    if (timKiem) {
+      rows = rows.filter(function (r) {
+        return khongDau(r.full_name).indexOf(timKiem) !== -1
+            || khongDau(r.email).indexOf(timKiem) !== -1;
+      });
+    }
+    const oHit = $('mem-hit');
+    if (oHit) oHit.textContent = timKiem ? (rows.length + ' kết quả') : '';
     danhSach = rows;
     $('filter-bar').classList.toggle('open', !!locPhongBan);
     if (locPhongBan) $('filter-name').textContent = locPhongBan;
@@ -268,19 +306,93 @@
     setSo('ms-active', active.length);
     setSo('ms-suspended', suspended.length);
 
+    nhom.pending = pending; nhom.active = active; nhom.suspended = suspended;
+
     $('seg-pending').style.display = pending.length ? 'block' : 'none';
     $('count-pending').textContent = pending.length;
-    $('list-pending').innerHTML = pending.map(rowHtml).join('');
+    veNhom('pending');
 
     $('count-active').textContent = active.length;
-    $('list-active').innerHTML = active.map(rowHtml).join('');
+    veNhom('active');
     $('empty-active').style.display = active.length ? 'none' : 'block';
 
     $('seg-suspended').style.display = suspended.length ? 'block' : 'none';
     $('count-suspended').textContent = suspended.length;
-    $('list-suspended').innerHTML = suspended.map(rowHtml).join('');
+    veNhom('suspended');
 
     capNhatThanhHangLoat();
+  }
+
+  // Vẽ MỘT nhóm: cắt đúng trang đang xem + dựng thanh lật trang.
+  function veNhom(khoa) {
+    const ds = nhom[khoa];
+    const soTrang = Math.max(1, Math.ceil(ds.length / MOI_TRANG));
+    // Kẹp lại số trang: xoá/lọc bớt người có thể làm trang hiện tại không còn tồn tại
+    // → không kẹp thì màn hình trắng trơn mà không hiểu vì sao.
+    if (trang[khoa] > soTrang) trang[khoa] = soTrang;
+    if (trang[khoa] < 1) trang[khoa] = 1;
+
+    const dau = (trang[khoa] - 1) * MOI_TRANG;
+    $('list-' + khoa).innerHTML = ds.slice(dau, dau + MOI_TRANG).map(rowHtml).join('');
+
+    const oLat = $('pager-' + khoa);
+    if (!oLat) return;
+    if (soTrang <= 1) { oLat.innerHTML = ''; oLat.style.display = 'none'; return; }
+    oLat.style.display = 'flex';
+    oLat.innerHTML =
+      '<span class="pager-info">' + (dau + 1) + '–' + Math.min(dau + MOI_TRANG, ds.length) +
+        ' trên ' + ds.length + '</span>' +
+      '<span class="pager-sep"></span>' +
+      '<button type="button" class="pager-nut" data-trang="truoc" data-nhom="' + khoa + '"' +
+        (trang[khoa] === 1 ? ' disabled' : '') + ' aria-label="Trang trước">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>' +
+      soNut(khoa, soTrang) +
+      '<button type="button" class="pager-nut" data-trang="sau" data-nhom="' + khoa + '"' +
+        (trang[khoa] === soTrang ? ' disabled' : '') + ' aria-label="Trang sau">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>';
+  }
+
+  // Dãy số trang. Nhiều trang thì rút gọn bằng "…" để thanh không dài ra vô tận.
+  function soNut(khoa, soTrang) {
+    const hienTai = trang[khoa];
+    const ds = [];
+    for (let i = 1; i <= soTrang; i++) {
+      if (i === 1 || i === soTrang || Math.abs(i - hienTai) <= 1) ds.push(i);
+      else if (ds[ds.length - 1] !== '…') ds.push('…');
+    }
+    return ds.map(function (i) {
+      if (i === '…') return '<span class="pager-cham">…</span>';
+      return '<button type="button" class="pager-nut pager-so' + (i === hienTai ? ' dang-xem' : '') +
+             '" data-trang="' + i + '" data-nhom="' + khoa + '"' +
+             (i === hienTai ? ' aria-current="page"' : '') + '>' + i + '</button>';
+    }).join('');
+  }
+
+  function onPagerClick(e) {
+    const nut = e.target.closest('.pager-nut');
+    if (!nut || nut.disabled) return;
+    const khoa = nut.dataset.nhom;
+    const v = nut.dataset.trang;
+    const soTrang = Math.max(1, Math.ceil(nhom[khoa].length / MOI_TRANG));
+    if (v === 'truoc') trang[khoa] = Math.max(1, trang[khoa] - 1);
+    else if (v === 'sau') trang[khoa] = Math.min(soTrang, trang[khoa] + 1);
+    else trang[khoa] = Number(v);
+    veNhom(khoa);
+    capNhatThanhHangLoat();
+    // Kéo về đầu nhóm — lật trang mà mắt còn ở giữa danh sách thì mất phương hướng.
+    // ⚠️ KHÔNG dùng `scrollIntoView` trần: nó đưa phần tử lên sát mép trên cửa sổ, mà
+    // mép trên đang bị các thanh DÍNH (`.topbar`, `.bulk-bar`) che → hàng đầu chui
+    // xuống dưới chúng. Phải trừ đi chiều cao các thanh đó. Đo tại thời điểm bấm chứ
+    // không hardcode: thanh công cụ cao thấp khác nhau tuỳ có đang chọn người hay không.
+    const seg = $('list-' + khoa).closest('.seg');
+    if (!seg) return;
+    let che = 0;
+    ['.topbar', '#bulk-bar'].forEach(function (sel) {
+      const el = document.querySelector(sel);
+      if (el && getComputedStyle(el).position === 'sticky') che += el.offsetHeight;
+    });
+    const y = seg.getBoundingClientRect().top + window.scrollY - che - 24;
+    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
   }
 
   // ---- Thao tác --------------------------------------------------------------
@@ -319,30 +431,68 @@
     const bar = $('bulk-bar');
     bar.classList.toggle('open', n > 0);
     $('bulk-count').textContent = 'Đã chọn ' + n;
-    // Xoá là quyền riêng của Super Admin
+
+    // --- Nút nào áp dụng được thì mới hiện, kèm SỐ NGƯỜI thực sự bị tác động ---
+    // `nguoiHopLe()` vốn đã tính sẵn (dùng để chặn gọi DB thừa); giờ dùng luôn nó để
+    // quyết định hiển thị. Trước đây luôn bày đủ 5 nút, bấm vào mới báo "không có ai
+    // phù hợp" — đó là bắt người dùng thử-và-sai, và là lý do thanh này nhìn rối.
+    let uuTien = null;   // nút sẽ được tô primary
+    document.querySelectorAll('.bulk-act').forEach(function (nut) {
+      const act = nut.dataset.bulk;
+      const soNguoi = nguoiHopLe(act).length;
+      nut.style.display = soNguoi ? '' : 'none';
+      // Chỉ hiện số khi nó KHÁC tổng đang chọn — bằng nhau thì con số là thừa,
+      // "Đã chọn 5" ngay bên trái đã nói rồi.
+      const oSo = nut.querySelector('.bulk-n');
+      if (oSo) oSo.textContent = (soNguoi && soNguoi !== n) ? String(soNguoi) : '';
+      // Thứ tự ưu tiên việc chính: duyệt người mới > mở khoá > đổi phòng ban.
+      // KHÔNG bao giờ để việc phá huỷ (tạm khoá/xoá) làm nút primary.
+      if (soNguoi && !uuTien && ['approve', 'reactivate', 'dept'].indexOf(act) !== -1) uuTien = nut;
+      nut.classList.remove('btn-primary');
+    });
+    if (uuTien) { uuTien.classList.remove('btn-secondary'); uuTien.classList.add('btn-primary'); }
+    document.querySelectorAll('.bulk-act:not(.btn-primary)').forEach(function (nut) {
+      if (!nut.classList.contains('btn-warn-outline') && !nut.classList.contains('btn-danger-outline')) {
+        nut.classList.add('btn-secondary');
+      }
+    });
+
+    // Xoá là quyền riêng của Super Admin (đè lên phần tính ở trên)
     const btnXoa = $('bulk-delete');
-    if (btnXoa) btnXoa.style.display = me.role === 'super_admin' ? '' : 'none';
-    // Đồng bộ ô "chọn tất cả" của từng nhóm
+    if (btnXoa && me.role !== 'super_admin') btnXoa.style.display = 'none';
+    // Đồng bộ ô "chọn tất cả" — tính theo DỮ LIỆU CẢ NHÓM, không theo hàng đang hiển thị.
+    // Tính theo hàng hiển thị thì lật sang trang chưa chọn ai là ô này tự bỏ tick, dù
+    // 40 người ở trang khác vẫn đang được chọn — sai và gây hiểu nhầm nguy hiểm.
     document.querySelectorAll('.member-table').forEach(function (tbl) {
       const all = tbl.querySelector('.pick-all');
-      const oCon = Array.from(tbl.querySelectorAll('.m-pick'));
       if (!all) return;
-      const daTick = oCon.filter(function (c) { return c.checked; }).length;
-      all.checked = oCon.length > 0 && daTick === oCon.length;
-      all.indeterminate = daTick > 0 && daTick < oCon.length;
-      all.disabled = oCon.length === 0;
+      const khoa = ((tbl.querySelector('.member-list') || {}).id || '').replace('list-', '');
+      const ds = (nhom[khoa] || []).filter(canManage);
+      const daChon = ds.filter(function (p) { return dangChon.has(p.id); }).length;
+      all.checked = ds.length > 0 && daChon === ds.length;
+      all.indeterminate = daChon > 0 && daChon < ds.length;
+      all.disabled = ds.length === 0;
     });
   }
 
   function onPickChange(e) {
     const box = e.target;
     if (box.classList.contains('pick-all')) {
+      // ⚠️ Từ khi có phân trang, KHÔNG được duyệt theo `.m-pick` trên màn hình nữa —
+      // làm vậy thì "chọn tất cả" chỉ chọn 12 người của trang đang xem, trong khi
+      // tiêu đề vẫn ghi "Thành viên 51". Người dùng tưởng đã chọn hết cả 51.
+      // Chọn theo DỮ LIỆU của cả nhóm, rồi mới đồng bộ ô tick đang hiển thị.
       const tbl = box.closest('.member-table');
+      const khoa = (tbl.querySelector('.member-list') || {}).id || '';
+      const ds = nhom[khoa.replace('list-', '')] || [];
+      ds.forEach(function (p) {
+        if (!canManage(p)) return;              // không tự chọn người mình không quản được
+        if (box.checked) dangChon.add(p.id); else dangChon.delete(p.id);
+      });
       tbl.querySelectorAll('.m-pick').forEach(function (c) {
-        c.checked = box.checked;
-        if (box.checked) dangChon.add(c.getAttribute('data-id'));
-        else dangChon.delete(c.getAttribute('data-id'));
-        c.closest('.member-row').classList.toggle('is-picked', box.checked);
+        const co = dangChon.has(c.getAttribute('data-id'));
+        c.checked = co;
+        c.closest('.member-row').classList.toggle('is-picked', co);
       });
       capNhatThanhHangLoat();
       return;
@@ -463,6 +613,43 @@
     if (backdrop) backdrop.addEventListener('click', closeMenu);
     const logout = $('btn-logout-side');
     if (logout) logout.addEventListener('click', TSTAuth.signOut);
+    TSTAuth.initDoiMatKhau();
+
+    // Ô tìm thành viên. Lọc ngay trong bộ nhớ nên gõ tới đâu thấy tới đó, không debounce.
+    const oTim = $('mem-search');
+    const nutXoa = $('mem-search-clear');
+    if (oTim) {
+      oTim.addEventListener('input', function () {
+        timKiem = khongDau(oTim.value);
+        trang.pending = trang.active = trang.suspended = 1;   // lọc lại thì về trang đầu
+        // Bỏ chọn những người vừa bị lọc ra khỏi màn hình — nếu giữ, người dùng bấm
+        // "Duyệt" sẽ tác động lên cả người họ KHÔNG còn nhìn thấy. Nguy hiểm thầm lặng.
+        dangChon.clear();
+        if (nutXoa) nutXoa.style.display = oTim.value ? 'flex' : 'none';
+        veDanhSach();
+      });
+      // type="search" trên Chrome có nút X riêng, bấm nó chỉ bắn 'search' chứ không 'input'
+      oTim.addEventListener('search', function () { oTim.dispatchEvent(new Event('input')); });
+      oTim.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && oTim.value) { e.stopPropagation(); oTim.value = ''; oTim.dispatchEvent(new Event('input')); }
+      });
+    }
+    // Đo chiều cao THẬT của thanh công cụ rồi ghi vào biến CSS --bulk-h, để hàng
+    // tiêu đề cột dính đúng ngay dưới nó. Hardcode con số sẽ sai khi thanh xuống
+    // dòng ở màn hẹp, hoặc khi nhóm nút hàng loạt hiện ra làm nó cao thêm.
+    const thanh = $('bulk-bar');
+    if (thanh && window.ResizeObserver) {
+      new ResizeObserver(function () {
+        document.documentElement.style.setProperty('--bulk-h', thanh.offsetHeight + 'px');
+      }).observe(thanh);
+    }
+
+    if (nutXoa) {
+      nutXoa.style.display = 'none';
+      nutXoa.addEventListener('click', function () {
+        oTim.value = ''; oTim.dispatchEvent(new Event('input')); oTim.focus();
+      });
+    }
     // Super Admin dùng được MỌI công cụ (chủ tool quyết 20/07/2026) — giữ mục Công cụ.
   }
 
@@ -492,6 +679,9 @@
     // Ô chọn: bắt ở cấp #page-content vì hàng được vẽ lại sau mỗi lần load,
     // gắn trực tiếp vào từng ô sẽ mất listener.
     $('page-content').addEventListener('change', onPickChange);
+    // Một handler cho cả 3 thanh lật trang (uỷ quyền sự kiện — nút được dựng lại
+    // sau mỗi lần vẽ nên gắn trực tiếp vào nút là mất handler).
+    $('page-content').addEventListener('click', onPagerClick);
     $('bulk-bar').addEventListener('click', onBulkClick);
     $('bulk-clear').addEventListener('click', function () {
       dangChon.clear();
