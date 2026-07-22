@@ -210,24 +210,32 @@ trúng mèo), `aria-hidden=true`, cách đáy thẻ 25px, còn cách đáy canva
 
 **Version:** `style.css?v=72`, `js/main.js?v=8`.
 
-## Version hiện tại (2026-07-21 cuối ngày — ĐÃ PUSH cả `main` lẫn `feat/mainV1.1`)
+## Version hiện tại (2026-07-22 cuối ngày — ĐÃ PUSH lên `main`, đã deploy)
 
-Hai nhánh **cùng ở commit `c91d04b`**, cây làm việc sạch. `main` = bản LIVE
-(tool.thinksmartinsurance.com), đang **BẮT ĐĂNG NHẬP** (config.js có khoá Supabase thật —
-chủ tool chốt 21/07, xem ghi chú ở đầu file).
+`main` ở commit **`d577388`**, cây làm việc sạch, đã push (`6220af0..d577388`).
+⚠️ Lượt push này kéo theo cả `c218020` (3 con mèo, đợt 15) vốn còn nằm local chưa đẩy —
+kiểm `git log origin/main` trước khi giả định thứ gì đã lên live.
+`main` = bản LIVE (tool.thinksmartinsurance.com), đang **BẮT ĐĂNG NHẬP** (config.js có khoá
+Supabase thật — chủ tool chốt 21/07, xem ghi chú ở đầu file).
 
-Badge UI **v1.17** (5 chỗ — `grep -rn "version-badge" public/*.html`). Cache-version của asset:
+Badge UI **v1.20** (5 chỗ — `grep -rn "version-badge" public/*.html`), ngày 22/07/2026.
+Cache-version của asset (đọc thẳng từ HTML, không chép tay):
 
 | File | Version | File | Version |
 |---|---|---|---|
-| `style.css` | `?v=57` | `portal.css` | `?v=32` |
-| `dialog.css` | `?v=3` | `js/ui-dialog.js` | `?v=2` |
-| `js/core.js` | `?v=24` | `js/proposal.js` | `?v=21` |
-| `js/brochure.js` | `?v=9` | `js/sosanh.js` | `?v=2` |
-| `js/main.js` | `?v=6` | `js/namecard.js` | `?v=5` |
-| `js/animations.js` | `?v=4` | `js/portal/auth.js` | `?v=3` |
-| `js/portal/config.js` | `?v=8` | `js/portal/members.js` | `?v=10` |
+| `style.css` | `?v=75` | `portal.css` | `?v=45` |
+| `dialog.css` | `?v=4` | `js/ui-dialog.js` | `?v=3` |
+| `js/core.js` | `?v=25` | `js/proposal.js` | `?v=22` |
+| `js/brochure.js` | `?v=11` | `js/sosanh.js` | `?v=10` |
+| `js/main.js` | `?v=7` | `js/namecard.js` | `?v=5` |
+| `js/animations.js` | `?v=4` | `js/portal/auth.js` | `?v=4` |
+| `js/portal/config.js` | `?v=8` | `js/portal/members.js` | `?v=17` |
 | `js/portal/videos.js` | `?v=2` | | |
+
+Lệnh lấy đúng bảng này (đừng nhớ bằng đầu, số lệch là cache lỗi thầm lặng):
+```
+grep -ho "\(style\|portal\|dialog\)\.css?v=[0-9]*\|js/[a-z/-]*\.js?v=[0-9]*" public/*.html | sort -u
+```
 
 **Quy tắc bump (đã dính lỗi vì quên):** sửa file nào bump `?v=` file đó — **kể cả khi chỉ
 sửa TẠM rồi hoàn lại** (đục `config.js` để test xong khôi phục vẫn phải bump, không thì
@@ -263,11 +271,22 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 
 ## PENDING / open tasks
 
-> **BẮT ĐẦU PHIÊN MỚI ĐỌC 4 DÒNG NÀY:** hai nhánh `main` và `feat/mainV1.1` cùng ở `c91d04b`,
-> cây làm việc sạch, đã push. Live `tool.thinksmartinsurance.com` **BẮT ĐĂNG NHẬP** (chủ tool
-> chốt 21/07) — ai chưa có tài khoản đã duyệt là không vào được. Việc nên hỏi ngay: **A1** và **A2**.
-> Muốn kiểm chứng trên máy: tạm để trống `config.js` → test → khôi phục → **bump `config.js?v=`**
-> (quên bump là chủ tool dính bản trống trong cache, đã xảy ra rồi).
+> **BẮT ĐẦU PHIÊN MỚI ĐỌC 5 DÒNG NÀY:** MỘT nhánh `main` duy nhất, ở `d577388`, sạch, đã push
+> và deploy (22/07 cuối ngày). Live `tool.thinksmartinsurance.com` **BẮT ĐĂNG NHẬP** — ai chưa có
+> tài khoản đã duyệt là không vào được. Việc nên hỏi ngay: **A1**, **A2**, và **M1/M2** (mobile).
+> Muốn xem trang bị khoá đăng nhập: **ĐỪNG sửa `config.js` thật.** Tạo mirror tạm trong `public/`
+> (`sed` thay thẻ `<script src=config.js>` bằng config rỗng inline), đo xong **XOÁ NGAY** — file đó
+> đi qua cổng đăng nhập, để sót là Vercel phục vụ nó trên domain thật.
+
+**M1. Bàn phím iOS vẫn che thanh thao tác đáy.** iOS neo `position: fixed` theo khung layout, và
+`interactive-widget=resizes-content` Safari chưa hỗ trợ → phải dùng VisualViewport API mới đẩy thanh
+đáy lên trên bàn phím. Chưa làm, chờ chủ tool quyết có đáng không. Lúc gõ thì bản vẽ VẪN nhìn thấy
+(đó là thứ đã sửa xong), chỉ là Lưu/Xuất phải đóng bàn phím mới bấm được.
+
+**M2. Trên điện thoại KHÔNG đăng xuất / đổi mật khẩu / đổi sáng-tối được.** `.portal-sidebar` bị
+`display:none` ở ≤900px mà ngăn kéo trái chỉ chứa cây file. Sale mất máy thì không tự khoá tài khoản
+từ chính máy đó được. Sửa được nhưng đụng bố cục ngăn kéo (đề xuất: dải icon ở đáy ngăn kéo) →
+**cần chủ tool duyệt thiết kế trước**, đừng tự làm.
 
 **Việc gấp — mở đầu phiên nên hỏi chủ tool:**
 - **A1. Bảng So sánh: 16 PNG trong folder chỉ là LOGO hãng**, không phải nội dung so sánh. Bảng vẫn
