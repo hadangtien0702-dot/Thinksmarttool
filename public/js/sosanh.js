@@ -108,10 +108,25 @@ const SS_DATA = [
 ];
 
 const SS_BADGE = {
-  ok: { cls: 'ss-ok', ic: '✓', txt: 'Có' },
-  no: { cls: 'ss-no', ic: '✕', txt: 'Không' },
-  wr: { cls: 'ss-wr', ic: '!', txt: 'Chưa rõ' }
+  ok: { cls: 'ss-ok', ic: '✓', en: 'Yes',     vi: 'Có' },
+  no: { cls: 'ss-no', ic: '✕', en: 'No',      vi: 'Không' },
+  wr: { cls: 'ss-wr', ic: '!', en: 'Unclear', vi: 'Chưa rõ' }
 };
+
+/**
+ * NHÃN SONG NGỮ — quy ước CHUNG của cả app, chủ tool chốt 22/07/2026:
+ * **"English / Tiếng Việt"** — tiếng Anh TRƯỚC, một dòng, ngăn bằng gạch chéo.
+ * Giống hệt các mục nav sẵn có: "Proposal / Báo giá", "Brochure / Tài liệu",
+ * "Name Card / Danh thiếp". Bản trước làm ngược ("So sánh quyền lợi / Compare")
+ * và xếp chồng EN trên VI dưới → chủ tool bắt lỗi. ĐỪNG làm ngược lại lần nữa.
+ *
+ * Chỉ áp cho NHÃN (tiêu đề, nút, badge, tên cột). ĐOẠN NỘI DUNG điều khoản giữ
+ * NGUYÊN tiếng Việt — chủ tool chốt: sale đọc cho khách nghe bằng tiếng Việt, và
+ * bản dịch tiếng Anh phải do chủ tool cấp chứ tôi không tự dịch số liệu bảo hiểm.
+ */
+function ssNhan(en, vi) {
+  return `<span class="ss-en">${en}</span><span class="ss-sep">/</span><span class="ss-vi">${vi}</span>`;
+}
 
 function ssLogoUrl(file) {
   return '/api/download?path=' + encodeURIComponent('Bang so sanh quyen loi cac hang/' + file) + '&inline=1';
@@ -126,35 +141,54 @@ function ssLogoUrl(file) {
 const SS_SHOW_IN_NAV = true;
 
 // --- NAV SECTION (gọi từ renderFileTree trong js/main.js) ---
+// MỘT MỤC PHẲNG, KHÔNG dropdown (chủ tool 22/07/2026): các mục khác (Proposal,
+// Brochure, Name Card) có mũi tên xổ vì bên trong CÓ nhiều mẫu con để chọn. Công cụ
+// So sánh chỉ là MỘT bảng duy nhất — dựng dropdown chứa đúng một dòng là bắt người
+// dùng bấm hai lần cho một việc. Nếu sau này thêm bảng so sánh thứ hai thì mới đổi
+// lại thành nhóm xổ được.
 function renderCompareNavSection(container, q) {
   if (!SS_SHOW_IN_NAV) return 0;
-  const section = makeCollapsibleFolder('So sánh quyền lợi / Compare', { extraClass: 'nav-section', iconHTML: NAV_ICONS.compare });
-  if (q && !'living benefits so sánh quyền lợi'.includes(q)) {
-    // đang tìm kiếm mẫu khác → vẫn hiện mục nhưng không tính vào tổng
-    container.appendChild(section.folder);
-    return 0;
-  }
+  if (q && !'compare so sánh quyền lợi living benefits'.includes(q)) return 0;
+
+  const folder = document.createElement('div');
+  folder.className = 'tree-folder nav-section nav-section-flat';
+
   const el = document.createElement('div');
-  el.className = 'tree-file-item lib-item' + (appState.activeLibraryPath === 'sosanh:living' ? ' active' : '');
+  el.className = 'tree-folder-header'
+    + (appState.activeLibraryPath === 'sosanh:living' ? ' is-open' : '');
+  el.setAttribute('title', 'Bảng so sánh Living Benefits — 16 hãng bảo hiểm');
   el.innerHTML = `
-    <span class="tree-file-icon">${NAV_ICONS.compare}</span>
-    <span class="tree-file-name" title="Bảng so sánh Living Benefits — 16 hãng">Living Benefits — 16 hãng</span>
+    <span class="tree-folder-icon">${NAV_ICONS.compare}</span>
+    <span class="tree-folder-label">${ssNhan('Compare', 'So sánh quyền lợi')}</span>
   `;
   el.addEventListener('click', async () => {
     if (!(await confirmLeaveUnsaved())) return;
     document.querySelectorAll('.tree-file-item').forEach(x => x.classList.remove('active'));
-    el.classList.add('active');
+    document.querySelectorAll('.nav-section-flat > .tree-folder-header').forEach(x => x.classList.remove('is-open'));
+    el.classList.add('is-open');
     openCompareTable();
   });
   makeKeyboardActivatable(el);
-  section.content.appendChild(el);
-  container.appendChild(section.folder);
+
+  folder.appendChild(el);
+  container.appendChild(folder);
   return 1;
 }
 
-// --- BẢNG SO SÁNH (vẽ vào #library-view — dùng chung vòng đời với brochure preview:
-//     loadSvgContent → hideLibraryPreview sẽ tự dọn khi mở file khác) ---
+// --- BẢNG SO SÁNH — vẽ vào #doc-viewport, KHÔNG PHẢI CANVAS ---
+// Vì sao (chủ tool 22/07/2026, tôi làm sai lần đầu): canvas dành riêng cho công cụ MỞ
+// FILE SVG và SỬA NỘI DUNG TRỰC TIẾP. Bảng này chỉ để ĐỌC. Nhét vào canvas thì dính
+// đủ lỗi: `.canvas-container{overflow:hidden}` + main.js nuốt `wheel` để đổi thành zoom
+// → LĂN CHUỘT KHÔNG CUỘN ĐƯỢC; `user-select:none` → sale không bôi đen copy điều khoản
+// được; `cursor:grab` → con trỏ là bàn tay kéo giữa một trang chữ. Cảnh báo này đã có
+// sẵn ở PENDING -3 trong changelog từ 21/07 mà tôi vẫn làm ngược.
 function openCompareTable() {
+  // Dọn canvas + preview brochure TRƯỚC (hideLibraryPreview xoá activeLibraryPath
+  // nên phải gọi trước khi đặt giá trị mới, không thì mục nav mất trạng thái chọn).
+  hideLibraryPreview();
+  dom.canvasWrapper.innerHTML = '';
+  if (dom.noSelection) dom.noSelection.style.display = 'none';
+
   appState.activeLibraryPath = 'sosanh:living';
   appState.activeFile = null;
   clearDirty();
@@ -162,25 +196,17 @@ function openCompareTable() {
   updateHeaderActions();
 
   if (dom.activeFileTitle) {
-    dom.activeFileTitle.textContent = 'So sánh Living Benefits — 16 hãng';
+    dom.activeFileTitle.textContent = 'Living Benefits — 16 hãng';
     dom.activeFileTitle.classList.add('is-active');
   }
   dom.btnSaveTop.disabled = true;
-  if (dom.noSelection) dom.noSelection.style.display = 'none';
-  dom.canvasWrapper.innerHTML = '';
 
-  let view = document.getElementById('library-view');
-  if (!view) {
-    view = document.createElement('div');
-    view.id = 'library-view';
-    view.className = 'library-view';
-    dom.canvasContainer.appendChild(view);
-  }
-  view.classList.add('has-group');
-  view.style.display = '';
+  // Bật khung tài liệu: CSS sẽ ẩn canvas + dải zoom, hiện #doc-viewport cuộn bình thường
+  document.body.classList.add('doc-mode');
+  const view = document.getElementById('doc-viewport');
 
   const dauCot = SS_BENEFITS.map(b =>
-    `<div class="ss-th ss-th-${b.key}">${b.en}<small>${b.vi}</small></div>`).join('');
+    `<div class="ss-th ss-th-${b.key}">${ssNhan(b.en, b.vi)}</div>`).join('');
 
   const hang = SS_DATA.map((c, i) => {
     const soCo = SS_BENEFITS.reduce((n, b) => n + (c[b.key].s === 'ok' ? 1 : 0), 0);
@@ -188,13 +214,13 @@ function openCompareTable() {
     // data-label: trên mobile bảng bỏ hàng tiêu đề, mỗi ô tự hiện tên quyền lợi
     const o = SS_BENEFITS.map(b => {
       const bd = SS_BADGE[c[b.key].s];
-      return `<div class="ss-cell" data-label="${b.en}"><span class="ss-badge ${bd.cls}"><span aria-hidden="true">${bd.ic}</span>${bd.txt}</span></div>`;
+      return `<div class="ss-cell" data-label="${b.en} / ${b.vi}"><span class="ss-badge ${bd.cls}"><span aria-hidden="true">${bd.ic}</span>${ssNhan(bd.en, bd.vi)}</span></div>`;
     }).join('');
     const the = SS_BENEFITS.map(b => {
       const cell = c[b.key]; const bd = SS_BADGE[cell.s];
       const noiDung = cell.d || (cell.s === 'no' ? 'Không cung cấp quyền lợi này.' : '—');
       return `<div class="ss-dcard${cell.d ? '' : ' ss-empty'}">
-          <div class="ss-dh ss-dh-${b.key}">${b.en} <span class="ss-mini">${bd.ic} ${bd.txt}</span></div>
+          <div class="ss-dh ss-dh-${b.key}">${ssNhan(b.en, b.vi)} <span class="ss-mini">${bd.ic} ${bd.vi}</span></div>
           <div class="ss-db">${escapeHtml(noiDung)}</div>
         </div>`;
     }).join('');
@@ -205,7 +231,7 @@ function openCompareTable() {
             <span class="ss-logo"><img src="${ssLogoUrl(c.logo)}" alt="" onerror="this.parentElement.textContent='${escapeHtml(c.name.slice(0, 2).toUpperCase())}'"></span>
             <span class="ss-co-txt">
               <span class="ss-co-name">${escapeHtml(c.name)}</span>
-              <span class="ss-meter">${vach}<i>${soCo}/4 quyền lợi</i></span>
+              <span class="ss-meter">${vach}<i>${soCo}/4 ${ssNhan('benefits', 'quyền lợi')}</i></span>
             </span>
             <span class="ss-chev" aria-hidden="true">▸</span>
           </div>
@@ -218,28 +244,28 @@ function openCompareTable() {
   view.innerHTML = `
     <div class="ss-wrap">
       <div class="ss-head-block">
-        <span class="ss-eyebrow">Internal Use Only</span>
-        <h2>So Sánh Living Benefits</h2>
+        <span class="ss-eyebrow">${ssNhan('Internal Use Only', 'Chỉ dùng nội bộ')}</span>
+        <h2>${ssNhan('Living Benefits Comparison', 'So Sánh Quyền Lợi Living Benefits')}</h2>
         <p>16 hãng bảo hiểm lớn tại Mỹ · 4 nhóm quyền lợi · Dải màu bên trái mỗi thẻ cho biết mức độ bao phủ · Bấm vào một hãng để xem điều khoản chi tiết.</p>
         <div class="ss-actions">
-          <button type="button" class="btn btn-secondary btn-sm" id="ss-mo-het">Mở rộng tất cả</button>
-          <button type="button" class="btn btn-secondary btn-sm" id="ss-thu-het">Thu gọn tất cả</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="ss-mo-het">${ssNhan('Expand all', 'Mở rộng tất cả')}</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="ss-thu-het">${ssNhan('Collapse all', 'Thu gọn tất cả')}</button>
         </div>
       </div>
       <div class="ss-board">
-        <div class="ss-thead"><div class="ss-th ss-th-co">Công Ty Bảo Hiểm<small>Mức độ bao phủ</small></div>${dauCot}</div>
+        <div class="ss-thead"><div class="ss-th ss-th-co">${ssNhan('Insurance Company', 'Công ty bảo hiểm')}</div>${dauCot}</div>
         ${hang}
       </div>
       <div class="ss-foot">
         <div class="ss-legend">
-          <h3>Chú thích</h3>
-          <div><span class="ss-badge ss-ok">✓ Có</span> hãng cung cấp quyền lợi này</div>
-          <div><span class="ss-badge ss-no">✕ Không</span> không cung cấp / không có rider</div>
-          <div><span class="ss-badge ss-wr">! Chưa rõ</span> thiếu thông tin chi tiết công khai</div>
+          <h3>${ssNhan('Legend', 'Chú thích')}</h3>
+          <div><span class="ss-badge ss-ok">✓ ${ssNhan('Yes', 'Có')}</span> hãng cung cấp quyền lợi này</div>
+          <div><span class="ss-badge ss-no">✕ ${ssNhan('No', 'Không')}</span> không cung cấp / không có rider</div>
+          <div><span class="ss-badge ss-wr">! ${ssNhan('Unclear', 'Chưa rõ')}</span> thiếu thông tin chi tiết công khai</div>
           <div><span class="ss-meter"><span class="ss-seg on"></span><span class="ss-seg on"></span><span class="ss-seg"></span><span class="ss-seg"></span></span> thanh mức độ = số quyền lợi hãng có (trên 4)</div>
         </div>
         <div class="ss-note">
-          <h3>Lưu ý quan trọng</h3>
+          <h3>${ssNhan('Important Notes', 'Lưu ý quan trọng')}</h3>
           <p>— Ngoại trừ các công ty mà <b>ThinkSmart Insurance</b> đang trực tiếp đại diện, thông tin của những hãng còn lại chỉ mang tính <b>tham khảo</b> để hỗ trợ so sánh tổng quan, và không được mặc định là chính xác tuyệt đối.</p>
           <p>— Quyền lợi, điều khoản và giới hạn chi trả thực tế sẽ được áp dụng theo <b>loại hợp đồng bảo hiểm, rider và quy định chính thức</b> của từng công ty tại thời điểm phát hành hợp đồng.</p>
         </div>
@@ -261,5 +287,13 @@ function openCompareTable() {
     view.querySelectorAll('.ss-row').forEach(r => { r.classList.remove('open'); r.querySelector('.ss-row-main').setAttribute('aria-expanded', 'false'); });
   });
 
-  updateStatus('Đang xem: Bảng so sánh Living Benefits (16 hãng)');
+  view.scrollTop = 0;   // mở lại lần sau phải về đầu bảng, không giữ chỗ cuộn cũ
+}
+
+// Tắt khung tài liệu, trả quyền hiển thị lại cho canvas. Gọi từ hideLibraryPreview
+// (brochure.js) — đó là chỗ duy nhất mọi luồng "mở thứ khác" đều đi qua.
+function exitDocMode() {
+  document.body.classList.remove('doc-mode');
+  const view = document.getElementById('doc-viewport');
+  if (view) view.innerHTML = '';
 }

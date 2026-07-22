@@ -33,7 +33,12 @@ bản gốc lâu dài: `E:\2026\Claude\.claude\skills\`):
    phần tử tạo mới hoặc reload rồi đo.
 8. **Chỉnh vị trí phần tử SVG**: đo lệch thật bằng getBoundingClientRect (chia appState.zoom) rồi
    vá `translate(x y)` vào file — vá ĐỒNG BỘ `public/templates/` + `2-Templates/`.
-9. **Nhãn đôi song ngữ** (EN / VN) cho tiêu đề điều hướng — nhất quán cả 3 section.
+9. **Nhãn song ngữ: `English / Tiếng Việt` — TIẾNG ANH TRƯỚC, một dòng, gạch chéo.**
+   Chuẩn của cả app: `Proposal / Báo giá`, `Brochure / Tài liệu`, `Name Card / Danh thiếp`.
+   (22/07 đã làm ngược thành `So sánh quyền lợi / Compare` + xếp chồng EN trên VI dưới → chủ tool
+   bắt lỗi.) Chỉ áp cho NHÃN; đoạn nội dung/điều khoản giữ tiếng Việt. Cột hẹp thì bọc mỗi vế
+   trong span `white-space: nowrap` để xuống dòng đúng chỗ gạch chéo.
+   **Trước khi tự nghĩ format cho một thành phần: grep thành phần cùng loại đã có trong app.**
 10. **Field editor gọn theo ngữ nghĩa**: 2 giá trị liên quan chặt (tiền + tuổi của 1 cột biểu đồ)
     → 1 hàng 2 ô (`.dual-input-row`), đừng rải thành 2 nhóm xa nhau.
 11. **Chữ trong SVG không tự giãn — mọi thứ đứng cạnh nhau đều phải tính lại tay.** Hai giá trị nằm
@@ -49,7 +54,43 @@ bản gốc lâu dài: `E:\2026\Claude\.claude\skills\`):
     mẫu AIG/NLG tình cờ không có class kerning âm ở mảnh đầu. Thêm mẫu mới = phải mở từng ô ra gõ thử,
     không suy ra từ mẫu cũ.
 
+14. **CANVAS CHỈ DÀNH CHO SỬA BẢN VẼ — công cụ chỉ-đọc dùng `doc-mode`/`#doc-viewport`.**
+    `.canvas-container` có `overflow:hidden` + `cursor:grab` + `user-select:none`, và `main.js`
+    nuốt `wheel` để đổi thành zoom → nhét trang chữ vào đó là không cuộn được, không copy được.
+    Hỏi trước khi chọn khung: *khung này được thiết kế cho HÀNH VI gì?* Đọc ≠ sửa ≠ vẽ.
+    Áp cho 2 công cụ sắp làm: Tính tuổi bảo hiểm, Run quotes.
+15. **Thang chữ GIAO DIỆN (`--fs-*`) ≠ thang chữ TÀI LIỆU.** 10.5px hợp cho nhãn sidebar, quá nhỏ
+    cho bảng sale đọc cho khách. Nội dung dạng đọc: đặt biến `--<khối>-fs-*` cục bộ, 13–14.5px trở
+    lên. Đặc biệt khi khối đó KHÔNG có zoom — mất zoom là mất đường lùi.
+16. **Dropdown chứa đúng một mục là phản tác dụng** (bấm hai lần cho một việc). Chỉ dùng nhóm xổ
+    khi thật sự có nhiều lựa chọn bên trong; còn lại làm mục phẳng bấm thẳng.
+
 ## Log bài học theo ngày
+
+### 2026-07-22 (chủ tool review bảng So sánh — 5 điểm, 3 bài học lớn)
+
+- **BỀ MẶT PHẢI KHỚP HÀNH VI, KHÔNG PHẢI KHỚP "CHỖ TRỐNG SẴN CÓ".** Tôi nhét bảng tra cứu vào
+  canvas chỉ vì canvas là vùng lớn ở giữa đang rảnh. Nhưng canvas được dựng cho việc SỬA BẢN VẼ:
+  `overflow:hidden` + `cursor:grab` + `user-select:none` + nuốt `wheel` để đổi thành zoom. Hệ quả
+  với một trang chữ: không cuộn được, con trỏ là bàn tay kéo, **không bôi đen copy được**. Hỏi
+  trước khi đặt nội dung vào một khung: *khung này được thiết kế cho HÀNH VI gì?* Đọc ≠ sửa ≠ vẽ.
+  → Đã tách `doc-mode` / `#doc-viewport` riêng cho công cụ chỉ-đọc.
+- **Cảnh báo mình tự viết ra mà mình vẫn vi phạm.** PENDING -3 ghi rõ từ 21/07: *"2 công cụ này
+  không mở file SVG nên khung 3 cột không hợp"* — tôi viết dòng đó, hôm sau vẫn làm ngược. Bài
+  học: **đọc lại PENDING TRƯỚC KHI code phần liên quan**, không chỉ đọc lúc mở đầu phiên.
+- **Thang chữ GIAO DIỆN ≠ thang chữ TÀI LIỆU.** `--fs-2xs: 10.5px` hợp lý cho nhãn sidebar, quá
+  nhỏ cho bảng sale đọc cho khách nghe. Nội dung dạng đọc cần thang riêng (13–14.5px trở lên).
+  Càng đúng khi vừa **bỏ zoom**: mất zoom thì cỡ chữ nền phải đủ lớn ngay từ đầu, không còn
+  đường lùi. Đặt biến `--ss-fs-*` cục bộ trong khối, đừng sửa token toàn cục.
+- **Quy ước nhãn phải NHẤT QUÁN, và cách rẻ nhất để biết là đi soi các mục có sẵn.** Chủ tool
+  không mô tả quy tắc, chỉ nói *"xem các menu khác làm sao thì làm y chang"* — grep 30 giây ra
+  ngay: `Proposal / Báo giá`, `Brochure / Tài liệu`, `Name Card / Danh thiếp` = **EN / VI, tiếng
+  Anh trước, một dòng, gạch chéo**. Mục của tôi ngược thứ tự. **Trước khi tự nghĩ format mới cho
+  một thành phần, tìm thành phần cùng loại đã có trong app.**
+- Nhãn song ngữ trong cột hẹp: bọc mỗi vế trong `<span>` `white-space: nowrap` → khi hết chỗ nó
+  xuống dòng ĐÚNG chỗ gạch chéo thay vì vỡ giữa từ.
+- **Dropdown chứa đúng một mục là phản tác dụng** — bắt bấm hai lần cho một việc. Chỉ dùng nhóm
+  xổ khi thật sự có nhiều lựa chọn bên trong.
 
 ### 2026-07-21 (later — bảng So sánh Living Benefits)
 - **Bảng nhiều hàng mà muốn THẺ BO TRÒN thì không subgrid được** (thẻ có bo góc + padding

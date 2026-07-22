@@ -383,5 +383,9 @@ function hideLibraryPreview() {
     view.style.display = 'none';
     view.classList.remove('has-group');
   }
+  // Đây là chỗ DUY NHẤT mọi luồng "mở thứ khác" đều đi qua (loadSvgContent,
+  // resetCanvasToWelcome, mở brochure/name card) → tắt luôn khung tài liệu của
+  // công cụ So sánh ở đây, khỏi phải nhớ gọi tay ở từng chỗ. (js/sosanh.js)
+  if (typeof exitDocMode === 'function') exitDocMode();
   appState.activeLibraryPath = null;
 }

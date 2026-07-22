@@ -1257,6 +1257,19 @@ select.text-input-field option, .select-field option { background-color: var(--s
   border-radius: var(--r-md);
 }
 .tree-folder.nav-section > .tree-folder-header:hover { background: var(--surface-3); color: var(--text); }
+
+/* Mục công cụ PHẲNG — không có mũi tên xổ vì bên trong không có mẫu con để chọn
+   (bảng So sánh là một bảng duy nhất). Bấm thẳng vào tiêu đề là mở luôn, nên nó
+   cần trạng thái "đang mở" giống một file đang chọn — mục xổ được thì không cần. */
+.tree-folder.nav-section-flat > .tree-folder-header { cursor: pointer; }
+.tree-folder.nav-section-flat > .tree-folder-header.is-open {
+  background: var(--brand-soft);
+  color: var(--brand);
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+.tree-folder.nav-section-flat > .tree-folder-header.is-open .tree-folder-icon {
+  background: var(--brand); color: var(--text-on-brand);
+}
 .tree-folder.nav-section > .tree-folder-header .tree-folder-icon {
   width: 30px; height: 30px;
   border-radius: var(--r-sm);
@@ -1740,18 +1753,61 @@ body.no-editor .sidebar-right { display: none; }
    CÙNG bề rộng; bắt buộc min-width:0 trên mọi ô để nội dung không đẩy phình cột
    (đây chính là cái bẫy ở bài học subgrid — đã đo lại sau khi dựng).
    -------------------------------------------------------------------------- */
+/* --------------------------------------------------------------------------
+   KHUNG TÀI LIỆU (doc-mode) — thay canvas cho công cụ CHỈ ĐỌC
+   --------------------------------------------------------------------------
+   Vì sao tồn tại (22/07/2026, chủ tool yêu cầu): canvas có `overflow:hidden`,
+   `cursor:grab`, `user-select:none`, và main.js nuốt sự kiện `wheel` để đổi thành
+   zoom → nhét bảng So sánh vào canvas thì KHÔNG cuộn được, KHÔNG bôi đen copy được.
+   Canvas chỉ dành cho công cụ mở file SVG + sửa nội dung trực tiếp.
+   Công cụ tra cứu dùng khung này. Bật: document.body.classList.add('doc-mode').
+   -------------------------------------------------------------------------- */
+.doc-viewport {
+  display: none;
+  flex: 1; min-height: 0;
+  overflow-y: auto; overflow-x: hidden;
+  overscroll-behavior: contain;
+  background: var(--bg);
+  cursor: auto;              /* KHÔNG phải bàn tay kéo như canvas */
+  user-select: text;         /* sale phải copy được điều khoản cho khách */
+}
+body.doc-mode .doc-viewport { display: block; }
+/* Ẩn hẳn canvas + dải zoom: zoom/pan vô nghĩa với tài liệu, và để dải zoom lại thì
+   người dùng bấm vào sẽ không thấy gì xảy ra (nút chết) — tệ hơn là không có nút. */
+body.doc-mode .canvas-container,
+body.doc-mode .canvas-status-bar { display: none; }
+
 .ss-wrap {
   /* Khai báo MỘT chỗ duy nhất: hàng tiêu đề và mọi hàng dữ liệu cùng đọc biến này
      → sửa tỉ lệ cột chỉ sửa ở đây, không bao giờ lệch giữa header và body. */
   --ss-cols: 2.1fr 1fr 1fr 1fr 1fr;
-  max-width: 1120px; margin: 0 auto; padding: 26px 22px 48px;
+
+  /* THANG CHỮ RIÊNG cho tài liệu đọc (22/07: chủ tool báo chữ quá nhỏ).
+     KHÔNG dùng --fs-* của app: thang đó là cỡ chữ GIAO DIỆN (nút, nhãn, sidebar),
+     nhỏ có chủ đích. Đây là bảng tra cứu sale đọc cho khách nghe, lại vừa bỏ zoom
+     canvas nên không phóng to được nữa → cỡ chữ nền phải đủ lớn ngay từ đầu. */
+  --ss-fs-th: 13px;      /* tiêu đề cột      (cũ 10.5) */
+  --ss-fs-name: 16px;    /* tên hãng         (cũ 14)   */
+  --ss-fs-badge: 13px;   /* badge Có/Không   (cũ 11.5) */
+  --ss-fs-meter: 12px;   /* "4/4 quyền lợi"  (cũ 10.5) */
+  --ss-fs-dh: 13px;      /* tiêu đề thẻ chi tiết (cũ 10.5) */
+  --ss-fs-body: 14.5px;  /* nội dung điều khoản  (cũ 12.5) */
+
+  max-width: 1240px; margin: 0 auto; padding: 30px 26px 56px;
 }
+
+/* Nhãn song ngữ "English / Tiếng Việt" — ĐÚNG quy ước của cả app
+   ("Proposal / Báo giá", "Brochure / Tài liệu", "Name Card / Danh thiếp").
+   Mỗi vế nowrap để khi cột hẹp thì xuống dòng ĐÚNG chỗ gạch chéo, không vỡ giữa từ. */
+.ss-en, .ss-vi { white-space: nowrap; }
+.ss-vi { font-weight: 600; color: var(--text-3); text-transform: none; letter-spacing: 0; }
+.ss-sep { color: var(--text-3); opacity: 0.5; padding: 0 2px; }
 
 /* ---------- Tiêu đề khối ---------- */
 .ss-head-block { margin-bottom: 18px; }
 .ss-eyebrow {
   display: inline-flex; align-items: center; gap: 7px;
-  font-size: var(--fs-2xs); font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase;
+  font-size: var(--fs-xs); font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase;
   color: var(--brand); background: var(--brand-soft);
   padding: 5px 12px; border-radius: var(--r-pill); margin-bottom: 10px;
 }
@@ -1759,7 +1815,7 @@ body.no-editor .sidebar-right { display: none; }
   margin: 0; font-size: var(--fs-2xl); font-weight: 800;
   letter-spacing: -0.5px; color: var(--text); line-height: 1.15;
 }
-.ss-head-block p { margin: 7px 0 0; font-size: var(--fs-sm); color: var(--text-3); max-width: 62ch; }
+.ss-head-block p { margin: 8px 0 0; font-size: var(--ss-fs-body); color: var(--text-3); max-width: 68ch; line-height: 1.55; }
 .ss-actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
 
 /* ---------- Bảng = xếp thẻ, KHÔNG phải lưới kẻ ô ---------- */
@@ -1778,12 +1834,11 @@ body.no-editor .sidebar-right { display: none; }
 }
 .ss-th {
   min-width: 0;
-  padding: 11px 10px; text-align: center;
-  font-size: var(--fs-2xs); font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;
-  color: var(--text-2);
+  padding: 13px 10px; text-align: center;
+  font-size: var(--ss-fs-th); font-weight: 800; letter-spacing: 0.2px; text-transform: none;
+  color: var(--text);
   display: flex; flex-direction: column; gap: 2px; justify-content: center; line-height: 1.3;
 }
-.ss-th small { font-weight: 600; font-size: var(--fs-2xs); color: var(--text-3); text-transform: none; letter-spacing: 0; }
 .ss-th-co { text-align: left; align-items: flex-start; padding-left: 18px; }
 /* Vạch màu mảnh trên đầu mỗi cột quyền lợi — điểm nhận diện, không tô cả ô */
 .ss-th-term { box-shadow: inset 0 3px 0 var(--danger); }
@@ -1837,13 +1892,13 @@ body.no-editor .sidebar-right { display: none; }
 .ss-logo img { max-width: 68px; max-height: 24px; object-fit: contain; display: block; }
 .ss-co-txt { min-width: 0; }
 .ss-co-name {
-  display: block; font-size: var(--fs-base); font-weight: 700; color: var(--text); line-height: 1.25;
+  display: block; font-size: var(--ss-fs-name); font-weight: 700; color: var(--text); line-height: 1.25;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .ss-meter { display: inline-flex; align-items: center; gap: 4px; margin-top: 5px; }
 .ss-seg { width: 16px; height: 5px; border-radius: var(--r-pill); background: var(--surface-3); }
 .ss-seg.on { background: var(--success); }
-.ss-meter i { font-style: normal; font-size: var(--fs-2xs); font-weight: 700; color: var(--text-3); margin-left: 5px; }
+.ss-meter i { font-style: normal; font-size: var(--ss-fs-meter); font-weight: 700; color: var(--text-3); margin-left: 6px; }
 .ss-chev {
   margin-left: auto; flex: none;
   width: 22px; height: 22px; border-radius: var(--r-pill);
@@ -1857,7 +1912,7 @@ body.no-editor .sidebar-right { display: none; }
 .ss-cell { min-width: 0; display: flex; align-items: center; justify-content: center; padding: 10px 8px; }
 .ss-badge {
   display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
-  font-size: var(--fs-xs); font-weight: 800; padding: 5px 12px; border-radius: var(--r-pill);
+  font-size: var(--ss-fs-badge); font-weight: 800; padding: 6px 13px; border-radius: var(--r-pill);
 }
 /* ⚠️ MÀU CHỮ BADGE ĐẶT RIÊNG, KHÔNG dùng thẳng --success/--warning.
    Đo thật (luminance, có TRỘN alpha của nền) thì cặp token mặc định KHÔNG đạt
@@ -1886,7 +1941,7 @@ body.dark-theme .ss-wr { color: #E9A23B; }
   display: flex; flex-direction: column;
 }
 .ss-dh {
-  padding: 8px 12px; font-size: var(--fs-2xs); font-weight: 800; letter-spacing: 0.3px;
+  padding: 10px 13px; font-size: var(--ss-fs-dh); font-weight: 800; letter-spacing: 0.2px;
   display: flex; align-items: center; justify-content: space-between; gap: 6px;
   background: var(--surface-2); color: var(--text-2);
   border-bottom: 1px solid var(--divider);
@@ -1895,8 +1950,8 @@ body.dark-theme .ss-wr { color: #E9A23B; }
 .ss-dh-chr  { box-shadow: inset 3px 0 0 var(--warning); }
 .ss-dh-cri  { box-shadow: inset 3px 0 0 var(--success); }
 .ss-dh-inj  { box-shadow: inset 3px 0 0 var(--brand); }
-.ss-mini { font-weight: 800; font-size: var(--fs-2xs); color: var(--text-3); }
-.ss-db { padding: 10px 12px; font-size: var(--fs-sm); color: var(--text-2); line-height: 1.55; flex: 1; }
+.ss-mini { font-weight: 800; font-size: var(--ss-fs-meter); color: var(--text-3); white-space: nowrap; }
+.ss-db { padding: 12px 13px; font-size: var(--ss-fs-body); color: var(--text-2); line-height: 1.6; flex: 1; }
 .ss-empty .ss-db { color: var(--text-3); font-style: italic; }
 
 /* ---------- Chân trang ---------- */
@@ -1909,9 +1964,9 @@ body.dark-theme .ss-wr { color: #E9A23B; }
   margin: 0 0 12px; font-size: var(--fs-2xs); font-weight: 800; letter-spacing: 0.8px;
   text-transform: uppercase; color: var(--brand);
 }
-.ss-legend div { display: flex; align-items: center; gap: 10px; font-size: var(--fs-sm); color: var(--text-2); margin-bottom: 9px; }
+.ss-legend div { display: flex; align-items: center; gap: 10px; font-size: var(--ss-fs-body); color: var(--text-2); margin-bottom: 10px; }
 .ss-legend div:last-child { margin-bottom: 0; }
-.ss-note p { margin: 0 0 9px; font-size: var(--fs-sm); color: var(--text-2); line-height: 1.55; }
+.ss-note p { margin: 0 0 10px; font-size: var(--ss-fs-body); color: var(--text-2); line-height: 1.6; }
 .ss-note p:last-child { margin-bottom: 0; }
 
 /* ---------- Mobile: bỏ lưới 5 cột, mỗi thẻ xếp dọc ---------- */
@@ -1927,7 +1982,7 @@ body.dark-theme .ss-wr { color: #E9A23B; }
   }
   .ss-cell::before {
     content: attr(data-label);
-    font-size: var(--fs-xs); font-weight: 700; color: var(--text-3);
+    font-size: var(--ss-fs-meter); font-weight: 700; color: var(--text-3);
   }
   .ss-detail-grid { grid-template-columns: 1fr; }
   .ss-foot { grid-template-columns: 1fr; }
