@@ -3,34 +3,36 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
-## ⚠️ BA NHÁNH (cập nhật 2026-07-22, SAU KHI MERGE LÊN LIVE) — ĐỌC TRƯỚC KHI ĐỘNG VÀO GIT
+## ✅ MỘT NHÁNH DUY NHẤT: `main` (chốt 22/07/2026) — ĐỌC TRƯỚC KHI ĐỘNG VÀO GIT
 
-| | `main` | `feat/login` | `feat/mainV1.1` |
-|---|---|---|---|
-| Vai trò | **BẢN LIVE cho đội sale (69 người)** | Portal (đã gộp vào V1.1) | Nhánh phát triển |
-| Trạng thái | **v1.19 — đã merge V1.1, đã push 22/07** | Đã push GitHub 20/07 | Đã gộp hết vào main |
-| `config.js` | **CÓ khoá thật** → bắt đăng nhập | CÓ khoá thật | CÓ khoá thật |
-| Bảng So sánh | **ẨN** (`SS_SHOW_IN_NAV=false`) | — | **HIỆN** (`=true`) |
-| Đổi mật khẩu | **CÓ** (từ v1.19) | — | CÓ |
+Chủ tool chốt: *"chỉ dùng 1 bản đầy đủ — offline chạy ở local, online chạy ở domain chính"*.
+`feat/login` và `feat/mainV1.1` **ĐÃ XOÁ** (đã gộp hết vào `main`; còn nhãn sao lưu
+`luu-feat-login-22-07-2026` và `luu-feat-mainV1.1-22-07-2026` nếu cần lục lại).
 
-**✅ 22/07/2026 — ĐÃ PUSH LÊN LIVE (v1.19).** Chủ tool duyệt sau khi xem trên localhost. Gồm:
-tính năng Đổi mật khẩu, tạo tài khoản hàng loạt, trang Thành viên (ô tìm · phân trang 12/trang ·
-thanh thao tác thiết kế lại), bỏ dòng dung lượng trên thẻ Brochure, vá vạch ngăn menu.
-**Bảng So sánh vẫn ẨN** — chủ tool chưa duyệt xong.
+| | |
+|---|---|
+| Nhánh | **`main`** — nhánh DUY NHẤT. Vercel deploy từ đây. |
+| Offline | `localhost:8000` (`PORT=8000 node server.js`) |
+| Online | `tool.thinksmartinsurance.com` — 69 tài khoản sale |
+| `config.js` | CÓ khoá Supabase thật → bắt đăng nhập ở cả 2 nơi |
 
-**🔒 CỜ `SS_SHOW_IN_NAV` — BẪY XUNG ĐỘT CHỈ NỔ MỘT CHIỀU (dính 22/07, phải nhớ):**
-- Chiều `feat/mainV1.1` → `main`: **CÓ** xung đột, git bắt dừng lại chọn. Đúng như thiết kế.
-- Chiều **`main` → `feat/mainV1.1`** (đồng bộ nhánh làm việc với live): **KHÔNG** xung đột!
-  Git coi giá trị bên `main` là mới hơn nên **lặng lẽ ghi đè thành `false`**. Bảng So sánh biến
-  mất khỏi localhost mà không báo gì — 22/07 chủ tool phát hiện, không phải tôi.
-- → **SAU MỖI LẦN `git merge main` VÀO NHÁNH LÀM VIỆC: kiểm lại dòng đó, phải là `true`.**
-- → Bài học chung: **cờ khác nhau giữa 2 nhánh KHÔNG tự bảo vệ được.** Xung đột chỉ nổ khi cả
-  hai bên cùng sửa dòng đó KỂ TỪ tổ tiên chung; sau một lần merge thì một bên thành hậu duệ của
-  bên kia và git im lặng. Muốn chắc thì phải KIỂM TAY sau mỗi lần merge.
+**⚠️ ĐỪNG TẠO NHÁNH MỚI để giấu tính năng chưa xong.** Cách đó đã hỏng và đã bỏ (xem dưới).
+Muốn thứ gì đó chỉ chạy ở local thì dùng **`location.hostname`**, như `SS_SHOW_IN_NAV`.
 
-**🚦 QUY TẮC PUSH (chủ tool chốt 22/07/2026):** `main` chỉ nhận phần **ĐÃ DUYỆT XONG**. Việc đang
-làm dở ở lại nhánh phát triển. Đã dính lỗi 21/07: push bảng So sánh chưa xong lên live, đội sale
-nhìn thấy tưởng bản chính thức.
+### Bảng So sánh — hiện ở local, ẩn ở domain chính
+
+`SS_SHOW_IN_NAV` đầu `public/js/sosanh.js` giờ tính theo **tên miền**, không theo nhánh:
+localhost / 127.0.0.1 / 192.168.* / file:// → **HIỆN**; mọi tên miền khác → **ẨN**.
+Lý do phải ẩn trên live: bảng **chưa được chủ tool duyệt xong**, để 69 sale nhìn thấy là họ
+tưởng bản chính thức rồi đem số liệu quyền lợi đi tư vấn cho khách.
+👉 **Khi duyệt xong: xoá cả khối đó, thay bằng `const SS_SHOW_IN_NAV = true;`**
+
+### 🚨 VÌ SAO BỎ CÁCH CŨ (cờ khác nhau giữa 2 nhánh) — đừng làm lại
+
+Xung đột git **chỉ nổ theo MỘT chiều**: `nhánh → main` thì có, `main → nhánh` thì **KHÔNG**.
+Sau lần merge đầu, `main` thành hậu duệ nên merge ngược lại git **lặng lẽ ghi đè**. Ngày 22/07
+bảng So sánh biến mất khỏi localhost mà không báo gì — chủ tool phát hiện, không phải tôi.
+Đã đo 7 tên miền để xác nhận cách mới chạy đúng cả 2 phía.
 
 ## Version hiện tại (2026-07-21 cuối ngày — ĐÃ PUSH cả `main` lẫn `feat/mainV1.1`)
 

@@ -151,18 +151,26 @@ function ssLogoUrl(file) {
   return '/api/download?path=' + encodeURIComponent('Bang so sanh quyen loi cac hang/' + file) + '&inline=1';
 }
 
-// --- CỜ BẬT/TẮT MỤC NAV ---
-// TRUE trên `feat/mainV1.1` (nhánh ĐANG LÀM) — bảng hiện để làm tiếp.
-// FALSE trên `main` (bản LIVE) — bảng CHƯA ĐƯỢC DUYỆT XONG, ẩn để đội sale không tưởng là bản
-// chính thức rồi đem số liệu quyền lợi đi tư vấn cho khách. Code giữ nguyên 100%, chỉ tắt nav.
+// --- CỜ BẬT/TẮT MỤC NAV — THEO MÔI TRƯỜNG, KHÔNG THEO NHÁNH GIT ---
 //
-// 🚨 CẢNH BÁO GIT — ĐỌC TRƯỚC KHI MERGE, ĐÃ DÍNH 22/07/2026:
-// Xung đột "cố ý" ở dòng này CHỈ NỔ THEO MỘT CHIỀU: `feat/mainV1.1` → `main`.
-// Chiều NGƯỢC LẠI (`main` → `feat/mainV1.1`, tức đồng bộ nhánh làm việc với live) thì git coi
-// giá trị bên `main` là mới hơn nên **LẶNG LẼ GHI ĐÈ thành false, KHÔNG báo gì**. Bảng So sánh
-// biến mất khỏi localhost mà không ai hiểu vì sao — chủ tool phát hiện chứ không phải tôi.
-// → SAU MỖI LẦN `git merge main` VÀO NHÁNH LÀM VIỆC: kiểm lại dòng này, phải là `true`.
-const SS_SHOW_IN_NAV = true;
+// Từ 22/07/2026 dự án chỉ còn MỘT nhánh `main` duy nhất (chủ tool chốt: "một bản đầy đủ,
+// offline chạy ở local, online chạy ở domain chính"). Nên cờ này KHÔNG thể dựa vào nhánh nữa.
+//
+// Vì sao bảng So sánh phải khác nhau giữa 2 nơi: nó CHƯA ĐƯỢC CHỦ TOOL DUYỆT XONG. Để hiện trên
+// domain chính thì 69 người đội sale tưởng là bản chính thức rồi đem số liệu quyền lợi đi tư vấn
+// cho khách — đó là rủi ro thật, không phải chuyện thẩm mỹ.
+//
+// Cách cũ (cờ true/false khác nhau giữa 2 nhánh) ĐÃ HỎNG và phải bỏ: xung đột git chỉ nổ theo
+// chiều nhánh→main; merge ngược main→nhánh thì git ghi đè LẶNG LẼ, bảng biến mất khỏi localhost
+// mà không báo gì (dính đúng 22/07). Dựa vào tên miền thì không có cửa nào sai.
+//
+// 👉 KHI CHỦ TOOL DUYỆT XONG BẢNG SO SÁNH: xoá cả khối này, thay bằng `const SS_SHOW_IN_NAV = true;`
+const SS_SHOW_IN_NAV = (function () {
+  var h = (location.hostname || '').toLowerCase();
+  // '' là khi mở file trực tiếp bằng file:// — vẫn tính là máy cá nhân
+  return h === 'localhost' || h === '127.0.0.1' || h === '::1' || h === ''
+      || h.endsWith('.local') || h.startsWith('192.168.') || h.startsWith('10.');
+})();
 
 // --- NAV SECTION (gọi từ renderFileTree trong js/main.js) ---
 // MỘT MỤC PHẲNG, KHÔNG dropdown (chủ tool 22/07/2026): các mục khác (Proposal,
