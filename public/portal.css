@@ -625,13 +625,11 @@ body.dark-theme .btn-danger-outline { color: #F87171; border-color: #F87171; }
 
 .member-head {
   align-items: center;
-  /* Dính dưới thanh công cụ khi cuộn. Danh sách 51 người mà mất hàng tiêu đề thì
-     không biết cột nào là cột nào. `--bulk-h` là chiều cao thật của .bulk-bar,
-     do JS đo và ghi vào — hardcode số sẽ sai khi thanh đó xuống dòng ở màn hẹp. */
-  position: sticky; z-index: 40;
-  top: calc(var(--header-height) + 16px + var(--bulk-h, 52px) + 10px);
-  background: var(--bg);
-  padding-top: 8px;
+  /* ⚠️ KHÔNG đặt `position: sticky` cho hàng này.
+     Bản 22/07 từng cho nó dính (để cuộn 51 người vẫn thấy tên cột) → thành TẦNG DÍNH
+     THỨ BA sau `.topbar` và `.bulk-bar`, và lật trang là ba tầng đè lên mấy hàng đầu.
+     Phân trang 12 hàng/trang đã bỏ hẳn việc phải cuộn danh sách, nên hàng tiêu đề
+     dính vừa thừa vừa đẻ lỗi. Ít tầng dính = ít lỗi chồng lấn. */
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
   font-size: var(--fs-2xs); font-weight: 800; letter-spacing: 0.6px;

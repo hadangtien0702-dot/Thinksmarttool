@@ -379,9 +379,20 @@
     else trang[khoa] = Number(v);
     veNhom(khoa);
     capNhatThanhHangLoat();
-    // Kéo về đầu bảng của nhóm đó — lật trang mà mắt còn ở giữa danh sách thì mất phương hướng
+    // Kéo về đầu nhóm — lật trang mà mắt còn ở giữa danh sách thì mất phương hướng.
+    // ⚠️ KHÔNG dùng `scrollIntoView` trần: nó đưa phần tử lên sát mép trên cửa sổ, mà
+    // mép trên đang bị các thanh DÍNH (`.topbar`, `.bulk-bar`) che → hàng đầu chui
+    // xuống dưới chúng. Phải trừ đi chiều cao các thanh đó. Đo tại thời điểm bấm chứ
+    // không hardcode: thanh công cụ cao thấp khác nhau tuỳ có đang chọn người hay không.
     const seg = $('list-' + khoa).closest('.seg');
-    if (seg) seg.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    if (!seg) return;
+    let che = 0;
+    ['.topbar', '#bulk-bar'].forEach(function (sel) {
+      const el = document.querySelector(sel);
+      if (el && getComputedStyle(el).position === 'sticky') che += el.offsetHeight;
+    });
+    const y = seg.getBoundingClientRect().top + window.scrollY - che - 24;
+    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
   }
 
   // ---- Thao tác --------------------------------------------------------------

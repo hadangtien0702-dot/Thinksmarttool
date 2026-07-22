@@ -190,6 +190,40 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
 
+### 2026-07-22 (later 11 — VÁ lỗi lật trang bị chồng lấn, do chính later 10 gây ra)
+
+Chủ tool: *"bấm qua trang thì nó bị nhảy ở phần này"* — ảnh chụp cho thấy tiêu đề trang, ô tìm và
+tiêu đề cột đè lên mấy hàng đầu.
+
+**Nguyên nhân — BA TẦNG DÍNH CHỒNG NHAU:** `.topbar` (135px) → `.bulk-bar` (73px) →
+`.member-head` (tôi thêm ở later 8). Lật trang xong `seg.scrollIntoView({block:'start'})` đưa
+nhóm lên **sát mép trên cửa sổ** — mà mép trên đang bị 3 tầng đó che → hàng đầu chui xuống dưới.
+
+**Sửa 2 chỗ, cố ý chọn cách BỎ BỚT thay vì cộng thêm bù trừ:**
+1. **Bỏ `position: sticky` khỏi `.member-head`.** Nó thêm vào later 8 để cuộn 51 người vẫn thấy
+   tên cột — nhưng later 10 (phân trang 12 hàng/trang) đã bỏ hẳn việc phải cuộn danh sách. Giữ
+   lại vừa thừa vừa đẻ lỗi. **Ít tầng dính = ít lỗi chồng lấn.**
+2. **Thay `scrollIntoView` bằng `scrollTo` có trừ chiều cao thanh dính**, đo tại thời điểm bấm
+   (`.topbar` + `#bulk-bar`, chỉ tính cái nào đang thật sự `position: sticky`). Không hardcode:
+   thanh công cụ cao thấp khác nhau tuỳ có đang chọn người hay không.
+
+**Kiểm chứng:** cuộn xuống 600px rồi bấm sang trang 3 → rows 25–36, đáy tầng dính ở 163px, tiêu
+đề nhóm 196 · tiêu đề cột 226 · hàng đầu 252 — **không cái nào bị che**, còn hở 33px.
+
+**🚨 BÀI HỌC ĐO ĐẠC — PANE HẸP LÀM CHẠY NHẦM BỐ CỤC MOBILE.** Trang thử đầu tiên cho ra
+`.member-table` `display:block`, `.member-head` `display:none`, hàng cao **253px** → tưởng subgrid
+vỡ. Thật ra pane rộng **981px**, dưới ngưỡng `@media (max-width: 900px)`… không, dưới **1100px**
+và trúng nhánh 900px của bảng → **CSS đang chạy bố cục MOBILE** (bảng xếp dọc, ẩn tiêu đề cột).
+Màn hình chủ tool ~2000px thì ra bảng ngang. `resize_window` lên 1500px mới đo được bố cục thật
+(hàng 52px, `display:grid`).
+→ **Trước khi kết luận "layout vỡ", kiểm `window.innerWidth` xem đang ở nhánh media query nào.**
+
+**Bài học thứ hai:** trang thử đầu tiên tôi CẮT một đoạn HTML từ `members.html` → cấu trúc DOM
+méo, `.topbar` đo ra **2106px**. Dựng lại bằng cách **giữ NGUYÊN file thật, chỉ thay các thẻ
+`<script src>` bằng stub** → `.topbar` ra đúng 135px. Cắt HTML là làm hỏng thứ mình đang cần đo.
+
+**Version:** `portal.css?v=41`, `portal/members.js?v=15`.
+
 ### 2026-07-22 (later 10 — PHÂN TRANG danh sách thành viên)
 
 Chủ tool: *"phần này phải scroll, chuyển qua dạng slide được không"* → phân trang, **12 hàng/trang**
