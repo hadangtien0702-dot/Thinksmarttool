@@ -232,8 +232,20 @@ vĩnh viễn):
 `type=password`, đúng 3 nhãn, có nút Huỷ, tiêu điểm vào ô đầu, ô lỗi rỗng thì `display:none`
 (không nhảy layout); 6 tình huống validate chặn đúng hết; **gõ sai bấm Lưu → hộp thoại Ở
 LẠI, báo đúng lỗi, giữ nguyên chữ đã gõ**; sửa đúng bấm lại → đóng.
-❗ CHƯA chạy được luồng Supabase thật (cần tài khoản đăng nhập) — chủ tool test sau khi
-chạy SQL. ❗ CHƯA chạy SQL trên DB thật.
+❗ CHƯA test được luồng đổi mật khẩu trên Supabase thật (cần tài khoản đăng nhập).
+
+**✅ KẾT QUẢ THẬT — chủ tool đã chạy SQL trên DB production ngày 22/07, CHẠY ĐƯỢC:**
+- `department='Sale'`: **48/48 tài khoản, tất cả `status='active'`**.
+- `thieu_dinh_danh = 0` → phần chèn `auth.identities` đúng, không ai bị "sai mật khẩu".
+- Tổng `profiles` = 54 (48 sale + 2 tài khoản chủ tool + 1 MKT + 3 test cũ đã `deleted`).
+- **`gus@thinksmartinsurance.com` ĐÃ TỒN TẠI từ trước** (`role='admin'`, `full_name='Cong Thai'`)
+  → vòng lặp BỎ QUA đúng như thiết kế, không ghi đè. Hệ quả phải nhớ: **mật khẩu dòng gus@
+  trong file CSV KHÔNG dùng được**, tài khoản đó giữ mật khẩu cũ. Chủ tool chốt giữ nguyên.
+- Bài học xác nhận: cơ chế "email đã có thì bỏ qua" là ĐÚNG — nếu ghi đè thì đã đá văng tài
+  khoản admin đang dùng của chủ tool.
+
+**Việc còn lại của chủ tool:** gửi mật khẩu 1-1 cho từng người, rồi XOÁ 3 file trong `Account/`
+(`tao-48-tai-khoan.sql`, `mat-khau-48-sale.csv`, `kiem-tra-48-tai-khoan.sql`).
 
 ### 2026-07-22 (later 6 — tô màu kín cả tiêu đề THẺ CHI TIẾT)
 
