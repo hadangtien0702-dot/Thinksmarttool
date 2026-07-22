@@ -190,6 +190,35 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
 
+### 2026-07-22 (later 13 — ĐỢT 2: thêm 21 tài khoản sale)
+
+Chủ tool đưa `Account/Danh-sach-sale 2.xlsx` (69 người, bản mở rộng của danh sách 1).
+
+**KHÔNG gõ lại từ ảnh chụp.** Chủ tool gửi ảnh bảng tính trước; tôi từ chối và xin file, vì đây là
+**email đăng nhập**: sai một ký tự (`raddie` → `radie`, hay sai dấu trong `Nguyễn Diễm Linh`) là
+tài khoản tạo ra không ai vào được, mà chỉ phát hiện khi người đó thử đăng nhập. Ảnh còn bị cắt ở
+dòng 70 nên không biết còn bao nhiêu người phía dưới.
+
+**Đối chiếu 2 danh sách trước khi sinh gì cả:** 48 → 69, **21 người mới**, **0 người bị xoá**,
+**0 người đổi họ tên**. Sạch.
+
+**⚠️ CHỈ SINH MẬT KHẨU CHO 21 NGƯỜI MỚI, KHÔNG SINH CHO CẢ 69.** Nếu sinh đủ 69 thì file CSV sẽ
+có mật khẩu mới cho 48 người cũ — nhưng SQL **bỏ qua** họ (email đã tồn tại), nên 48 mật khẩu đó
+**SAI HOÀN TOÀN**. Chủ tool gửi đi là 48 người không đăng nhập được và không ai hiểu vì sao.
+→ Quy tắc: chạy lại một quy trình sinh dữ liệu trên tập lớn hơn thì phải **lọc ra phần chênh
+lệch trước**, đừng sinh lại cả tập.
+
+File: `Account/tao-21-tai-khoan-moi.sql` + `Account/mat-khau-21-sale-moi.csv` (đều đã gitignore).
+SQL có thêm dòng `raise notice` ghi rõ "MAT KHAU TRONG CSV KHONG DUNG CHO NGUOI NAY" nếu gặp email
+đã tồn tại, và truy vấn kiểm tra cuối file (21 dòng, cột `tinh_trang` phải là `OK`) + tổng kết
+`phong_sale` phải ra **69**.
+
+Kiểm chứng file sinh ra: 21 dòng, 21 email duy nhất, 21 mật khẩu duy nhất, 0 dấu nháy lẻ,
+`$$` cân bằng, **0 người cũ lẫn vào**.
+
+**Nhắc:** `Account/Accout Tool.csv` chính là `mat-khau-48-sale.csv` đợt 1 do chủ tool đổi tên —
+vẫn chứa 48 mật khẩu plaintext. Gửi xong cho từng người thì xoá.
+
 ### 2026-07-22 (later 12 — vạch ngăn menu: trang có trang không)
 
 Chủ tool: *"sao 2 thanh menu khi chọn là không đồng nhất — cái có gạch cái không"*.
