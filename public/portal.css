@@ -1114,6 +1114,7 @@ button { font-family: inherit; cursor: pointer; }
 }
 .sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-foot button:nth-child(1) svg { transition-delay: 0.2s; }
 .sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-foot button:nth-child(2) svg { transition-delay: 0.24s; }
+.sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-foot button:nth-child(3) svg { transition-delay: 0.28s; }
 .sidebar-foot button:hover { background: var(--surface-3); color: var(--text); transform: translateX(2px); }
 .sidebar-foot button:hover svg { transform: translateX(1px) scale(1.08); transition-delay: 0s; }
 .sidebar-foot button:first-child:hover svg { transform: rotate(-8deg) scale(1.06); }

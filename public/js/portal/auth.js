@@ -109,6 +109,63 @@
     location.href = (typeof to === 'string' && /^\/(?!\/)/.test(to)) ? to : '/login';
   }
 
+  // ---- Đổi mật khẩu (22/07/2026) -----------------------------------------
+  // Vì sao cần: 48 tài khoản sale được tạo hàng loạt bằng SQL với mật khẩu do admin
+  // sinh sẵn. Không có màn này thì mật khẩu đầu tiên tồn tại vĩnh viễn — admin vẫn
+  // giữ bản CSV, và ai từng thấy tin nhắn đó là vào được mãi.
+  const MK_TOI_THIEU = 8;
+
+  async function doiMatKhau() {
+    const sb = getClient();
+    if (!sb) { await showAppAlert('Chưa cấu hình đăng nhập.'); return; }
+
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { await showAppAlert('Phiên đăng nhập đã hết hạn. Mời đăng nhập lại.'); return; }
+    const email = session.user && session.user.email;
+
+    const gt = await showAppForm({
+      title: 'Đổi mật khẩu',
+      message: 'Mật khẩu mới cần ít nhất ' + MK_TOI_THIEU + ' ký tự.',
+      confirmText: 'Đổi mật khẩu',
+      fields: [
+        { name: 'cu',  label: 'Mật khẩu hiện tại', type: 'password', autocomplete: 'current-password' },
+        { name: 'moi', label: 'Mật khẩu mới',      type: 'password', autocomplete: 'new-password' },
+        { name: 'lai', label: 'Nhập lại mật khẩu mới', type: 'password', autocomplete: 'new-password' }
+      ],
+      validate: function (v) {
+        if (!v.cu)  return 'Chưa nhập mật khẩu hiện tại.';
+        if (!v.moi) return 'Chưa nhập mật khẩu mới.';
+        if (v.moi.length < MK_TOI_THIEU) return 'Mật khẩu mới phải từ ' + MK_TOI_THIEU + ' ký tự trở lên.';
+        if (v.moi !== v.lai) return 'Hai ô mật khẩu mới không giống nhau.';
+        if (v.moi === v.cu)  return 'Mật khẩu mới trùng mật khẩu hiện tại.';
+        return null;
+      }
+    });
+    if (!gt) return;
+
+    // Bước 1: XÁC MINH mật khẩu hiện tại. Supabase KHÔNG tự kiểm tra việc này trong
+    // updateUser — chỉ cần còn phiên đăng nhập là đổi được. Bỏ qua bước này thì ai
+    // mượn được máy lúc đang mở màn hình là đổi mật khẩu chiếm luôn tài khoản.
+    const { error: loiDangNhap } = await sb.auth.signInWithPassword({ email: email, password: gt.cu });
+    if (loiDangNhap) { await showAppAlert('Mật khẩu hiện tại không đúng.', { tone: 'danger' }); return; }
+
+    const { error: loiDoi } = await sb.auth.updateUser({ password: gt.moi });
+    if (loiDoi) {
+      await showAppAlert('Không đổi được mật khẩu: ' + (loiDoi.message || 'lỗi không rõ'), { tone: 'danger' });
+      return;
+    }
+
+    await showAppAlert('Đã đổi mật khẩu. Lần sau đăng nhập bằng mật khẩu mới.', { tone: 'success' });
+  }
+
+  // Gắn nút "Đổi mật khẩu" ở chân sidebar. Gọi được nhiều lần (mỗi trang một lần).
+  function initDoiMatKhau() {
+    const nut = document.getElementById('btn-change-pw');
+    if (!nut || nut.dataset.daGan) return;
+    nut.dataset.daGan = '1';
+    nut.addEventListener('click', doiMatKhau);
+  }
+
   // ---- Shell: theme + user chip (header portal) --------------------------
   function applyThemeEarly() {
     try {
@@ -171,5 +228,7 @@
     requireLogin: requireLogin,
     signOut: signOut,
     initShell: initShell,
+    doiMatKhau: doiMatKhau,
+    initDoiMatKhau: initDoiMatKhau,
   };
 })();

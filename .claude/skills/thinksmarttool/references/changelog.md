@@ -174,6 +174,67 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
 
+### 2026-07-22 (later 7 — tạo hàng loạt 48 tài khoản sale + tính năng ĐỔI MẬT KHẨU)
+
+**🔒 VIỆC ĐẦU TIÊN LÀM, TRƯỚC MỌI THỨ KHÁC: chặn rò rỉ.** Chủ tool đưa
+`Account/Danh-sach-sale 1.xlsx` (48 người: tên gọi · họ tên · email công ty). Thư mục
+`Account/` **chưa có trong `.gitignore`** mà repo này PUBLIC trên GitHub → một lệnh
+`git add -A` là lộ danh sách nhân sự. Đã thêm `Account/` **và `*.sql`** vào `.gitignore`
+(file SQL chứa mật khẩu dạng chữ thường). Kiểm `git log --all -- Account/` → **chưa từng
+bị commit lần nào**, không phải đi xoá lịch sử.
+→ **Quy tắc: dữ liệu người thật vào repo thì gitignore TRƯỚC, xử lý sau.**
+
+**Tạo tài khoản:** sinh `Account/tao-48-tai-khoan.sql` + `Account/mat-khau-48-sale.csv`
+(cả hai đã bị ignore). Chủ tool chốt: **mật khẩu riêng từng người** (không dùng mật khẩu
+chung), tất cả `role='user'`, `status='active'`, `department='Sale'`.
+
+Chi tiết kỹ thuật của file SQL — mấy chỗ bỏ qua là hỏng:
+- `insert into auth.users` phải để **5 cột token = `''` chứ KHÔNG để NULL**
+  (`confirmation_token`, `recovery_token`, `email_change`, `email_change_token_new`,
+  `email_change_token_current`) — GoTrue đọc NULL vào kiểu string sẽ lỗi
+  *"converting NULL to string is unsupported"* lúc đăng nhập.
+- Phải chèn thêm **`auth.identities`** (provider `email`, `provider_id` = user id).
+  Thiếu bảng này thì tài khoản HIỆN trong Dashboard nhưng đăng nhập báo sai mật khẩu.
+- `email_confirmed_at = now()` để khỏi bắt xác nhận email.
+- Trigger `on_auth_user_created` tự tạo dòng `profiles` (`status='pending'`) → sau đó
+  `update` lên `active`. Trigger `enforce_member_update` **cho qua khi `auth.uid()` is
+  null** (SQL Editor) nên update này không bị chặn.
+- Bọc trong `do $$ ... $$` có vòng lặp + kiểm tồn tại → **chạy lại an toàn**, email đã
+  có thì bỏ qua, không ghi đè mật khẩu người đang dùng.
+- Mật khẩu sinh bằng `secrets` (CSPRNG), bảng chữ **bỏ ký tự dễ nhầm** `0/O`, `1/l/I` —
+  sale phải gõ tay từ tin nhắn.
+- ⚠️ Đã dặn chủ tool **chạy thử 1 dòng trước**: `auth.users` là bảng NỘI BỘ của Supabase,
+  cấu trúc đổi giữa các phiên bản GoTrue; hỏng 1 dòng dễ sửa hơn hỏng 48.
+
+**Tính năng ĐỔI MẬT KHẨU** (chủ tool yêu cầu cùng lúc — grep trước đó xác nhận portal
+KHÔNG hề có `updateUser`/`resetPasswordForEmail`, tức mật khẩu admin đặt sẽ tồn tại
+vĩnh viễn):
+- `ui-dialog.js`: mở rộng hộp thoại DÙNG CHUNG thêm `type: 'form'` + `fields[]` +
+  `validate()`. **Cố ý mở rộng thay vì viết hộp thoại thứ hai** — file này có ghi chú
+  "hộp thoại để MỘT bản duy nhất". `validate` trả chuỗi lỗi thì **giữ hộp thoại mở** và
+  báo tại chỗ; đóng rồi mới báo là người dùng mất hết chữ vừa gõ.
+- `auth.js`: `doiMatKhau()` + `initDoiMatKhau()`. **Bắt buộc nhập lại mật khẩu hiện tại
+  và xác minh bằng `signInWithPassword` TRƯỚC khi `updateUser`** — Supabase KHÔNG tự
+  kiểm tra việc này, chỉ cần còn phiên là đổi được; bỏ bước đó thì ai mượn máy lúc màn
+  hình đang mở là chiếm luôn tài khoản.
+- Nút ở chân sidebar **cả 4 trang** (index · members · videos · tool). `index.html`
+  trước đây chưa nạp hộp thoại dùng chung → nạp thêm `dialog.css` + `ui-dialog.js`.
+  Trên `tool.html` nút ẩn mặc định, chỉ hiện khi đã cấu hình Supabase (giống nút Đăng xuất).
+- Sidebar giờ có 3 nút → thêm `nth-child(3)` cho hiệu ứng so le, **sửa CẢ `portal.css`
+  LẪN `style.css`** (hai file là bản sao của nhau — cảnh báo ở đầu changelog).
+
+**Version:** `dialog.css?v=4`, `ui-dialog.js?v=3`, `portal/auth.js?v=4`, `portal.css?v=33`,
+`portal/members.js?v=11`, `style.css?v=68`. Đã quét 5 file HTML: không file nào bị khai
+2 version khác nhau.
+
+**Kiểm chứng:** SQL — 48 dòng, 48 email duy nhất, 48 mật khẩu duy nhất, 0 dấu nháy lẻ
+(không vỡ chuỗi), `$$` cân bằng. Hộp thoại — chạy thật trên trang tạm: 3 ô đều
+`type=password`, đúng 3 nhãn, có nút Huỷ, tiêu điểm vào ô đầu, ô lỗi rỗng thì `display:none`
+(không nhảy layout); 6 tình huống validate chặn đúng hết; **gõ sai bấm Lưu → hộp thoại Ở
+LẠI, báo đúng lỗi, giữ nguyên chữ đã gõ**; sửa đúng bấm lại → đóng.
+❗ CHƯA chạy được luồng Supabase thật (cần tài khoản đăng nhập) — chủ tool test sau khi
+chạy SQL. ❗ CHƯA chạy SQL trên DB thật.
+
 ### 2026-07-22 (later 6 — tô màu kín cả tiêu đề THẺ CHI TIẾT)
 
 Chủ tool: *"tương tự ở bên trong đây nữa nha em"*. Áp cùng cách xử lý của ô đầu cột cho tiêu đề

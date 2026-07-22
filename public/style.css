@@ -507,6 +507,7 @@ aside {
 }
 .portal-sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-foot button:nth-child(1) svg { transition-delay: 0.2s; }
 .portal-sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-foot button:nth-child(2) svg { transition-delay: 0.24s; }
+.portal-sidebar:is(:hover, :has(.sidebar-nav a:focus-visible)) .sidebar-foot button:nth-child(3) svg { transition-delay: 0.28s; }
 .portal-sidebar .sidebar-foot button:hover { background: var(--surface-3); color: var(--text); transform: translateX(2px); }
 .portal-sidebar .sidebar-foot button:hover svg { transform: translateX(1px) scale(1.08); transition-delay: 0s; }
 .portal-sidebar .sidebar-foot button:first-child:hover svg { transform: rotate(-8deg) scale(1.06); }

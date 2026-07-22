@@ -73,6 +73,35 @@ where id = (select id from auth.users where email = 'EMAIL_CAN_NANG_QUYEN');
 `enforce_member_update` cố ý CHẶN việc đổi `role`/`status` từ phía ứng dụng, để
 người dùng web không tự nâng quyền cho mình. Nâng quyền chỉ làm được từ SQL Editor.
 
+## Tạo NHIỀU tài khoản một lúc (22/07/2026)
+
+Tạo tay từng người trong Dashboard thì 48 người là 48 lần bấm. Thay vào đó:
+
+1. Danh sách người dùng để ở `Account/` (Excel: tên gọi · họ tên · email).
+2. Nhờ Claude sinh file `Account/tao-<n>-tai-khoan.sql` — nó tự sinh mật khẩu ngẫu
+   nhiên riêng cho từng người và xuất kèm `Account/mat-khau-<n>-sale.csv`.
+3. Supabase → **SQL Editor** → dán → **Run**. Tài khoản tạo ra ở `status='active'`,
+   `role='user'`, `department='Sale'` → đăng nhập là dùng được ngay.
+4. Gửi mật khẩu **riêng cho từng người** (tin nhắn 1-1), rồi **XOÁ** cả 2 file.
+
+> 🔒 `Account/` và `*.sql` đã nằm trong `.gitignore` — họ tên, email, mật khẩu của
+> đội sale KHÔNG được lên repo public. Kiểm lại bằng `git status` trước khi push.
+
+**Chạy thử 1 dòng trước khi chạy cả 48.** `auth.users` là bảng nội bộ của Supabase,
+cấu trúc có thể đổi giữa các phiên bản GoTrue. Hỏng 1 dòng dễ sửa hơn hỏng 48.
+
+File SQL chạy lại an toàn: email nào đã tồn tại thì bỏ qua, không ghi đè mật khẩu
+người đang dùng.
+
+## Đổi mật khẩu (22/07/2026)
+
+Nút **Đổi mật khẩu** ở chân thanh bên trái, có trên cả 4 trang (trang chủ, Công cụ,
+Video học, Quản lý thành viên). Người dùng nhập mật khẩu hiện tại + mật khẩu mới 2 lần.
+
+Vì sao bắt nhập lại mật khẩu hiện tại: Supabase **không** tự kiểm tra việc đó trong
+`updateUser` — chỉ cần còn phiên đăng nhập là đổi được. Không có bước xác minh thì ai
+mượn được máy lúc màn hình đang mở là chiếm luôn tài khoản.
+
 ## Duyệt nhân viên mới (việc thường ngày)
 
 Nhân viên tự **Đăng ký** trên web → thấy màn "chờ admin duyệt".

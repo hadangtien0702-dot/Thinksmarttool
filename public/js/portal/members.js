@@ -463,6 +463,7 @@
     if (backdrop) backdrop.addEventListener('click', closeMenu);
     const logout = $('btn-logout-side');
     if (logout) logout.addEventListener('click', TSTAuth.signOut);
+    TSTAuth.initDoiMatKhau();
     // Super Admin dùng được MỌI công cụ (chủ tool quyết 20/07/2026) — giữ mục Công cụ.
   }
 
