@@ -66,6 +66,68 @@ Admin"* · Bỏ lọc → cả 2 nút tắt, về 72 · đang ở trang 3 (25–
 từ đầu hàm sẽ trỏ vào phần tử đã rời khỏi DOM — bấm không có tác dụng, nhìn như sản phẩm hỏng.
 Phải **query lại nút ngay trước khi bấm**. (Lần đầu tôi tưởng lọc không reset trang, hoá ra thế.)
 
+### 2026-07-22 (later 18 — DỌN CẤU TRÚC DỰ ÁN, đợt 1/2)
+
+Chủ tool: *"vào folder này sắp xếp lại toàn bộ thư mục, dự án, file… anh thấy nó rất lộn xộn"*.
+Chốt làm **2 đợt**, đợt 1 = chỉ những việc KHÔNG thể làm hỏng tool (không đổi tên thư mục nào).
+
+**🚨 SUÝT LÀM HỎNG BẢN LIVE — đọc kỹ đoạn này.**
+Nhìn `.gitignore` thấy `Brochure/` và `Name Card/` bị ignore *nhưng 7 file vẫn đang tracked*, tôi
+định "sửa cho nhất quán" bằng cách gỡ chúng khỏi git. **Sai hoàn toàn.** Kiểm bản live trước khi
+động tay thì ra:
+```
+curl -s https://tool.thinksmartinsurance.com/api/svgs
+  → "path":"Name Card/Chung/Sale Name Card.svg"
+curl -s "https://tool.thinksmartinsurance.com/api/library?type=brochure"
+  → 6 file Brochure/AIG + Brochure/NLG
+```
+Bản live **CHẠY `server.js` thật**, không phải static build. Gỡ 7 file đó là **công cụ Brochure và
+Name Card chết trên live ngay lập tức**. Chú thích cũ trong `.gitignore` ("local-server only, not
+used by the static Vercel build") SAI, và comment trong `server.js:264` cũng tin theo cái sai đó
+("khác Brochure/ bị gitignore").
+→ Đã làm ngược lại: **GỠ hai dòng ignore**, ghi rõ hai thư mục là một phần của bản triển khai.
+→ **BÀI HỌC: `.gitignore` mâu thuẫn với thực tế thì hỏi SẢN PHẨM ĐANG CHẠY, đừng "sửa cho nhất
+quán" theo file cấu hình.** File đã tracked trước khi có luật ignore vẫn được commit bình thường —
+luật đó vô hiệu với chúng, nhưng là BẪY cho file MỚI thêm sau này (thêm brochure mới → git lặng lẽ
+bỏ qua → chạy ở máy, mất trên live, không báo lỗi).
+
+**Đã làm:**
+1. **`3-Export-PDF/` gỡ khỏi git** (`git rm --cached`, 7 file vẫn còn trên máy) + thêm vào
+   `.gitignore`. Đây là **thư mục tool ghi file xuất ra** — 7 file hiện tại là bản mẫu không có tên
+   khách, nhưng lần tới xuất báo giá KHÁCH THẬT mà còn tracked thì `git add -A` là hồ sơ khách lên
+   GitHub công khai. (Đóng mục **A3** mở từ 22/07.)
+2. **Chuyển 79MB ra ngoài dự án** → `E:\2026\Thinksmart\Design\Proposal2026 - File nguon\`:
+   `1-Design/` (34MB `.ai`) và `_Archive/` (45MB). Chủ tool dặn *"lưu riêng file thiết kế cho anh
+   file adobe ai"* → **dời, KHÔNG xoá**; đã kiểm cả hai đầu sau khi `mv`, file `.ai` còn nguyên
+   34.112.285 và 1.025.749 byte. Đã kiểm trước đó: không code nào đọc hai thư mục này.
+   ⚠️ Đặt vào thư mục CON riêng chứ không đổ thẳng vào `Design/` — chỗ đó là kho thiết kế chung của
+   công ty, đã có sẵn `Name Card.psd`, đổ vào là lẫn.
+3. `Accout Tool.xlsx` (gốc repo) → chuyển vào `Account/` cho cùng chỗ với dữ liệu nhân sự khác.
+4. **Viết `CAU-TRUC.md`** ở gốc dự án: bảng ĐỎ liệt kê 5 thư mục `server.js` khoá cứng tên (đổi tên
+   là hỏng), bảng mã nguồn, bảng cục bộ, và mục "còn lộn xộn — đợt 2".
+
+**Dự án: 332MB → 253MB.** (`.git` vẫn 207MB — xem dưới.)
+
+**CHƯA làm, cần chủ tool quyết:**
+- **Lịch sử git vẫn 207MB.** `Proposal NLG AIG.ai` bị commit lại 5 lần (54+38+38+32+23MB, có cả
+  thư mục `Filedesign/` không còn tồn tại). Dời file ra ngoài **không** làm nhẹ lịch sử — git giữ
+  vĩnh viễn. Dọn được nhưng phải viết lại lịch sử + `--force` push + mọi bản clone khác phải clone
+  lại. Hỏi lúc này chủ tool trả lời lệch câu (dặn về file .ai) nên **không tự làm**.
+  Lệnh xem thủ phạm:
+  ```
+  git rev-list --objects --all | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' | awk '$1=="blob"{print $3,$4}' | sort -rn | head
+  ```
+- **ĐỢT 2 — đổi tên thư mục cho nhất quán.** Hiện trộn: có đánh số (`2-Templates`, `3-Export-PDF`,
+  `4-Clients`, `5-Design-Sections` — số 1 giờ trống) với không đánh số (`Account`, `Brochure`,
+  `Name Card`, `Bang so sanh quyen loi cac hang`), lẫn Việt không dấu với Anh, có khoảng trắng.
+  **Phải sửa `server.js` kèm theo** (`PROPOSAL_SCAN_DIRS` + `LIBRARY_SECTIONS`) và kiểm chứng lại
+  cả 3 công cụ. Cần chủ tool duyệt sơ đồ tên mới TRƯỚC.
+
+**Kiểm chứng sau khi dọn** (server local, đo bằng API thật):
+`/api/svgs` → đủ 5 mẫu + 1 bản khách + Name Card · `/api/library?type=brochure` → đủ 6 file ·
+`type=soSanh` → đủ 16 logo · 5 trang đều 200 · `git ls-files "Brochure" "Name Card"` = **7**
+(live-critical còn nguyên) · không file nhạy cảm nào lọt vào staged.
+
 ### 2026-07-22 (later 17 — 3 lỗi chủ tool bắt được TRÊN IPHONE THẬT + chặn rò rỉ)
 
 Chủ tool chụp màn hình iPhone 14 Pro Max (430×932) sau đợt 16. Cả 3 lỗi đều là thứ **chỉ lộ khi
@@ -296,8 +358,8 @@ từ chính máy đó được. Sửa được nhưng đụng bố cục ngăn k
 - **A2. Đội sale có vào được live không?** Chủ tool nói KHÔNG cần tài khoản admin1/admin2 nữa, nhưng
   CHƯA xác nhận cả đội đã đăng ký + được duyệt. Nếu bị chặn: để trống `config.js` + bump version +
   push là mở lại trong ~1 phút.
-- **A3. `3-Export-PDF/` chưa gitignore** → PDF chủ tool xuất ra hiện lên mỗi lần commit. Hỏi có ignore
-  không (file gửi khách không nên nằm trên repo công khai).
+- ~~**A3. `3-Export-PDF/` chưa gitignore**~~ **XONG 22/07 (later 18)** — đã `git rm --cached` 7 file
+  và thêm luật ignore. File vẫn còn nguyên trên máy.
 
 -3. **CÔNG CỤ SẮP THÊM (chủ tool báo 21/07/2026)** — mục "Công cụ" sẽ KHÔNG chỉ có
    Proposal/Brochure/Name Card nữa:

@@ -23,15 +23,39 @@ Account/
 /Accou*t*.xlsx
 /Accou*t*.csv
 
-# Archived / superseded files - local only
+# Đã CHUYỂN RA NGOÀI dự án 22/07/2026 (chủ tool duyệt) — giữ luật phòng khi có
+# bản sao lạc về:
+#   1-Design/  (34MB file .ai)  → E:\2026\Thinksmart\Design\Proposal2026 - File nguon\
+#   _Archive/  (45MB)           → cùng chỗ trên
+# Lý do: hai thư mục này KHÔNG được code nào đọc (đã kiểm server.js + public/js),
+# mà `Proposal NLG AIG.ai` bị commit lại 5 lần nên chiếm ~186MB trong lịch sử git.
+1-Design/
 _Archive/
 
 # Design work-in-progress (e.g. Allianz sections) — local only, not published
 5-Design-Sections/
 
-# Downloadable library assets — large, local-server only (not used by the static Vercel build)
-Brochure/
-Name Card/
+# ⚠️ ĐỪNG ignore `Brochure/` và `Name Card/` — ĐÃ THỬ VÀ SAI (sửa 22/07/2026).
+#
+# Hai dòng đó từng nằm ở đây kèm chú thích "local-server only, not used by the
+# static Vercel build". Chú thích SAI: bản live CHẠY server.js thật, và
+# `/api/svgs` + `/api/library` trên tool.thinksmartinsurance.com đang phục vụ
+# đúng 7 file trong hai thư mục này (6 brochure AIG/NLG + Sale Name Card.svg).
+# Kiểm lại bất cứ lúc nào:
+#   curl -s https://tool.thinksmartinsurance.com/api/library?type=brochure
+#
+# Vì file đã được commit TRƯỚC khi thêm luật nên git vẫn theo dõi chúng → live
+# không hỏng, và không ai phát hiện luật này vô nghĩa. Nhưng nó là cái BẪY:
+# thêm brochure MỚI thì git lặng lẽ bỏ qua → chạy được ở máy, mất trên live,
+# mà không có thông báo lỗi nào.
+#
+# → Hai thư mục này là MỘT PHẦN CỦA BẢN TRIỂN KHAI. Phải commit.
+
+# Thư mục XUẤT FILE của tool — nơi "Xuất PDF" ghi ra. Hiện chỉ có bản mẫu
+# (AIG IUL, NLG Termlife…) nhưng lần tới xuất báo giá cho KHÁCH THẬT thì một
+# lệnh `git add -A` là hồ sơ khách lên GitHub công khai. 7 file cũ đã gỡ khỏi
+# theo dõi bằng `git rm --cached` (vẫn còn nguyên trên máy). (22/07/2026)
+3-Export-PDF/
 
 # Third-party design skills — installed locally, NOT redistributed on the public repo
 # (frontend-design: (c) Anthropic all-rights-reserved; ui-ux-pro-max: no license file).
