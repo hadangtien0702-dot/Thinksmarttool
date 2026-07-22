@@ -18,9 +18,15 @@ tính năng Đổi mật khẩu, tạo tài khoản hàng loạt, trang Thành v
 thanh thao tác thiết kế lại), bỏ dòng dung lượng trên thẻ Brochure, vá vạch ngăn menu.
 **Bảng So sánh vẫn ẨN** — chủ tool chưa duyệt xong.
 
-**🔒 KHI MERGE `feat/mainV1.1` → `main` LẦN SAU:** sẽ lại xung đột ở đúng dòng
-`SS_SHOW_IN_NAV` trong `public/js/sosanh.js`. **XUNG ĐỘT NÀY LÀ CỐ Ý.** Gặp nó thì dừng lại tự
-hỏi *"chủ tool đã duyệt bảng So sánh chưa?"* — chưa thì giữ `false`. Đừng nhắm mắt lấy bên nào.
+**🔒 CỜ `SS_SHOW_IN_NAV` — BẪY XUNG ĐỘT CHỈ NỔ MỘT CHIỀU (dính 22/07, phải nhớ):**
+- Chiều `feat/mainV1.1` → `main`: **CÓ** xung đột, git bắt dừng lại chọn. Đúng như thiết kế.
+- Chiều **`main` → `feat/mainV1.1`** (đồng bộ nhánh làm việc với live): **KHÔNG** xung đột!
+  Git coi giá trị bên `main` là mới hơn nên **lặng lẽ ghi đè thành `false`**. Bảng So sánh biến
+  mất khỏi localhost mà không báo gì — 22/07 chủ tool phát hiện, không phải tôi.
+- → **SAU MỖI LẦN `git merge main` VÀO NHÁNH LÀM VIỆC: kiểm lại dòng đó, phải là `true`.**
+- → Bài học chung: **cờ khác nhau giữa 2 nhánh KHÔNG tự bảo vệ được.** Xung đột chỉ nổ khi cả
+  hai bên cùng sửa dòng đó KỂ TỪ tổ tiên chung; sau một lần merge thì một bên thành hậu duệ của
+  bên kia và git im lặng. Muốn chắc thì phải KIỂM TAY sau mỗi lần merge.
 
 **🚦 QUY TẮC PUSH (chủ tool chốt 22/07/2026):** `main` chỉ nhận phần **ĐÃ DUYỆT XONG**. Việc đang
 làm dở ở lại nhánh phát triển. Đã dính lỗi 21/07: push bảng So sánh chưa xong lên live, đội sale

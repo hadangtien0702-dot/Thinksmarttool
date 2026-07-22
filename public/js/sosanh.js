@@ -152,13 +152,17 @@ function ssLogoUrl(file) {
 }
 
 // --- CỜ BẬT/TẮT MỤC NAV ---
-// FALSE trên `main` (bản LIVE). Bảng So sánh CHƯA ĐƯỢC DUYỆT XONG — chủ tool yêu cầu ẩn khỏi
-// live để đội sale không tưởng là bản chính thức rồi đem số liệu quyền lợi đi tư vấn cho khách.
-// Code giữ nguyên 100%, chỉ mục nav bị tắt. Trên `feat/mainV1.1` (bản đang làm) cờ = true.
-// ⚠️ DÒNG NÀY CỐ Ý XUNG ĐỘT MỖI LẦN MERGE V1.1 → main. Gặp xung đột thì DỪNG LẠI tự hỏi
-// "chủ tool đã duyệt bảng So sánh chưa?" rồi mới chọn. Đừng nhắm mắt lấy bên nào.
-// Merge 22/07 (v1.19): giữ FALSE — chủ tool chưa duyệt.
-const SS_SHOW_IN_NAV = false;
+// TRUE trên `feat/mainV1.1` (nhánh ĐANG LÀM) — bảng hiện để làm tiếp.
+// FALSE trên `main` (bản LIVE) — bảng CHƯA ĐƯỢC DUYỆT XONG, ẩn để đội sale không tưởng là bản
+// chính thức rồi đem số liệu quyền lợi đi tư vấn cho khách. Code giữ nguyên 100%, chỉ tắt nav.
+//
+// 🚨 CẢNH BÁO GIT — ĐỌC TRƯỚC KHI MERGE, ĐÃ DÍNH 22/07/2026:
+// Xung đột "cố ý" ở dòng này CHỈ NỔ THEO MỘT CHIỀU: `feat/mainV1.1` → `main`.
+// Chiều NGƯỢC LẠI (`main` → `feat/mainV1.1`, tức đồng bộ nhánh làm việc với live) thì git coi
+// giá trị bên `main` là mới hơn nên **LẶNG LẼ GHI ĐÈ thành false, KHÔNG báo gì**. Bảng So sánh
+// biến mất khỏi localhost mà không ai hiểu vì sao — chủ tool phát hiện chứ không phải tôi.
+// → SAU MỖI LẦN `git merge main` VÀO NHÁNH LÀM VIỆC: kiểm lại dòng này, phải là `true`.
+const SS_SHOW_IN_NAV = true;
 
 // --- NAV SECTION (gọi từ renderFileTree trong js/main.js) ---
 // MỘT MỤC PHẲNG, KHÔNG dropdown (chủ tool 22/07/2026): các mục khác (Proposal,
