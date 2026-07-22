@@ -123,6 +123,12 @@ const SS_BADGE = {
  * Chỉ áp cho NHÃN (tiêu đề, nút, badge, tên cột). ĐOẠN NỘI DUNG điều khoản giữ
  * NGUYÊN tiếng Việt — chủ tool chốt: sale đọc cho khách nghe bằng tiếng Việt, và
  * bản dịch tiếng Anh phải do chủ tool cấp chứ tôi không tự dịch số liệu bảo hiểm.
+ *
+ * ⚠️ CHỈ DÙNG TRONG BẢNG, KHÔNG DÙNG CHO MỤC NAV. Trên cây công cụ phải viết nhãn
+ * bằng CHỮ THƯỜNG y hệt các mục khác ("Proposal / Báo giá" là một chuỗi text trơn).
+ * Bản 22/07 dùng helper này cho nav → phần tiếng Việt bị tô xám nhạt trong khi
+ * "Proposal / Báo giá" đậm đều → chủ tool bắt lỗi "sao nó lại khác các phần khác".
+ * Sắc độ nhạt chỉ hợp trong bảng, nơi cần phân tầng thị giác giữa hai ngôn ngữ.
  */
 function ssNhan(en, vi) {
   return `<span class="ss-en">${en}</span><span class="ss-sep">/</span><span class="ss-vi">${vi}</span>`;
@@ -159,7 +165,7 @@ function renderCompareNavSection(container, q) {
   el.setAttribute('title', 'Bảng so sánh Living Benefits — 16 hãng bảo hiểm');
   el.innerHTML = `
     <span class="tree-folder-icon">${NAV_ICONS.compare}</span>
-    <span class="tree-folder-label">${ssNhan('Compare', 'So sánh quyền lợi')}</span>
+    <span class="tree-folder-label">Compare / So sánh quyền lợi</span>
   `;
   el.addEventListener('click', async () => {
     if (!(await confirmLeaveUnsaved())) return;

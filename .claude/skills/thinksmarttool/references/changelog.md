@@ -174,6 +174,37 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
 
+### 2026-07-22 (later 2 — bỏ chi tiết thừa trên thẻ brochure + nhãn nav phải giống mọi mục)
+
+**1. Bỏ dòng "PDF · 249 KB" khỏi thẻ Brochure** (`library-card-meta` + `library-card-ext` trong
+`brochure.js`, CSS đã xoá luôn — grep xác nhận không còn chỗ nào dùng). Cùng lý do đã bỏ đuôi file
+khỏi tiêu đề hôm 21/07: **đội sale chỉ cần "NLG IUL" + nút Tải về**, định dạng/dung lượng là chi
+tiết kỹ thuật gây nhiễu. ⚠️ Dòng meta cũ giữ `margin-bottom:16px` — xoá nó là tiêu đề dính nút
+Tải về, nên đã dồn khoảng hở sang `.library-card-title` (6px → **18px**), đo lại đúng 18px.
+`formatBytes()` trong core.js giờ không còn ai gọi — CHƯA xoá (có thể dùng lại), nếu dọn thì nhớ.
+
+**2. NHÃN NAV PHẢI VIẾT BẰNG CHỮ TRƠN, KHÔNG DÙNG `ssNhan()`.** Chủ tool: *"sao nó lại khác với
+các phần khác vậy em"*. Nguyên nhân: tôi dùng helper song ngữ cho cả mục nav → `.ss-vi` tô
+`--text-3` + weight 600 nên phần "So sánh quyền lợi" **xám nhạt**, trong khi "Proposal / Báo giá"
+đậm đều một màu. Sắc độ nhạt chỉ hợp TRONG BẢNG (cần phân tầng thị giác giữa 2 ngôn ngữ), không
+hợp trên cây nav (cần đồng nhất với các mục anh em). Đã trả về chuỗi text trơn
+`'Compare / So sánh quyền lợi'` + ghi cảnh báo ngay trên helper.
+
+**Kiểm chứng (lại dùng file tạm `public/_ss-preview.html`, đã xoá sau khi xong):** dựng CẠNH NHAU
+mục Proposal thật (markup y hệt `makeCollapsibleFolder`) và mục Compare mới rồi đo computed style
+— trùng khít: cỡ chữ **14px**, weight **800**, màu **rgb(17,20,32)**, **0 span con** bị tô khác,
+chiều cao **48px**, padding `9px 10px`, bo góc `10px`, icon `30px`. Khác duy nhất: không có
+`.tree-folder-arrow` (đúng ý chủ tool, xem later 1) và `margin-bottom` 4px thay vì 18px — do nó là
+`:last-child`, rule `.nav-section:last-child` áp cho mục cuối bất kỳ, không phải lệch.
+Thẻ brochure: `.library-card-meta` không còn tồn tại, khoảng hở dưới tiêu đề = 18px.
+
+**Version:** `style.css?v=59`, `js/sosanh.js?v=5`, `js/brochure.js?v=11`.
+
+**BÀI HỌC:** một helper trình bày (`ssNhan`) tiện thì dễ bị bê đi dùng ở mọi nơi — nhưng **cùng
+một nội dung ở hai ngữ cảnh khác nhau cần cách trình bày khác nhau**. Nav cần ĐỒNG NHẤT với hàng
+xóm; bảng cần PHÂN TẦNG nội bộ. Trước khi tái sử dụng một helper trình bày, hỏi: *ở chỗ mới này,
+hàng xóm của nó trông thế nào?*
+
 ### 2026-07-22 (later — GỠ bảng So sánh khỏi CANVAS + song ngữ đúng quy ước)
 
 Chủ tool review bảng So sánh, 5 điểm. Sửa hết trên `feat/mainV1.1`.

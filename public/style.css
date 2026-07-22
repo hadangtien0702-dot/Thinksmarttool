@@ -1500,7 +1500,8 @@ body.no-editor .sidebar-right { display: none; }
   font-size: var(--fs-base);
   font-weight: 700;
   color: var(--text);
-  margin-bottom: 6px;
+  margin-bottom: 18px;   /* trước 6px + 16px của dòng meta đã xoá — giữ nguyên
+                            khoảng hở tới nút Tải về, không để tiêu đề dính nút */
   line-height: 1.4;
   min-height: 2.8em; /* Ensure 2 lines alignment */
   display: -webkit-box;
@@ -1510,25 +1511,9 @@ body.no-editor .sidebar-right { display: none; }
   text-overflow: ellipsis;
 }
 
-.library-card-meta {
-  font-size: var(--fs-xs);
-  color: var(--text-3);
-  font-weight: 600;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.library-card-ext {
-  background: var(--surface-3);
-  color: var(--text-2);
-  padding: 2px 6px;
-  border-radius: var(--r-xs);
-  font-size: var(--fs-2xs);
-  font-weight: 800;
-  letter-spacing: 0.5px;
-}
+/* .library-card-meta / .library-card-ext ĐÃ XOÁ 22/07 — chủ tool bỏ dòng
+   "PDF · 249 KB" khỏi thẻ brochure. Khoảng cách tới nút Tải về nay do
+   .library-card-title margin-bottom lo (xem ngay bên trên). */
 
 .library-card-btn {
   margin-top: auto;

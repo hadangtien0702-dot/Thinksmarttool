@@ -67,6 +67,24 @@ bản gốc lâu dài: `E:\2026\Claude\.claude\skills\`):
 
 ## Log bài học theo ngày
 
+### 2026-07-22 (later 2 — helper trình bày bị bê nhầm ngữ cảnh)
+
+- **Cùng một nội dung, hai ngữ cảnh khác nhau → cách trình bày khác nhau.** Helper song ngữ
+  `ssNhan()` tô phần tiếng Việt nhạt hơn — hợp lý TRONG BẢNG (phân tầng thị giác giữa 2 ngôn ngữ),
+  nhưng bê lên cây nav thì mục Compare xám nhạt lệch hẳn so với "Proposal / Báo giá" đậm đều.
+  Chủ tool nhận ra ngay: *"sao nó lại khác với các phần khác"*. **Trước khi tái dùng một helper
+  trình bày ở chỗ mới, hỏi: hàng xóm của nó ở chỗ đó trông thế nào?** Nav cần ĐỒNG NHẤT với anh
+  em; bảng cần PHÂN TẦNG nội bộ. → Quy tắc 31 (toàn cục).
+- **Cách kiểm "có giống nhau không" rẻ và chắc: dựng CẠNH NHAU rồi đo computed style.** Không so
+  bằng mắt qua 2 ảnh chụp. Dựng mục thật + mục mới trong cùng một trang, so `fontSize/fontWeight/
+  color/height/padding/borderRadius` — ra ngay cái nào lệch, và lệch bao nhiêu.
+- **Xoá một dòng khỏi thẻ = mất luôn margin của dòng đó.** Bỏ dòng "PDF · 249 KB" (có
+  `margin-bottom:16px`) làm tiêu đề dính nút Tải về. Xoá phần tử phải kiểm phần tử đó có đang
+  gánh khoảng cách cho hàng xóm không, rồi dồn lại — đo để xác nhận, đừng đoán.
+- **Chi tiết kỹ thuật không phải thông tin người dùng cần.** Định dạng + dung lượng file là thứ
+  dev quan tâm; sale chỉ cần tên tài liệu và nút tải. Cùng lý do đã bỏ đuôi `.jpg/.pdf` khỏi
+  tiêu đề hôm trước — cùng một loại nhiễu, xuất hiện hai lần ở hai chỗ.
+
 ### 2026-07-22 (chủ tool review bảng So sánh — 5 điểm, 3 bài học lớn)
 
 - **BỀ MẶT PHẢI KHỚP HÀNH VI, KHÔNG PHẢI KHỚP "CHỖ TRỐNG SẴN CÓ".** Tôi nhét bảng tra cứu vào

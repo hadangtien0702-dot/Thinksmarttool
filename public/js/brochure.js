@@ -229,11 +229,9 @@ function showLibraryGroupPreview(items) {
         ${previewHTML}
         <div class="library-card-info">
           <div class="library-card-title" title="${escapeHtml(item.name)}">${escapeHtml(item.name.replace(/\.[^.]+$/, ''))}</div>
-          <div class="library-card-meta">
-            <span class="library-card-ext">${escapeHtml((item.ext || '').toUpperCase())}</span>
-            <span>·</span>
-            <span>${formatBytes(item.size)}</span>
-          </div>
+          <!-- KHÔNG hiện định dạng + dung lượng ("PDF · 249 KB") — chủ tool gạch bỏ 22/07,
+               cùng lý do đã bỏ đuôi file khỏi tiêu đề hôm 21/07: đội sale chỉ cần biết
+               "NLG IUL" và bấm Tải về, dung lượng là chi tiết kỹ thuật gây nhiễu. -->
           <a class="library-card-btn" href="${dl}" download>${NAV_ICONS.download} Tải về</a>
         </div>
       </div>
