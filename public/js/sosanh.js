@@ -107,31 +107,44 @@ const SS_DATA = [
     chr:  { s: 'no', d: '' }, cri: { s: 'no', d: '' }, inj: { s: 'no', d: '' } }
 ];
 
-const SS_BADGE = {
-  ok: { cls: 'ss-ok', ic: '✓', en: 'Yes',     vi: 'Có' },
-  no: { cls: 'ss-no', ic: '✕', en: 'No',      vi: 'Không' },
-  wr: { cls: 'ss-wr', ic: '!', en: 'Unclear', vi: 'Chưa rõ' }
-};
+/**
+ * NGÔN NGỮ TRONG BẢNG — CHỈ TIẾNG VIỆT (chủ tool chốt 22/07/2026, later 3).
+ *
+ * ⚠️ ĐỌC KỸ KẺO SỬA NGƯỢC: quy ước song ngữ "English / Tiếng Việt" VẪN ĐÚNG cho
+ * MỤC NAV và menu (`Compare / So sánh quyền lợi`, `Proposal / Báo giá`…) — đừng gỡ.
+ * Nhưng RIÊNG BẢNG NÀY chủ tool xem bản song ngữ thật rồi chốt bỏ: 5 cột × 16 hàng
+ * mà nhãn nào cũng gánh 2 ngôn ngữ thì rối, đọc chậm. "Bảng này chỉ sử dụng 1 ngôn
+ * ngữ tiếng Việt cho gọn gàng."
+ *
+ * Nội dung điều khoản vốn đã chỉ có tiếng Việt (bản dịch tiếng Anh phải do chủ tool
+ * cấp — không tự dịch số liệu bảo hiểm).
+ */
 
 /**
- * NHÃN SONG NGỮ — quy ước CHUNG của cả app, chủ tool chốt 22/07/2026:
- * **"English / Tiếng Việt"** — tiếng Anh TRƯỚC, một dòng, ngăn bằng gạch chéo.
- * Giống hệt các mục nav sẵn có: "Proposal / Báo giá", "Brochure / Tài liệu",
- * "Name Card / Danh thiếp". Bản trước làm ngược ("So sánh quyền lợi / Compare")
- * và xếp chồng EN trên VI dưới → chủ tool bắt lỗi. ĐỪNG làm ngược lại lần nữa.
+ * DẤU TRẠNG THÁI — ICON, KHÔNG CÒN CHỮ (chủ tool 22/07 later 3: "tinh gọn").
+ * Trước đây mỗi ô là một viên thuốc "✓ Có" / "✕ Không" → 64 ô đầy chữ lặp lại.
+ * Nay chỉ còn icon tròn: XANH LÁ = có, ĐỎ = không, CAM = chưa rõ.
  *
- * Chỉ áp cho NHÃN (tiêu đề, nút, badge, tên cột). ĐOẠN NỘI DUNG điều khoản giữ
- * NGUYÊN tiếng Việt — chủ tool chốt: sale đọc cho khách nghe bằng tiếng Việt, và
- * bản dịch tiếng Anh phải do chủ tool cấp chứ tôi không tự dịch số liệu bảo hiểm.
+ * ⚠️ "Không" TRƯỚC ĐÂY CỐ Ý ĐỂ XÁM TRUNG TÍNH (không phải lỗi của hãng) — chủ tool
+ * đã chốt đổi sang ĐỎ để quét mắt nhanh hơn. Đừng "sửa lại cho trung tính".
  *
- * ⚠️ CHỈ DÙNG TRONG BẢNG, KHÔNG DÙNG CHO MỤC NAV. Trên cây công cụ phải viết nhãn
- * bằng CHỮ THƯỜNG y hệt các mục khác ("Proposal / Báo giá" là một chuỗi text trơn).
- * Bản 22/07 dùng helper này cho nav → phần tiếng Việt bị tô xám nhạt trong khi
- * "Proposal / Báo giá" đậm đều → chủ tool bắt lỗi "sao nó lại khác các phần khác".
- * Sắc độ nhạt chỉ hợp trong bảng, nơi cần phân tầng thị giác giữa hai ngôn ngữ.
+ * Bỏ chữ thì phải bù bằng cách khác cho người dùng hiểu + máy đọc màn hình đọc được:
+ * mỗi icon có `title` (hiện tooltip khi rê chuột) + `aria-label`, và khối Chú thích
+ * cuối bảng giải nghĩa cả 3 icon.
  */
-function ssNhan(en, vi) {
-  return `<span class="ss-en">${en}</span><span class="ss-sep">/</span><span class="ss-vi">${vi}</span>`;
+const SS_BADGE = {
+  ok: { cls: 'ss-ok', vi: 'Có',
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' },
+  no: { cls: 'ss-no', vi: 'Không',
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' },
+  wr: { cls: 'ss-wr', vi: 'Chưa rõ',
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="7" x2="12" y2="13"/><line x1="12" y1="17" x2="12" y2="17"/></svg>' }
+};
+
+// Một dấu trạng thái (dùng cho ô trong bảng và cho khối Chú thích)
+function ssDau(s) {
+  const b = SS_BADGE[s];
+  return `<span class="ss-mark ${b.cls}" role="img" aria-label="${b.vi}" title="${b.vi}">${b.icon}</span>`;
 }
 
 function ssLogoUrl(file) {
@@ -212,21 +225,21 @@ function openCompareTable() {
   const view = document.getElementById('doc-viewport');
 
   const dauCot = SS_BENEFITS.map(b =>
-    `<div class="ss-th ss-th-${b.key}">${ssNhan(b.en, b.vi)}</div>`).join('');
+    `<div class="ss-th ss-th-${b.key}">${b.vi}</div>`).join('');
 
   const hang = SS_DATA.map((c, i) => {
     const soCo = SS_BENEFITS.reduce((n, b) => n + (c[b.key].s === 'ok' ? 1 : 0), 0);
     const vach = [0, 1, 2, 3].map(k => `<span class="ss-seg${k < soCo ? ' on' : ''}"></span>`).join('');
     // data-label: trên mobile bảng bỏ hàng tiêu đề, mỗi ô tự hiện tên quyền lợi
-    const o = SS_BENEFITS.map(b => {
-      const bd = SS_BADGE[c[b.key].s];
-      return `<div class="ss-cell" data-label="${b.en} / ${b.vi}"><span class="ss-badge ${bd.cls}"><span aria-hidden="true">${bd.ic}</span>${ssNhan(bd.en, bd.vi)}</span></div>`;
-    }).join('');
+    const o = SS_BENEFITS.map(b =>
+      `<div class="ss-cell" data-label="${b.vi}">${ssDau(c[b.key].s)}</div>`).join('');
     const the = SS_BENEFITS.map(b => {
       const cell = c[b.key]; const bd = SS_BADGE[cell.s];
       const noiDung = cell.d || (cell.s === 'no' ? 'Không cung cấp quyền lợi này.' : '—');
+      // Trong thẻ chi tiết VẪN giữ chữ ("Có"/"Không") — mỗi hãng chỉ có 4 thẻ, không lặp
+      // 64 lần như ô trong bảng, nên chữ ở đây làm rõ nghĩa chứ không gây rối.
       return `<div class="ss-dcard${cell.d ? '' : ' ss-empty'}">
-          <div class="ss-dh ss-dh-${b.key}">${ssNhan(b.en, b.vi)} <span class="ss-mini">${bd.ic} ${bd.vi}</span></div>
+          <div class="ss-dh ss-dh-${b.key}">${b.vi} <span class="ss-mini ${bd.cls}">${bd.vi}</span></div>
           <div class="ss-db">${escapeHtml(noiDung)}</div>
         </div>`;
     }).join('');
@@ -237,7 +250,7 @@ function openCompareTable() {
             <span class="ss-logo"><img src="${ssLogoUrl(c.logo)}" alt="" onerror="this.parentElement.textContent='${escapeHtml(c.name.slice(0, 2).toUpperCase())}'"></span>
             <span class="ss-co-txt">
               <span class="ss-co-name">${escapeHtml(c.name)}</span>
-              <span class="ss-meter">${vach}<i>${soCo}/4 ${ssNhan('benefits', 'quyền lợi')}</i></span>
+              <span class="ss-meter">${vach}<i>${soCo}/4 quyền lợi</i></span>
             </span>
             <span class="ss-chev" aria-hidden="true">▸</span>
           </div>
@@ -250,28 +263,30 @@ function openCompareTable() {
   view.innerHTML = `
     <div class="ss-wrap">
       <div class="ss-head-block">
-        <span class="ss-eyebrow">${ssNhan('Internal Use Only', 'Chỉ dùng nội bộ')}</span>
-        <h2>${ssNhan('Living Benefits Comparison', 'So Sánh Quyền Lợi Living Benefits')}</h2>
-        <p>16 hãng bảo hiểm lớn tại Mỹ · 4 nhóm quyền lợi · Dải màu bên trái mỗi thẻ cho biết mức độ bao phủ · Bấm vào một hãng để xem điều khoản chi tiết.</p>
+        <!-- Tiêu đề "So Sánh Living Benefits" + đoạn mô tả ĐÃ BỎ (chủ tool 22/07 later 3):
+             thanh tiêu đề trên đầu app đã hiện "Living Benefits — 16 hãng" rồi, lặp lại
+             ngay dưới là thừa và đẩy bảng xuống thấp. Giữ lại nhãn "CHỈ DÙNG NỘI BỘ" —
+             đây là cảnh báo phạm vi sử dụng, không phải chữ trang trí. -->
+        <span class="ss-eyebrow">Chỉ dùng nội bộ</span>
         <div class="ss-actions">
-          <button type="button" class="btn btn-secondary btn-sm" id="ss-mo-het">${ssNhan('Expand all', 'Mở rộng tất cả')}</button>
-          <button type="button" class="btn btn-secondary btn-sm" id="ss-thu-het">${ssNhan('Collapse all', 'Thu gọn tất cả')}</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="ss-mo-het">Mở rộng tất cả</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="ss-thu-het">Thu gọn tất cả</button>
         </div>
       </div>
       <div class="ss-board">
-        <div class="ss-thead"><div class="ss-th ss-th-co">${ssNhan('Insurance Company', 'Công ty bảo hiểm')}</div>${dauCot}</div>
+        <div class="ss-thead"><div class="ss-th ss-th-co">Công ty bảo hiểm</div>${dauCot}</div>
         ${hang}
       </div>
       <div class="ss-foot">
         <div class="ss-legend">
-          <h3>${ssNhan('Legend', 'Chú thích')}</h3>
-          <div><span class="ss-badge ss-ok">✓ ${ssNhan('Yes', 'Có')}</span> hãng cung cấp quyền lợi này</div>
-          <div><span class="ss-badge ss-no">✕ ${ssNhan('No', 'Không')}</span> không cung cấp / không có rider</div>
-          <div><span class="ss-badge ss-wr">! ${ssNhan('Unclear', 'Chưa rõ')}</span> thiếu thông tin chi tiết công khai</div>
-          <div><span class="ss-meter"><span class="ss-seg on"></span><span class="ss-seg on"></span><span class="ss-seg"></span><span class="ss-seg"></span></span> thanh mức độ = số quyền lợi hãng có (trên 4)</div>
+          <h3>Chú thích</h3>
+          <div>${ssDau('ok')} <span>Hãng có cung cấp quyền lợi này</span></div>
+          <div>${ssDau('no')} <span>Không cung cấp / không có rider</span></div>
+          <div>${ssDau('wr')} <span>Thiếu thông tin chi tiết công khai</span></div>
+          <div><span class="ss-meter"><span class="ss-seg on"></span><span class="ss-seg on"></span><span class="ss-seg"></span><span class="ss-seg"></span></span> <span>Thanh mức độ = số quyền lợi hãng có (trên 4)</span></div>
         </div>
         <div class="ss-note">
-          <h3>${ssNhan('Important Notes', 'Lưu ý quan trọng')}</h3>
+          <h3>Lưu ý quan trọng</h3>
           <p>— Ngoại trừ các công ty mà <b>ThinkSmart Insurance</b> đang trực tiếp đại diện, thông tin của những hãng còn lại chỉ mang tính <b>tham khảo</b> để hỗ trợ so sánh tổng quan, và không được mặc định là chính xác tuyệt đối.</p>
           <p>— Quyền lợi, điều khoản và giới hạn chi trả thực tế sẽ được áp dụng theo <b>loại hợp đồng bảo hiểm, rider và quy định chính thức</b> của từng công ty tại thời điểm phát hành hợp đồng.</p>
         </div>

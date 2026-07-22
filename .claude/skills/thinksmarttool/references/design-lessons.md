@@ -67,6 +67,24 @@ bản gốc lâu dài: `E:\2026\Claude\.claude\skills\`):
 
 ## Log bài học theo ngày
 
+### 2026-07-22 (later 3 — icon thay chữ, một ngôn ngữ, bỏ tiêu đề thừa)
+
+- **Lặp một nhãn 64 lần thì nhãn đó thành nhiễu, không còn là thông tin.** Bảng 4 cột × 16 hàng
+  mà ô nào cũng ghi "✓ Có"/"✕ Không" → mắt phải ĐỌC từng ô. Đổi sang icon + màu thì quét một
+  phát thấy cả bảng. Quy tắc: **giá trị lặp lại dày đặc → mã hoá bằng hình/màu; giá trị xuất
+  hiện một lần → viết chữ.** (Thẻ chi tiết mỗi hãng chỉ 4 cái nên vẫn giữ chữ.)
+- **Bỏ chữ thì phải trả lại nghĩa bằng đường khác**, không được bỏ trắng: `title` (tooltip khi rê
+  chuột) + `aria-label` (máy đọc màn hình) + khối Chú thích giải nghĩa cả 3 icon.
+- **Một bộ class màu dùng cho CẢ icon LẪN chữ thì phải lấy ngưỡng tương phản CAO HƠN.** Icon là
+  đồ hoạ phi văn bản → 3:1; chữ → 4.5:1. Token `--danger` đo được 4.22: đạt cho icon, trượt cho
+  chữ 12px đậm dùng lại cùng class. Đậm thêm một nấc (`#B91C1C` = 5.65) là đạt cả hai.
+- **Chủ tool đảo quyết định sau khi NHÌN THẤY bản thật là chuyện bình thường** — sáng chốt song
+  ngữ, chiều xem bảng thật xong bỏ song ngữ vì rối. Việc của mình là ghi rõ **phạm vi đảo**
+  (chỉ trong bảng; nav vẫn song ngữ) để phiên sau không "sửa lại cho nhất quán" rồi hỏng.
+- **Tiêu đề lặp lại chỗ đã có tiêu đề là chi tiết thừa.** Thanh tiêu đề app đã ghi "Living
+  Benefits — 16 hãng"; in lại ngay dưới chỉ tổ đẩy nội dung chính xuống thấp. Nhưng **phân biệt
+  chữ TRANG TRÍ với chữ CẢNH BÁO**: nhãn "Chỉ dùng nội bộ" giữ lại, nó ràng buộc phạm vi dùng.
+
 ### 2026-07-22 (later 2 — helper trình bày bị bê nhầm ngữ cảnh)
 
 - **Cùng một nội dung, hai ngữ cảnh khác nhau → cách trình bày khác nhau.** Helper song ngữ

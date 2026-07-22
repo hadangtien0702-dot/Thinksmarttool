@@ -1773,7 +1773,6 @@ body.doc-mode .canvas-status-bar { display: none; }
      canvas nên không phóng to được nữa → cỡ chữ nền phải đủ lớn ngay từ đầu. */
   --ss-fs-th: 13px;      /* tiêu đề cột      (cũ 10.5) */
   --ss-fs-name: 16px;    /* tên hãng         (cũ 14)   */
-  --ss-fs-badge: 13px;   /* badge Có/Không   (cũ 11.5) */
   --ss-fs-meter: 12px;   /* "4/4 quyền lợi"  (cũ 10.5) */
   --ss-fs-dh: 13px;      /* tiêu đề thẻ chi tiết (cũ 10.5) */
   --ss-fs-body: 14.5px;  /* nội dung điều khoản  (cũ 12.5) */
@@ -1781,27 +1780,22 @@ body.doc-mode .canvas-status-bar { display: none; }
   max-width: 1240px; margin: 0 auto; padding: 30px 26px 56px;
 }
 
-/* Nhãn song ngữ "English / Tiếng Việt" — ĐÚNG quy ước của cả app
-   ("Proposal / Báo giá", "Brochure / Tài liệu", "Name Card / Danh thiếp").
-   Mỗi vế nowrap để khi cột hẹp thì xuống dòng ĐÚNG chỗ gạch chéo, không vỡ giữa từ. */
-.ss-en, .ss-vi { white-space: nowrap; }
-.ss-vi { font-weight: 600; color: var(--text-3); text-transform: none; letter-spacing: 0; }
-.ss-sep { color: var(--text-3); opacity: 0.5; padding: 0 2px; }
+/* .ss-en/.ss-vi/.ss-sep ĐÃ XOÁ 22/07 (later 3) — bảng chuyển về MỘT ngôn ngữ tiếng Việt.
+   Quy ước song ngữ "English / Tiếng Việt" VẪN ÁP DỤNG cho mục nav/menu, nhưng ở đó viết
+   bằng chữ trơn nên không cần class riêng. */
 
 /* ---------- Tiêu đề khối ---------- */
-.ss-head-block { margin-bottom: 18px; }
+.ss-head-block { margin-bottom: 16px; }
 .ss-eyebrow {
   display: inline-flex; align-items: center; gap: 7px;
   font-size: var(--fs-xs); font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase;
   color: var(--brand); background: var(--brand-soft);
   padding: 5px 12px; border-radius: var(--r-pill); margin-bottom: 10px;
 }
-.ss-head-block h2 {
-  margin: 0; font-size: var(--fs-2xl); font-weight: 800;
-  letter-spacing: -0.5px; color: var(--text); line-height: 1.15;
-}
-.ss-head-block p { margin: 8px 0 0; font-size: var(--ss-fs-body); color: var(--text-3); max-width: 68ch; line-height: 1.55; }
-.ss-actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+/* h2 + p ĐÃ XOÁ 22/07 (later 3) — chủ tool bỏ tiêu đề và đoạn mô tả khỏi bảng
+   (thanh tiêu đề của app đã hiện "Living Benefits — 16 hãng" rồi). Chỉ còn
+   nhãn "Chỉ dùng nội bộ" + 2 nút, nên hàng nút không cần đẩy xuống nữa. */
+.ss-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 
 /* ---------- Bảng = xếp thẻ, KHÔNG phải lưới kẻ ô ---------- */
 .ss-board { display: flex; flex-direction: column; gap: 9px; }
@@ -1895,10 +1889,16 @@ body.doc-mode .canvas-status-bar { display: none; }
 .ss-row.open .ss-chev { transform: rotate(90deg); background: var(--brand); color: var(--text-on-brand); }
 
 .ss-cell { min-width: 0; display: flex; align-items: center; justify-content: center; padding: 10px 8px; }
-.ss-badge {
-  display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
-  font-size: var(--ss-fs-badge); font-weight: 800; padding: 6px 13px; border-radius: var(--r-pill);
+
+/* DẤU TRẠNG THÁI — chỉ ICON, không chữ (chủ tool 22/07 later 3: "tinh gọn").
+   64 ô mà ô nào cũng có chữ "Có"/"Không" thì mắt phải ĐỌC từng ô; còn icon + màu thì
+   quét một phát thấy ngay cả bảng. Nghĩa của icon nằm ở tooltip + khối Chú thích cuối bảng. */
+.ss-mark {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: var(--r-pill);
+  flex: none;
 }
+.ss-mark svg { width: 17px; height: 17px; }
 /* ⚠️ MÀU CHỮ BADGE ĐẶT RIÊNG, KHÔNG dùng thẳng --success/--warning.
    Đo thật (luminance, có TRỘN alpha của nền) thì cặp token mặc định KHÔNG đạt
    AA 4.5 cho chữ 12px đậm:
@@ -1908,11 +1908,19 @@ body.doc-mode .canvas-status-bar { display: none; }
    Nên chốt màu chữ riêng cho badge, đo lại đạt hết (số ghi ở cuối khối).
    Đây là vấn đề CHUNG của mẫu "badge nền nhạt" trong app (badge trạng thái ở trang
    Thành viên dùng cùng cặp token) — sửa toàn cục là việc riêng, xem PENDING. */
-.ss-ok { color: #0F7A38;        background: var(--success-soft); }
-.ss-no { color: var(--text-2);  background: var(--surface-3); }   /* "Không" là trung tính, không phải lỗi */
-.ss-wr { color: #96590A;        background: var(--warning-soft); }
-body.dark-theme .ss-ok { color: var(--success); }
-body.dark-theme .ss-no { color: var(--text-3); }
+/* ⚠️ "Không" TRƯỚC ĐÂY CỐ Ý XÁM TRUNG TÍNH (không cung cấp ≠ lỗi của hãng).
+   Chủ tool chốt 22/07 đổi sang ĐỎ cho dễ quét mắt. Đừng "sửa lại cho trung tính".
+   Đo tương phản icon trên nền soft (chuẩn đồ hoạ phi văn bản WCAG 1.4.11 là 3:1):
+     #0F7A38 trên #E7F7EE = 4.90 · #B91C1C trên #FCECEC = 5.69 · #96590A trên #FBF1E2 = 5.04
+   Vì sao KHÔNG dùng thẳng --danger #DC2626: đo được 4.22 — đủ cho ICON (3:1) nhưng
+   3 lớp màu này DÙNG LẠI cho chữ "Có/Không" 12px đậm trong thẻ chi tiết, mà chữ cần
+   4.5:1. Đỏ đậm hơn một nấc là đạt cả hai, vẫn đọc rõ là màu đỏ.
+   (Warning cũng vậy: --warning #C2740B chỉ 3.23 nên dùng #96590A.) */
+.ss-ok { color: #0F7A38; background: var(--success-soft); }
+.ss-no { color: #B91C1C; background: var(--danger-soft); }
+.ss-wr { color: #96590A; background: var(--warning-soft); }
+body.dark-theme .ss-ok { color: #4ADE80; }
+body.dark-theme .ss-no { color: #F87171; }
 body.dark-theme .ss-wr { color: #E9A23B; }
 
 /* ---------- Chi tiết mở ra NGAY TRONG thẻ (giữ ẩn dụ thẻ bo tròn) ---------- */
@@ -1935,7 +1943,10 @@ body.dark-theme .ss-wr { color: #E9A23B; }
 .ss-dh-chr  { box-shadow: inset 3px 0 0 var(--warning); }
 .ss-dh-cri  { box-shadow: inset 3px 0 0 var(--success); }
 .ss-dh-inj  { box-shadow: inset 3px 0 0 var(--brand); }
-.ss-mini { font-weight: 800; font-size: var(--ss-fs-meter); color: var(--text-3); white-space: nowrap; }
+.ss-mini {
+  font-weight: 800; font-size: var(--ss-fs-meter); white-space: nowrap;
+  padding: 3px 9px; border-radius: var(--r-pill);   /* dùng lại 3 lớp màu .ss-ok/.ss-no/.ss-wr */
+}
 .ss-db { padding: 12px 13px; font-size: var(--ss-fs-body); color: var(--text-2); line-height: 1.6; flex: 1; }
 .ss-empty .ss-db { color: var(--text-3); font-style: italic; }
 
@@ -1949,7 +1960,9 @@ body.dark-theme .ss-wr { color: #E9A23B; }
   margin: 0 0 12px; font-size: var(--fs-2xs); font-weight: 800; letter-spacing: 0.8px;
   text-transform: uppercase; color: var(--brand);
 }
-.ss-legend div { display: flex; align-items: center; gap: 10px; font-size: var(--ss-fs-body); color: var(--text-2); margin-bottom: 10px; }
+.ss-legend div { display: flex; align-items: center; gap: 12px; font-size: var(--ss-fs-body); color: var(--text-2); margin-bottom: 12px; }
+.ss-legend .ss-mark { width: 26px; height: 26px; }
+.ss-legend .ss-mark svg { width: 15px; height: 15px; }
 .ss-legend div:last-child { margin-bottom: 0; }
 .ss-note p { margin: 0 0 10px; font-size: var(--ss-fs-body); color: var(--text-2); line-height: 1.6; }
 .ss-note p:last-child { margin-bottom: 0; }

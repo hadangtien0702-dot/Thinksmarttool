@@ -174,6 +174,53 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
 
+### 2026-07-22 (later 3 — bảng So sánh: icon thay chữ, MỘT ngôn ngữ, bỏ tiêu đề)
+
+**1. 🔴 ĐẢO QUYẾT ĐỊNH SONG NGỮ — NHƯNG CHỈ TRONG BẢNG NÀY.** Chủ tool: *"bảng này chỉ sử dụng
+1 ngôn ngữ tiếng Việt cho gọn gàng"*. Sáng cùng ngày chốt song ngữ, xem bản thật xong thì đổi:
+5 cột × 16 hàng mà nhãn nào cũng gánh 2 ngôn ngữ thì rối, đọc chậm.
+⚠️ **ĐỪNG SỬA NGƯỢC LẠI:** quy ước `English / Tiếng Việt` VẪN ĐÚNG cho **mục nav / menu**
+(`Compare / So sánh quyền lợi`, `Proposal / Báo giá`…). Chỉ NỘI DUNG BẢNG là tiếng Việt.
+Đã xoá helper `ssNhan()` và 3 class `.ss-en/.ss-vi/.ss-sep`.
+
+**2. Ô trong bảng: CHỈ CÒN ICON, bỏ chữ** (chủ tool: *"icon check xanh lá cho yes và ngược lại
+đỏ cho No — tinh gọn"*). Trước là 64 viên thuốc "✓ Có"/"✕ Không" → mắt phải ĐỌC từng ô; nay icon
+tròn 30px + màu → quét một phát thấy cả bảng. Bù lại phần chữ đã mất: mỗi icon có `title`
+(tooltip) + `aria-label`, và khối **Chú thích** cuối bảng giải nghĩa cả 3 icon.
+Trong **thẻ chi tiết** thì VẪN giữ chữ "Có/Không" — mỗi hãng chỉ 4 thẻ, không lặp 64 lần.
+
+⚠️ **"Không" TRƯỚC ĐÂY CỐ Ý ĐỂ XÁM TRUNG TÍNH** (hãng không cung cấp ≠ hãng có lỗi) — chủ tool
+chốt đổi sang ĐỎ. Đừng "sửa lại cho trung tính", đó là quyết định có chủ ý.
+
+**3. Bỏ tiêu đề + đoạn mô tả** khỏi đầu bảng (`h2` + `p`, CSS xoá luôn): thanh tiêu đề của app
+đã hiện "Living Benefits — 16 hãng" rồi, lặp lại ngay dưới là thừa và đẩy bảng xuống thấp.
+**GIỮ** nhãn "Chỉ dùng nội bộ" — đó là cảnh báo phạm vi sử dụng, không phải chữ trang trí.
+
+**MÀU + TƯƠNG PHẢN (đo thật, không tính tay):**
+| | icon (ngưỡng 3:1) | chữ trong thẻ chi tiết (ngưỡng 4.5:1) |
+|---|---|---|
+| Có `#0F7A38` | sáng 4.90 · tối 10.67 | 4.90 · 8.33 |
+| Không `#B91C1C` | sáng 5.65 · tối 6.89 | 5.65 · 5.62 |
+| Chưa rõ `#96590A` | sáng 5.04 · tối 8.44 | 5.04 · 6.60 |
+
+**Vì sao KHÔNG dùng thẳng token `--danger` #DC2626:** đo được **4.22** — đủ cho ICON nhưng 3 lớp
+màu này DÙNG LẠI cho chữ 12px đậm trong thẻ chi tiết, mà chữ cần 4.5. Đỏ đậm hơn một nấc
+(`#B91C1C`) đạt cả hai. Tương tự `--warning` #C2740B chỉ 3.23 → dùng `#96590A`.
+→ **Bài học: khi một bộ class màu được dùng cho CẢ icon LẪN chữ thì phải lấy ngưỡng CAO HƠN
+(4.5), đừng lấy ngưỡng của icon.**
+
+**Version:** `style.css?v=61`, `js/sosanh.js?v=6`.
+
+**Kiểm chứng** (file tạm `public/_ss-preview.html`, đã xoá): quét toàn bộ `.ss-wrap.innerText`
+tìm 14 từ tiếng Anh cũ (Yes/No/Unclear/Expand/Collapse/Insurance Company/Terminal Illness/…) →
+**không còn từ nào**; ô trong bảng `textContent` **rỗng** + có `<svg>` + `title="Có"` +
+`aria-label="Có"`; đầu cột ra đúng 5 nhãn tiếng Việt; `4/4 quyền lợi`; `h2`/`p` không còn tồn
+tại, `.ss-eyebrow` = "Chỉ dùng nội bộ"; tương phản đo bằng luminance CÓ trộn alpha ở CẢ 2 theme
+→ **đạt hết**.
+❗ CHƯA kiểm mobile: `resize_window` không ăn (`innerWidth` vẫn 981 thay vì 375) — đúng cái bẫy
+đã ghi ở bài học "không tin số đo sau resize". Theo nguyên tắc desktop-trước-mobile-sau thì để
+sau. ❗ CHƯA xem bằng mắt trong `/tool` thật (login chặn).
+
 ### 2026-07-22 (later 2 — bỏ chi tiết thừa trên thẻ brochure + nhãn nav phải giống mọi mục)
 
 **1. Bỏ dòng "PDF · 249 KB" khỏi thẻ Brochure** (`library-card-meta` + `library-card-ext` trong
