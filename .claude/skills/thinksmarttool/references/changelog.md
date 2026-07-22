@@ -77,6 +77,10 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
    giả định "mọi mục trong Công cụ đều là file SVG" khi sửa `renderFileTree`.
 
 **Mở từ 2026-07-20 (cập nhật 21/07 sau khi merge thành `feat/mainV1.1`):**
+- **Z. BADGE NỀN NHẠT KHÔNG ĐẠT AA TRÊN TOÀN APP** (phát hiện 21/07 khi làm bảng So sánh):
+  cặp `--success`/`--success-soft` = 2.97 và `--warning`/`--warning-soft` = 3.24 ở theme sáng.
+  Badge trạng thái + quyền ở trang Thành viên (`.badge.st-active`, `.role-admin`…) dùng cùng
+  mẫu này. Đã vá RIÊNG cho `.ss-*`; cần rà và vá chung (đo bằng luminance CÓ trộn alpha nền).
 - **A. Danh sách xếp hạng Allianz đang là TẠM** — owner sẽ gửi bản chính thức sau. Sửa ở
   `RATE_CLASSES_BY_CARRIER.Allianz` trong `public/js/proposal.js` (nhớ bump `proposal.js?v=`).
 - **B. ~~`feat/login` chưa push~~ XONG 21/07**: đã push `feat/login` (v1.12) rồi merge `--no-ff`
@@ -140,6 +144,54 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > **Ghi chú merge 21/07/2026:** `main` và `feat/login` chạy song song ngày 20/07 nên có HAI mục
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
+
+### 2026-07-21 (later 16 — bảng So sánh dựng lại theo ngôn ngữ thẻ bo tròn, v1.17)
+
+Chủ tool: *"Creative hơn — anh muốn nó là một dạng bảng có góc bo tròn như thiết kế của
+mình vậy đó"*. Bản later 15 là bảng kẻ ô dính liền → nhìn generic, lạc với phần còn lại
+của tool (chỗ nào cũng là thẻ bo tròn).
+
+**Cách dựng lại:** bỏ khung bảng liền khối. Mỗi hãng = MỘT THẺ BO TRÒN riêng
+(`--r-lg` 14px), cách nhau 9px; hàng tiêu đề cũng là một thẻ bo tròn dính đầu khi cuộn.
+Thêm: dải màu 4px bên trái mỗi thẻ mã hoá mức độ bao phủ (4/4 xanh, 3 tím brand, 1–2
+vàng, 0 xám) — cùng dữ liệu với thanh x/4, chỉ là mã hoá thị giác; hover nâng thẻ lên
+(`translateY(-1px)` + shadow-md); mở ra thì viền brand + chi tiết bung NGAY TRONG thẻ
+(giữ ẩn dụ thẻ); mũi tên thành nút tròn xoay 90°. Toàn token, không hardcode màu.
+
+**⚠️ CĂN CỘT KHÔNG DÙNG SUBGRID ĐƯỢC** (thẻ có bo góc + padding riêng — đúng cái đánh
+đổi ghi ở bài học subgrid). Giải: khai báo `--ss-cols` MỘT chỗ trên `.ss-wrap`, header
+và mọi hàng cùng đọc; bắt buộc `min-width:0` trên mọi ô để nội dung không đẩy phình cột.
+Đo lại: header và cả 16 hàng ra ĐÚNG một bộ toạ độ (431|278, 709|132, 842|132, 974|132,
+1106|132) — không lệch 1px nào.
+
+**🔴 PHÁT HIỆN LỚN — BADGE NỀN NHẠT KHÔNG ĐẠT AA, CẢ HAI THEME.**
+Đo thật (luminance + TRỘN alpha của nền) cặp token mặc định:
+
+| Badge | Sáng (trước) | Tối (trước) | Sau khi vá |
+|---|---|---|---|
+| Có — `--success` / `--success-soft` | **2.97** ✗ | 4.60 ✓ | 4.90 / 4.60 |
+| Không — `--text-3` / `--surface-3` | **4.45** ✗ | 5.09 ✓ | 5.81 / 5.09 |
+| Chưa rõ — `--warning` / `--warning-soft` | **3.24** ✗ | **4.12** ✗ | 5.04 / 6.89 |
+
+Vá bằng màu chữ riêng cho badge (`#0F7A38` xanh đậm, `--text-2`, `#96590A` amber đậm;
+theme tối giữ token + `#E9A23B`). **KHÔNG sửa token toàn cục** vì `--success`/`--warning`
+còn dùng chỗ khác đã kiểm. Đã đo lại toàn bộ 8 cặp chữ/nền ở CẢ HAI theme → thấp nhất
+4.56, không còn chỗ nào dưới 4.5.
+➡️ **Đây là vấn đề CHUNG của mẫu "badge nền nhạt" trong app** (badge trạng thái/quyền ở
+trang Thành viên dùng cùng cặp token) — thêm vào PENDING, cần rà riêng.
+
+**⚠️ HAI LẦN SUÝT SỬA NHẦM — cả hai đều do CÔNG CỤ ĐO, không phải code:**
+1. Sau khi bấm mở hàng, `getComputedStyle` trả về giá trị CŨ (viền/nền/transform không
+   đổi) dù rule khớp và không có gì đè. Đúng bài học 13: pane trình duyệt đơ style-recalc.
+   **Tải lại trang rồi đo mới ra đúng.** Suýt đi "sửa" đoạn CSS vốn đã chạy đúng.
+2. Hàm đo tương phản tự viết trả `null`/`1` vô lý: (a) quên trộn alpha nền badge →
+   ra tỉ lệ 1; (b) truyền chuỗi màu vào tham số cần object → NaN → JSON hoá thành null.
+   **Số đo bất thường thì nghi công cụ đo trước.**
+
+Kiểm chứng: 16 thẻ, cột thẳng tuyệt đối, mở/đóng + mở rộng/thu gọn tất cả chạy,
+`<button>` Tab được + `aria-expanded` đổi đúng, mobile bỏ header và mỗi ô tự hiện nhãn
+quyền lợi (không tràn ngang), 16/16 logo. `style.css?v=57`, `sosanh.js?v=2`,
+`config.js?v=8`, badge **v1.17**.
 
 ### 2026-07-21 (later 15 — bảng So sánh Living Benefits hoàn chỉnh, v1.16)
 

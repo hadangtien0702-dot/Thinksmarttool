@@ -176,9 +176,10 @@ function openCompareTable() {
   const hang = SS_DATA.map((c, i) => {
     const soCo = SS_BENEFITS.reduce((n, b) => n + (c[b.key].s === 'ok' ? 1 : 0), 0);
     const vach = [0, 1, 2, 3].map(k => `<span class="ss-seg${k < soCo ? ' on' : ''}"></span>`).join('');
+    // data-label: trên mobile bảng bỏ hàng tiêu đề, mỗi ô tự hiện tên quyền lợi
     const o = SS_BENEFITS.map(b => {
       const bd = SS_BADGE[c[b.key].s];
-      return `<div class="ss-cell"><span class="ss-badge ${bd.cls}"><span aria-hidden="true">${bd.ic}</span>${bd.txt}</span></div>`;
+      return `<div class="ss-cell" data-label="${b.en}"><span class="ss-badge ${bd.cls}"><span aria-hidden="true">${bd.ic}</span>${bd.txt}</span></div>`;
     }).join('');
     const the = SS_BENEFITS.map(b => {
       const cell = c[b.key]; const bd = SS_BADGE[cell.s];
@@ -189,7 +190,7 @@ function openCompareTable() {
         </div>`;
     }).join('');
     return `
-      <div class="ss-row" data-i="${i}">
+      <div class="ss-row" data-i="${i}" data-score="${soCo}">
         <button type="button" class="ss-row-main" aria-expanded="false" aria-label="Xem chi tiết ${escapeHtml(c.name)}">
           <div class="ss-co">
             <span class="ss-logo"><img src="${ssLogoUrl(c.logo)}" alt="" onerror="this.parentElement.textContent='${escapeHtml(c.name.slice(0, 2).toUpperCase())}'"></span>
@@ -208,16 +209,17 @@ function openCompareTable() {
   view.innerHTML = `
     <div class="ss-wrap">
       <div class="ss-head-block">
+        <span class="ss-eyebrow">Internal Use Only</span>
         <h2>So Sánh Living Benefits</h2>
-        <p>16 hãng bảo hiểm lớn tại Mỹ · 4 nhóm quyền lợi · Bấm vào từng hãng để xem chi tiết · <b>Internal Use Only</b></p>
+        <p>16 hãng bảo hiểm lớn tại Mỹ · 4 nhóm quyền lợi · Dải màu bên trái mỗi thẻ cho biết mức độ bao phủ · Bấm vào một hãng để xem điều khoản chi tiết.</p>
         <div class="ss-actions">
           <button type="button" class="btn btn-secondary btn-sm" id="ss-mo-het">Mở rộng tất cả</button>
           <button type="button" class="btn btn-secondary btn-sm" id="ss-thu-het">Thu gọn tất cả</button>
         </div>
       </div>
-      <div class="ss-table" role="table" aria-label="Bảng so sánh Living Benefits">
+      <div class="ss-board">
         <div class="ss-thead"><div class="ss-th ss-th-co">Công Ty Bảo Hiểm<small>Mức độ bao phủ</small></div>${dauCot}</div>
-        <div class="ss-tbody">${hang}</div>
+        ${hang}
       </div>
       <div class="ss-foot">
         <div class="ss-legend">

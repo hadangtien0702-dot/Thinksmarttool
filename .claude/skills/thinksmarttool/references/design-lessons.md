@@ -51,6 +51,22 @@ bản gốc lâu dài: `E:\2026\Claude\.claude\skills\`):
 
 ## Log bài học theo ngày
 
+### 2026-07-21 (later — bảng So sánh Living Benefits)
+- **Bảng nhiều hàng mà muốn THẺ BO TRÒN thì không subgrid được** (thẻ có bo góc + padding
+  riêng). Giải: khai báo `grid-template-columns` MỘT chỗ bằng biến CSS, header và mọi hàng
+  cùng đọc; **bắt buộc `min-width:0` trên mọi ô** để nội dung không đẩy phình cột. Đo lại
+  toạ độ từng cột của header vs hàng đầu vs hàng cuối phải TRÙNG KHÍT.
+- **Badge nền nhạt (soft background) rất hay trượt AA** — nhất là màu vàng/cam. Phải đo
+  bằng luminance **CÓ TRỘN alpha** của nền badge lên nền dưới, đừng đọc mã màu rồi đoán.
+  Ở dự án này cặp token mặc định cho ra 2.97 / 3.24 (sáng) và 4.12 (tối) → phải đặt màu
+  chữ riêng cho badge.
+- **Số đo bất thường thì nghi CÔNG CỤ ĐO trước khi nghi code.** Dính 2 lần trong một
+  phiên: (a) pane đơ style-recalc sau khi đổi class → getComputedStyle trả giá trị cũ,
+  phải TẢI LẠI TRANG mới đúng; (b) hàm đo tự viết truyền sai kiểu tham số → NaN →
+  JSON.stringify hoá thành null. Tỉ lệ tương phản bằng đúng 1 hoặc null = hàm đo sai,
+  không phải màu sai.
+
+
 ### 2026-07-21 (later 2 — 3 lỗi Allianz, xem changelog cùng ngày)
 - Rút ra quy tắc **11, 12, 13** ở trên. Cả 3 lỗi đều lọt vì phiên trước chỉ chạy `node --check`
   rồi coi như xong; chỉ cần mở đúng mẫu Allianz gõ thử 3 ô là lộ hết ngay.
