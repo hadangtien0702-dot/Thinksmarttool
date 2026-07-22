@@ -848,6 +848,34 @@ body.dark-theme .btn-danger-outline { --acc: #F87171; }
 .mem-search button:hover { background: var(--danger-soft); color: var(--danger); }
 .mem-hit { font-size: var(--fs-sm); font-weight: 700; color: var(--text-3); white-space: nowrap; }
 
+/* --- Thanh lật trang (22/07: chủ tool "phải scroll", xin chuyển sang lật trang) --- */
+.pager {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 14px 0 2px;
+}
+.pager-info { font-size: var(--fs-sm); color: var(--text-3); font-variant-numeric: tabular-nums; }
+.pager-sep { flex: 1; }
+.pager-cham { color: var(--text-3); padding: 0 2px; user-select: none; }
+.pager-nut {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 34px; height: 34px; padding: 0 8px;
+  border: 1px solid var(--border-strong); border-radius: var(--r-md);
+  background: var(--surface); color: var(--text);
+  font: inherit; font-size: var(--fs-sm); font-weight: 700;
+  font-variant-numeric: tabular-nums; cursor: pointer;
+  transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease),
+              color var(--dur) var(--ease);
+}
+.pager-nut svg { width: 16px; height: 16px; }
+.pager-nut:hover:not(:disabled) { border-color: var(--brand); color: var(--brand); }
+.pager-nut:disabled { opacity: 0.4; cursor: not-allowed; }
+/* Trang đang xem: nền đặc, không chỉ đổi màu chữ — phải nhìn phát là biết đang ở đâu */
+.pager-nut.dang-xem {
+  background: var(--brand); border-color: var(--brand); color: var(--text-on-brand);
+  cursor: default;
+}
+.pager-nut.dang-xem:hover { color: var(--text-on-brand); }
+
 /* Bố cục 2 cột trang Quản lý thành viên (chủ tool 21/07):
    trái = danh sách người, phải = các con số tổng hợp.
    Cột phải hẹp và DÍNH theo cuộn để lúc rà danh sách dài vẫn thấy tổng quan. */

@@ -190,6 +190,50 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
 
+### 2026-07-22 (later 10 — PHÂN TRANG danh sách thành viên)
+
+Chủ tool: *"phần này phải scroll, chuyển qua dạng slide được không"* → phân trang, **12 hàng/trang**
+(hàng cao 54px × 12 ≈ 650px, vừa một màn hình cùng tiêu đề + thanh công cụ, không phải cuộn).
+⚠️ Đừng tăng bừa lên 20–30 rồi lại phải cuộn — mất đúng thứ vừa sửa.
+
+Phân trang **RIÊNG cho từng nhóm** (`pending` / `active` / `suspended`), mỗi nhóm một thanh lật
+trang, nhóm ≤ 1 trang thì thanh tự ẩn. Có nút ‹ ›, dãy số trang rút gọn bằng `…`, và dòng
+"13–24 trên 51". Lật trang xong tự `scrollIntoView` về đầu nhóm.
+
+**🚨 HAI CHỖ PHÂN TRANG SUÝT LÀM HỎNG — phải sửa kèm, không phải việc phụ:**
+
+1. **"Chọn tất cả" phải ăn CẢ NHÓM, không phải trang đang xem.** Bản cũ duyệt
+   `tbl.querySelectorAll('.m-pick')` = các ô ĐANG HIỂN THỊ. Có phân trang thì nó chỉ chọn 12
+   người, trong khi tiêu đề vẫn ghi "Thành viên 51" → người dùng tưởng đã chọn hết 51 rồi bấm
+   "Tạm khoá". Sửa: chọn theo **DỮ LIỆU** của cả nhóm (`nhom[khoa]`), rồi mới đồng bộ ô tick.
+2. **Ô "chọn tất cả" phải phản ánh CẢ NHÓM.** Tính theo hàng hiển thị thì lật sang trang chưa
+   chọn ai là ô tự bỏ tick, dù 40 người ở trang khác vẫn đang được chọn.
+
+`danhSach` giữ NGUYÊN danh sách đã lọc (không cắt theo trang) nên `nguoiHopLe()` và mọi thao tác
+hàng loạt vẫn chạy đúng trên toàn bộ người đã chọn, kể cả người ở trang khác.
+
+Kẹp số trang khi vẽ (`if (trang > soTrang) trang = soTrang`): xoá/lọc bớt người có thể làm trang
+hiện tại không còn tồn tại → không kẹp là màn hình trắng trơn mà không hiểu vì sao.
+Gõ ô tìm → reset về trang 1.
+Thanh lật trang dùng **uỷ quyền sự kiện** trên `#page-content` — nút được dựng lại sau mỗi lần
+vẽ nên gắn handler trực tiếp vào nút là mất.
+
+**Kiểm chứng** (trang tạm, chạy HÀM THẬT `veNhom`/`soNut`/`onPagerClick`/`onPickChange`/
+`capNhatThanhHangLoat` chép từ members.js, 51 người giả):
+- 5 trang, trang cuối 3 người, `1–12 trên 51` → `49–51 trên 51`, nút ‹ khoá ở trang 1, › khoá ở
+  trang cuối, dãy số rút gọn có `…`.
+- Chọn tất cả → **51** người (không phải 12), thanh ghi "Đã chọn 51", 12 ô tick + 12 hàng tô sáng.
+- Lật sang trang 3 → vẫn 12 ô tick, ô chọn-tất-cả vẫn tick, đếm vẫn 51.
+- Bỏ tick 1 người → 50, ô chọn-tất-cả chuyển **lửng** (indeterminate).
+- Về trang 1 → người vừa bỏ KHÔNG bị hồi sinh, tổng vẫn 50.
+
+**BÀI HỌC VỀ CÁCH KIỂM CHỨNG:** lần đầu trang thử báo "lật trang là mất sạch tick" — tưởng bug
+sản phẩm. Đọc lại `rowHtml` THẬT thì nó CÓ khôi phục cả `checked` lẫn class `is-picked`; thiếu là
+ở **bản rút gọn tôi tự viết trong trang thử**. → Trang thử mà đơn giản hoá phần đang cần kiểm thì
+nó kiểm chính bản rút gọn đó, không kiểm sản phẩm. Đã sửa trang thử cho khớp rồi mới đo lại.
+
+**Version:** `portal.css?v=40`, `portal/members.js?v=14`.
+
 ### 2026-07-22 (later 9 — thiết kế lại thanh thao tác hàng loạt)
 
 Chủ tool: *"nút ở thanh này em thiết kế lại cho dễ dùng hơn, anh nhìn vào thấy nó bị rối"*.
