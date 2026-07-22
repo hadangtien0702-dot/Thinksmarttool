@@ -928,8 +928,13 @@ body.dark-theme .btn-danger-outline { --acc: #F87171; }
   font-size: var(--fs-xl); font-weight: 800; letter-spacing: -0.5px;
   line-height: 1; font-variant-numeric: tabular-nums; color: var(--text);
 }
-.ms-row .ms-value.is-warn { color: var(--warning); }
-.ms-row .ms-value.is-ok   { color: var(--success); }
+/* Dùng bộ màu đã đo đạt AA (giống bảng So sánh / thanh thao tác), KHÔNG dùng thẳng
+   token --warning/--danger: đo 22/07 ra 3.62 và 3.73 trên nền trắng, dưới ngưỡng 4.5. */
+.ms-row .ms-value.is-warn   { color: #96590A; }
+.ms-row .ms-value.is-ok     { color: var(--success); }
+.ms-row .ms-value.is-danger { color: #B91C1C; }
+body.dark-theme .ms-row .ms-value.is-warn   { color: #E9A23B; }
+body.dark-theme .ms-row .ms-value.is-danger { color: #F87171; }
 
 /* Tiêu đề nhóm phụ trong khối tổng quan ("Theo phòng ban") */
 .ms-panel-head.ms-sub { margin-top: 6px; padding-top: 12px; border-top: 1px solid var(--border); border-bottom: none; }

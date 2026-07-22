@@ -25,6 +25,11 @@
   let danhSach = [];   // hồ sơ SAU khi lọc — mọi thao tác hàng loạt chạy trên đây
   let toanBo  = [];    // hồ sơ gốc, chưa lọc — dùng để đếm theo phòng ban
   let locPhongBan = null;  // null = không lọc
+  // Lọc theo quyền — chủ tool 22/07 chỉ cần DUY NHẤT "Admin". null = không lọc.
+  // GỘP CẢ `super_admin`: người đó có quyền cao hơn admin, hỏi "ai đang có quyền
+  // quản trị" mà bỏ sót họ là sai. Con số trên nút vì vậy đếm cả hai.
+  let locQuyen = null;
+  const QUYEN_QUAN_TRI = ['admin', 'super_admin'];
   let timKiem = '';        // chuỗi tìm kiếm ĐÃ BỎ DẤU, rỗng = không tìm
 
   // --- PHÂN TRANG (22/07: chủ tool "phải scroll", xin chuyển sang dạng lật trang) ---
@@ -193,13 +198,41 @@
     hop.innerHTML = html;
   }
 
+  // Nút lọc theo quyền — chỉ MỘT nút "Admin" (chủ tool 22/07).
+  // Đếm trên TOÀN BỘ, không phụ thuộc bộ lọc đang bật — giống veDemPhongBan,
+  // nếu không thì bấm lọc xong con số tự tụt về chính nó.
+  function veDemQuyen(rows) {
+    const hop = $('ms-roles');
+    if (!hop) return;
+    const n = rows.filter(function (r) { return QUYEN_QUAN_TRI.indexOf(r.role) !== -1; }).length;
+    hop.innerHTML =
+      '<button class="ms-dept' + (locQuyen ? ' is-on' : '') + '" data-role="admin">' +
+        '<span class="msd-name">Admin</span>' +
+        '<span class="msd-count">' + n + '</span>' +
+      '</button>';
+  }
+
+  function onRoleClick(e) {
+    const btn = e.target.closest('[data-role]');
+    if (!btn) return;
+    locQuyen = locQuyen ? null : 'admin';   // bấm lại chính nó = bỏ lọc
+    trang.pending = trang.active = trang.suspended = 1;
+    dangChon.clear();                        // xem ghi chú ở ô tìm: đổi bộ lọc là bỏ chọn
+    veDanhSach();
+  }
+
   function onDeptClick(e) {
     const btn = e.target.closest('.ms-dept');
     if (!btn) return;
     const d = btn.getAttribute('data-dept');
     locPhongBan = (locPhongBan === d) ? null : d;   // bấm lại chính nó = bỏ lọc
+    trang.pending = trang.active = trang.suspended = 1;  // lọc lại thì về trang đầu
     dangChon.clear();                                // đổi bộ lọc thì bỏ chọn cũ
-    load();
+    // Trước 22/07 chỗ này gọi load() — nạp LẠI từ Supabase chỉ để lọc, trong khi dữ
+    // liệu đã nằm sẵn trong `toanBo`. Vừa chậm vừa tốn quota, lại khác hẳn cách bộ
+    // lọc quyền và ô tìm làm việc. Cho cả ba dùng chung veDanhSach() để hành vi
+    // giống nhau (nhất là việc reset trang — thiếu nó thì lọc xong còn kẹt ở trang 3).
+    veDanhSach();
   }
 
   // ---- Trạng thái đang tải ---------------------------------------------------
@@ -272,12 +305,16 @@
     // Đếm theo phòng ban dựa trên TOÀN BỘ (không phụ thuộc bộ lọc đang bật),
     // nếu không thì bấm lọc xong mọi con số khác tụt về 0.
     veDemPhongBan(tatCa);
+    veDemQuyen(tatCa);
 
     // Danh sách hiển thị = đã lọc phòng ban + đã lọc theo ô tìm.
     // Mọi thao tác hàng loạt chạy trên danh sách này.
     let rows = locPhongBan
       ? tatCa.filter(function (r) { return (r.department || '').trim() === locPhongBan; })
       : tatCa;
+    if (locQuyen) {
+      rows = rows.filter(function (r) { return QUYEN_QUAN_TRI.indexOf(r.role) !== -1; });
+    }
     if (timKiem) {
       rows = rows.filter(function (r) {
         return khongDau(r.full_name).indexOf(timKiem) !== -1
@@ -287,8 +324,11 @@
     const oHit = $('mem-hit');
     if (oHit) oHit.textContent = timKiem ? (rows.length + ' kết quả') : '';
     danhSach = rows;
-    $('filter-bar').classList.toggle('open', !!locPhongBan);
-    if (locPhongBan) $('filter-name').textContent = locPhongBan;
+    const dangLoc = [];
+    if (locPhongBan !== null) dangLoc.push('phòng ban ' + (locPhongBan || 'Chưa xếp'));
+    if (locQuyen) dangLoc.push('quyền Admin');
+    $('filter-bar').classList.toggle('open', dangLoc.length > 0);
+    if (dangLoc.length) $('filter-name').textContent = dangLoc.join(' + ');
     // Bỏ khỏi danh sách chọn những người đã biến mất sau lần tải này (vd vừa bị xoá)
     const conTon = new Set(rows.map(function (r) { return r.id; }));
     Array.from(dangChon).forEach(function (id) { if (!conTon.has(id)) dangChon.delete(id); });
@@ -305,6 +345,11 @@
     setSo('ms-pending', pending.length);
     setSo('ms-active', active.length);
     setSo('ms-suspended', suspended.length);
+    // Chỉ hiện hàng "Tạm khoá" khi CÓ người bị khoá. Không có mà vẫn bày số 0 thì
+    // thành nhiễu; nhưng CÓ mà không bày thì tổng không khớp — 22/07 chủ tool bắt
+    // đúng lỗi này: Tổng 72, Đang hoạt động 71, mất tiêu 1 người.
+    const hangKhoa = $('ms-row-suspended');
+    if (hangKhoa) hangKhoa.style.display = suspended.length ? '' : 'none';
 
     nhom.pending = pending; nhom.active = active; nhom.suspended = suspended;
 
@@ -694,8 +739,13 @@
 
     // Lọc theo phòng ban (cột phải) + bỏ lọc
     $('ms-depts').addEventListener('click', onDeptClick);
+    $('ms-roles').addEventListener('click', onRoleClick);
+    // "Bỏ lọc" phải xoá MỌI bộ lọc đang bật, không chỉ phòng ban — nếu không thì
+    // bấm Bỏ lọc xong mà danh sách vẫn bị lọc theo quyền, người dùng tưởng hỏng.
     $('filter-clear').addEventListener('click', function () {
-      locPhongBan = null; dangChon.clear(); load();
+      locPhongBan = null; locQuyen = null;
+      trang.pending = trang.active = trang.suspended = 1;
+      dangChon.clear(); veDanhSach();
     });
 
     // Bấm ra ngoài / Esc → đóng menu "⋯"

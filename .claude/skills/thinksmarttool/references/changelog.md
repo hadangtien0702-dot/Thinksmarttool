@@ -34,6 +34,40 @@ Sau lần merge đầu, `main` thành hậu duệ nên merge ngược lại git 
 bảng So sánh biến mất khỏi localhost mà không báo gì — chủ tool phát hiện, không phải tôi.
 Đã đo 7 tên miền để xác nhận cách mới chạy đúng cả 2 phía.
 
+### 2026-07-22 (later 14 — hàng "Tạm khoá" + bộ lọc quyền Admin)
+
+**1. Tổng quan thiếu hàng "Tạm khoá" → các con số không cộng khớp.** Chủ tool: *"tạm khoá ở đây
+nó không thông báo hả em"*. Hàng này bị gỡ khỏi HTML ngày 21/07; đến khi thật sự có 1 người bị
+khoá thì bảng ghi **Tổng 72 · Chờ duyệt 0 · Đang hoạt động 71** — mất tiêu 1 người, không biết đi
+đâu. Đã thêm lại `#ms-row-suspended`, **chỉ hiện khi > 0** (không có mà bày số 0 thì thành nhiễu;
+có mà không bày thì sai). Đo lại: 71 + 1 + 0 = 72 ✓.
+
+**2. Bộ lọc theo quyền — DUY NHẤT nút "Admin"** (chủ tool chốt). Đặt dưới khối "Theo phòng ban",
+cùng kiểu nút để bấm quen tay.
+⚠️ **Gộp cả `super_admin`** vào bộ lọc này: hỏi "ai đang có quyền quản trị" mà bỏ sót người có
+quyền CAO HƠN admin là sai. Con số trên nút vì vậy đếm cả hai (dữ liệu thử: 6 = 5 admin + 1 super).
+
+**3. Đồng nhất 3 bộ lọc (sửa kèm, phát hiện lúc kiểm chứng).** `onDeptClick` trước đây gọi
+`load()` — **nạp lại từ Supabase chỉ để lọc**, trong khi dữ liệu đã nằm sẵn trong `toanBo`. Vừa
+chậm vừa tốn quota, lại **không reset trang** (lọc xong còn kẹt ở trang 3). Cho cả ba (phòng ban ·
+quyền · ô tìm) dùng chung `veDanhSach()`. Nút "Bỏ lọc" cũng phải xoá **cả hai** bộ lọc — trước chỉ
+xoá phòng ban, bấm xong danh sách vẫn bị lọc theo quyền thì người dùng tưởng hỏng.
+
+**Màu số:** `.ms-value.is-warn/.is-danger` dùng `#96590A`/`#B91C1C` (tối: `#E9A23B`/`#F87171`) —
+KHÔNG dùng thẳng token `--warning`/`--danger`, đo 22/07 ra 3.62 và 3.73, dưới ngưỡng 4.5.
+
+**Version:** `portal.css?v=44`, `portal/members.js?v=17`.
+
+**Kiểm chứng** (trang tạm chạy HÀM THẬT, dữ liệu 72 người: 70 Sale · 1 MKT · 1 chưa xếp,
+6 admin/super, 1 tạm khoá):
+lọc MKT → 1 người · thêm lọc Admin → đúng 1 mình Vincent, thanh báo *"phòng ban MKT + quyền
+Admin"* · Bỏ lọc → cả 2 nút tắt, về 72 · đang ở trang 3 (25–36 trên 71) mà lọc → **về trang 1**
+(1–12 trên 69) · hàng Tạm khoá hiện đúng khi có người, ẩn khi lọc ra tập không có ai bị khoá.
+
+**Bẫy khi viết phép thử:** nút lọc được **dựng lại sau mỗi lần vẽ**, nên biến giữ tham chiếu nút
+từ đầu hàm sẽ trỏ vào phần tử đã rời khỏi DOM — bấm không có tác dụng, nhìn như sản phẩm hỏng.
+Phải **query lại nút ngay trước khi bấm**. (Lần đầu tôi tưởng lọc không reset trang, hoá ra thế.)
+
 ## Version hiện tại (2026-07-21 cuối ngày — ĐÃ PUSH cả `main` lẫn `feat/mainV1.1`)
 
 Hai nhánh **cùng ở commit `c91d04b`**, cây làm việc sạch. `main` = bản LIVE

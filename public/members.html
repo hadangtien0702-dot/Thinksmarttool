@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/vendor/animate.min.css">
-  <link rel="stylesheet" href="/portal.css?v=43">
+  <link rel="stylesheet" href="/portal.css?v=44">
   <link rel="stylesheet" href="/dialog.css?v=4">
 </head>
 <body>
@@ -137,7 +137,7 @@
             <div class="members-main">
 
           <div class="filter-bar" id="filter-bar">
-            <span>Đang lọc phòng ban: <b id="filter-name">—</b></span>
+            <span id="filter-text">Đang lọc: <b id="filter-name">—</b></span>
             <span class="fb-sep"></span>
             <button class="btn btn-secondary btn-sm" id="filter-clear">Bỏ lọc</button>
           </div>
@@ -216,10 +216,22 @@
                   <span class="ms-label">Đang hoạt động</span>
                   <span class="ms-value is-ok" id="ms-active">—</span>
                 </div>
+                <!-- Tạm khoá: CHỈ hiện khi thật sự có người bị khoá (JS bật/tắt).
+                     Trước 22/07 hàng này bị gỡ hẳn → khoá 1 người xong thì Tổng 72 mà
+                     Đang hoạt động 71, mất tiêu 1 người không biết đi đâu. -->
+                <div class="ms-row" id="ms-row-suspended" style="display:none">
+                  <span class="ms-label">Tạm khoá</span>
+                  <span class="ms-value is-danger" id="ms-suspended">—</span>
+                </div>
 
                 <!-- Số người theo phòng ban — BẤM ĐƯỢC để lọc danh sách bên trái -->
                 <div class="ms-panel-head ms-sub">Theo phòng ban</div>
                 <div id="ms-depts"></div>
+
+                <!-- Lọc theo quyền — chủ tool 22/07 chỉ cần DUY NHẤT nút Admin:
+                     giữa 72 người, việc hay làm là "ai đang có quyền quản trị". -->
+                <div class="ms-panel-head ms-sub">Theo quyền</div>
+                <div id="ms-roles"></div>
               </div>
 
               <button class="btn btn-primary btn-block" id="btn-add-member">
@@ -294,7 +306,7 @@
   <script src="/js/portal/config.js?v=8"></script>
   <script src="/js/portal/auth.js?v=4"></script>
   <script src="/js/ui-dialog.js?v=3"></script>
-  <script src="/js/portal/members.js?v=15"></script>
+  <script src="/js/portal/members.js?v=17"></script>
   <script src="/vendor/gsap.min.js"></script>
   <script src="/js/animations.js?v=4"></script>
 </body>
