@@ -1968,16 +1968,39 @@ body.dark-theme .ss-wr { color: #E9A23B; }
 .ss-dh {
   padding: 10px 13px; font-size: var(--ss-fs-dh); font-weight: 800; letter-spacing: 0.2px;
   display: flex; align-items: center; justify-content: space-between; gap: 6px;
-  background: var(--surface-2); color: var(--text-2);
   border-bottom: 1px solid var(--divider);
+  /* KHÔNG đặt background/color ở đây — 4 lớp .ss-dh-* bên dưới lo, mỗi nhóm bệnh một màu. */
 }
-.ss-dh-term { box-shadow: inset 3px 0 0 var(--danger); }
-.ss-dh-chr  { box-shadow: inset 3px 0 0 var(--warning); }
-.ss-dh-cri  { box-shadow: inset 3px 0 0 var(--success); }
-.ss-dh-inj  { box-shadow: inset 3px 0 0 var(--brand); }
+/* TÔ MÀU KÍN tiêu đề thẻ chi tiết — cùng cách xử lý với ô đầu cột (chủ tool 22/07 later 6:
+   "tương tự ở bên trong đây nữa"). Bỏ vạch trái 3px. Nhờ vậy khi bung một hãng ra, 4 thẻ chi
+   tiết ăn khớp màu với 4 cột phía trên → mắt nối được "thẻ này là cột nào" mà không phải đọc.
+   ⚠️ CHỈ tiếng Việt ở đây — tiếng Anh là ngoại lệ RIÊNG của hàng tiêu đề cột (xem later 4). */
+.ss-dh-term { background: var(--danger-soft);  color: #B91C1C; }
+.ss-dh-chr  { background: var(--warning-soft); color: #96590A; }
+.ss-dh-cri  { background: var(--success-soft); color: #0F7A38; }
+.ss-dh-inj  { background: var(--brand-soft);   color: #5B21B6; }
+body.dark-theme .ss-dh-term { color: #F87171; }
+body.dark-theme .ss-dh-chr  { color: #E9A23B; }
+body.dark-theme .ss-dh-cri  { color: #4ADE80; }
+body.dark-theme .ss-dh-inj  { color: #C4B5FD; }
+/* Badge "Có/Không" trong tiêu đề thẻ chi tiết.
+   ⚠️ NỀN PHẢI ĐẶC (--surface), KHÔNG dùng nền soft của .ss-ok/.ss-no/.ss-wr: từ 22/07 tiêu đề
+   thẻ đã được tô màu theo nhóm bệnh, mà nền soft của badge nằm trên nền soft của tiêu đề thì
+   chìm nghỉm (đo được tỉ lệ 1.00–1.23 — coi như tàng hình, viên thuốc biến thành chữ trôi nổi).
+   Nền đặc còn gỡ được một chuyện rối nghĩa: màu tiêu đề mã hoá NHÓM BỆNH, màu badge mã hoá
+   TRẠNG THÁI — "Có" xanh nằm thẳng trên nền đỏ Terminal Illness thì đọc như mâu thuẫn. Tách
+   badge ra thành con chip trắng riêng thì hai hệ màu không giẫm chân nhau nữa.
+
+   ⚠️ NHƯNG NỀN ĐẶC MỘT MÌNH KHÔNG ĐỦ, và tôi đã đo nhầm chỗ một lần: --surface trắng nằm trên
+   nền soft cũng gần trắng → tỉ lệ chỉ 1.10–1.21, chip vẫn chìm. Thứ thật sự vẽ ra ranh giới là
+   VIỀN. Viền `var(--border)` xám nhạt cũng chìm nốt, nên dùng `currentColor` — viền tự lấy màu
+   trạng thái (#B91C1C / #0F7A38 / #96590A), vừa tách hẳn khỏi nền tiêu đề vừa nhắc lại màu
+   trạng thái. Bài học: chip có viền thì phải đo VIỀN với nền xung quanh, đo nền-với-nền là sai. */
 .ss-mini {
   font-weight: 800; font-size: var(--ss-fs-meter); white-space: nowrap;
-  padding: 3px 9px; border-radius: var(--r-pill);   /* dùng lại 3 lớp màu .ss-ok/.ss-no/.ss-wr */
+  padding: 3px 9px; border-radius: var(--r-pill);
+  background: var(--surface) !important;   /* đè nền soft của .ss-ok/.ss-no/.ss-wr, giữ màu chữ */
+  border: 1.5px solid currentColor;        /* viền LẤY LUÔN màu trạng thái — xem ghi chú dưới */
 }
 .ss-db { padding: 12px 13px; font-size: var(--ss-fs-body); color: var(--text-2); line-height: 1.6; flex: 1; }
 .ss-empty .ss-db { color: var(--text-3); font-style: italic; }

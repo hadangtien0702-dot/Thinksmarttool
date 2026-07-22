@@ -174,6 +174,36 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
 
+### 2026-07-22 (later 6 — tô màu kín cả tiêu đề THẺ CHI TIẾT)
+
+Chủ tool: *"tương tự ở bên trong đây nữa nha em"*. Áp cùng cách xử lý của ô đầu cột cho tiêu đề
+4 thẻ chi tiết (`.ss-dh-*`): bỏ vạch trái 3px, **tô màu kín cả ô** + chữ lấy màu của nhóm bệnh.
+Nhờ vậy khi bung một hãng ra, 4 thẻ chi tiết ăn khớp màu với 4 cột phía trên → mắt nối được
+"thẻ này thuộc cột nào" mà không phải đọc lại nhãn.
+⚠️ **KHÔNG thêm tiếng Anh ở đây** — tiếng Anh là ngoại lệ riêng của hàng tiêu đề cột (later 4).
+
+**HỆ QUẢ DÂY CHUYỀN PHẢI XỬ THEO — badge "Có/Không" trong tiêu đề thẻ bị chìm.** Badge dùng lại
+3 lớp `.ss-ok/.ss-no/.ss-wr` vốn có nền SOFT; giờ nó nằm trên nền tiêu đề cũng SOFT → đo được
+**1.00–1.23**, coi như tàng hình, viên thuốc biến thành chữ trôi nổi. Còn một chuyện rối nghĩa
+nữa: màu tiêu đề mã hoá **NHÓM BỆNH**, màu badge mã hoá **TRẠNG THÁI** — "Có" xanh nằm thẳng
+trên nền đỏ Terminal Illness đọc như mâu thuẫn.
+
+**Sửa 2 nhịp, vì nhịp đầu tôi ĐO SAI CHỖ:**
+1. Cho badge nền đặc `--surface` → đo lại vẫn **1.10–1.21**. Lý do: `--surface` trắng mà nền soft
+   cũng gần trắng, nền-với-nền thì mãi không tách. **Tôi đo nền-với-nền, trong khi thứ thật sự
+   vẽ ra ranh giới của một con chip là VIỀN.**
+2. Viền `var(--border)` xám nhạt cũng chìm nốt → dùng **`border: 1.5px solid currentColor`**:
+   viền tự lấy màu trạng thái, vừa tách hẳn khỏi nền tiêu đề vừa nhắc lại màu trạng thái.
+
+**Đo lại đủ 9 tổ hợp (cột bệnh × trạng thái) CÓ THẬT trên trang, cả 2 theme:**
+| | theme sáng | theme tối |
+|---|---|---|
+| Chữ badge (ngưỡng 4.5) | 5.44 – 6.47 | 6.52 – 10.35 |
+| Viền vs nền tiêu đề (ngưỡng 3.0) | 4.75 – 5.86 | 5.40 – 9.25 |
+| Chữ tiêu đề thẻ (ngưỡng 4.5) | 4.90 – 8.14 | 5.83 – 8.71 |
+
+**Version:** `style.css?v=67` (chỉ CSS; `sosanh.js` vẫn `?v=7`).
+
 ### 2026-07-22 (later 5 — gộp hàng tiêu đề + tô màu KÍN ô đầu cột)
 
 **1. Nhãn "Chỉ dùng nội bộ" + 2 nút Mở rộng/Thu gọn về CÙNG MỘT HÀNG.** Trước xếp dọc, ngốn 2
