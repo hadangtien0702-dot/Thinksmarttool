@@ -1785,17 +1785,25 @@ body.doc-mode .canvas-status-bar { display: none; }
    bằng chữ trơn nên không cần class riêng. */
 
 /* ---------- Tiêu đề khối ---------- */
-.ss-head-block { margin-bottom: 16px; }
+/* Nhãn "Chỉ dùng nội bộ" + 2 nút nằm CÙNG MỘT HÀNG (chủ tool 22/07 later 5): trước đây
+   xếp dọc, ngốn 2 tầng chiều cao chỉ để chứa 1 nhãn + 2 nút → đẩy bảng xuống thấp.
+   `space-between` đẩy nhóm nút sang phải, cân với mép phải của bảng bên dưới. */
+.ss-head-block {
+  margin-bottom: 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+}
 .ss-eyebrow {
   display: inline-flex; align-items: center; gap: 7px;
   font-size: var(--fs-xs); font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase;
   color: var(--brand); background: var(--brand-soft);
-  padding: 5px 12px; border-radius: var(--r-pill); margin-bottom: 10px;
+  padding: 5px 12px; border-radius: var(--r-pill);
+  margin: 0;               /* đã cùng hàng với nút, không cần đẩy xuống nữa */
 }
 /* h2 + p ĐÃ XOÁ 22/07 (later 3) — chủ tool bỏ tiêu đề và đoạn mô tả khỏi bảng
    (thanh tiêu đề của app đã hiện "Living Benefits — 16 hãng" rồi). Chỉ còn
    nhãn "Chỉ dùng nội bộ" + 2 nút, nên hàng nút không cần đẩy xuống nữa. */
-.ss-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.ss-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
 /* ---------- Bảng = xếp thẻ, KHÔNG phải lưới kẻ ô ---------- */
 .ss-board { display: flex; flex-direction: column; gap: 9px; }
@@ -1829,11 +1837,25 @@ body.doc-mode .canvas-status-bar { display: none; }
   font-weight: 600; font-size: var(--ss-fs-meter);
   color: var(--text-2); letter-spacing: 0;
 }
-/* Vạch màu mảnh trên đầu mỗi cột quyền lợi — điểm nhận diện, không tô cả ô */
-.ss-th-term { box-shadow: inset 0 3px 0 var(--danger); }
-.ss-th-chr  { box-shadow: inset 0 3px 0 var(--warning); }
-.ss-th-cri  { box-shadow: inset 0 3px 0 var(--success); }
-.ss-th-inj  { box-shadow: inset 0 3px 0 var(--brand); }
+/* TÔ MÀU CẢ Ô, không còn vạch mảnh (chủ tool 22/07 later 5: "muốn line màu nó được fill
+   cho toàn bộ chứ không chỉ là 1 line"). Vạch 3px cũ quá mảnh để nhận ra cột nào là cột nào
+   khi mắt chạy dọc 16 hàng; nền màu thì cả khối tiêu đề trở thành 4 vùng phân biệt rõ.
+   Chữ cũng lấy màu của cột — cùng bảng màu đã đo đạt AA ở khối .ss-ok/.ss-no/.ss-wr. */
+.ss-th-term { background: var(--danger-soft);  color: #B91C1C; }
+.ss-th-chr  { background: var(--warning-soft); color: #96590A; }
+.ss-th-cri  { background: var(--success-soft); color: #0F7A38; }
+.ss-th-inj  { background: var(--brand-soft);   color: #5B21B6; }
+body.dark-theme .ss-th-term { color: #F87171; }
+body.dark-theme .ss-th-chr  { color: #E9A23B; }
+body.dark-theme .ss-th-cri  { color: #4ADE80; }
+body.dark-theme .ss-th-inj  { color: #C4B5FD; }
+/* Dòng tiếng Việt trong ngoặc: CÙNG MÀU, KHÔNG giảm opacity.
+   ⚠️ Bản đầu dùng `opacity: 0.85` cho "nhạt hơn một nấc" — đo ra rớt AA ở 3 trường hợp
+   (vàng 3.80 · xanh lá 3.75 theme sáng · đỏ 4.11 theme tối) vì opacity trộn chữ vào đúng
+   cái nền đang cần tương phản với nó. Phân cấp thị giác đã đủ nhờ CỠ CHỮ (12 vs 13px) và
+   ĐỘ ĐẬM (600 vs 800) — hai thứ này không đụng gì tới tương phản. */
+.ss-th-term .ss-th-vi, .ss-th-chr .ss-th-vi,
+.ss-th-cri  .ss-th-vi, .ss-th-inj .ss-th-vi { color: inherit; }
 
 /* ---------- Mỗi hãng = một thẻ bo tròn ---------- */
 .ss-row {

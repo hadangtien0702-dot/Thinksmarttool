@@ -174,6 +174,40 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
 
+### 2026-07-22 (later 5 — gộp hàng tiêu đề + tô màu KÍN ô đầu cột)
+
+**1. Nhãn "Chỉ dùng nội bộ" + 2 nút Mở rộng/Thu gọn về CÙNG MỘT HÀNG.** Trước xếp dọc, ngốn 2
+tầng chiều cao chỉ để chứa 1 nhãn + 2 nút → đẩy bảng xuống thấp. `.ss-head-block` thành flex
+`space-between`: nhãn trái, nhóm nút phải (thẳng mép phải của bảng). Khối tiêu đề còn **32px**.
+Nhớ gỡ `margin-bottom` của `.ss-eyebrow` và `margin-top` của `.ss-actions` — hai margin đó dành
+cho kiểu xếp dọc, để lại là lệch tâm.
+
+**2. Ô đầu 4 cột bệnh: TÔ MÀU KÍN CẢ Ô**, bỏ vạch 3px (chủ tool: *"muốn line màu nó được fill
+cho toàn bộ chứ không chỉ là 1 line"*). Vạch mảnh quá yếu để nhận ra cột nào khi mắt chạy dọc 16
+hàng; nền màu biến hàng tiêu đề thành 4 vùng phân biệt rõ. Chữ cũng lấy màu của cột.
+Cột "Công ty bảo hiểm" giữ nền trung tính — nó không thuộc 4 nhóm bệnh.
+
+| Cột | Nền | Chữ (sáng) | Chữ (tối) |
+|---|---|---|---|
+| Terminal | `--danger-soft` | `#B91C1C` | `#F87171` |
+| Chronic | `--warning-soft` | `#96590A` | `#E9A23B` |
+| Critical Illness | `--success-soft` | `#0F7A38` | `#4ADE80` |
+| Critical Injury | `--brand-soft` | `#5B21B6` | `#C4B5FD` |
+
+**🚨 BẪY `opacity` — TỰ GÂY RA RỒI TỰ ĐO RA:** bản đầu cho dòng tiếng Việt `opacity: 0.85` để
+"nhạt hơn một nấc", kèm comment tự trấn an *"dùng opacity để khỏi phải đo thêm 8 cặp màu"*. Đo
+thì rớt AA 3 chỗ: vàng **3.80**, xanh lá **3.75** (theme sáng), đỏ **4.11** (theme tối).
+**`opacity` trộn chữ vào ĐÚNG cái nền đang cần tương phản với nó** — nó không phải "làm nhạt màu
+chữ", nó là "kéo màu chữ về phía màu nền". Bỏ opacity, phân cấp thị giác để cho **cỡ chữ
+(12 vs 13px)** và **độ đậm (600 vs 800)** lo — hai thứ đó không đụng tới tương phản.
+Đo lại sau khi sửa, cả 2 theme, cả 2 dòng: **4.90 – 8.14**, đạt hết.
+
+**Version:** `style.css?v=64` (chỉ CSS, `sosanh.js` giữ `?v=7`).
+
+**Kiểm chứng:** tâm nhãn và tâm nhóm nút lệch **0px** theo trục Y (cùng hàng thật), nút nằm bên
+phải nhãn; 4 ô tiêu đề `box-shadow: none` (vạch cũ đã đi), nền đúng 4 màu, cao 78/80px (tô kín);
+cột Công ty bảo hiểm nền trong suốt.
+
 ### 2026-07-22 (later 4 — tên 4 nhóm bệnh: NGOẠI LỆ song ngữ duy nhất trong bảng)
 
 Chủ tool: *"phần bệnh thì thêm cho anh tiếng Anh — **chỉ thêm ở phần này thôi biết chưa? không
