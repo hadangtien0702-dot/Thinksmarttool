@@ -3,15 +3,31 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
-## ⚠️ BA NHÁNH (cập nhật 2026-07-21) — ĐỌC TRƯỚC KHI ĐỘNG VÀO GIT
+## ⚠️ BA NHÁNH (cập nhật 2026-07-22) — ĐỌC TRƯỚC KHI ĐỘNG VÀO GIT
 
 | | `main` | `feat/login` | `feat/mainV1.1` |
 |---|---|---|---|
-| Vai trò | **BẢN LIVE cho đội sale** | Portal (đã gộp vào V1.1) | **NHÁNH ĐANG LÀM** = main + portal |
-| Ở đâu | Đã push, Vercel auto-deploy | Đã push GitHub 20/07 | **LOCAL — CHƯA PUSH** |
-| Version | v1.11 · `proposal.js?v=11` | v1.12 | **v1.13** (xem "Version hiện tại" bên dưới) |
-| `config.js` | Khoá Supabase **TRỐNG** → chế độ mở | CÓ khoá thật | **CÓ khoá thật** → bắt đăng nhập |
-| Nội dung | Chỉ Tool. `/`,`/login`,`/videos` → **302 về `/tool`** | Portal | Portal + Tool, **đã GỠ redirect** |
+| Vai trò | **BẢN LIVE cho đội sale** | Portal (đã gộp vào V1.1) | **NHÁNH ĐANG LÀM** |
+| Ở đâu | `5df89c0` — đã push, Vercel auto-deploy | Đã push GitHub 20/07 | `7f3447f` — **11 commit CHƯA PUSH** |
+| Version badge | v1.18 | v1.12 | v1.17 (lệch — xem ghi chú dưới) |
+| `config.js` | **CÓ khoá thật** → bắt đăng nhập | CÓ khoá thật | **CÓ khoá thật** → bắt đăng nhập |
+| Bảng So sánh | **ẨN** (`SS_SHOW_IN_NAV=false`) | — | **HIỆN** (`=true`, đang làm) |
+| Đổi mật khẩu | **CHƯA CÓ** | — | **CÓ** |
+
+**⛔ 22/07/2026 — CHỦ TOOL CHỐT: TẠM CHƯA PUSH.** Đã xem tính năng Đổi mật khẩu chạy trên
+localhost và duyệt phần nhìn, nhưng **chưa cho deploy**. Hàng đợi 11 commit (`b07177e`→`7f3447f`):
+
+1. **Đổi mật khẩu + tạo 48 tài khoản** (`9d550b7`, `7f3447f`) — ⚠️ 48 sale ĐÃ có tài khoản
+   trên Supabase production và đang đăng nhập được, nhưng **nút Đổi mật khẩu chưa lên live**,
+   nên cả đội đang kẹt với mật khẩu do admin sinh. Đây là món cần lên sớm nhất.
+2. **Bỏ dòng "PDF · 249 KB"** trên thẻ Brochure (`f94be7b`) — chủ tool đã duyệt.
+3. **Bảng So sánh, 7 commit** — CHƯA XONG, đang bị cờ ẩn trên `main`.
+   Merge lên `main` sẽ **XUNG ĐỘT ở đúng dòng `SS_SHOW_IN_NAV`** — CỐ Ý, để buộc dừng lại
+   tự hỏi "duyệt xong chưa?". Giữ `false` cho tới khi chủ tool duyệt.
+
+**Khi được phép push:** badge đang lệch (`main` v1.18 vs nhánh v1.17) → đặt **v1.19** cho bản
+live mới, đừng lấy bừa bên nào. **CHƯA test luồng đổi mật khẩu thật** (nhập sai mật khẩu cũ /
+đổi xong đăng nhập lại bằng mật khẩu mới) — làm trước khi deploy.
 
 **✅ 21/07/2026 — CHỦ TOOL CHỐT: merge lên `main` và cho LIVE, chấp nhận bắt đăng nhập.**
 Cảnh báo bên dưới giữ lại để hiểu bối cảnh, nhưng quyết định đã thay đổi.
