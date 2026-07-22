@@ -174,6 +174,36 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
 
+### 2026-07-22 (bảng So sánh bị ẨN khỏi bản LIVE — quy tắc push mới)
+
+Chủ tool sáng 22/07: *"phần này chưa xong đã public lên vậy em?"* — đúng. Cuối ngày 21/07 bảng So
+sánh (v1.15→v1.17) bị push chung một cục lên `main` theo thói quen "EOD push" trong khi **chưa
+xong**. Live có bắt đăng nhập nên khách ngoài không thấy, nhưng **đội sale đã duyệt tài khoản thì
+thấy** → rủi ro thật: tưởng bản chính thức rồi đem số liệu quyền lợi đi tư vấn.
+
+**🚦 QUY TẮC PUSH MỚI (chủ tool chốt 22/07):** `main` chỉ nhận phần **ĐÃ DUYỆT XONG**. Việc đang
+làm dở ở lại `feat/mainV1.1`. Không gộp việc dở vào commit cuối ngày nữa.
+
+**Cách ẩn:** cờ `SS_SHOW_IN_NAV` ở đầu `public/js/sosanh.js`, `renderCompareNavSection`
+early-return `0` khi tắt. Code giữ nguyên 100%, không xoá dòng nào.
+- `main` (live): `false` — đã push `5df89c0`, badge **v1.18**, `js/sosanh.js?v=3`.
+- `feat/mainV1.1` (nhánh này): `true` — bảng hiện bình thường, `js/sosanh.js?v=3`, badge vẫn v1.17.
+- ⚠️ **Một dòng này CỐ Ý gây xung đột khi merge V1.1 → main.** Lúc merge phải dừng lại tự hỏi
+  "bảng So sánh duyệt xong chưa?" rồi mới chọn giá trị. Đừng nhắm mắt lấy bên nào.
+- Khi bảng hoàn thiện: `main` đổi `false` → `true` + bump `sosanh.js?v=`.
+
+**Cách kiểm chứng khi login chặn** (dùng lại được cho mọi thứ nằm sau cổng đăng nhập): không vào
+được `/tool` bằng trình duyệt và KHÔNG được nhập tài khoản của chủ tool → thay vào đó eval thẳng
+file server đang phục vụ trong console: XHR đồng bộ lấy `/js/sosanh.js?v=3` → `new Function(stub +
+src)` với stub các hàm của `core.js` (`makeCollapsibleFolder`, `NAV_ICONS`, `appState`…) → gọi
+`renderCompareNavSection(container, '')` và soi container. Kết quả: `main` trả `0` + container
+rỗng; nhánh này trả `1` + đúng mục "So sánh quyền lợi / Compare" › "Living Benefits — 16 hãng".
+Đây là chạy code THẬT, không phải đọc code.
+
+**Chốt ngôn ngữ (chủ tool 22/07):** bảng So sánh dùng **song ngữ Anh trên / Việt dưới**
+(`TERMINAL ILLNESS` / `Bệnh Giai Đoạn Cuối`) — áp cho header cột, tên quyền lợi và phần điều khoản
+khi mở rộng hàng. Chưa xác nhận có mở rộng quy tắc này sang Proposal/Brochure hay không.
+
 ### 2026-07-21 (later 16 — bảng So sánh dựng lại theo ngôn ngữ thẻ bo tròn, v1.17)
 
 Chủ tool: *"Creative hơn — anh muốn nó là một dạng bảng có góc bo tròn như thiết kế của

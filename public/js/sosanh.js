@@ -117,8 +117,17 @@ function ssLogoUrl(file) {
   return '/api/download?path=' + encodeURIComponent('Bang so sanh quyen loi cac hang/' + file) + '&inline=1';
 }
 
+// --- CỜ BẬT/TẮT MỤC NAV ---
+// TRUE trên nhánh `feat/mainV1.1` (bản offline ĐANG LÀM) — bảng hiện bình thường để làm tiếp.
+// FALSE trên `main` (bản LIVE) từ 22/07/2026: bảng CHƯA XONG, chủ tool yêu cầu ẩn khỏi live để
+// đội sale không tưởng là bản chính thức rồi đem số liệu quyền lợi đi tư vấn cho khách.
+// ⚠️ DÒNG NÀY SẼ XUNG ĐỘT KHI MERGE V1.1 → main. Xung đột CÓ CHỦ Ý: lúc đó dừng lại tự hỏi
+// "bảng So sánh đã duyệt xong chưa?" rồi mới chọn giá trị. Đừng nhắm mắt lấy bên nào.
+const SS_SHOW_IN_NAV = true;
+
 // --- NAV SECTION (gọi từ renderFileTree trong js/main.js) ---
 function renderCompareNavSection(container, q) {
+  if (!SS_SHOW_IN_NAV) return 0;
   const section = makeCollapsibleFolder('So sánh quyền lợi / Compare', { extraClass: 'nav-section', iconHTML: NAV_ICONS.compare });
   if (q && !'living benefits so sánh quyền lợi'.includes(q)) {
     // đang tìm kiếm mẫu khác → vẫn hiện mục nhưng không tính vào tổng
