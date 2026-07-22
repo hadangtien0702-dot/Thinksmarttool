@@ -1819,6 +1819,16 @@ body.doc-mode .canvas-status-bar { display: none; }
   display: flex; flex-direction: column; gap: 2px; justify-content: center; line-height: 1.3;
 }
 .ss-th-co { text-align: left; align-items: flex-start; padding-left: 18px; }
+
+/* Tên 4 nhóm bệnh — NGOẠI LỆ DUY NHẤT còn song ngữ trong bảng (chủ tool 22/07 later 4).
+   Tiền tố `-th-` trong tên class là CỐ Ý: buộc phạm vi vào đúng hàng tiêu đề để không ai
+   vô tình dùng lại rồi song ngữ hoá cả bảng lần nữa. Mọi nhãn khác chỉ tiếng Việt. */
+.ss-th-en { display: block; }
+.ss-th-vi {
+  display: block; margin-top: 2px;
+  font-weight: 600; font-size: var(--ss-fs-meter);
+  color: var(--text-2); letter-spacing: 0;
+}
 /* Vạch màu mảnh trên đầu mỗi cột quyền lợi — điểm nhận diện, không tô cả ô */
 .ss-th-term { box-shadow: inset 0 3px 0 var(--danger); }
 .ss-th-chr  { box-shadow: inset 0 3px 0 var(--warning); }

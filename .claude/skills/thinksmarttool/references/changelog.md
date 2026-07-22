@@ -174,6 +174,40 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
 
+### 2026-07-22 (later 4 — tên 4 nhóm bệnh: NGOẠI LỆ song ngữ duy nhất trong bảng)
+
+Chủ tool: *"phần bệnh thì thêm cho anh tiếng Anh — **chỉ thêm ở phần này thôi biết chưa? không
+thêm ở phần khác**"*. Format theo đúng ảnh mẫu: **tiếng Anh dòng trên, tiếng Việt trong NGOẶC
+dòng dưới** (`Terminal Illness` / `(Bệnh Giai Đoạn Cuối)`).
+
+**🔒 PHẠM VI — ĐỌC KỸ, ĐÂY LÀ CHỖ DỄ LÀM HỎNG NHẤT.** Bảng này giờ có 3 tầng quy ước ngôn ngữ:
+| Chỗ | Ngôn ngữ |
+|---|---|
+| Mục nav / menu (`Compare / So sánh quyền lợi`) | **Song ngữ `EN / VI`** một dòng, gạch chéo |
+| **Tên 4 nhóm bệnh ở đầu cột** | **Song ngữ**: EN dòng trên, `(VI)` dòng dưới |
+| Mọi thứ còn lại trong bảng | **CHỈ tiếng Việt** |
+
+"Mọi thứ còn lại" = `Công ty bảo hiểm`, 2 nút Mở rộng/Thu gọn, `Chỉ dùng nội bộ`, thanh
+`4/4 quyền lợi`, `Chú thích`, `Lưu ý quan trọng`, **và tiêu đề thẻ chi tiết** (thẻ chi tiết vẫn
+chỉ ghi `Bệnh Giai Đoạn Cuối`, KHÔNG kèm tiếng Anh — chủ tool chỉ ra ảnh hàng tiêu đề cột).
+
+Class đặt là `.ss-th-en` / `.ss-th-vi` — **tiền tố `-th-` là CỐ Ý**, buộc phạm vi vào đúng hàng
+tiêu đề để không ai vô tình dùng lại rồi song ngữ hoá cả bảng lần nữa (đã xảy ra hôm nay: helper
+`ssNhan` bị bê lên cả nav).
+
+**Version:** `style.css?v=62`, `js/sosanh.js?v=7`.
+
+**Kiểm chứng:** 4 cột bệnh ra đúng `Terminal Illness | (Bệnh Giai Đoạn Cuối)` …; 5 chỗ khác kiểm
+lại vẫn thuần Việt (`Công ty bảo hiểm`, `Mở rộng tất cả`, `Chỉ dùng nội bộ`, `4/4 quyền lợi`,
+`Chú thích`, thẻ chi tiết `Bệnh Giai Đoạn Cuối Có`); hàng tiêu đề không tràn ngang.
+
+**⚠️ BẪY ĐO ĐẠC (lại dính, lại thoát nhờ đo tiếp):** trên pane rộng 981px thì 3/4 dòng tiếng Việt
+bị xuống 2 dòng → nhìn như lỗi. Đo bề rộng THẬT của từng dòng chữ (clone phần tử, ép
+`white-space:nowrap` rồi đo) mới ra: khi bảng được hiển thị ở `max-width:1240px` thì mỗi cột bệnh
+có **174px** chỗ chứa chữ, dòng dài nhất `(Tai Nạn Trọng Thương)` chỉ **130px** → thừa 44px, vừa
+một dòng. **Đó là hẹp pane, không phải lỗi bố cục.** Nếu sau này chủ tool báo header vỡ dòng thật
+thì mới cần nới `--ss-cols` (đang `2.1fr 1fr 1fr 1fr 1fr`).
+
 ### 2026-07-22 (later 3 — bảng So sánh: icon thay chữ, MỘT ngôn ngữ, bỏ tiêu đề)
 
 **1. 🔴 ĐẢO QUYẾT ĐỊNH SONG NGỮ — NHƯNG CHỈ TRONG BẢNG NÀY.** Chủ tool: *"bảng này chỉ sử dụng

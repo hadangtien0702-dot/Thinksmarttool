@@ -224,8 +224,14 @@ function openCompareTable() {
   document.body.classList.add('doc-mode');
   const view = document.getElementById('doc-viewport');
 
+  // TÊN 4 NHÓM BỆNH là NGOẠI LỆ DUY NHẤT còn song ngữ trong bảng (chủ tool 22/07 later 4:
+  // "phần bệnh thì thêm cho anh tiếng Anh — CHỈ THÊM Ở PHẦN NÀY THÔI, không thêm ở phần khác").
+  // Format theo đúng mẫu chủ tool đưa: tiếng Anh dòng trên, tiếng Việt trong NGOẶC dòng dưới.
+  // ⚠️ ĐỪNG nhân rộng sang chỗ khác: "Công ty bảo hiểm", nút, chú thích, thanh mức độ, thẻ chi
+  // tiết… đều CHỈ tiếng Việt. Class đặt tên .ss-th-en/.ss-th-vi (có tiền tố -th-) để buộc phạm
+  // vi vào đúng hàng tiêu đề, không ai vô tình dùng lại được ở nơi khác.
   const dauCot = SS_BENEFITS.map(b =>
-    `<div class="ss-th ss-th-${b.key}">${b.vi}</div>`).join('');
+    `<div class="ss-th ss-th-${b.key}"><span class="ss-th-en">${b.en}</span><span class="ss-th-vi">(${b.vi})</span></div>`).join('');
 
   const hang = SS_DATA.map((c, i) => {
     const soCo = SS_BENEFITS.reduce((n, b) => n + (c[b.key].s === 'ok' ? 1 : 0), 0);
