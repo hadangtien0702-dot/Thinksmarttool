@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/vendor/animate.min.css">
-  <link rel="stylesheet" href="/portal.css?v=36">
+  <link rel="stylesheet" href="/portal.css?v=39">
   <link rel="stylesheet" href="/dialog.css?v=4">
 </head>
 <body>
@@ -110,15 +110,25 @@
               </button>
             </div>
             <span class="mem-hit" id="mem-hit" aria-live="polite"></span>
+            <!-- Nhóm nút hàng loạt — thiết kế lại 22/07 (chủ tool: "nhìn vào thấy nó bị rối").
+                 3 nguyên tắc:
+                 1) MỘT kiểu nút cho việc thường, MỘT kiểu cho việc phá huỷ. Bản cũ 5 nút
+                    dùng 4 kiểu (đặc tím, viền, chữ đỏ trần) nên mắt không phân được nhóm.
+                 2) TỐI ĐA MỘT nút primary. Bản cũ "Duyệt" và "Mở khoá" cùng tím đặc, đọc như
+                    hai việc chính ngang nhau. Giờ primary do JS gán ĐỘNG cho việc cần làm nhất.
+                 3) Nút nào không áp dụng được cho nhóm đang chọn thì ẨN HẲN, kèm số người
+                    thực sự bị tác động. Bản cũ luôn bày đủ 5 nút, bấm vào mới báo "không có ai
+                    phù hợp" — bắt người dùng thử-và-sai.
+                 Việc phá huỷ tách sang phải bằng .bulk-sep, không đứng lẫn việc thường. -->
             <div class="bulk-actions" id="bulk-actions">
               <span class="bulk-count" id="bulk-count">Đã chọn 0</span>
-              <button class="btn btn-primary btn-sm" data-bulk="approve">Duyệt</button>
-              <button class="btn btn-secondary btn-sm" data-bulk="dept">Đổi phòng ban</button>
-              <button class="btn btn-danger btn-sm" data-bulk="suspend">Tạm khoá</button>
-              <button class="btn btn-primary btn-sm" data-bulk="reactivate">Mở khoá</button>
-              <button class="btn btn-danger btn-sm" data-bulk="delete" id="bulk-delete">Xoá</button>
+              <button class="btn btn-secondary btn-sm bulk-act" data-bulk="approve">Duyệt<span class="bulk-n"></span></button>
+              <button class="btn btn-secondary btn-sm bulk-act" data-bulk="reactivate">Mở khoá<span class="bulk-n"></span></button>
+              <button class="btn btn-secondary btn-sm bulk-act" data-bulk="dept">Đổi phòng ban<span class="bulk-n"></span></button>
               <span class="bulk-sep"></span>
-              <button class="btn btn-secondary btn-sm" id="bulk-clear">Bỏ chọn</button>
+              <button class="btn btn-warn-outline btn-sm bulk-act" data-bulk="suspend">Tạm khoá<span class="bulk-n"></span></button>
+              <button class="btn btn-danger-outline btn-sm bulk-act" data-bulk="delete" id="bulk-delete">Xoá<span class="bulk-n"></span></button>
+              <button class="btn btn-ghost btn-sm" id="bulk-clear">Bỏ chọn</button>
             </div>
           </div>
 
@@ -281,7 +291,7 @@
   <script src="/js/portal/config.js?v=8"></script>
   <script src="/js/portal/auth.js?v=4"></script>
   <script src="/js/ui-dialog.js?v=3"></script>
-  <script src="/js/portal/members.js?v=12"></script>
+  <script src="/js/portal/members.js?v=13"></script>
   <script src="/vendor/gsap.min.js"></script>
   <script src="/js/animations.js?v=4"></script>
 </body>

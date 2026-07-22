@@ -346,9 +346,35 @@
     const bar = $('bulk-bar');
     bar.classList.toggle('open', n > 0);
     $('bulk-count').textContent = 'Đã chọn ' + n;
-    // Xoá là quyền riêng của Super Admin
+
+    // --- Nút nào áp dụng được thì mới hiện, kèm SỐ NGƯỜI thực sự bị tác động ---
+    // `nguoiHopLe()` vốn đã tính sẵn (dùng để chặn gọi DB thừa); giờ dùng luôn nó để
+    // quyết định hiển thị. Trước đây luôn bày đủ 5 nút, bấm vào mới báo "không có ai
+    // phù hợp" — đó là bắt người dùng thử-và-sai, và là lý do thanh này nhìn rối.
+    let uuTien = null;   // nút sẽ được tô primary
+    document.querySelectorAll('.bulk-act').forEach(function (nut) {
+      const act = nut.dataset.bulk;
+      const soNguoi = nguoiHopLe(act).length;
+      nut.style.display = soNguoi ? '' : 'none';
+      // Chỉ hiện số khi nó KHÁC tổng đang chọn — bằng nhau thì con số là thừa,
+      // "Đã chọn 5" ngay bên trái đã nói rồi.
+      const oSo = nut.querySelector('.bulk-n');
+      if (oSo) oSo.textContent = (soNguoi && soNguoi !== n) ? String(soNguoi) : '';
+      // Thứ tự ưu tiên việc chính: duyệt người mới > mở khoá > đổi phòng ban.
+      // KHÔNG bao giờ để việc phá huỷ (tạm khoá/xoá) làm nút primary.
+      if (soNguoi && !uuTien && ['approve', 'reactivate', 'dept'].indexOf(act) !== -1) uuTien = nut;
+      nut.classList.remove('btn-primary');
+    });
+    if (uuTien) { uuTien.classList.remove('btn-secondary'); uuTien.classList.add('btn-primary'); }
+    document.querySelectorAll('.bulk-act:not(.btn-primary)').forEach(function (nut) {
+      if (!nut.classList.contains('btn-warn-outline') && !nut.classList.contains('btn-danger-outline')) {
+        nut.classList.add('btn-secondary');
+      }
+    });
+
+    // Xoá là quyền riêng của Super Admin (đè lên phần tính ở trên)
     const btnXoa = $('bulk-delete');
-    if (btnXoa) btnXoa.style.display = me.role === 'super_admin' ? '' : 'none';
+    if (btnXoa && me.role !== 'super_admin') btnXoa.style.display = 'none';
     // Đồng bộ ô "chọn tất cả" của từng nhóm
     document.querySelectorAll('.member-table').forEach(function (tbl) {
       const all = tbl.querySelector('.pick-all');

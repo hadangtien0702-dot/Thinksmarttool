@@ -190,6 +190,61 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > cùng ngày — mục của `main` là việc trên bản live (redirect + xếp hạng sức khoẻ), mục của
 > `feat/login` là việc trên portal. Giữ cả hai, đừng gộp.
 
+### 2026-07-22 (later 9 — thiết kế lại thanh thao tác hàng loạt)
+
+Chủ tool: *"nút ở thanh này em thiết kế lại cho dễ dùng hơn, anh nhìn vào thấy nó bị rối"*.
+Chẩn đoán: **5 nút dùng 4 kiểu khác nhau** (đặc tím · viền · chữ đỏ trần · đặc tím) và **2 nút
+primary tím cạnh tranh nhau** (Duyệt + Mở khoá) → mắt không phân được nhóm nào là nhóm nào.
+
+**Sửa theo 3 nguyên tắc:**
+1. **Hai họ nút, hết.** Việc thường = `btn-secondary`/`btn-primary`; việc phá huỷ = nút VIỀN màu
+   (`btn-warn-outline` cam = đảo ngược được, `btn-danger-outline` đỏ = mất dữ liệu).
+   Bỏ `btn-danger` cũ (chữ đỏ **không viền**) — nó nhìn như đường link lạc giữa các nút, đó chính
+   là cái "rối". Có viền thì vẫn là NÚT, chỉ khác MÀU: hình dạng nói "bấm được", màu nói "cẩn thận".
+2. **Tối đa MỘT primary, gán ĐỘNG** theo việc cần làm nhất (duyệt > mở khoá > đổi phòng ban).
+   **Không bao giờ** để việc phá huỷ làm primary.
+3. **Nút không áp dụng được thì ẨN HẲN**, kèm số người thực sự bị tác động. `nguoiHopLe()` vốn đã
+   tính sẵn (dùng chặn gọi DB thừa) → dùng luôn nó để quyết định hiển thị. Bản cũ luôn bày đủ 5
+   nút, bấm mới báo "không có ai phù hợp" = bắt người dùng thử-và-sai.
+   Số chỉ hiện khi KHÁC tổng đang chọn. Việc phá huỷ đẩy sang phải bằng `.bulk-sep`.
+
+**Kết quả đo (chạy HÀM THẬT `capNhatThanhHangLoat` chép từ members.js trên trang tạm):**
+| Chọn ai | Nút hiện ra |
+|---|---|
+| 1 người đang hoạt động | Đổi phòng ban *(primary)* · Tạm khoá · Xoá — **3 nút thay vì 5** |
+| 3 người chờ duyệt | Duyệt *(primary)* · Đổi phòng ban · Xoá |
+| 2 người tạm khoá | Mở khoá *(primary)* · Đổi phòng ban · Xoá |
+| Trộn 2+5+1 | Duyệt **2** · Mở khoá **1** · Đổi phòng ban · Tạm khoá **5** · Xoá |
+Luôn đúng MỘT primary trong mọi tình huống.
+
+**BẪY CSS TỰ GÂY RA — `currentColor` TỰ THAM CHIẾU:** viết
+`background: currentColor` cùng rule với `color: var(--surface)` thì `currentColor` lấy `color`
+của **CHÍNH phần tử đó** → lấy luôn giá trị vừa ghi đè → nền trùng chữ, huy hiệu thành cục đặc
+không đọc được (**đo ra tỉ lệ 1.00**). Cách đúng: nút khai `--acc`, huy hiệu đọc `var(--acc)`.
+
+**LẠI DÍNH BẪY ĐO ĐẠC — suýt sửa nhầm CSS đang đúng.** Đo theme tối bằng
+`classList.toggle('dark-theme')` rồi `getComputedStyle` → ra màu theme SÁNG, dù soi
+`document.styleSheets` thấy rule dark CÓ khớp, CÓ ưu tiên cao hơn, KHÔNG `!important`.
+Cascade nói phải thắng mà computed lại sai → **nghi công cụ đo, không nghi CSS**. Nạp lại trang
+với class bật NGAY TỪ ĐẦU → ra đúng màu. Pane Browser đơ style-recalc sau khi đổi class bằng JS.
+
+**Tương phản sau khi sửa** (nạp trang riêng cho từng theme):
+| | sáng | tối |
+|---|---|---|
+| Chữ nút Tạm khoá | 5.63 | 8.33 |
+| Chữ nút Xoá | 6.47 | 6.52 |
+| Huy hiệu số | 5.63 – 8.98 | 5.09 – 8.98 |
+| Chip "Đã chọn" | 8.14 | 8.43 |
+Dùng lại bộ màu của bảng So sánh (`#96590A`/`#B91C1C`, tối `#E9A23B`/`#F87171`) — token
+`--warning`/`--danger` đo ra 3.62 và 3.73, **không dùng thẳng cho chữ được**.
+
+**⚠️ HAI LỖI CÓ SẴN CỦA APP, CHƯA SỬA — cần chủ tool quyết vì đụng TOÀN BỘ nút:**
+- `.btn-primary` ở **theme tối**: chữ trắng trên `--brand-400` = **3.55** (cần 4.5).
+- `.btn-secondary`: viền `--border-strong` chỉ **1.41** (sáng) / **1.62** (tối), dưới ngưỡng 3:1.
+`git diff main..HEAD` xác nhận đợt này KHÔNG đụng vào 2 lớp đó.
+
+**Version:** `portal.css?v=39`, `portal/members.js?v=13`.
+
 ### 2026-07-22 (later 8 — trang Thành viên: ô TÌM + làm gọn danh sách)
 
 Danh sách lên 51 người sau khi tạo 48 tài khoản → chủ tool: *"scroll nó bị dài"* + xin ô tìm

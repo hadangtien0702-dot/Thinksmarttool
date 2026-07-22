@@ -210,6 +210,30 @@ button { font-family: inherit; cursor: pointer; }
 .btn-secondary:hover { border-color: var(--brand); color: var(--brand); }
 .btn-danger { background-color: transparent; color: var(--danger); border-color: transparent; }
 .btn-danger:hover { background-color: var(--danger-soft); }
+
+/* Hai biến thể VIỀN cho việc phá huỷ (thêm 22/07 cho thanh thao tác hàng loạt).
+   Vì sao không dùng .btn-danger cũ ở đó: nó không viền, nhìn như một đường link
+   lạc giữa các nút có viền → đó chính là cái "rối" chủ tool thấy. Có viền thì nó
+   vẫn là NÚT, chỉ khác MÀU để báo mức độ nguy hiểm — hình dạng nói "bấm được",
+   màu nói "cẩn thận". Tách hai mức: cam = đảo ngược được, đỏ = mất dữ liệu. */
+/* ⚠️ KHÔNG dùng thẳng token --warning/--danger cho chữ: đo 22/07 ra
+   --warning #C2740B trên nền nút trắng = 3.62 và --danger trên nền TỐI = 3.73,
+   đều dưới 4.5. Dùng bộ màu đã kiểm ở bảng So sánh cho nhất quán toàn app. */
+.btn-warn-outline {
+  background-color: transparent; color: #96590A; border-color: #96590A;
+}
+.btn-warn-outline:hover { background-color: var(--warning-soft); }
+.btn-danger-outline {
+  background-color: transparent; color: #B91C1C; border-color: #B91C1C;
+}
+.btn-danger-outline:hover { background-color: var(--danger-soft); }
+body.dark-theme .btn-warn-outline   { color: #E9A23B; border-color: #E9A23B; }
+body.dark-theme .btn-danger-outline { color: #F87171; border-color: #F87171; }
+/* "Bỏ chọn" là lối thoát, không phải hành động ngang hàng → nhẹ nhất, không viền */
+.btn-ghost {
+  background-color: transparent; color: var(--text-3); border-color: transparent;
+}
+.btn-ghost:hover { background-color: var(--surface-3); color: var(--text); }
 .btn-block { width: 100%; }
 
 .icon-btn {
@@ -758,8 +782,36 @@ button { font-family: inherit; cursor: pointer; }
 .bulk-bar.open .bulk-actions {
   display: flex; flex: 1; align-items: center; gap: 12px; flex-wrap: wrap;
 }
-.bulk-bar .bulk-count { font-weight: 800; font-size: var(--fs-sm); color: var(--brand); }
-.bulk-bar .bulk-sep { flex: 1; }
+.bulk-bar .bulk-count {
+  font-weight: 800; font-size: var(--fs-sm); color: var(--brand-700);
+  background: var(--brand-soft); padding: 5px 11px; border-radius: var(--r-pill);
+  white-space: nowrap;
+}
+/* Đẩy nhóm phá huỷ sang phải, tách hẳn khỏi nhóm việc thường — để không ai
+   với tay bấm "Xoá" theo quán tính khi đang nhắm "Đổi phòng ban". */
+body.dark-theme .bulk-bar .bulk-count { color: #C4B5FD; }
+.bulk-bar .bulk-sep { flex: 1; min-width: 12px; }
+/* Số người thực sự bị tác động, hiện ngay trong nút khi khác tổng đang chọn */
+.bulk-n:empty { display: none; }
+.bulk-n {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; margin-left: 7px; padding: 0 5px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-2xs); font-weight: 800; line-height: 1;
+}
+/* Màu huy hiệu ĐẢO theo nền nút: nền huy hiệu = màu nhấn của nút, chữ = màu nền nút.
+   ⚠️ ĐỪNG viết `background: currentColor; color: var(--surface)` trên CÙNG một rule —
+   `currentColor` lấy `color` của CHÍNH phần tử đó, tức lấy luôn cái vừa ghi đè ở dòng
+   dưới → nền trùng chữ, huy hiệu thành một cục đặc không đọc được (đo ra tỉ lệ 1.00).
+   Cách đúng: nút khai `--acc`, huy hiệu đọc `--acc`. Rõ ràng và không phụ thuộc thứ tự. */
+.btn-secondary      { --acc: var(--brand); }
+.btn-warn-outline   { --acc: #96590A; }
+.btn-danger-outline { --acc: #B91C1C; }
+body.dark-theme .btn-warn-outline   { --acc: #E9A23B; }
+body.dark-theme .btn-danger-outline { --acc: #F87171; }
+.bulk-n { background: var(--acc, var(--brand)); color: var(--surface); }
+/* Nút primary nền đã đặc → huy hiệu phải đảo: nền sáng, chữ tím đậm */
+.btn-primary .bulk-n { background: var(--text-on-brand); color: var(--brand-700); }
 
 /* Ô tìm thành viên */
 .mem-search {
