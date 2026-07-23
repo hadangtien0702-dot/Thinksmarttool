@@ -9,6 +9,7 @@ Newest entries on top. Keep it concrete (versions, files, commands).
   lịch sử cũ nằm dần bên dưới; không xoá nội dung.
 - Cập nhật `PIPELINE`, `FUNCTION MAP`, `CHECKLIST` để ghi rõ quy tắc mới.
 - Automation 07:30 và 15:30 luôn chèn dòng mới tại hàng 5, không append xuống cuối bảng.
+- KPI `PIPELINE` đổi thành `TÍNH NĂNG ĐÃ SỬA VÀ THÊM`; `G5` dùng lại công thức `COUNTA` để tự tăng.
 - QA: 6 sheet/6 table, 0 lỗi công thức; đã render đầu/cuối `VERSION TRACKING` và mở lại file đã lưu.
 
 ### 2026-07-23 (tiếp 15 — CHỐT CUỐI NGÀY). ✅ TRACKING XONG, KHÔNG SỬA CODE.
@@ -853,15 +854,26 @@ trúng mèo), `aria-hidden=true`, cách đáy thẻ 25px, còn cách đáy canva
 ## Version hiện tại (2026-07-23 cuối ngày — ĐÃ PUSH lên `main`, đã deploy)
 
 `main` = bản LIVE (tool.thinksmartinsurance.com), **BẮT ĐĂNG NHẬP** (config.js có khoá Supabase thật).
-✅ **ĐÃ PUSH badge v1.27** (23/07) — gộp 6 lượt (tiếp 5→9; hash mới: xem `git log -1`):
+✅ **ĐÃ PUSH badge v1.29** (23/07) — gộp 8 lượt (tiếp 5→11; hash mới: xem `git log -1`):
 - **tiếp 5** — form Thêm tài khoản: style ô Phòng ban + ô Quyền + căn `.select-field` (server.js nhận `role`).
-- **tiếp 6** — N1 Đo lường: `usage_events` (SQL ĐÃ CHẠY trên production) + `logUsage` + tab "Đo lường" ở /members.
+- **tiếp 6** — N1 Đo lường: `usage_events` (SQL ĐÃ CHẠY) + `logUsage` + tab "Đo lường" ở /members.
 - **tiếp 7** — hộp "Xem theo ngày" (lịch từ/đến + preset) lọc biểu đồ+bảng theo khoảng; bố cục 2 cột.
-- **tiếp 8** — đổi mẫu MƯỢT (spinner + vẽ trước + cache) · POP mở mẫu/Brochure/Compare · module "TẢI VỀ"
-  (kind `download`, SQL ALTER ĐÃ CHẠY; ghi khi xuất JPEG/PDF + tải brochure; thẻ+dòng+cột trong tab Đo lường).
+- **tiếp 8** — đổi mẫu MƯỢT (spinner + vẽ trước + cache) · POP mở mẫu/Brochure/Compare · module "TẢI VỀ".
 - **tiếp 9** — mẫu Allianz bản mới: thêm đường line + nhúng logo + state→Texas + gỡ mục trùng (`.svg.svg`).
-File nhạy cảm vẫn gitignore. Version cuối: badge **v1.27** · `auth.js?v=5 · members.js?v=23 · portal.css?v=49 · style.css?v=81 · core.js?v=27 · main.js?v=8` · `public/templates/Max-Funded Allianz.svg` cập nhật.
-⚠️ Live giờ BẮT ĐẦU ghi `usage_events` (mọi sale đăng nhập/mở tool). Nay ghi ĐỦ 3 loại: `login` · `open_tool` · `download`. Còn mở: N1 nâng cấp (tách theo tool, dashboard 30/90 ngày).
+- **tiếp 10** — popup "TẢI GÌ": cột `usage_events.label` (SQL ĐÃ CHẠY), bấm dòng "Tải về" → ai/tải-gì/lúc-nào.
+- **tiếp 11** — con mắt 👁 "SALE ĐÃ ĐIỀN GÌ" (Cách A): cột `usage_events.detail jsonb` (⚠️ **CHỦ TOOL VỪA CHẠY SQL,
+  ĐANG TEST** — chỉ lượt tải MỚI sau v1.29 mới có 👁; lượt cũ hiện "—"). Lưu giá trị khách (super_admin QA).
+File nhạy cảm vẫn gitignore. Version cuối: badge **v1.29** · `auth.js?v=7 · members.js?v=25 · portal.css?v=51 ·
+style.css?v=81 · core.js?v=29 · main.js?v=9` · `public/templates/Max-Funded Allianz.svg` cập nhật.
+⚠️ Live ghi `usage_events`: `login` · `open_tool` · `download` (kèm `label` = tải gì + `detail` = giá trị đã điền).
+
+**🎯 CÒN LÀM (chủ tool xin 23/07, XẾP HÀNG) — dùng lại hạ tầng label/detail:**
+- **N2. Top brochure/mẫu chạy nhiều nhất** (việc 3): thêm kind `'view'` ghi mở brochure/mẫu NÀO → bảng xếp hạng
+  lượt xem + lượt chạy báo giá. Cần SQL nới `kind` nhận `'view'`. Nhanh (tận dụng label).
+- **N3. Trạng thái ONLINE real-time** (việc 5): heartbeat (~60s ghi "còn đây") + bảng `presence` (ghi-đè, KHÔNG
+  append) → "online" = thấy trong ~2-3 phút. KHÁC "đang hoạt động" (trạng thái tài khoản). **CHỜ chủ tool chốt
+  ngưỡng 2 hay 3 phút.** Cần SQL bảng presence + RLS (user upsert của mình, super_admin đọc).
+- **N1 nâng cấp (cũ):** dashboard xu hướng 30/90 ngày, xuất CSV.
 
 **🆕 23/07 — server.js có 2 ENDPOINT ADMIN** (`/api/admin/create-user`, `/api/admin/reset-password`)
 dùng khoá `service_role` đọc từ **ENV** (`.env` local đã gitignore + **Vercel Production** env
