@@ -17,7 +17,7 @@
 
   // Phòng ban CỐ ĐỊNH (chủ tool chốt 21/07/2026) — thay ô nhập tự do window.prompt.
   // Thêm/bớt phòng ban thì sửa đúng mảng này, không rải chuỗi ra chỗ khác.
-  const PHONG_BAN = ['Sale', 'MKT', 'CS', 'Admin'];
+  const PHONG_BAN = ['Sale', 'Agent', 'MKT', 'CS', 'Admin'];
 
   // Quyền được phép TẠO qua form Thêm tài khoản (KHÔNG tạo super_admin qua UI).
   // Server cũng kiểm lại theo ROLE_TAO_HOP_LE — đây chỉ là danh sách cho dropdown.

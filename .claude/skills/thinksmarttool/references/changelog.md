@@ -3,7 +3,25 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
-### 2026-07-23 (tiếp 12 — N2 Top mẫu/brochure + N3 Đang online). ⏳ ĐÃ BUILD LOCAL, CHỜ CHỦ TOOL CHẠY SQL + DUYỆT PUSH (v1.30).
+### 2026-07-23 (tiếp 13 — THÊM PHÒNG BAN "Agent"). ✅ ĐÃ PUSH (v1.31).
+
+Chủ tool: *"thêm cho anh phòng ban agent"*. Phòng ban có **whitelist ở 2 NƠI** (phải sửa cả hai, nếu chỉ
+client thì server ép về 'Sale' khi tạo tài khoản):
+- `public/js/portal/members.js` (v27→28) `PHONG_BAN` — nguồn cho dropdown "Chọn/Đổi phòng ban", form "Thêm
+  tài khoản", và cột đếm theo phòng ban (comment sẵn: "thêm/bớt sửa đúng mảng này").
+- `server.js` `PHONG_BAN_HOP_LE` — kiểm khi `POST /api/admin/create-user` (ngoài whitelist → ép 'Sale').
+
+Đổi: `['Sale','MKT','CS','Admin']` → **`['Sale','Agent','MKT','CS','Admin']`** (Agent sau Sale, viết hoa cho
+đồng bộ). server.js đổi → phải RESTART server local (Vercel tự deploy lại khi push).
+
+**Kiểm chứng:** server restart 200; `curl` file served → `members.js` có đúng mảng mới, `members.js?v=28`;
+`node -c` OK members.js + server.js. (Dropdown sau đăng nhập nên xác nhận qua file served.)
+**Version:** `members.js v28` · badge **v1.30→v1.31**. Chỉ đổi 2 file code + badge; đã push origin main.
+
+**🔑 BÀI HỌC:** phòng ban KHÔNG chỉ ở client — `server.js` có whitelist RIÊNG `PHONG_BAN_HOP_LE` kiểm lại
+(chốt an toàn). Thêm/bớt phòng ban phải sửa CẢ HAI mảng, nếu không tạo tài khoản sẽ âm thầm về 'Sale'.
+
+### 2026-07-23 (tiếp 12 — N2 Top mẫu/brochure + N3 Đang online). ✅ ĐÃ PUSH (v1.30).
 
 Chủ tool: *"build tiếp 2 phần mới"* → làm cả hai việc cuối trong hàng đợi. Chủ tool chốt *"cứ build
 schema, anh sẽ tạo (chạy SQL) cho"* → em soạn SQL, **chủ tool chạy trong Supabase SQL Editor**.

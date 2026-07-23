@@ -16,7 +16,7 @@ const supabaseAdmin = (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY)
   ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } })
   : null;
 const TEMP_PASSWORD = 'Drt$2022';          // mật khẩu tạm mặc định (chủ tool 23/07) — user tự đổi sau
-const PHONG_BAN_HOP_LE = ['Sale', 'MKT', 'CS', 'Admin'];
+const PHONG_BAN_HOP_LE = ['Sale', 'Agent', 'MKT', 'CS', 'Admin'];
 const ROLE_TAO_HOP_LE = ['user', 'admin']; // quyền được phép tạo qua form (KHÔNG tạo super_admin qua UI)
 
 // Body parser
