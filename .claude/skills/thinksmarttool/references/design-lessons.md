@@ -64,8 +64,18 @@ bản gốc lâu dài: `E:\2026\Claude\.claude\skills\`):
     lên. Đặc biệt khi khối đó KHÔNG có zoom — mất zoom là mất đường lùi.
 16. **Dropdown chứa đúng một mục là phản tác dụng** (bấm hai lần cho một việc). Chỉ dùng nhóm xổ
     khi thật sự có nhiều lựa chọn bên trong; còn lại làm mục phẳng bấm thẳng.
+17. **Workbook vận hành cho người mới phải có “đường đọc”.** Mỗi tab chỉ trả lời một câu hỏi, có
+    dải `CÁCH ĐỌC` ngay trước bảng; cột người dùng cần xem đặt trước, cột kỹ thuật vẫn giữ nhưng ghi
+    rõ `(kỹ thuật)` và làm mờ. Không xoá chiều sâu — chỉ mở dần theo nhu cầu.
 
 ## Log bài học theo ngày
+
+### 2026-07-23 (tiếp 4 — workbook cho người không biết kỹ thuật)
+- Năm tab vận hành dễ hiểu hơn hẳn khi mỗi tab trả lời một câu hỏi riêng: quy trình, chức năng, tình
+  trạng hiện tại, việc cần làm và nhật ký ngày.
+- Dải màu cam `CÁCH ĐỌC` tạo điểm bắt đầu cố định; người mới không phải tự đoán nên nhìn cột nào.
+- Cột kỹ thuật được giữ để Codex đối chiếu nhưng lùi về nền xám nhạt và có nhãn rõ, nên không cản
+  luồng đọc chính.
 
 ### 2026-07-23 (tiếp 3 — đổi mẫu mượt: perceived-perf + animation compositor)
 - **"LOAD LÂU" thường là JS ĐÓNG BĂNG luồng chính, không phải mạng chậm.** Đổi mẫu SVG 2.6MB giật vì sau

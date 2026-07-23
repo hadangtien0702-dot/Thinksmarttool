@@ -3,6 +3,32 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
+### 2026-07-23 (tiếp 14 — HAI MỐC KIỂM TRA MỖI NGÀY). ✅ ĐANG HOẠT ĐỘNG.
+
+- Lượt đầu ngày chạy 07:30; lượt cuối ngày chạy 15:30 và rà soát toàn bộ thay đổi từ buổi sáng.
+- Hai lượt cùng cập nhật một mục ngày trong `product/DAILY-CHANGELOG.md` và một dòng ngày trong
+  `outputs/019f8dd8-version-tracking/Thinksmart Tool.xlsx`, không tạo bản ghi trùng.
+- Mỗi lượt bắt buộc đối chiếu `PIPELINE`/`CHECKLIST`, ghi rõ WIP, rủi ro và bước tiếp theo.
+- Chỉ đọc code/worktree; không sửa code, format, hoàn tác, commit, push hoặc deploy.
+
+### 2026-07-23 (tiếp 13 — AUTOMATION ĐÚNG FILE MỚI). ✅ ĐANG HOẠT ĐỘNG.
+
+- Automation `Nhật ký Thinksmart hằng ngày` chạy mỗi ngày lúc 18:00.
+- Workbook đích đã đổi đúng sang `outputs/019f8dd8-version-tracking/Thinksmart Tool.xlsx`.
+- Mỗi ngày tạo hoặc cập nhật đúng một mục changelog và một dòng `DAILY LOG`, không tạo trùng;
+  đồng thời cập nhật `PIPELINE` và `CURRENT SNAPSHOT`.
+- Chỉ đọc code để đối chiếu; không sửa code, commit, push hoặc deploy.
+
+### 2026-07-23 (tiếp 12 — 5 TAB DỄ ĐỌC CHO NGƯỜI MỚI). ✅ HOÀN TẤT NỘI BỘ, CHƯA PUSH.
+
+- Giữ nguyên tab `VERSION TRACKING` và toàn bộ lịch sử 239 dòng.
+- Viết lại `PIPELINE`, `FUNCTION MAP`, `CURRENT SNAPSHOT`, `CHECKLIST`, `DAILY LOG` bằng tiếng Việt
+  đời thường; mỗi tab có dải `CÁCH ĐỌC` nêu rõ nên xem cột nào trước.
+- Các cột kỹ thuật vẫn được giữ để đối chiếu nhưng có nhãn `(kỹ thuật)` và màu nền nhẹ để người mới
+  có thể bỏ qua.
+- Trạng thái và bước thao tác được chuẩn hoá thành từ dễ hiểu; dữ liệu, công thức và 6 bảng không đổi.
+- QA: 6 sheet/6 table, 0 lỗi công thức; đã render và xem lại toàn bộ tab. Không sửa code ứng dụng.
+
 ## ✅ MỘT NHÁNH DUY NHẤT: `main` (chốt 22/07/2026) — ĐỌC TRƯỚC KHI ĐỘNG VÀO GIT
 
 Chủ tool chốt: *"chỉ dùng 1 bản đầy đủ — offline chạy ở local, online chạy ở domain chính"*.
@@ -91,6 +117,34 @@ hiện tại rồi ghi lại**, theo khung gốc: Version → Chức năng → M
 - QA workbook: inspect đủ 6 sheet/6 table, 0 lỗi công thức `#REF!/#VALUE!/#DIV/0!/#NAME?/#N/A`;
   render trực quan toàn bộ 6 tab + riêng các dòng v1.25, không có nội dung bị cắt nghiêm trọng.
 - Không sửa mã ứng dụng trong lượt này; chỉ thêm workbook + entry knowledge-base này.
+
+### 2026-07-23 (tiếp 9 — MẪU ALLIANZ bản mới: thêm đường line + gỡ mục trùng). ✅ ĐÃ PUSH (v1.27).
+
+Chủ tool muốn thêm **1 đường line mảnh** trên "PRESENTED BY" ở mẫu Max-Funded Allianz, nên tự thêm trong
+Illustrator rồi export SVG mới. Bản export mới **tái phát mọi bẫy cũ** + 2 bẫy mới:
+- **Tên file dính 2 đuôi `.svg.svg`** (đổi tên trong Explorer gõ ".svg" khi Windows đã ẩn đuôi). Vì tên
+  KHÁC bản `public/templates/Max-Funded Allianz.svg` nên `/api/svgs` **không gộp** → hiện **2 mục "Max-Funded"**
+  trong nav ALLIANZ. → **`/api/svgs` gộp trùng theo TÊN FILE**: cùng tên (2-Templates + public/templates) = 1 mục;
+  khác tên = 2 mục. Sửa: đổi về đúng `Max-Funded Allianz.svg` (1 đuôi) + đồng bộ public → còn 1 mục.
+- **1 logo `Layer 1.png` link ngoài** (`href="../..."`) → nhúng lại data-uri (đọc từ `E:\2024\Video\Asset\
+  Logo\Thinksmart Insurance\Layer 1.png`). File 62KB/2386KB (thiếu embed) → **2537KB** sau nhúng đủ 4 ảnh.
+- **State về "Washington DC"** (không có trong US_STATES) → ô Tiểu bang MẤT dropdown (chủ tool: "thêm tiểu
+  bang vào đây"). Đổi thẻ `cls-11 translate(365.87 332.61)` 5-tspan "Washington DC" → 1 tspan sạch **"Texas"**.
+- ⚠️ Export mới đổi class `cls-*`→`st*` rồi lại `cls-*` qua các lần — nhưng `isAllianz` + dán nhãn theo
+  **VỊ TRÍ/NEO CHỮ** (không theo class) nên vẫn map đúng (chủ tool đã thấy 8 field hiện đúng ở tool).
+
+**Cách làm (script `scratchpad/fix-allianz.js`):** backup → nhúng Layer 1.png → state→Texas → ghi CÙNG TÊN
+`Max-Funded Allianz.svg` vào `2-Templates/Allianz/` + `public/templates/` → xoá file `.svg.svg`. Verify:
+`/api/svgs` còn **1 mục** Allianz · 4 data-uri · 0 href ngoài · Texas · line y=1193 · 2537KB.
+
+**🔑 BÀI HỌC (bổ sung mẫu Allianz lần 22/07):** re-export Illustrator LUÔN mất các fix làm tay ở SVG
+(embed logo, Texas) + hay sai tên (Aliianz / thiếu Allianz / .svg.svg). Vì `isAllianz` đọc TÊN FILE và
+ảnh phải EMBED, mỗi lần chủ tool gửi mẫu mới phải: (1) đổi tên đúng `...Allianz.svg`, (2) nhúng ảnh ngoài,
+(3) state = bang thật (Texas), (4) đồng bộ 2 chỗ CÙNG TÊN. Cân nhắc PENDING: cho `isAllianz` nhận theo
+THƯ MỤC `/Allianz/` để hết phụ thuộc tên file.
+
+**Version:** chỉ đổi `public/templates/Max-Funded Allianz.svg` (bản live) + badge v1.26→**v1.27**.
+`2-Templates/` master (gitignore) cũng cập nhật cho local. Live `isAllianz` vẫn OK (tên có "Allianz").
 
 ### 2026-07-23 (tiếp 8 — ĐỔI MẪU MƯỢT + POP + MODULE "TẢI VỀ"). ✅ ĐÃ PUSH (v1.26).
 
@@ -733,13 +787,14 @@ trúng mèo), `aria-hidden=true`, cách đáy thẻ 25px, còn cách đáy canva
 ## Version hiện tại (2026-07-23 cuối ngày — ĐÃ PUSH lên `main`, đã deploy)
 
 `main` = bản LIVE (tool.thinksmartinsurance.com), **BẮT ĐĂNG NHẬP** (config.js có khoá Supabase thật).
-✅ **ĐÃ PUSH badge v1.26** (23/07) — gộp 5 lượt (tiếp 5→8; hash mới: xem `git log -1`):
+✅ **ĐÃ PUSH badge v1.27** (23/07) — gộp 6 lượt (tiếp 5→9; hash mới: xem `git log -1`):
 - **tiếp 5** — form Thêm tài khoản: style ô Phòng ban + ô Quyền + căn `.select-field` (server.js nhận `role`).
 - **tiếp 6** — N1 Đo lường: `usage_events` (SQL ĐÃ CHẠY trên production) + `logUsage` + tab "Đo lường" ở /members.
 - **tiếp 7** — hộp "Xem theo ngày" (lịch từ/đến + preset) lọc biểu đồ+bảng theo khoảng; bố cục 2 cột.
 - **tiếp 8** — đổi mẫu MƯỢT (spinner + vẽ trước + cache) · POP mở mẫu/Brochure/Compare · module "TẢI VỀ"
   (kind `download`, SQL ALTER ĐÃ CHẠY; ghi khi xuất JPEG/PDF + tải brochure; thẻ+dòng+cột trong tab Đo lường).
-File nhạy cảm vẫn gitignore. Version cuối: badge **v1.26** · `auth.js?v=5 · members.js?v=23 · portal.css?v=49 · style.css?v=81 · core.js?v=27 · main.js?v=8`.
+- **tiếp 9** — mẫu Allianz bản mới: thêm đường line + nhúng logo + state→Texas + gỡ mục trùng (`.svg.svg`).
+File nhạy cảm vẫn gitignore. Version cuối: badge **v1.27** · `auth.js?v=5 · members.js?v=23 · portal.css?v=49 · style.css?v=81 · core.js?v=27 · main.js?v=8` · `public/templates/Max-Funded Allianz.svg` cập nhật.
 ⚠️ Live giờ BẮT ĐẦU ghi `usage_events` (mọi sale đăng nhập/mở tool). Nay ghi ĐỦ 3 loại: `login` · `open_tool` · `download`. Còn mở: N1 nâng cấp (tách theo tool, dashboard 30/90 ngày).
 
 **🆕 23/07 — server.js có 2 ENDPOINT ADMIN** (`/api/admin/create-user`, `/api/admin/reset-password`)
