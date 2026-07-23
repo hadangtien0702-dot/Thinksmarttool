@@ -796,6 +796,13 @@
     });
     // Bấm dòng "Tải về" → popup chi tiết tải gì
     $('uk-download-row').addEventListener('click', moChiTietTaiVe);
+    // Bấm 👁 → bung/gập khối "sale đã điền gì"
+    $('dl-rows').addEventListener('click', function (e) {
+      const b = e.target.closest('.dl-eye');
+      if (!b) return;
+      const d = $('dl-detail-' + b.getAttribute('data-idx'));
+      if (d) { d.hidden = !d.hidden; b.classList.toggle('is-open', !d.hidden); }
+    });
     $('dl-close').addEventListener('click', dongChiTietTaiVe);
     $('dl-backdrop').addEventListener('click', function (e) { if (e.target === $('dl-backdrop')) dongChiTietTaiVe(); });
     document.addEventListener('keydown', function (e) {
@@ -818,10 +825,13 @@
     const msg = $('usage-msg');
     msg.style.display = 'none';
     const from90 = new Date(Date.now() - 90 * NGAY_MS).toISOString();  // nạp 90 ngày, lọc khoảng ở client
-    // Kèm 'label' (tải gì) — cột mới; nếu chưa chạy SQL ALTER thì nạp lại không có label.
-    let resp = await sb.from('usage_events').select('user_id, kind, at, label').gte('at', from90).order('at', { ascending: false });
-    if (resp.error && /label/i.test(resp.error.message || '')) {
-      resp = await sb.from('usage_events').select('user_id, kind, at').gte('at', from90).order('at', { ascending: false });
+    // Kèm 'label' (tải gì) + 'detail' (đã điền gì) — cột mới; chưa chạy SQL thì tự lùi dần.
+    let resp = await sb.from('usage_events').select('user_id, kind, at, label, detail').gte('at', from90).order('at', { ascending: false });
+    if (resp.error && /(label|detail|column)/i.test(resp.error.message || '')) {
+      resp = await sb.from('usage_events').select('user_id, kind, at, label').gte('at', from90).order('at', { ascending: false });
+      if (resp.error) {
+        resp = await sb.from('usage_events').select('user_id, kind, at').gte('at', from90).order('at', { ascending: false });
+      }
     }
     const { data, error } = resp;
 
@@ -1001,14 +1011,28 @@
       $('dl-empty').style.display = 'flex';
     } else {
       $('dl-empty').style.display = 'none';
-      $('dl-rows').innerHTML = rows.map(function (e) {
+      $('dl-rows').innerHTML = rows.map(function (e, idx) {
         const p = pmap[e.user_id] || {};
         const ten = esc(p.full_name || p.email || '(không rõ)');
         const nhan = e.label ? esc(e.label) : '<span class="ur-never">không rõ (bản cũ)</span>';
-        return '<div class="dl-row">' +
-          '<span class="dl-who" data-label="Thành viên">' + ten + '</span>' +
-          '<span class="dl-what" data-label="Tải gì">' + nhan + '</span>' +
-          '<span class="ta-right dl-when" data-label="Lúc">' + thoiGianTuong(new Date(e.at).getTime()) + '</span>' +
+        const coDetail = Array.isArray(e.detail) && e.detail.length;
+        const eye = coDetail
+          ? '<button type="button" class="dl-eye" data-idx="' + idx + '" title="Xem sale đã điền gì">👁</button>'
+          : '<span class="dl-eye-empty" title="Lượt cũ chưa lưu chi tiết">—</span>';
+        let chiTiet = '';
+        if (coDetail) {
+          chiTiet = '<div class="dl-detail" id="dl-detail-' + idx + '" hidden>' +
+            e.detail.map(function (f) {
+              return '<div class="dl-f"><span class="dl-f-k">' + esc(f.k) + '</span><span class="dl-f-v">' + esc(f.v) + '</span></div>';
+            }).join('') + '</div>';
+        }
+        return '<div class="dl-item">' +
+          '<div class="dl-row">' +
+            '<span class="dl-who" data-label="Thành viên">' + ten + '</span>' +
+            '<span class="dl-what" data-label="Tải gì">' + nhan + '</span>' +
+            '<span class="ta-right dl-when" data-label="Lúc">' + thoiGianTuong(new Date(e.at).getTime()) + '</span>' +
+            '<span class="ta-right dl-eye-cell">' + eye + '</span>' +
+          '</div>' + chiTiet +
         '</div>';
       }).join('');
     }

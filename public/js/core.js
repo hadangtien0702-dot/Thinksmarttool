@@ -1538,8 +1538,22 @@ function flashButton(btn, text) {
 
 // Ghi sự kiện "tải về" để đo lường (xuất JPEG/PDF, tải brochure) — chủ tool 23/07:
 // "download mới biết sale dùng THẬT". Best-effort, KHÔNG chặn luồng (auth.js nuốt lỗi).
-function ghiTaiXuong(label) {
-  if (window.TSTAuth && TSTAuth.logUsage) TSTAuth.logUsage('download', label);
+function ghiTaiXuong(label, detail) {
+  if (window.TSTAuth && TSTAuth.logUsage) TSTAuth.logUsage('download', label, detail);
+}
+
+// Chụp GIÁ TRỊ sale đã điền lúc xuất (Cách A) — để super_admin bấm 👁 xem "điền đủ chưa".
+// Mỗi ô editor có aria-label = tên nhãn (Khách hàng/Tuổi/Tiểu bang…) + value = giá trị.
+function chupThongTinDaDien() {
+  const out = [];
+  try {
+    document.querySelectorAll('.text-input-field[data-editor-id]').forEach(function (inp) {
+      const nhan = (inp.getAttribute('aria-label') || '').trim();
+      const gt = (inp.value || '').trim();
+      if (nhan && gt) out.push({ k: nhan, v: gt.slice(0, 120) });   // k=nhãn, v=giá trị
+    });
+  } catch (e) {}
+  return out.length ? out : null;
 }
 
 async function exportToJpeg() {
@@ -1561,7 +1575,7 @@ async function exportToJpeg() {
     link.click();
     document.body.removeChild(link);
 
-    ghiTaiXuong(`${getProposalBaseName()} · JPEG`);
+    ghiTaiXuong(`${getProposalBaseName()} · JPEG`, chupThongTinDaDien());
     updateStatus(`Đã xuất và tải xuống ảnh JPEG: ${jpgName}`);
   }, '#ffffff');
 }
@@ -1618,7 +1632,7 @@ async function exportToPdf() {
 
     const pdfName = `${getProposalBaseName()}.pdf`;
     pdf.save(pdfName);
-    ghiTaiXuong(`${getProposalBaseName()} · PDF`);
+    ghiTaiXuong(`${getProposalBaseName()} · PDF`, chupThongTinDaDien());
     updateStatus(`Đã xuất PDF: ${pdfName}`);
   }, '#ffffff');
 }

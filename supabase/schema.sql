@@ -248,6 +248,9 @@ alter table public.usage_events add  constraint usage_events_kind_check
   check (kind in ('login', 'open_tool', 'download'));
 -- (23/07 nâng cấp) cột label: xem "tải CÁI GÌ" trong popup chi tiết ở tab Đo lường.
 alter table public.usage_events add column if not exists label text;
+-- (23/07 nâng cấp - Cách A) cột detail: giá trị sale ĐÃ ĐIỀN lúc xuất (Khách/Tuổi/Bang/số tiền…)
+-- → super_admin bấm 👁 xem "điền đủ thông tin khách chưa". Chỉ super_admin đọc (RLS như trên).
+alter table public.usage_events add column if not exists detail jsonb;
 
 alter table public.usage_events enable row level security;
 

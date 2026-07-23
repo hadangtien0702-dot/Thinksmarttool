@@ -3,6 +3,14 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
+### 2026-07-23 (tiếp 16 — VERSION TRACKING MỚI NHẤT Ở TRÊN). ✅ HOÀN TẤT, KHÔNG SỬA CODE.
+
+- Đảo thứ tự 271 dòng trong `outputs/019f8dd8-version-tracking/Thinksmart Tool.xlsx`: WIP/release mới ở hàng 5,
+  lịch sử cũ nằm dần bên dưới; không xoá nội dung.
+- Cập nhật `PIPELINE`, `FUNCTION MAP`, `CHECKLIST` để ghi rõ quy tắc mới.
+- Automation 07:30 và 15:30 luôn chèn dòng mới tại hàng 5, không append xuống cuối bảng.
+- QA: 6 sheet/6 table, 0 lỗi công thức; đã render đầu/cuối `VERSION TRACKING` và mở lại file đã lưu.
+
 ### 2026-07-23 (tiếp 15 — CHỐT CUỐI NGÀY). ✅ TRACKING XONG, KHÔNG SỬA CODE.
 
 - Release hiện tại `v1.27`; `HEAD = origin/main = 89bc051`. Đã ghi đủ thay đổi của `v1.26` và `v1.27`.
@@ -128,6 +136,26 @@ hiện tại rồi ghi lại**, theo khung gốc: Version → Chức năng → M
 - QA workbook: inspect đủ 6 sheet/6 table, 0 lỗi công thức `#REF!/#VALUE!/#DIV/0!/#NAME?/#N/A`;
   render trực quan toàn bộ 6 tab + riêng các dòng v1.25, không có nội dung bị cắt nghiêm trọng.
 - Không sửa mã ứng dụng trong lượt này; chỉ thêm workbook + entry knowledge-base này.
+
+### 2026-07-23 (tiếp 11 — Đo lường: CON MẮT 👁 xem "sale đã điền gì" - Cách A). ✅ ĐÃ PUSH (v1.29).
+
+Chủ tool: trong popup tải-về, muốn bấm 👁 xem **bản sale đã tải** — kiểm "điền đủ thông tin khách chưa".
+Chốt **Cách A: lưu GIÁ TRỊ đã điền** (không lưu ảnh, nhẹ + ít privacy hơn). Chủ tool ĐỒNG Ý lưu data khách.
+
+**Data:** thêm cột `usage_events.detail jsonb` (**chủ tool chạy SQL** `add column if not exists detail jsonb`).
+Lúc xuất, `chupThongTinDaDien()` (core.js) đọc MỌI ô `.text-input-field[data-editor-id]` → mảng `[{k:aria-label,
+v:value}]` (Khách hàng/Tuổi/Giới tính/Sức khoẻ/Tiểu bang/Mức đóng…). `logUsage(kind, label, detail)` (auth.js
+v6→7) chèn detail; **RESILIENT nhiều tầng** — thiếu detail → bỏ detail; thiếu cả label → ghi tối giản.
+
+**UI:** cột 4 "Xem" trong popup; lượt CÓ detail hiện nút **👁**, lượt cũ hiện "—". Bấm 👁 → **bung khối
+`.dl-detail`** (grid 2 cột nhãn=giá trị, mobile 1 cột). `taiDoLuong` select thêm `detail` (lùi dần nếu chưa
+có cột). members.js v24→25, portal.css v50→51.
+
+**Kiểm chứng** (harness): 👁 chỉ hiện ở lượt có detail; bấm → bung đúng 4 field đã điền (Khách/Tuổi/Bang/
+Mức đóng); lượt cũ "—". `node -c` OK.
+
+**Version:** `auth.js v7 · core.js v29 · members.js v25 · portal.css v51` · badge v1.28→**v1.29**.
+⚠️ Live giờ lưu **giá trị khách sale điền** vào `usage_events.detail` (super_admin QA). Còn: ③ Top brochure · ② Online.
 
 ### 2026-07-23 (tiếp 10 — Đo lường: POPUP "TẢI GÌ" + ghi label download). ✅ ĐÃ PUSH (v1.28).
 

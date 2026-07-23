@@ -1737,9 +1737,22 @@ body.dark-theme .up-field input[type="date"] { color-scheme: dark; }
 
 /* Bảng trong popup "Chi tiết tải về" */
 .dl-thead, .dl-row {
-  display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.6fr) minmax(0, 0.7fr);
+  display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.5fr) minmax(0, 0.7fr) 44px;
   gap: 12px; align-items: center;
 }
+/* 👁 xem "sale đã điền gì" + khối chi tiết bung ra */
+.dl-eye { border: none; background: transparent; cursor: pointer; font-size: 15px; line-height: 1; padding: 4px 6px; border-radius: var(--r-sm); opacity: 0.7; }
+.dl-eye:hover, .dl-eye.is-open { opacity: 1; background: var(--surface-3); }
+.dl-eye-empty { color: var(--text-3); }
+.dl-detail {
+  margin: 2px 6px 10px; padding: 10px 12px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-md);
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px;
+}
+.dl-f { display: flex; justify-content: space-between; gap: 10px; font-size: var(--fs-sm); border-bottom: 1px solid var(--divider); padding-bottom: 4px; min-width: 0; }
+.dl-f-k { color: var(--text-3); flex: 0 0 auto; }
+.dl-f-v { color: var(--text); font-weight: 600; text-align: right; min-width: 0; word-break: break-word; }
+@media (max-width: 640px) { .dl-detail { grid-template-columns: 1fr; } }
 .dl-thead {
   padding: 0 6px 8px; font-size: var(--fs-xs); font-weight: 700; color: var(--text-3);
   text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--divider);
