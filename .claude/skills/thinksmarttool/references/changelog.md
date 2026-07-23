@@ -32,6 +32,40 @@ Sau lần merge đầu, `main` thành hậu duệ nên merge ngược lại git 
 bảng So sánh biến mất khỏi localhost mà không báo gì — chủ tool phát hiện, không phải tôi.
 Đã đo 7 tên miền để xác nhận cách mới chạy đúng cả 2 phía.
 
+### 2026-07-23 (tiếp 4 — BẢNG SỬA: sắp thứ tự theo bản vẽ + LƯỚI 2 CỘT + rút gọn nhãn). ✅ ĐÃ PUSH (v1.23).
+
+Chủ tool: bảng sửa phải đọc **y như tờ báo giá** — thứ tự ô theo bố cục mẫu gốc, và ô ngắn xếp 2/hàng.
+
+**1. Sắp thứ tự theo VỊ TRÍ bản vẽ (Y↓ rồi X→).** Section 1 (khách) + Section 2 (kế hoạch) sắp theo toạ độ.
+Agent giữ nguyên (đã theo từng người). 3 bẫy đã xử:
+- **Cùng hàng lệch Y nhỏ** (Giới tính 271.7 vs Tuổi 273 → sort thuần Y đảo): gộp theo **dải Y 20px**
+  (`Math.round(y/20)`) rồi sắp theo X.
+- **Ô Allianz dùng vị trí SỐ** (số nằm dưới nhãn ~104px, có dòng phụ chen giữa → sai): thêm `tot.sortY/sortX`
+  = vị trí NHÃN (neo), sort ưu tiên sortY.
+- **Combo biểu đồ IUL đảo cột** (cột cao→số ở Y nhỏ→sắp theo tiền ra 3,2,1): `viTriItem` combo dùng vị trí
+  **nhãn tuổi/period** (cùng hàng, X=thứ tự cột) thay vì số tiền.
+
+**2. Lưới 2 cột** (`style.css`, `@media min-width:901px`): `.text-group-items` thành grid 2 cột;
+`.tb-full` (combo, ô có dòng xem-trước, tên khách, no-data) chiếm cả hàng; `min-width:0` cho dropdown
+không đẩy tràn. Mobile ≤900px giữ 1 cột.
+
+**Đo 5 mẫu (desktop 1280):**
+- Allianz: **đúng y danh sách chủ tool** (Mức đóng→Mức bảo vệ→Thời gian→Bảo vệ→Tổng tiền→Thu nhập→
+  Tổng dòng tiền→Nhận từ tuổi→Nhận đều đặn). Client: Khách hàng→[Tuổi|Giới tính]→[Sức khoẻ|Tiểu bang].
+- AIG/NLG IUL: Mức bảo vệ→Phí đóng→Thời gian→Tổng tiền→Cột 1,2,3. Term: Mức bảo vệ→Gói 1,2,3.
+- **Không mẫu nào tràn ngang panel; canvas VẪN cập nhật khi sửa** (reorder chỉ đổi thứ tự block, ghi theo editorId).
+
+**3. Rút gọn NHÃN cho ô đều, không xuống dòng** (chủ tool: label dài xuống 2 dòng làm ô cao lệch;
+"ngắn gọn đủ ý, đừng rớt ô"). Đổi (kèm chỗ tham chiếu để không lỗi): "Tổng số tiền đóng (20 năm)"→
+**"Tổng tiền đóng"** · "Thu nhập hưu trí mỗi năm"→**"Thu nhập hưu trí"** (đổi cả `n.ten===` của neoHauTo)
+· "Tổng dòng tiền dự kiến"→**"Tổng dòng tiền"** (đổi cả findIndex splice) · "Mức bảo vệ (Mệnh giá)"→
+**"Mức bảo vệ"** · "Xếp hạng sức khoẻ"→**"Sức khoẻ"** · "Giá trị tích luỹ — Cột N biểu đồ"→bỏ "biểu đồ"
+· "Nhận đều đặn trong (số năm)"→bỏ "trong". ⚠️ KHÔNG đụng regex `khop` (khớp chữ trên bản vẽ).
+Đo lại: Allianz 9 ô + AIG IUL — **0 ô xuống dòng, 0 tràn**; neoHauTo "/năm" vẫn dời đúng.
+
+**Version:** `proposal.js v29→33`, `style.css v77→78`, badge **v1.22→1.23**. Verify Allianz/AIG-IUL/
+NLG-IUL/AIG-Term (desktop 1280): thứ tự khớp bản vẽ, 2 cột, nhãn 1 dòng, canvas không đổi. ĐÃ push.
+
 ### 2026-07-23 (tiếp 3 — ADMIN THÊM TÀI KHOẢN + ĐỔI MẬT KHẨU). ✅ TEST OK + ĐÃ PUSH (badge v1.22).
 
 **Cập nhật sau khi test:**

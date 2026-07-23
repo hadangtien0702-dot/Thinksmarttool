@@ -599,6 +599,7 @@ function populateProposalTextsEditor(svgEl, textElements) {
   }
 
   const clientBlocks = {};
+  const clientPos = {};     // id -> {y, x} vị trí trên bản vẽ, để sắp ô theo đúng bố cục mẫu
   const idOKhach = [];      // editorId của các ô Thông tin khách hàng, theo thứ tự gặp
   const neoVuaKhach = {};   // editorId -> mốc để thu nhỏ chữ cho vừa khung (xem vuaKhungOKhach)
   const allLines = [];   // MỌI dòng chữ + toạ độ — dùng làm NEO để dò nhãn (mẫu Allianz)
@@ -628,7 +629,7 @@ function populateProposalTextsEditor(svgEl, textElements) {
       let displayName = id;
       if (id === 'client-name') displayName = 'Khách hàng';
       else if (id === 'client-age') displayName = 'Tuổi';
-      else if (id === 'client-rate') displayName = 'Xếp hạng sức khoẻ';
+      else if (id === 'client-rate') displayName = 'Sức khoẻ';
       else if (id === 'client-gender') displayName = 'Giới tính';
       else if (id === 'client-state') displayName = 'Tiểu bang';
 
@@ -673,7 +674,9 @@ function populateProposalTextsEditor(svgEl, textElements) {
         });
       }
 
+      if (id === 'client-name') itemBlock.classList.add('tb-full');   // tên khách để CẢ HÀNG
       neoVuaKhach[editorId] = { id: editorId, coChuGoc: null };
+      clientPos[id] = { y: absoluteY, x: absoluteX };
       clientBlocks[id] = itemBlock;
     }
 
@@ -786,13 +789,14 @@ function populateProposalTextsEditor(svgEl, textElements) {
     }
   });
 
-  // Sort and append Section 1:
-  const clientOrder = ['client-name', 'client-age', 'client-rate', 'client-gender', 'client-state'];
-  clientOrder.forEach(idKey => {
-    if (clientBlocks[idKey]) {
-      clientContainer.appendChild(clientBlocks[idKey]);
-    }
-  });
+  // Sort and append Section 1: sắp theo VỊ TRÍ trên bản vẽ (Y↓ rồi X→) để khớp bố cục mẫu gốc.
+  // → tên khách (trên cùng), rồi hàng [Tuổi | Giới tính], hàng [Sức khoẻ | Tiểu bang].
+  const BAND_KHACH = 20;   // gộp ô cùng hàng (lệch Y nhỏ) rồi sắp trái→phải
+  ['client-name', 'client-age', 'client-rate', 'client-gender', 'client-state']
+    .filter(k => clientBlocks[k])
+    .sort((a, b) => (Math.round(clientPos[a].y / BAND_KHACH) - Math.round(clientPos[b].y / BAND_KHACH))
+                    || (clientPos[a].x - clientPos[b].x))
+    .forEach(k => clientContainer.appendChild(clientBlocks[k]));
 
   // Sort, label and append Section 2:
   const tenFile = (appState.activeFile && appState.activeFile.name || '').toLowerCase();
@@ -811,7 +815,7 @@ function populateProposalTextsEditor(svgEl, textElements) {
     const periods = planExtras.filter(x => x.kind === 'period')
                               .sort((a, b) => a.absoluteX - b.absoluteX);
 
-    if (mainBenefit) mainBenefit.displayName = 'Mức bảo vệ (Mệnh giá)';
+    if (mainBenefit) mainBenefit.displayName = 'Mức bảo vệ';
     if (mainBenefit) orderedPlanItems.push(mainBenefit);
 
     // Mỗi cột = MỘT hàng gộp [số năm | số tiền] (yêu cầu chủ tool 2026-07-21).
@@ -859,11 +863,11 @@ function populateProposalTextsEditor(svgEl, textElements) {
     // ------------------------------------------------------------------------
     const NHAN = [
       { khop: /^MỨC ĐÓNG MỖI NĂM$/i,          ten: 'Mức đóng mỗi năm' },
-      { khop: /^THU NHẬP HƯU TRÍ$/i,          ten: 'Thu nhập hưu trí mỗi năm' },
-      { khop: /^Tổng dòng tiền dự kiến/i,     ten: 'Tổng dòng tiền dự kiến' },
+      { khop: /^THU NHẬP HƯU TRÍ$/i,          ten: 'Thu nhập hưu trí' },
+      { khop: /^Tổng dòng tiền dự kiến/i,     ten: 'Tổng dòng tiền' },
       { khop: /^Thời gian đóng phí$/i,        ten: 'Thời gian đóng phí' },
       { khop: /^Bảo vệ đến khi nào$/i,        ten: 'Bảo vệ đến khi nào' },
-      { khop: /^Tổng số tiền đóng$/i,         ten: 'Tổng số tiền đóng' },
+      { khop: /^Tổng số tiền đóng$/i,         ten: 'Tổng tiền đóng' },
       { khop: /^Mức bảo vệ ban đầu$/i,        ten: 'Mức bảo vệ ban đầu' },
     ];
 
@@ -892,11 +896,13 @@ function populateProposalTextsEditor(svgEl, textElements) {
       if (!tot) return;
       daDung.add(tot.editorId);
       tot.displayName = n.ten;
+      // Sắp theo vị trí NHÃN (thẻ), KHÔNG theo vị trí SỐ (số nằm dưới, có dòng phụ chen giữa)
+      tot.sortY = nhan.absoluteY; tot.sortX = nhan.absoluteX;
 
       // "Thu nhập hưu trí mỗi năm" có chữ "/năm" nằm NGAY BÊN PHẢI, là một thẻ <text>
       // riêng với toạ độ cứng → số dài ra là đè lên nó. Ghi nhớ để xếp lại chỗ sau mỗi
       // lần gõ (xem xepLaiHauTo ở đầu file).
-      if (n.ten === 'Thu nhập hưu trí mỗi năm') {
+      if (n.ten === 'Thu nhập hưu trí') {
         const viTriTien = docTranslate(tot.el.closest('text'));
         let hauTo = null, gan = Infinity;
         if (viTriTien) {
@@ -922,15 +928,17 @@ function populateProposalTextsEditor(svgEl, textElements) {
     const dongTuoi = allLines.find(l => /^NHẬN TỪ TUỔI/i.test(l.textContent));
     if (dongTuoi) themDongSo.push({
       isAllianzTuoiNhan: true, el: dongTuoi.el, editorId: dongTuoi.editorId,
+      absoluteY: dongTuoi.absoluteY, absoluteX: dongTuoi.absoluteX,   // để sắp theo vị trí
       khoang: dongTuoi.textContent.replace(/^NHẬN TỪ TUỔI\s*/i, '').trim()
     });
     const dongSoNam = allLines.find(l => /đều đặn.*\d+\s*năm/i.test(l.textContent));
     if (dongSoNam) themDongSo.push({
       isAllianzSoNamNhan: true, el: dongSoNam.el, editorId: dongSoNam.editorId,
+      absoluteY: dongSoNam.absoluteY, absoluteX: dongSoNam.absoluteX,   // để sắp theo vị trí
       so: (dongSoNam.textContent.match(/(\d+)\s*năm/i) || ['', ''])[1]
     });
     if (themDongSo.length) {
-      const iTong = orderedPlanItems.findIndex(it => it.displayName === 'Tổng dòng tiền dự kiến');
+      const iTong = orderedPlanItems.findIndex(it => it.displayName === 'Tổng dòng tiền');
       if (iTong !== -1) orderedPlanItems.splice(iTong + 1, 0, ...themDongSo);
       else orderedPlanItems.push(...themDongSo);
     }
@@ -974,9 +982,9 @@ function populateProposalTextsEditor(svgEl, textElements) {
       it.paired = cashAts.find(c => numOf(c.textContent) === numOf(it.textContent)) || null;
     });
 
-    if (mainBenefit) mainBenefit.displayName = 'Mức bảo vệ (Mệnh giá)';
+    if (mainBenefit) mainBenefit.displayName = 'Mức bảo vệ';
     if (monthlyPremium) monthlyPremium.displayName = 'Phí đóng mỗi tháng';
-    if (totalPremium) totalPremium.displayName = 'Tổng số tiền đóng (' + (period ? period.textContent : '20 năm') + ')';
+    if (totalPremium) totalPremium.displayName = 'Tổng tiền đóng';
 
     if (mainBenefit) orderedPlanItems.push(mainBenefit);
     if (monthlyPremium) orderedPlanItems.push(monthlyPremium);
@@ -996,6 +1004,26 @@ function populateProposalTextsEditor(svgEl, textElements) {
     // "Bảo vệ đến khi nào / 120 tuổi" bị KHOÁ theo yêu cầu chủ tool (2026-07-15): giá trị cố định
     // của sản phẩm, không đưa vào bảng chỉnh sửa (coverage vẫn được thu thập làm mốc hàng ô ở trên).
   }
+
+  // Sắp Section 2 theo VỊ TRÍ trên bản vẽ (Y↓ rồi X→) → bảng sửa đọc y như tờ báo giá (chủ tool 23/07).
+  // Combo lấy vị trí ô chính (tiền/period); ô tiền + đặc biệt đều có absoluteY/absoluteX sẵn.
+  // Combo: sắp theo nhãn TUỔI / SỐ NĂM (nằm CÙNG HÀNG, X = thứ tự cột) — KHÔNG theo số tiền
+  // (cột biểu đồ cao thấp khác nhau → số tiền ở Y khác nhau → sắp theo tiền sẽ đảo cột).
+  const viTriItem = (it) => it.isChartCombo ? (it.age || it.money)
+    : it.isTermCombo ? (it.period || it.money)
+    : it.isSoNam ? it.ref
+    : it;
+  const DAI_HANG = 20;   // gộp các ô lệch Y dưới ~20px vào CÙNG HÀNG rồi sắp theo X (trái→phải)
+  const khoaSort = (it) => {
+    const p = viTriItem(it) || {};
+    const y = (it.sortY != null) ? it.sortY : (p.absoluteY || 0);   // ưu tiên vị trí NHÃN nếu có
+    const x = (it.sortX != null) ? it.sortX : (p.absoluteX || 0);
+    return { hang: Math.round(y / DAI_HANG), x: x };
+  };
+  orderedPlanItems.sort((a, b) => {
+    const ka = khoaSort(a), kb = khoaSort(b);
+    return (ka.hang - kb.hang) || (ka.x - kb.x);
+  });
 
   // --- Chuẩn bị neo-giữa cho MỌI ô giá trị của phần Kế hoạch (xem canhGiuaTheoBanVe) ---
   const oCanGiua = [];
@@ -1042,10 +1070,10 @@ function populateProposalTextsEditor(svgEl, textElements) {
   function buildChartComboBlock(combo) {
     const idx = combo.index + 1;
     const block = document.createElement('div');
-    block.className = 'text-edit-block';
+    block.className = 'text-edit-block tb-full';   // combo 2 ô → cả hàng
     block.innerHTML = `
       <div class="text-meta">
-        <span class="text-id">Giá trị tích luỹ — Cột ${idx} biểu đồ</span>
+        <span class="text-id">Giá trị tích luỹ — Cột ${idx}</span>
       </div>
       <div class="dual-input-row">
         ${combo.money ? `<input type="text" class="text-input-field" data-editor-id="${combo.money.editorId}" value="${escapeHtml(combo.money.textContent)}" aria-label="Số tiền cột ${idx}" title="Số tiền">` : ''}
@@ -1093,7 +1121,7 @@ function populateProposalTextsEditor(svgEl, textElements) {
   function buildTermComboBlock(combo) {
     const idx = combo.index + 1;
     const block = document.createElement('div');
-    block.className = 'text-edit-block';
+    block.className = 'text-edit-block tb-full';   // combo 2 ô → cả hàng
     block.innerHTML = `
       <div class="text-meta">
         <span class="text-id">Gói ${idx} — thời gian &amp; phí mỗi tháng</span>
@@ -1169,7 +1197,7 @@ function populateProposalTextsEditor(svgEl, textElements) {
   // "NHẬN TỪ TUỔI 65-85" — sửa KHOẢNG TUỔI, giữ "NHẬN TỪ TUỔI" cố định. Dòng 1 tspan → applyTextValue sạch.
   function buildTuoiNhanBlock(item) {
     const block = document.createElement('div');
-    block.className = 'text-edit-block';
+    block.className = 'text-edit-block tb-full';   // có dòng xem trước → cả hàng
     block.innerHTML = `
       <div class="text-meta"><span class="text-id">Nhận từ tuổi (khoảng)</span></div>
       <input type="text" class="text-input-field" data-editor-id="${item.editorId}" value="${escapeHtml(item.khoang)}"
@@ -1191,9 +1219,9 @@ function populateProposalTextsEditor(svgEl, textElements) {
   // "Nhận đều đặn trong 21 năm" — sửa SỐ NĂM, giữ khung câu cố định; dùng lại đơn vị khoá "năm".
   function buildSoNamNhanBlock(item) {
     const block = document.createElement('div');
-    block.className = 'text-edit-block';
+    block.className = 'text-edit-block tb-full';   // có dòng xem trước → cả hàng
     block.innerHTML = `
-      <div class="text-meta"><span class="text-id">Nhận đều đặn trong (số năm)</span></div>
+      <div class="text-meta"><span class="text-id">Nhận đều đặn (số năm)</span></div>
       <div class="unit-input-row">
         <input type="text" inputmode="numeric" class="text-input-field unit-number"
                data-editor-id="${item.editorId}" value="${escapeHtml(item.so)}" aria-label="Số năm nhận đều đặn">
@@ -1244,7 +1272,7 @@ function populateProposalTextsEditor(svgEl, textElements) {
     if (item.isSoNam) {
       const x = item.ref;
       const b = document.createElement('div');
-      b.className = 'text-edit-block';
+      b.className = 'text-edit-block tb-full';   // có dòng xem trước → cả hàng
       // Ô này nhận CẢ SỐ LẪN CHỮ (chủ tool chốt 21/07): gõ "21" ra "nhận trong 21 năm",
       // gõ "trọn đời" ra "nhận trọn đời". Có dòng xem trước ngay dưới ô để thấy câu
       // hoàn chỉnh trước khi nhìn lên bản vẽ.

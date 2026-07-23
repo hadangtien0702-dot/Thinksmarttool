@@ -1176,6 +1176,21 @@ body.dark-theme .icon-btn .icon-moon { display: none; }
 .group-arrow { color: var(--text-3); }
 .text-group-items { padding: 12px; display: flex; flex-direction: column; gap: 12px; }
 
+/* Desktop (>900px): bảng sửa 2 CỘT — ô ngắn nửa hàng, .tb-full chiếm cả hàng (chủ tool 23/07).
+   Mobile (≤900px) giữ flex 1 cột ở trên. Vì các ô đã sắp theo VỊ TRÍ bản vẽ, 2 ô cùng hàng
+   trên tờ báo giá tự nằm cạnh nhau → bảng sửa "soi gương" bản vẽ. */
+@media (min-width: 901px) {
+  .text-group-items {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 10px 12px;
+  }
+  .text-group-items > .text-edit-block { min-width: 0; }   /* cho ô co lại vừa cột, dropdown không đẩy tràn */
+  .text-group-items > .tb-full,
+  .text-group-items > .no-data { grid-column: 1 / -1; }    /* chiếm cả hàng */
+}
+
 /* Category accents via :has (client / plan / agent) */
 .text-group:has(#group-client) .text-group-title { border-left-color: var(--cat-client); }
 .text-group:has(#group-client) .text-group-title svg { color: var(--cat-client); }
