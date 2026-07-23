@@ -66,6 +66,14 @@ không đẩy tràn. Mobile ≤900px giữ 1 cột.
 **Version:** `proposal.js v29→33`, `style.css v77→78`, badge **v1.22→1.23**. Verify Allianz/AIG-IUL/
 NLG-IUL/AIG-Term (desktop 1280): thứ tự khớp bản vẽ, 2 cột, nhãn 1 dòng, canvas không đổi. ĐÃ push.
 
+**4. Tinh chỉnh sau khi chủ tool xem (proposal.js v33→35, badge v1.23→1.24, ĐÃ push):**
+- **Ô "Nhận đều đặn" nhận CẢ số năm LẪN "trọn đời"** (chủ tool). Bỏ khoá-đơn-vị, đổi thành ô gõ tự do +
+  dòng xem trước: gõ số → "…trong N năm"; gõ chữ (vd "trọn đời") → "…trọn đời" (hàm `cauNhanDeuDan`).
+  Dò dòng đổi `/^Nhận đều đặn/i` (khớp cả bản không có "năm"); ô nhập trích "trong N năm"→"N", "trọn đời"→"trọn đời".
+- **Ô gói Term (period + tiền) TRỐNG → hiện "-"** (chủ tool: đồng nhất cột chưa dùng, giống ô tiền).
+  `applyTextValue(..., n ? (n+' năm') : '-')` và tiền `value.trim() ? value : '-'`.
+- Đo: Allianz "trọn đời"/"25"→câu đúng; AIG-Term xoá period/tiền→canvas "-". ✓
+
 ### 2026-07-23 (tiếp 3 — ADMIN THÊM TÀI KHOẢN + ĐỔI MẬT KHẨU). ✅ TEST OK + ĐÃ PUSH (badge v1.22).
 
 **Cập nhật sau khi test:**

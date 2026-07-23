@@ -931,12 +931,17 @@ function populateProposalTextsEditor(svgEl, textElements) {
       absoluteY: dongTuoi.absoluteY, absoluteX: dongTuoi.absoluteX,   // để sắp theo vị trí
       khoang: dongTuoi.textContent.replace(/^NHẬN TỪ TUỔI\s*/i, '').trim()
     });
-    const dongSoNam = allLines.find(l => /đều đặn.*\d+\s*năm/i.test(l.textContent));
-    if (dongSoNam) themDongSo.push({
-      isAllianzSoNamNhan: true, el: dongSoNam.el, editorId: dongSoNam.editorId,
-      absoluteY: dongSoNam.absoluteY, absoluteX: dongSoNam.absoluteX,   // để sắp theo vị trí
-      so: (dongSoNam.textContent.match(/(\d+)\s*năm/i) || ['', ''])[1]
-    });
+    // Khớp cả "Nhận đều đặn trong N năm" LẪN "Nhận đều đặn trọn đời" (đừng đòi phải có "năm")
+    const dongSoNam = allLines.find(l => /^Nhận đều đặn/i.test(l.textContent));
+    if (dongSoNam) {
+      const rawSN = dongSoNam.textContent.replace(/^Nhận đều đặn\s*/i, '').trim();
+      const mSN = rawSN.match(/^trong\s+(\d+)\s*năm$/i);   // ô nhập: "trong 21 năm"→"21"; "trọn đời"→"trọn đời"
+      themDongSo.push({
+        isAllianzSoNamNhan: true, el: dongSoNam.el, editorId: dongSoNam.editorId,
+        absoluteY: dongSoNam.absoluteY, absoluteX: dongSoNam.absoluteX,   // để sắp theo vị trí
+        so: mSN ? mSN[1] : rawSN
+      });
+    }
     if (themDongSo.length) {
       const iTong = orderedPlanItems.findIndex(it => it.displayName === 'Tổng dòng tiền');
       if (iTong !== -1) orderedPlanItems.splice(iTong + 1, 0, ...themDongSo);
@@ -1142,7 +1147,8 @@ function populateProposalTextsEditor(svgEl, textElements) {
       g.input.addEventListener('input', () => {
         const n = g.input.value.replace(/\D/g, '');
         if (g.input.value !== n) g.input.value = n;
-        applyTextValue(combo.period.el, combo.period.editorId, n ? (n + ' ' + donVi) : '');
+        // Cột trống → "-" (đồng nhất với ô tiền, khớp bản mẫu cột chưa dùng)
+        applyTextValue(combo.period.el, combo.period.editorId, n ? (n + ' ' + donVi) : '-');
         thuNhoChoVua(combo.period.neoGiua);
       });
     }
@@ -1150,7 +1156,7 @@ function populateProposalTextsEditor(svgEl, textElements) {
       row.insertAdjacentHTML('beforeend', `<input type="text" class="text-input-field" data-editor-id="${combo.money.editorId}" value="${escapeHtml(combo.money.textContent)}" aria-label="Phí mỗi tháng gói ${idx}" title="Phí mỗi tháng">`);
       const moneyInput = block.querySelector(`input[data-editor-id="${combo.money.editorId}"]`);
       moneyInput.addEventListener('input', (e) => {
-        applyTextValue(combo.money.el, combo.money.editorId, e.target.value);
+        applyTextValue(combo.money.el, combo.money.editorId, e.target.value.trim() ? e.target.value : '-');   // trống → "-"
       });
       moneyInput.addEventListener('blur', (e) => {
         const formatted = formatCurrencyValue(e.target.value);
@@ -1216,28 +1222,33 @@ function populateProposalTextsEditor(svgEl, textElements) {
     return block;
   }
 
-  // "Nhận đều đặn trong 21 năm" — sửa SỐ NĂM, giữ khung câu cố định; dùng lại đơn vị khoá "năm".
+  // "Nhận đều đặn trong N năm" HOẶC "Nhận đều đặn trọn đời" (chủ tool 23/07): gõ SỐ → "trong N năm";
+  // gõ CHỮ (vd "trọn đời") → giữ nguyên. Ô gõ tự do + dòng xem trước cho thấy câu hoàn chỉnh.
+  function cauNhanDeuDan(v) {
+    const s = String(v == null ? '' : v).trim().replace(/\s+/g, ' ');
+    if (!s) return 'Nhận đều đặn';
+    if (/^\d+$/.test(s)) return 'Nhận đều đặn trong ' + s + ' năm';                       // "21" → trong 21 năm
+    if (/^\d+\s*năm$/i.test(s)) return 'Nhận đều đặn trong ' + s.replace(/\s*năm$/i, '') + ' năm';
+    return 'Nhận đều đặn ' + s;                                                            // "trọn đời" → Nhận đều đặn trọn đời
+  }
   function buildSoNamNhanBlock(item) {
     const block = document.createElement('div');
     block.className = 'text-edit-block tb-full';   // có dòng xem trước → cả hàng
     block.innerHTML = `
-      <div class="text-meta"><span class="text-id">Nhận đều đặn (số năm)</span></div>
-      <div class="unit-input-row">
-        <input type="text" inputmode="numeric" class="text-input-field unit-number"
-               data-editor-id="${item.editorId}" value="${escapeHtml(item.so)}" aria-label="Số năm nhận đều đặn">
-        <span class="unit-suffix" aria-hidden="true">năm</span>
-      </div>
+      <div class="text-meta"><span class="text-id">Nhận đều đặn</span></div>
+      <input type="text" class="text-input-field" data-editor-id="${item.editorId}"
+             value="${escapeHtml(item.so)}" placeholder="gõ 21  hoặc  trọn đời"
+             aria-label="Nhận đều đặn trong (số năm hoặc trọn đời)">
       <div class="text-preview" aria-live="polite"></div>
     `;
-    const inp = block.querySelector('.unit-number');
+    const inp = block.querySelector('input');
     const xem = block.querySelector('.text-preview');
     inp.addEventListener('input', () => {
-      const so = inp.value.replace(/\D/g, '');
-      if (inp.value !== so) inp.value = so;
-      applyTextValue(item.el, item.editorId, so ? ('Nhận đều đặn trong ' + so + ' năm') : 'Nhận đều đặn');
-      xem.textContent = so ? `Trên bản vẽ: “Nhận đều đặn trong ${so} năm”` : '';
+      const cau = cauNhanDeuDan(inp.value);
+      applyTextValue(item.el, item.editorId, cau);
+      xem.textContent = 'Trên bản vẽ: “' + cau + '”';
     });
-    xem.textContent = `Trên bản vẽ: “Nhận đều đặn trong ${item.so} năm”`;
+    xem.textContent = 'Trên bản vẽ: “' + cauNhanDeuDan(item.so) + '”';
     return block;
   }
 
