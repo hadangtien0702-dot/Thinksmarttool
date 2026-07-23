@@ -874,13 +874,18 @@ function populateProposalTextsEditor(svgEl, textElements) {
     NHAN.forEach(function (n) {
       const nhan = allLines.find(l => n.khop.test(l.textContent));
       if (!nhan) return;
-      // Giá trị nằm DƯỚI nhãn, cùng cột (lệch ngang nhỏ), cách không quá 70px
+      // Giá trị nằm DƯỚI nhãn, cùng cột (lệch ngang nhỏ). Ngưỡng nới rộng cho bản
+      // FINAL 2026-07-23: nhãn "THU NHẬP HƯU TRÍ" và "TỔNG DÒNG TIỀN DỰ KIẾN" có
+      // thêm DÒNG PHỤ ĐỀ tiếng Anh chen giữa nhãn và số → giá trị tụt xuống ~104px
+      // và lệch ngang tới ~121px (đo trên bản vẽ), vượt ngưỡng cũ 70/80 nên rớt
+      // thành "Giá trị khác". Dùng "ứng viên gần nhất bên dưới" (chấm điểm dy+dx*.5)
+      // nên nới ngưỡng vẫn ghép đúng; ứng viên SAI gần nhất cách dx=153.9 → 140 an toàn.
       let tot = null, diem = Infinity;
       ungVien.forEach(function (v) {
         if (daDung.has(v.editorId)) return;
         const dy = v.absoluteY - nhan.absoluteY;
         const dx = Math.abs(v.absoluteX - nhan.absoluteX);
-        if (dy <= 0 || dy > 70 || dx > 80) return;
+        if (dy <= 0 || dy > 120 || dx > 140) return;
         const d = dy + dx * 0.5;          // ưu tiên ô ngay bên dưới, rồi mới tới lệch ngang
         if (d < diem) { diem = d; tot = v; }
       });
@@ -907,6 +912,28 @@ function populateProposalTextsEditor(svgEl, textElements) {
 
       orderedPlanItems.push(tot);
     });
+
+    // Hai dòng chữ trong thẻ "TỔNG DÒNG TIỀN DỰ KIẾN" cho sửa SỐ (chủ tool 23/07):
+    //   "NHẬN TỪ TUỔI 65-85"       → sửa khoảng tuổi "65-85"
+    //   "Nhận đều đặn trong 21 năm" → sửa số năm "21"
+    // Đặt NGAY SAU ô "Tổng dòng tiền dự kiến" cho gom nhóm. Ghi bằng applyTextValue: dòng tuổi
+    // là 1 tspan (sạch), dòng năm nhiều tspan vẫn gộp đúng như ô tên agent.
+    const themDongSo = [];
+    const dongTuoi = allLines.find(l => /^NHẬN TỪ TUỔI/i.test(l.textContent));
+    if (dongTuoi) themDongSo.push({
+      isAllianzTuoiNhan: true, el: dongTuoi.el, editorId: dongTuoi.editorId,
+      khoang: dongTuoi.textContent.replace(/^NHẬN TỪ TUỔI\s*/i, '').trim()
+    });
+    const dongSoNam = allLines.find(l => /đều đặn.*\d+\s*năm/i.test(l.textContent));
+    if (dongSoNam) themDongSo.push({
+      isAllianzSoNamNhan: true, el: dongSoNam.el, editorId: dongSoNam.editorId,
+      so: (dongSoNam.textContent.match(/(\d+)\s*năm/i) || ['', ''])[1]
+    });
+    if (themDongSo.length) {
+      const iTong = orderedPlanItems.findIndex(it => it.displayName === 'Tổng dòng tiền dự kiến');
+      if (iTong !== -1) orderedPlanItems.splice(iTong + 1, 0, ...themDongSo);
+      else orderedPlanItems.push(...themDongSo);
+    }
 
     // Ô nào không khớp nhãn nào thì vẫn cho sửa, đặt tên trung tính để không mất field
     ungVien.forEach(function (v) {
@@ -954,6 +981,8 @@ function populateProposalTextsEditor(svgEl, textElements) {
     if (mainBenefit) orderedPlanItems.push(mainBenefit);
     if (monthlyPremium) orderedPlanItems.push(monthlyPremium);
     if (totalPremium) orderedPlanItems.push(totalPremium);
+    // "Thời gian đóng phí" đặt NGAY TRÊN các cột biểu đồ (chủ tool 23/07), không để cuối bảng.
+    if (period) { period.displayName = 'Thời gian đóng phí'; orderedPlanItems.push(period); }
 
     // Mỗi cột biểu đồ = MỘT hàng chỉnh sửa gộp [tiền | tuổi] cho gọn (yêu cầu chủ tool 2026-07-15)
     const columnCount = Math.max(chartProjections.length, ageLabels.length);
@@ -961,7 +990,6 @@ function populateProposalTextsEditor(svgEl, textElements) {
       orderedPlanItems.push({ isChartCombo: true, index: i, money: chartProjections[i] || null, age: ageLabels[i] || null });
     }
 
-    if (period) { period.displayName = 'Thời gian đóng phí'; orderedPlanItems.push(period); }
     // Chỉ có ở mẫu Allianz; mẫu khác không khớp mẫu câu nên mảng rỗng, vô hại.
     planExtras.filter(x => x.kind === 'cumDongTien')
               .forEach(x => orderedPlanItems.push({ isSoNam: true, ref: x }));
@@ -975,6 +1003,7 @@ function populateProposalTextsEditor(svgEl, textElements) {
     if (it.isChartCombo) { [it.money, it.age].forEach(v => { if (v) oCanGiua.push(v); }); return; }
     if (it.isTermCombo)  { [it.period, it.money].forEach(v => { if (v) oCanGiua.push(v); }); return; }
     if (it.isSoNam)      { oCanGiua.push(it.ref); return; }
+    if (it.isAllianzTuoiNhan || it.isAllianzSoNamNhan) return;  // dòng chữ neo-TRÁI, không canh giữa
     if (it.neoHauTo)     return;   // cụm [số | /năm] có cách canh riêng, xem xepLaiHauTo
     oCanGiua.push(it);
   });
@@ -998,6 +1027,17 @@ function populateProposalTextsEditor(svgEl, textElements) {
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(canhTatCa);
   else canhTatCa();
 
+  // Cụm [số | ĐƠN VỊ KHOÁ] dùng trong ô gộp 2 cột (không kèm nhãn). viTri:
+  // 'suffix' → "21" + "năm" | 'prefix' → "Tuổi" + "63". Trả về {row, input} để gắn sự kiện.
+  function unitInputGroup(soBanDau, donVi, viTri, editorId, ariaLabel) {
+    const row = document.createElement('div');
+    row.className = 'unit-input-row';
+    const chip = `<span class="unit-suffix${viTri === 'prefix' ? ' unit-prefix' : ''}" aria-hidden="true">${escapeHtml(donVi)}</span>`;
+    const inp = `<input type="text" inputmode="numeric" class="text-input-field unit-number" data-editor-id="${editorId}" value="${escapeHtml(soBanDau)}" aria-label="${escapeHtml(ariaLabel || '')}">`;
+    row.innerHTML = viTri === 'prefix' ? (chip + inp) : (inp + chip);
+    return { row, input: row.querySelector('.unit-number') };
+  }
+
   // Hàng gộp cho 1 cột biểu đồ: ô TIỀN bên trái + ô TUỔI bên phải
   function buildChartComboBlock(combo) {
     const idx = combo.index + 1;
@@ -1009,9 +1049,9 @@ function populateProposalTextsEditor(svgEl, textElements) {
       </div>
       <div class="dual-input-row">
         ${combo.money ? `<input type="text" class="text-input-field" data-editor-id="${combo.money.editorId}" value="${escapeHtml(combo.money.textContent)}" aria-label="Số tiền cột ${idx}" title="Số tiền">` : ''}
-        ${combo.age ? `<input type="text" class="text-input-field dual-age" data-editor-id="${combo.age.editorId}" value="${escapeHtml(combo.age.textContent)}" aria-label="Tuổi cột ${idx}" title="Tuổi">` : ''}
       </div>
     `;
+    const row = block.querySelector('.dual-input-row');
 
     if (combo.money) {
       const moneyInput = block.querySelector(`input[data-editor-id="${combo.money.editorId}"]`);
@@ -1029,15 +1069,20 @@ function populateProposalTextsEditor(svgEl, textElements) {
       });
     }
     if (combo.age) {
-      const ageInput = block.querySelector(`input[data-editor-id="${combo.age.editorId}"]`);
-      ageInput.addEventListener('input', (e) => {
-        applyTextValue(combo.age.el, combo.age.editorId, e.target.value);
+      // "Tuổi 63": ĐƠN VỊ ĐỨNG TRƯỚC. Khoá chữ "Tuổi", chỉ gõ số.
+      const m = String(combo.age.textContent).trim().match(/^(\D*?)\s*(\d+)\s*$/);
+      const tienTo = (m && m[1].trim()) ? m[1].trim() : 'Tuổi';
+      const so = m ? m[2] : String(combo.age.textContent).replace(/\D/g, '');
+      const g = unitInputGroup(so, tienTo, 'prefix', combo.age.editorId, 'Tuổi cột ' + idx);
+      g.row.classList.add('dual-age');
+      row.appendChild(g.row);
+      g.input.addEventListener('input', () => {
+        const n = g.input.value.replace(/\D/g, '');
+        if (g.input.value !== n) g.input.value = n;
+        applyTextValue(combo.age.el, combo.age.editorId, n ? (tienTo + ' ' + n) : tienTo);
         thuNhoChoVua(combo.age.neoGiua);
         // Giữ dòng phụ tiếng Anh "Cash Value at N" khớp với tuổi mới
-        if (combo.age.paired) {
-          const num = (e.target.value.match(/\d+/) || [null])[0];
-          if (num) applyTextValue(combo.age.paired.el, combo.age.paired.editorId, 'Cash Value at ' + num);
-        }
+        if (combo.age.paired && n) applyTextValue(combo.age.paired.el, combo.age.paired.editorId, 'Cash Value at ' + n);
       });
     }
     return block;
@@ -1053,22 +1098,28 @@ function populateProposalTextsEditor(svgEl, textElements) {
       <div class="text-meta">
         <span class="text-id">Gói ${idx} — thời gian &amp; phí mỗi tháng</span>
       </div>
-      <div class="dual-input-row">
-        ${combo.period ? `<input type="text" class="text-input-field dual-age" data-editor-id="${combo.period.editorId}" value="${escapeHtml(combo.period.textContent)}" aria-label="Thời gian tham gia gói ${idx}" title="Thời gian tham gia">` : ''}
-        ${combo.money ? `<input type="text" class="text-input-field" data-editor-id="${combo.money.editorId}" value="${escapeHtml(combo.money.textContent)}" aria-label="Phí mỗi tháng gói ${idx}" title="Phí mỗi tháng">` : ''}
-      </div>
+      <div class="dual-input-row"></div>
     `;
+    const row = block.querySelector('.dual-input-row');
 
     if (combo.period) {
-      const periodInput = block.querySelector(`input[data-editor-id="${combo.period.editorId}"]`);
-      periodInput.addEventListener('input', (e) => {
-        applyTextValue(combo.period.el, combo.period.editorId, e.target.value);
+      // "10 năm": khoá đơn vị "năm", chỉ gõ số. Ở cột TRÁI (nhãn cột).
+      const m = String(combo.period.textContent).trim().match(/^(\d+)\s*(.*)$/);
+      const so = m ? m[1] : String(combo.period.textContent).replace(/\D/g, '');
+      const donVi = (m && m[2].trim()) ? m[2].trim() : 'năm';
+      const g = unitInputGroup(so, donVi, 'suffix', combo.period.editorId, 'Thời gian tham gia gói ' + idx);
+      g.row.classList.add('dual-age');
+      row.appendChild(g.row);
+      // KHÔNG format tiền tệ cho ô này — "10 năm" qua formatCurrencyValue thành "$10".
+      g.input.addEventListener('input', () => {
+        const n = g.input.value.replace(/\D/g, '');
+        if (g.input.value !== n) g.input.value = n;
+        applyTextValue(combo.period.el, combo.period.editorId, n ? (n + ' ' + donVi) : '');
         thuNhoChoVua(combo.period.neoGiua);
       });
-      // KHÔNG format tiền tệ cho ô này — "10 năm" mà đưa qua formatCurrencyValue
-      // sẽ thành "$10". Đây đúng là lỗi noCurrency đã gặp hôm 15/07.
     }
     if (combo.money) {
+      row.insertAdjacentHTML('beforeend', `<input type="text" class="text-input-field" data-editor-id="${combo.money.editorId}" value="${escapeHtml(combo.money.textContent)}" aria-label="Phí mỗi tháng gói ${idx}" title="Phí mỗi tháng">`);
       const moneyInput = block.querySelector(`input[data-editor-id="${combo.money.editorId}"]`);
       moneyInput.addEventListener('input', (e) => {
         applyTextValue(combo.money.el, combo.money.editorId, e.target.value);
@@ -1085,6 +1136,83 @@ function populateProposalTextsEditor(svgEl, textElements) {
     return block;
   }
 
+  // Ô "số + ĐƠN VỊ" (Thời gian đóng phí = "N Năm"/"N năm", Bảo vệ đến khi nào = "N tuổi"):
+  // KHOÁ đơn vị, người dùng chỉ gõ SỐ, đơn vị tự fill — giống ô tiền tự thêm "$" (chủ tool 23/07).
+  // Tách số + đơn vị từ giá trị hiện có → GIỮ ĐÚNG đơn vị + chữ hoa/thường của từng mẫu
+  // ("Năm"/"năm"/"tuổi"), không hardcode.
+  function buildUnitLockBlock(item) {
+    const m = String(item.textContent).trim().match(/^(\d+)\s*(.*)$/);
+    const soBanDau = m ? m[1] : String(item.textContent).replace(/\D/g, '');
+    const donVi = (m && m[2].trim()) ? m[2].trim() : '';
+    const nhan = item.displayName || 'Giá trị';
+    const block = document.createElement('div');
+    block.className = 'text-edit-block';
+    block.innerHTML = `
+      <div class="text-meta"><span class="text-id">${escapeHtml(nhan)}</span></div>
+      <div class="unit-input-row">
+        <input type="text" inputmode="numeric" class="text-input-field unit-number"
+               data-editor-id="${item.editorId}" value="${escapeHtml(soBanDau)}"
+               aria-label="${escapeHtml(nhan + ' (số ' + donVi + ')')}">
+        <span class="unit-suffix" aria-hidden="true">${escapeHtml(donVi)}</span>
+      </div>
+    `;
+    const inp = block.querySelector('.unit-number');
+    inp.addEventListener('input', () => {
+      const so = inp.value.replace(/\D/g, '');       // KHOÁ: chỉ giữ chữ số
+      if (inp.value !== so) inp.value = so;
+      applyTextValue(item.el, item.editorId, so ? (so + ' ' + donVi) : '');
+      thuNhoChoVua(item.neoGiua);
+    });
+    return block;
+  }
+
+  // "NHẬN TỪ TUỔI 65-85" — sửa KHOẢNG TUỔI, giữ "NHẬN TỪ TUỔI" cố định. Dòng 1 tspan → applyTextValue sạch.
+  function buildTuoiNhanBlock(item) {
+    const block = document.createElement('div');
+    block.className = 'text-edit-block';
+    block.innerHTML = `
+      <div class="text-meta"><span class="text-id">Nhận từ tuổi (khoảng)</span></div>
+      <input type="text" class="text-input-field" data-editor-id="${item.editorId}" value="${escapeHtml(item.khoang)}"
+             inputmode="numeric" placeholder="vd 65-85" aria-label="Khoảng tuổi nhận thu nhập">
+      <div class="text-preview" aria-live="polite"></div>
+    `;
+    const inp = block.querySelector('input');
+    const xem = block.querySelector('.text-preview');
+    inp.addEventListener('input', () => {
+      const kh = inp.value.replace(/[^\d\-–\s]/g, '').replace(/\s+/g, ' ').trim();  // chỉ số, gạch nối, khoảng trắng
+      if (inp.value !== kh) inp.value = kh;
+      applyTextValue(item.el, item.editorId, 'NHẬN TỪ TUỔI ' + kh);
+      xem.textContent = kh ? `Trên bản vẽ: “NHẬN TỪ TUỔI ${kh}”` : '';
+    });
+    xem.textContent = `Trên bản vẽ: “NHẬN TỪ TUỔI ${item.khoang}”`;
+    return block;
+  }
+
+  // "Nhận đều đặn trong 21 năm" — sửa SỐ NĂM, giữ khung câu cố định; dùng lại đơn vị khoá "năm".
+  function buildSoNamNhanBlock(item) {
+    const block = document.createElement('div');
+    block.className = 'text-edit-block';
+    block.innerHTML = `
+      <div class="text-meta"><span class="text-id">Nhận đều đặn trong (số năm)</span></div>
+      <div class="unit-input-row">
+        <input type="text" inputmode="numeric" class="text-input-field unit-number"
+               data-editor-id="${item.editorId}" value="${escapeHtml(item.so)}" aria-label="Số năm nhận đều đặn">
+        <span class="unit-suffix" aria-hidden="true">năm</span>
+      </div>
+      <div class="text-preview" aria-live="polite"></div>
+    `;
+    const inp = block.querySelector('.unit-number');
+    const xem = block.querySelector('.text-preview');
+    inp.addEventListener('input', () => {
+      const so = inp.value.replace(/\D/g, '');
+      if (inp.value !== so) inp.value = so;
+      applyTextValue(item.el, item.editorId, so ? ('Nhận đều đặn trong ' + so + ' năm') : 'Nhận đều đặn');
+      xem.textContent = so ? `Trên bản vẽ: “Nhận đều đặn trong ${so} năm”` : '';
+    });
+    xem.textContent = `Trên bản vẽ: “Nhận đều đặn trong ${item.so} năm”`;
+    return block;
+  }
+
   // Create and append Section 2 elements
   orderedPlanItems.forEach(item => {
     // Hàng gộp [tiền | tuổi] của cột biểu đồ có builder riêng
@@ -1094,6 +1222,21 @@ function populateProposalTextsEditor(svgEl, textElements) {
     }
     if (item.isTermCombo) {
       planContainer.appendChild(buildTermComboBlock(item));
+      return;
+    }
+    // Ô "số + đơn vị" khoá đơn vị: Thời gian đóng phí ("N năm") + Bảo vệ đến khi nào ("N tuổi")
+    if (item.kind === 'period' || item.kind === 'coverage') {
+      planContainer.appendChild(buildUnitLockBlock(item));
+      return;
+    }
+    // Allianz: sửa khoảng tuổi "NHẬN TỪ TUỔI 65-85"
+    if (item.isAllianzTuoiNhan) {
+      planContainer.appendChild(buildTuoiNhanBlock(item));
+      return;
+    }
+    // Allianz: sửa số năm "Nhận đều đặn trong 21 năm"
+    if (item.isAllianzSoNamNhan) {
+      planContainer.appendChild(buildSoNamNhanBlock(item));
       return;
     }
     // Chỉ sửa CON SỐ trong câu, ghi thẳng vào đúng mảnh tspan chứa nó nên các

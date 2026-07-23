@@ -32,6 +32,136 @@ Sau lần merge đầu, `main` thành hậu duệ nên merge ngược lại git 
 bảng So sánh biến mất khỏi localhost mà không báo gì — chủ tool phát hiện, không phải tôi.
 Đã đo 7 tên miền để xác nhận cách mới chạy đúng cả 2 phía.
 
+### 2026-07-23 (tiếp 2 — mở rộng đơn vị "tuổi", ô sửa 65-85/21, nhúng logo, + CHECKLIST). CHƯA PUSH.
+
+Chủ tool rà mẫu Allianz trên local, ra loạt yêu cầu "lỗi căn bản" — đã ghi thành quy tắc chuẩn:
+**memory `mau-bao-gia-3-loi-can-ban`** (nạp mỗi phiên) để phiên sau TỰ sửa, không đợi nhắc.
+
+**1. Khoá đơn vị mở rộng: "tuổi".** `buildPeriodUnitBlock` → đổi tên **`buildUnitLockBlock`**, route thêm
+`kind === 'coverage'` ("Bảo vệ đến khi nào" = "120 tuổi"). Đơn vị tách từ text nên tự đúng "năm"/"tuổi"/
+hoa-thường. Đo: "Bảo vệ đến khi nào" hiện 120 + chip "tuổi" khoá; gõ 100 → canvas "100 tuổi". ✓
+
+**2. Sửa số "65-85" và "21 năm" trong thẻ "TỔNG DÒNG TIỀN DỰ KIẾN".** 2 dòng trước cố định, nay có ô:
+"Nhận từ tuổi (khoảng)" (text "65-85" + preview) và "Nhận đều đặn trong (số năm)" (đơn vị "năm" khoá +
+preview). Ghi bằng `applyTextValue` (dòng tuổi 1 tspan sạch; dòng năm nhiều tspan gộp như ô tên agent).
+Chèn NGAY SAU ô "Tổng dòng tiền dự kiến" (splice theo displayName). Loại khỏi vòng canh-giữa (neo-trái).
+Đo: cả 2 ô hiện đúng vị trí, gõ đổi số OK. ✓
+  → **VÁ (v27): 2 input này thiếu `data-editor-id` → "click chữ trên bản vẽ để nhảy tới ô" KHÔNG chạy**
+  (chủ tool báo "sửa được mà ko click được"). `tagEditableCanvasElements` gắn `.svg-editable-text` DỰA
+  vào input có `data-editor-id`. Thêm `data-editor-id="${item.editorId}"` vào cả 2 → click canvas
+  "NHẬN TỪ TUỔI…"/"Nhận đều đặn…" nay focus đúng ô. **Quy tắc: MỌI input trong editor phải có
+  `data-editor-id` để click-to-edit hoạt động** (buildUnitLockBlock đã có sẵn).
+
+**3. LỖI LOGO — nhúng 2 ảnh vỡ.** File final trỏ `href="../../../../../../2024/Video/Asset/Logo/
+Thinksmart Insurance/{Logo Thinksmart White.png, Layer 1.png}"` (Illustrator quên Embed) → icon vỡ góc
+phải. 2 file CÓ trên đĩa `E:\2024\Video\Asset\Logo\...` → đọc + nhúng `data:image/png;base64`. Đo trong
+tool: 4/4 `<image>` là data-uri, 0 href ngoài. File 2.41MB → 2.60MB. ✓
+
+**4. CĂN GIỮA số mục I/II/III trong badge — XONG (đo được).** Số la mã neo-trái, lệch PHẢI khỏi tâm
+badge, càng rộng càng lệch (I +1.09, II +1.77, III +3.01px; dọc ~0). 🔑 **Pane ẩn nên getBBox=local,
+getBoundingClientRect=0 — nhưng `getCTM` TÍNH ĐƯỢC toạ độ doc từ transform (không cần paint):**
+`docX = a*cx + c*cy + e`. Đo tâm badge (rect gradient) + tâm số cùng hệ → dời transform X sang trái
+đúng offset: I 29.97→28.88, II 27.94→26.17, III 25.8067→22.7967 (chỉ X, giữ Y). Đo lại: offsetX = 0/0/0. ✓
+→ **Bài học: pane preview ẩn thì dùng `getCTM` để đo hình học SVG, đừng bỏ cuộc vì screenshot/getBoundingClientRect chết.**
+
+**5. KHOÁ ĐƠN VỊ TRONG BẢNG GỘP Term/IUL — XONG (chủ tool chốt "áp cho term/iul, cho sale biết
+đơn vị chọn sẵn, chỉ đổi số, không bối rối").** Thêm helper `unitInputGroup(so, donVi, viTri, editorId,
+aria)` → cụm [số | chip khoá] dùng trong ô gộp; `viTri='prefix'` cho chip đứng TRƯỚC (CSS mới
+`.unit-suffix.unit-prefix` đảo viền/bo góc). `buildTermComboBlock`: cột "N năm" → số + "năm" (suffix).
+`buildChartComboBlock`: "Tuổi N" → "Tuổi" (prefix) + số, GIỮ đồng bộ "Cash Value at N". Đo:
+Term 3 gói (10/20/30 + "năm", gõ 15→"15 năm"), IUL 3 cột (63/67/72 + "Tuổi", gõ 77→"Tuổi 77" +
+"Cash Value at 77"), **overflow=false cả hai** (ô gộp 2 cột không tràn). Allianz vẫn 18 field nguyên vẹn.
+**Version:** `proposal.js v27→28`, `style.css v76→77`.
+
+**6. Dời ô "Thời gian đóng phí" lên TRÊN cột 1 biểu đồ (IUL) — XONG.** Chủ tool xem NLG IUL, muốn ô
+này không nằm cuối bảng. Nhánh IUL: chuyển `push(period)` lên NGAY SAU `totalPremium`, trước vòng
+cột biểu đồ. Áp cả AIG IUL lẫn NLG IUL. Đo NLG IUL: thứ tự … Tổng số tiền đóng → **Thời gian đóng
+phí** → Cột 1/2/3 (thoiGianTruocCot1=true).
+
+**➡️ ĐÃ PUSH LÊN LIVE 23/07/2026** (chủ tool duyệt: *"xong thì em push code lên nhé"*). Bump badge
+**v1.20→v1.21**, ngày **22/07→23/07** (5 file HTML; KHÔNG đụng ngày trong comment). Commit + push
+origin main → Vercel deploy.
+
+**Tổng version cuối lượt:** `proposal.js?v=29`, `style.css?v=77`, badge **v1.21**. `Max-Funded
+Allianz.svg` md5 đổi (Texas + logo nhúng + căn badge). `2-Templates/` master vẫn gitignore (local-only).
+
+**CÒN LẠI:**
+- **Admin: THÊM tài khoản + đổi/reset mật khẩu thành viên** (chủ tool 23/07: *"admin chủ động thêm
+  tài khoản - thay đổi pass… nhờ IT trực tiếp và kiểm soát để tránh rủi ro"*). CHƯA làm — đổi pass/
+  tạo user người khác trong Supabase cần `service_role` chạy SERVER-SIDE (KHÔNG để lộ ở client anon
+  key) → cần endpoint an toàn (server.js đọc key từ env `SUPABASE_SERVICE_ROLE`) + UI ở /members +
+  chỉ cho `is_admin()`. Đang lập kế hoạch chi tiết. Việc LỚN kế tiếp.
+
+### 2026-07-23 (tiếp — KHOÁ ĐƠN VỊ "Năm" ô "Thời gian đóng phí"). CHƯA PUSH.
+
+Chủ tool: *"khóa chữ năm lại, chỉ cần nhập số là chữ năm nó tự fill mặc định — tương đương như
+nhập giá trị '$'"*. Ô "Thời gian đóng phí" (bản vẽ = "5 Năm") trước cho nhập cả chuỗi text.
+
+**Cách làm:** ô `kind === 'period'` (dò ở `/^\d+\s*năm$/i`, planExtras) giờ render qua
+`buildPeriodUnitBlock` mới (proposal.js) thay vì input text thường: input **chỉ nhận SỐ**
+(`replace(/\D/g,'')` mỗi lần gõ) + chip **đơn vị KHOÁ** bên phải (`.unit-suffix`, `pointer-events:none`).
+Gõ số → ghi `số + ' ' + đơn vị` vào canvas qua `applyTextValue` (tự set dirty + căn giữa qua
+`thuNhoChoVua`). **Đơn vị lấy từ chính giá trị mẫu** (`match(/^(\d+)\s*(.*)$/)`) nên GIỮ đúng chữ
+hoa/thường: Allianz "Năm", IUL "năm" — không hardcode.
+
+**Phạm vi:** áp cho MỌI ô đơn-năm `kind:'period'` = "Thời gian đóng phí" của **cả IUL lẫn Allianz**
+(nhất quán, đúng tinh thần "$" áp toàn cục). **Term Life KHÔNG đụng** — 3 ô năm của nó là tiêu đề cột
+đi qua `buildTermComboBlock` (dual-input), không phải nhánh này.
+
+**CSS mới** (`.unit-input-row` + `.unit-suffix`, đặt cạnh `.dual-input-row`): cả hàng trông như MỘT ô
+(input số không viền, chip đơn vị nền `--surface-3` khoá bên phải, focus-ring bọc cả hàng). Toàn token
+→ theme tối tự đúng.
+
+**Kiểm chứng** (mirror config-rỗng, đã xoá sau khi đo): Allianz — input hiện "5" + chip "Năm"
+(`pointer-events:none`, nền `rgb(241,242,246)`); gõ "7"→canvas **"7 Năm"**; gõ "ab12x"→input còn
+"12", canvas **"12 Năm"**; xoá sạch→canvas KHÔNG còn "Năm" lơ lửng; dirty bật. IUL: an toàn theo
+cấu trúc (cùng nhánh, đơn vị "năm" giữ nguyên, không mất centering/không có neoHauTo để mất).
+
+**Version:** `style.css?v=75→76`, `proposal.js?v=23→24` (đều trong tool.html). Badge vẫn v1.20.
+
+### 2026-07-23 — MẪU ALLIANZ BẢN FINAL (chủ tool gửi) + vá nhánh isAllianz. CHƯA PUSH.
+
+Chủ tool: *"anh mới update file final dành cho chương trình allianz, em update vào phần báo giá"*.
+
+**🚨 FILE ĐẶT SAI CHỖ + SAI TÊN — cả hai đều phá nhận diện hãng.** Chủ tool lưu bản final vào
+`2-Templates/AIG/Max-Funded Aliianz.svg` (thư mục **AIG**, tên lỗi chính tả **"Al*ii*anz"** 2 chữ i).
+Hậu quả nếu để nguyên: (1) `server.js:104` xếp theo `aig` trước → mẫu hiện dưới hãng **AIG**;
+(2) `proposal.js:800` `isAllianz = tenFile.includes('allianz')` → "aliianz" ≠ "allianz" → **false** →
+editor chạy nhánh IUL thường, dán nhãn Quyền lợi lung tung. Cả local lẫn live đều dò `isAllianz`
+theo TÊN FILE nên tên phải đúng chính tả.
+
+**Có 3 bản byte-identical** (md5 `fc59ea80…`): `AIG/Max-Funded Aliianz.svg`,
+`Allianz/Max-Funded Aliianz 2.svg`, và bản WIP cũ ở `Allianz/Max-Funded Allianz.svg`. Đã gom về
+MỘT: copy nội dung final vào `2-Templates/Allianz/Max-Funded Allianz.svg` (đúng tên), **xoá 2 bản
+trùng lỗi chính tả**. Backup bản WIP cũ (live v1.14) + bản final gốc vào scratchpad trước khi động.
+
+**Vá nhánh `isAllianz` (proposal.js ~L883) — chỉ sửa LOGIC DÒ NHÃN, KHÔNG đụng số liệu.**
+Kiểm chứng trong tool thật (mirror config-rỗng, chế độ mở, đã xoá sau khi đo) lòi ra: 2 nhãn
+**"THU NHẬP HƯU TRÍ"** và **"TỔNG DÒNG TIỀN DỰ KIẾN"** rớt thành "Giá trị khác". Bản final có thêm
+DÒNG PHỤ ĐỀ tiếng Anh chen giữa nhãn và số → giá trị tụt xuống **dy≈104px**, lệch ngang **dx≈121px**,
+vượt ngưỡng cũ `dy>70 / dx>80`. Thuật toán "ứng viên gần nhất bên dưới" vẫn ghép đúng nên chỉ cần
+nới ngưỡng → **`dy≤120 / dx≤140`** (ứng viên SAI gần nhất cách dx=153.9 → an toàn, đã trace cả 7 nhãn
+không mis-attach). Sửa NẰM TRONG `else if (isAllianz)` → AIG/NLG/Term không đụng.
+
+**Đo lại sau khi vá:** đủ **7/7** nhãn Quyền lợi ghép đúng ($30k / $50,968 / $1,070,328 / 5 Năm /
+120 tuổi / $150k / $580,337). Gõ số dài vào "Thu nhập hưu trí" → canvas cập nhật + hậu tố **"/năm"
+tự dời phải** (neoHauTo nay kích hoạt được). 77 text render, 0 lỗi console.
+
+**Ô "TIỂU BANG" — ĐÃ SỬA (chủ tool chốt).** State dò bằng `US_STATES.includes(line)` khớp CHÍNH XÁC;
+placeholder Allianz là **"Washington DC"** không có trong `US_STATES` (chỉ có `'Washington'`) → ô Tiểu
+bang không hiện, sale không đổi bang được. Bản Allianz CŨ đang live cũng vậy (hành vi cũ, không phải
+lỗi bản final). AIG/NLG dùng "Texas" (khớp → có ô). Chủ tool: *"làm theo các file khác - đúng biểu
+bang của Mỹ là được"* → đổi placeholder trong SVG **"Washington DC" → "Texas"** (khớp AIG/NLG),
+đồng bộ cả `2-Templates/Allianz/` lẫn `public/templates/`. Đo lại: ô Tiểu bang hiện, **dropdown 50
+bang, value "Texas"**. (Sửa placeholder = dữ liệu MẪU, không phải số liệu bảo hiểm; backup bản gốc
+"Washington DC" của chủ tool còn trong scratchpad.) md5 mẫu giờ `9e79d934…` (khác bản gốc `fc59ea80…`).
+
+**Đã cập nhật (STAGED, CHƯA PUSH):** `public/js/proposal.js` (vá ngưỡng isAllianz) ·
+`public/templates/Max-Funded Allianz.svg` (bản live = final + Texas) · `public/templates/manifest.json`
+(+entry Allianz, dự phòng static) · `tool.html` `proposal.js?v=22→23` · file changelog này.
+`git status` = 5 file, `2-Templates` vẫn gitignore. **Chủ tool chốt CHƯA push — xem local trước.**
+Khi duyệt: BUMP badge (v1.20→v1.21, 5 chỗ) + đổi changelog thành "đã push" + commit + push origin main.
+
 ### 2026-07-22 (later 14 — hàng "Tạm khoá" + bộ lọc quyền Admin)
 
 **1. Tổng quan thiếu hàng "Tạm khoá" → các con số không cộng khớp.** Chủ tool: *"tạm khoá ở đây

@@ -1961,6 +1961,48 @@ body.no-editor .sidebar-right { display: none; }
 .dual-input-row .text-input-field { min-width: 0; flex: 1; }
 .dual-input-row .dual-age { flex: 0 0 40%; }
 
+/* Ô có ĐƠN VỊ KHOÁ (vd "Thời gian đóng phí": chỉ gõ SỐ, chữ "Năm" cố định tự fill —
+   giống ô tiền tự thêm "$"). Cả hàng trông như MỘT ô: input số bên trái không viền
+   riêng, đơn vị là chip mờ khoá bên phải (không bấm/không chọn được). */
+.unit-input-row {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.unit-input-row:hover { border-color: var(--brand-300); }
+.unit-input-row:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-ring); }
+.unit-input-row .unit-number {
+  flex: 1; min-width: 0;
+  border: none; background: transparent;
+}
+.unit-input-row .unit-number:hover,
+.unit-input-row .unit-number:focus { border: none; box-shadow: none; }
+.unit-suffix {
+  display: inline-flex; align-items: center;
+  padding: 0 12px;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--text-3);
+  white-space: nowrap;
+  user-select: none;
+  pointer-events: none;
+  background: var(--surface-3);
+  border-left: 1px solid var(--border-strong);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+}
+/* Đơn vị đứng TRƯỚC số (vd "Tuổi 63"): chip nằm bên trái, viền phải làm vạch ngăn. */
+.unit-suffix.unit-prefix {
+  border-left: none;
+  border-right: 1px solid var(--border-strong);
+  border-radius: var(--r-sm) 0 0 var(--r-sm);
+}
+/* Trong ô gộp 2 cột: chip hẹp lại cho vừa (đơn vị ngắn "năm"/"Tuổi"). */
+.dual-input-row .unit-input-row { min-width: 0; }
+.dual-input-row .unit-input-row .unit-suffix { padding: 0 8px; }
+
 /* --------------------------------------------------------------------------
    22b. SO SÁNH LIVING BENEFITS (js/sosanh.js)
    Bảng 5 cột: 1 cột hãng + 4 cột quyền lợi.
