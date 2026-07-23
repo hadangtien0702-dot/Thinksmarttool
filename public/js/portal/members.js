@@ -841,14 +841,17 @@
     const dauHomNay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     const dau7 = dauHomNay - 6 * NGAY_MS;
     const loginHomNay = new Set(), toolHomNay = new Set(), active7 = new Set();
+    let dlHomNay = 0;   // TẢI VỀ đếm theo LƯỢT (mỗi lần xuất/tải = 1), không theo người
     events.forEach(function (e) {
       const t = new Date(e.at).getTime();
       if (e.kind === 'login' && t >= dauHomNay) loginHomNay.add(e.user_id);
       if (e.kind === 'open_tool' && t >= dauHomNay) toolHomNay.add(e.user_id);
+      if (e.kind === 'download' && t >= dauHomNay) dlHomNay++;
       if (t >= dau7) active7.add(e.user_id);
     });
     $('uc-login-today').textContent = loginHomNay.size;
     $('uc-tool-today').textContent = toolHomNay.size;
+    $('uc-download-today').textContent = dlHomNay;
     $('uc-active-7d').textContent = active7.size;
   }
 
@@ -891,21 +894,25 @@
     const trong = usageEvents.filter(function (e) { const ts = new Date(e.at).getTime(); return ts >= f && ts <= t; });
 
     const login = new Set(), tool = new Set(), act = new Set();
+    let dl = 0;   // tải về đếm theo LƯỢT trong khoảng
     const pmap = {}; (toanBo || []).forEach(function (p) { pmap[p.id] = p; });
     const theoNguoi = {}, theoNgay = {};
     trong.forEach(function (e) {
       const ts = new Date(e.at).getTime();
       if (e.kind === 'login') login.add(e.user_id);
       if (e.kind === 'open_tool') tool.add(e.user_id);
+      if (e.kind === 'download') dl++;
       act.add(e.user_id);
-      const u = theoNguoi[e.user_id] || (theoNguoi[e.user_id] = { lastLogin: 0, lastTool: 0, tool: 0 });
+      const u = theoNguoi[e.user_id] || (theoNguoi[e.user_id] = { lastLogin: 0, lastTool: 0, tool: 0, download: 0 });
       if (e.kind === 'login') u.lastLogin = Math.max(u.lastLogin, ts);
       if (e.kind === 'open_tool') { u.lastTool = Math.max(u.lastTool, ts); u.tool++; }
+      if (e.kind === 'download') u.download++;
       const k = ngayKey(ts); (theoNgay[k] || (theoNgay[k] = new Set())).add(e.user_id);
     });
 
     $('uk-login').textContent = login.size;
     $('uk-tool').textContent = tool.size;
+    $('uk-download').textContent = dl;
     $('uk-active').textContent = act.size;
 
     const soNgay = Math.round((batDauNgay(khoangTo).getTime() - batDauNgay(khoangFrom).getTime()) / NGAY_MS) + 1;
@@ -964,7 +971,8 @@
         '<span data-label="Phòng ban">' + pb + '</span>' +
         '<span data-label="Đăng nhập gần nhất">' + thoiGianTuong(u.lastLogin) + '</span>' +
         '<span data-label="Mở tool gần nhất">' + thoiGianTuong(u.lastTool) + '</span>' +
-        '<span class="ta-right" data-label="Số lần mở tool">' + (u.tool || 0) + '</span>' +
+        '<span class="ta-right" data-label="Mở tool">' + (u.tool || 0) + '</span>' +
+        '<span class="ta-right ur-dl" data-label="Tải về">' + (u.download || 0) + '</span>' +
       '</div>';
     }).join('');
   }

@@ -227,7 +227,8 @@ create index if not exists videos_category_sort_idx
 --    Mục đích: biết mỗi ngày bao nhiêu người thật sự đăng nhập / mở Công cụ
 --    ("build cho có hay dùng thật?"). Thu dữ liệu thô, KHÔNG lưu-đè-1-mốc, để
 --    sau này còn dựng lại được lịch sử theo ngày.
---    kind: 'login' (đăng nhập thành công) | 'open_tool' (mở trang Công cụ)
+--    kind: 'login' (đăng nhập) | 'open_tool' (mở Công cụ) | 'download' (xuất JPEG/PDF
+--          hoặc tải brochure — chủ tool 23/07: "download mới biết sale dùng THẬT")
 --    Chạy hoàn toàn bằng ANON KEY + RLS (KHÔNG cần service_role):
 --      • INSERT: mỗi người chỉ ghi được sự kiện của CHÍNH MÌNH (user_id = auth.uid()).
 --      • SELECT: CHỈ super_admin đọc (chủ tool chốt 23/07).
@@ -236,9 +237,14 @@ create index if not exists videos_category_sort_idx
 create table if not exists public.usage_events (
   id      bigint generated always as identity primary key,
   user_id uuid not null references public.profiles(id) on delete cascade,
-  kind    text not null check (kind in ('login', 'open_tool')),
+  kind    text not null check (kind in ('login', 'open_tool', 'download')),
   at      timestamptz not null default now()
 );
+
+-- Nâng cấp bảng đã tạo trước đó (idempotent): nới ràng buộc kind để nhận thêm 'download'.
+alter table public.usage_events drop constraint if exists usage_events_kind_check;
+alter table public.usage_events add  constraint usage_events_kind_check
+  check (kind in ('login', 'open_tool', 'download'));
 
 alter table public.usage_events enable row level security;
 

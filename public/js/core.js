@@ -364,8 +364,15 @@ function collectEditedFields() {
   return fields;
 }
 
+// Cache nội dung MẪU GỐC đã tải (mẫu không đổi trong phiên) → đổi mẫu lần sau khỏi
+// tải mạng lại. KHÔNG cache bản nháp/khách (local:) vì chúng thay đổi khi lưu.
+const svgContentCache = new Map();
+function batDauTaiCanvas() { if (dom.canvasContainer) dom.canvasContainer.classList.add('dang-tai'); }
+function ketThucTaiCanvas() { if (dom.canvasContainer) dom.canvasContainer.classList.remove('dang-tai'); }
+
 async function loadSvgContent(fileInfo) {
   updateStatus(`Đang tải thiết kế ${fileInfo.name}...`);
+  batDauTaiCanvas();   // spinner + giữ bản cũ mờ, KHÔNG để trắng lúc tải/vẽ
   try {
     let content = null;
     let localRecord = null;
@@ -391,10 +398,16 @@ async function loadSvgContent(fileInfo) {
       if (!resp.ok) throw new Error('Không tải được file thiết kế.');
       content = await resp.text();
     } else {
-      const response = await fetch(`/api/svgs/content?path=${encodeURIComponent(fileInfo.path)}`);
-      const data = await response.json();
-      if (!data.success) throw new Error(data.error);
-      content = data.content;
+      const laMau = isMasterFile(fileInfo);
+      if (laMau && svgContentCache.has(fileInfo.path)) {
+        content = svgContentCache.get(fileInfo.path);   // mẫu gốc đã tải → dùng lại, khỏi gọi API
+      } else {
+        const response = await fetch(`/api/svgs/content?path=${encodeURIComponent(fileInfo.path)}`);
+        const data = await response.json();
+        if (!data.success) throw new Error(data.error);
+        content = data.content;
+        if (laMau) svgContentCache.set(fileInfo.path, content);
+      }
     }
 
     {
@@ -488,22 +501,28 @@ async function loadSvgContent(fileInfo) {
 
       updateHeaderActions();
 
-      // Setup Canvas
+      // HIỆN BẢN VẼ TRƯỚC — sale bấm để XEM là chính, thường chưa sửa liền (chủ tool 23/07).
       renderSvgOnCanvas();
       resetPan();
       zoomToFit();
+      const renderBox = document.getElementById('svg-render-box');
+      if (renderBox) renderBox.classList.add('svg-vao');   // fade-in bản mới
+      ketThucTaiCanvas();                                  // canvas đã hiện → tắt spinner
+      updateStatus(`Đang mở: ${fileInfo.name}`);
 
-      // Update Inspector Panels
+      // NHƯỜNG 2 KHUNG HÌNH cho trình duyệt VẼ XONG canvas, RỒI mới dựng "máy sửa"
+      // (bảng chữ + bảng màu + click-to-edit). Mẫu nặng (~2.6MB) nhờ vậy HIỆN NGAY;
+      // phần sửa nạp ngầm sau. Vẫn nằm TRONG loadSvgContent nên caller (clone → tự
+      // điền preset đại lý) chờ được editor sẵn sàng — không vỡ auto-fill.
+      await new Promise(function (r) { requestAnimationFrame(function () { requestAnimationFrame(r); }); });
+
       updateInspectorDetails();
       populateTextsEditor();
       populateColorsEditor();
-
-      // Tag canvas SVG text elements that are editable (after sidebar inputs exist)
       tagEditableCanvasElements();
-
-      updateStatus(`Đang mở: ${fileInfo.name}`);
     }
   } catch (error) {
+    ketThucTaiCanvas();
     showAppAlert(`Lỗi khi mở file thiết kế: ${error.message}`, { title: 'Không mở được file', tone: 'danger' });
   }
 }
@@ -1517,6 +1536,12 @@ function flashButton(btn, text) {
   setTimeout(() => { btn.innerHTML = prev; }, 2000);
 }
 
+// Ghi sự kiện "tải về" để đo lường (xuất JPEG/PDF, tải brochure) — chủ tool 23/07:
+// "download mới biết sale dùng THẬT". Best-effort, KHÔNG chặn luồng (auth.js nuốt lỗi).
+function ghiTaiXuong() {
+  if (window.TSTAuth && TSTAuth.logUsage) TSTAuth.logUsage('download');
+}
+
 async function exportToJpeg() {
   if (!appState.activeFile || !appState.activeSvgDoc) return;
 
@@ -1536,6 +1561,7 @@ async function exportToJpeg() {
     link.click();
     document.body.removeChild(link);
 
+    ghiTaiXuong();
     updateStatus(`Đã xuất và tải xuống ảnh JPEG: ${jpgName}`);
   }, '#ffffff');
 }
@@ -1592,6 +1618,7 @@ async function exportToPdf() {
 
     const pdfName = `${getProposalBaseName()}.pdf`;
     pdf.save(pdfName);
+    ghiTaiXuong();
     updateStatus(`Đã xuất PDF: ${pdfName}`);
   }, '#ffffff');
 }

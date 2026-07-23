@@ -981,6 +981,42 @@ body.dark-theme .cat-2 { color: var(--text-3); }
 }
 .rendered-svg-container svg { display: block; width: 100%; height: 100%; }
 
+/* ĐANG TẢI / ĐỔI MẪU (23/07) — giữ bản vẽ cũ mờ đi + spinner thay vì để TRẮNG.
+   Spinner quay bằng transform → chạy trên COMPOSITOR nên vẫn mượt kể cả khi luồng
+   chính đóng băng lúc parse + vẽ SVG nặng (~2.6MB). */
+.canvas-container.dang-tai #canvas-wrapper { opacity: 0.4; transition: opacity 0.15s ease; }
+.canvas-container.dang-tai::after {
+  content: ''; position: absolute; top: 50%; left: 50%;
+  width: 42px; height: 42px; margin: -21px 0 0 -21px;
+  border: 3px solid var(--border); border-top-color: var(--brand);
+  border-radius: 50%; animation: tst-canvas-spin 0.7s linear infinite;
+  z-index: 30; pointer-events: none;
+}
+@keyframes tst-canvas-spin { to { transform: rotate(360deg); } }
+
+/* Bản vẽ mới hiện vào mượt (chỉ opacity → không đụng transform pan/zoom ở #canvas-wrapper).
+   Dùng class .svg-vao đặt riêng lúc MỞ MẪU, không bật khi re-render vì đổi màu. */
+.rendered-svg-container.svg-vao { animation: tst-canvas-in 0.44s cubic-bezier(0.34, 1.45, 0.5, 1) both; }
+@keyframes tst-canvas-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.955); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Brochure preview + bảng Compare cũng "POP" như canvas (chủ tool 23/07).
+   Mỗi lần mở, nội dung mới được đặt vào #library-view / #doc-viewport (innerHTML) →
+   phần tử con là MỚI → CSS animation tự chạy, không cần JS trigger. */
+.library-view > *,
+#doc-viewport > * {
+  animation: tst-canvas-in 0.44s cubic-bezier(0.34, 1.45, 0.5, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas-container.dang-tai::after { animation: none; }
+  .rendered-svg-container.svg-vao { animation: none; }
+  .library-view > *,
+  #doc-viewport > * { animation: none; }
+}
+
 .canvas-status-bar {
   height: var(--status-bar-height);
   flex-shrink: 0;

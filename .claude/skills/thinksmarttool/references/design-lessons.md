@@ -67,6 +67,27 @@ bản gốc lâu dài: `E:\2026\Claude\.claude\skills\`):
 
 ## Log bài học theo ngày
 
+### 2026-07-23 (tiếp 3 — đổi mẫu mượt: perceived-perf + animation compositor)
+- **"LOAD LÂU" thường là JS ĐÓNG BĂNG luồng chính, không phải mạng chậm.** Đổi mẫu SVG 2.6MB giật vì sau
+  `await fetch`, cả khối parse+clone+zoomToFit chạy ĐỒNG BỘ → trình duyệt không vẽ được → thấy "trắng + đơ".
+  Fix theo hướng chủ tool ("cho xem trước, sửa nạp sau"): **render canvas → `await` double-rAF → mới dựng
+  máy sửa**. Việc nặng-nhưng-không-cần-ngay (bảng sửa) đẩy sang sau khi khung hình đã vẽ. Perceived-perf >
+  raw-perf: bản vẽ HIỆN NGAY quan trọng hơn tổng thời gian.
+- **Spinner/animation bằng `transform`/`opacity` chạy trên COMPOSITOR → vẫn mượt lúc luồng chính đơ.** Đây
+  là lý do spinner báo "đang tải" hữu ích: nó quay đều kể cả khi JS đang freeze parse. Đừng làm loading bằng
+  thứ phụ thuộc luồng chính (setInterval đổi text…).
+- **KHÔNG để trắng: giữ nội dung cũ (mờ) tới khi cái mới sẵn sàng.** Thêm class `.dang-tai` (dim bản cũ +
+  spinner) lúc bắt đầu, bỏ khi canvas mới hiện. Khung hình cuối trước freeze = "bản cũ mờ + spinner" giữ
+  nguyên suốt lúc đơ → mắt không thấy trống.
+- **CSS `animation` TỰ chạy khi phần tử vừa được chèn vào DOM — không cần JS trigger.** Nội dung
+  `#library-view`/`#doc-viewport` set bằng `innerHTML` → con là phần tử MỚI → chỉ cần
+  `.library-view > * { animation: pop }` là mỗi lần mở tự pop. Đơn giản hơn nhiều so với remove-reflow-add class.
+- **Animation transform: gắn lên phần tử KHÔNG bị transform khác chiếm.** Pan/zoom nằm ở `#canvas-wrapper`
+  → đặt pop lên `.rendered-svg-container` (con) mới không xung đột. Kiểm `applyTransform` target trước khi
+  chọn phần tử để animate.
+- **⚠️ Windows tắt Animation effects → `prefers-reduced-motion: reduce` → animation KHÔNG chạy** (lặp lại
+  bẫy 20/07). Làm animation xong PHẢI nhắc chủ tool cái này, kẻo báo "không thấy gì".
+
 ### 2026-07-23 (tiếp 2 — N1 Đo lường: pane ẩn giết số đo BỀ RỘNG, không giết bề cao)
 - **🔑 PANE ẨN → `window.innerWidth = 0` → MỌI SỐ ĐO BỀ RỘNG LÀ RÁC; BỀ CAO thì vẫn đúng.** Đo tab bar
   ra `width=8px` (chỉ padding) trong khi nút con `scrollWidth=140`, `parentW(body)=48`. Nguyên nhân:

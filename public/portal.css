@@ -1664,9 +1664,11 @@ button:active, .btn:active, .icon-btn:active, .sidebar-nav a:active, .sidebar-fo
 /* Bảng theo người — grid 5 cột */
 .usage-thead, .usage-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 0.9fr);
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.9fr) minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 0.7fr) minmax(0, 0.7fr);
   gap: 12px; align-items: center;
 }
+/* Cột "Tải về" = tín hiệu dùng THẬT → làm nổi (chủ tool 23/07) */
+.usage-row .ur-dl { font-weight: 800; color: var(--brand); }
 .usage-thead {
   padding: 0 12px 8px; font-size: var(--fs-xs); font-weight: 700; color: var(--text-3);
   text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--divider);

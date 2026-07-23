@@ -218,6 +218,15 @@ function initEventListeners() {
   if (dom.btnExportJpeg) dom.btnExportJpeg.addEventListener('click', exportToJpeg);
   if (dom.btnExportPdf) dom.btnExportPdf.addEventListener('click', exportToPdf);
 
+  // Đo lường "tải về" cho BROCHURE — uỷ quyền trong #library-view (nút tải nằm ở đó,
+  // dựng động nên phải delegate). Chỉ trong #library-view nên KHÔNG bắt nhầm link tạm
+  // của export JPEG/PDF (link đó gắn vào <body>). Xem ghiTaiXuong() trong core.js.
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('#library-view a[download], #library-view .library-download, #library-view .library-card-btn')) {
+      if (typeof ghiTaiXuong === 'function') ghiTaiXuong();
+    }
+  });
+
   // New proposal button
   if (dom.btnNewProposal) dom.btnNewProposal.addEventListener('click', createNewProposal);
 

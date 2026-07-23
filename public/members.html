@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/vendor/animate.min.css">
-  <link rel="stylesheet" href="/portal.css?v=48">
+  <link rel="stylesheet" href="/portal.css?v=49">
   <link rel="stylesheet" href="/dialog.css?v=4">
 </head>
 <body>
@@ -267,6 +267,11 @@
               <span class="usage-card-sub">người dùng tool</span>
             </div>
             <div class="usage-card">
+              <span class="usage-card-label">Hôm nay · Tải về</span>
+              <span class="usage-card-value" id="uc-download-today">—</span>
+              <span class="usage-card-sub">lượt xuất / tải</span>
+            </div>
+            <div class="usage-card">
               <span class="usage-card-label">7 ngày qua</span>
               <span class="usage-card-value" id="uc-active-7d">—</span>
               <span class="usage-card-sub">người hoạt động</span>
@@ -292,7 +297,7 @@
                 <div class="usage-table">
                   <div class="usage-thead">
                     <span>Thành viên</span><span>Phòng ban</span><span>Đăng nhập gần nhất</span>
-                    <span>Mở tool gần nhất</span><span class="ta-right">Số lần mở tool</span>
+                    <span>Mở tool gần nhất</span><span class="ta-right">Mở tool</span><span class="ta-right">Tải về</span>
                   </div>
                   <div id="usage-rows"></div>
                 </div>
@@ -319,6 +324,7 @@
                 <div class="ms-panel-head ms-sub">Trong khoảng này</div>
                 <div class="ms-row"><span class="ms-label">Đăng nhập</span><span class="ms-value" id="uk-login">—</span></div>
                 <div class="ms-row"><span class="ms-label">Mở công cụ</span><span class="ms-value" id="uk-tool">—</span></div>
+                <div class="ms-row"><span class="ms-label">Tải về (xuất/tải)</span><span class="ms-value is-ok" id="uk-download">—</span></div>
                 <div class="ms-row"><span class="ms-label">Người hoạt động</span><span class="ms-value" id="uk-active">—</span></div>
               </div>
             </aside>
@@ -392,7 +398,7 @@
       </main>
 
       <footer class="portal-footer">
-        <span class="version-badge">v1.25</span>
+        <span class="version-badge">v1.26</span>
         <span>23/07/2026 · Thinksmart Insurance — lưu hành nội bộ</span>
       </footer>
     </div>
@@ -402,7 +408,7 @@
   <script src="/js/portal/config.js?v=8"></script>
   <script src="/js/portal/auth.js?v=5"></script>
   <script src="/js/ui-dialog.js?v=3"></script>
-  <script src="/js/portal/members.js?v=22"></script>
+  <script src="/js/portal/members.js?v=23"></script>
   <script src="/vendor/gsap.min.js"></script>
   <script src="/js/animations.js?v=4"></script>
 </body>
