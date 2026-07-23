@@ -32,6 +32,48 @@ Sau lần merge đầu, `main` thành hậu duệ nên merge ngược lại git 
 bảng So sánh biến mất khỏi localhost mà không báo gì — chủ tool phát hiện, không phải tôi.
 Đã đo 7 tên miền để xác nhận cách mới chạy đúng cả 2 phía.
 
+### 2026-07-23 (tiếp 3 — ADMIN THÊM TÀI KHOẢN + ĐỔI MẬT KHẨU). ✅ TEST OK + ĐÃ PUSH (badge v1.22).
+
+**Cập nhật sau khi test:**
+- **Cho GÕ mật khẩu tuỳ ý** (chủ tool: *"đổi mật khẩu ko được tự nhập hả em?"*): 2 endpoint nhận thêm
+  `body.password` (tối thiểu 6 ký tự; bỏ trống → dùng `Drt$2022`) và trả về `password` đã đặt. Ô Đổi mật
+  khẩu dùng `showAppPrompt` điền sẵn `Drt$2022`; form Thêm tài khoản có thêm ô "Mật khẩu tạm". `members.js v18→19`.
+- **Chủ tool đã set key** (Vercel Production + `.env` local) → test THẬT: tạo tài khoản + đổi mật khẩu chạy được.
+- 🔑 **BÀI HỌC `.env`:** chủ tool dán khoá service_role vào **dòng riêng, RỚT mất `SUPABASE_SERVICE_ROLE_KEY=`**
+  ở đầu → dotenv không đọc, server trả 503. Cách chẩn đoán KHÔNG lộ key: phân loại từng dòng (`NAME=` vs
+  "dòng lạ"), rồi `sed` ghép lại prefix. **Xác minh key nạp OK bằng SERVER** (503→401 khi có/không token;
+  token bậy → "Phiên không hợp lệ" = Supabase phản hồi = key hợp lệ), tuyệt đối không echo giá trị key.
+- ⚠️ Khoá service_role từng hiện trong ảnh chụp của chủ tool → đã nhắc có thể Reset key + cập nhật lại
+  `.env`+Vercel nếu muốn chắc.
+
+---
+_(ghi chú build ban đầu, giữ lại để tra cứu:)_
+
+Chủ tool chốt: admin **chủ động thêm tài khoản + đổi pass** để nhờ IT trực tiếp, kiểm soát tránh rủi ro.
+Quyết định: **cả admin lẫn super_admin** làm được đầy đủ (chủ tool bỏ đề xuất chặn admin đụng super_admin);
+tài khoản mới **role=user, phòng ban=Sale, status=active**; mật khẩu tạm **`Drt$2022`** (hiện cho admin, user đổi sau).
+
+**Vì sao server-side:** tạo user / đổi pass người khác trong Supabase cần **service_role** (bí mật, bỏ qua RLS)
+→ chạy trong `server.js`, đọc từ env, TUYỆT ĐỐI không nhúng client (config.js chỉ có anon key công khai).
+
+**Đã làm:**
+- `npm i @supabase/supabase-js dotenv`. `server.js`: `supabaseAdmin` (service_role từ env; chưa set → null).
+  2 endpoint: `POST /api/admin/create-user`, `POST /api/admin/reset-password`. Middleware **`requireAdmin`**:
+  verify JWT người gọi (`auth.getUser(token)`) → tra `profiles` → chỉ `admin`/`super_admin` + active mới qua.
+- `members.js`: helper `goiAdminApi` (kèm `Authorization: Bearer <access_token>`), `doiMatKhauThanhVien`,
+  case `reset-pw` trong menu ⋯ (hiện cho MỌI thành viên active — tách khỏi `canManage`). Dialog "Thêm thành viên"
+  nâng thành **tạo tài khoản trực tiếp** (Họ tên/Email/Phòng ban + nút Tạo) thay flow "gửi link đăng ký" cũ.
+- `.env.example` (mẫu, không key) + `.gitignore` `!.env.example` (cho commit mẫu; `.env` thật vẫn ignore).
+
+**Đã kiểm (không cần key):** server chạy, 2 endpoint đăng ký, gate trả **503** khi chưa set key (an toàn),
+`node -c` OK cả server.js/members.js, không còn ref `add-link/add-copy`. `node_modules` đã gitignore.
+
+**CHƯA test được (cần CHỦ TOOL):** tạo/đổi pass thật + UI /members (đòi đăng nhập admin). → owner phải:
+1. Supabase → Settings → API → copy **service_role** → dán vào **Vercel env** (`SUPABASE_SERVICE_ROLE_KEY`+`SUPABASE_URL`)
+   VÀ file `.env` local. **Không dán vào chat.** 2. Rồi test local (đăng nhập admin) → OK mới commit+push.
+**⚠️ ĐỪNG PUSH TRƯỚC KHI SET VERCEL KEY** — push trước thì nút "Thêm tài khoản"/"Đổi mật khẩu" trên live báo 503.
+Version members.js `v17→18`. Server 8000 đang chạy (đã restart để nạp code mới).
+
 ### 2026-07-23 (tiếp 2 — mở rộng đơn vị "tuổi", ô sửa 65-85/21, nhúng logo, + CHECKLIST). CHƯA PUSH.
 
 Chủ tool rà mẫu Allianz trên local, ra loạt yêu cầu "lỗi căn bản" — đã ghi thành quy tắc chuẩn:

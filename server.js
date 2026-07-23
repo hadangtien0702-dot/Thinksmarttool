@@ -1,9 +1,22 @@
+require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// --- ADMIN (Supabase service_role) — CHỈ server-side, đọc khoá từ env (.env / Vercel) ---
+// service_role BỎ QUA RLS → CHỈ dùng trong /api/admin/* có kiểm quyền (requireAdmin).
+// Chưa set key → supabaseAdmin = null → endpoint trả 503, phần còn lại của tool vẫn chạy.
+const SUPABASE_URL = process.env.SUPABASE_URL || '';
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabaseAdmin = (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY)
+  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } })
+  : null;
+const TEMP_PASSWORD = 'Drt$2022';          // mật khẩu tạm mặc định (chủ tool 23/07) — user tự đổi sau
+const PHONG_BAN_HOP_LE = ['Sale', 'MKT', 'CS', 'Admin'];
 
 // Body parser
 app.use(express.json({ limit: '50mb' }));
@@ -363,6 +376,75 @@ Object.entries(PORTAL_PAGES).forEach(([route, file]) => {
     if (req.path !== route) return res.redirect(301, route);
     res.sendFile(path.join(__dirname, 'public', file));
   });
+});
+
+// ---------------------------------------------------------------------------
+// ADMIN API — thêm tài khoản / đổi mật khẩu. CHỈ admin & super_admin (chủ tool
+// chốt 23/07: admin làm được đầy đủ). Mọi request phải kèm token đăng nhập; server
+// verify token + tra profiles TRƯỚC khi dùng service_role. Không có bước này thì
+// bất kỳ ai gọi API cũng đổi được mật khẩu người khác.
+// ---------------------------------------------------------------------------
+async function requireAdmin(req, res, next) {
+  if (!supabaseAdmin) return res.status(503).json({ error: 'Máy chủ chưa cấu hình SUPABASE_SERVICE_ROLE_KEY.' });
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+  if (!token) return res.status(401).json({ error: 'Thiếu token đăng nhập.' });
+  try {
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    if (error || !user) return res.status(401).json({ error: 'Phiên đăng nhập không hợp lệ.' });
+    const { data: profile, error: pErr } = await supabaseAdmin
+      .from('profiles').select('id, role, status').eq('id', user.id).single();
+    if (pErr || !profile) return res.status(403).json({ error: 'Không tìm thấy hồ sơ người dùng.' });
+    if (!['admin', 'super_admin'].includes(profile.role) || profile.status !== 'active') {
+      return res.status(403).json({ error: 'Chỉ Admin mới được thao tác này.' });
+    }
+    req.caller = profile;
+    next();
+  } catch (e) {
+    return res.status(500).json({ error: 'Lỗi xác thực: ' + e.message });
+  }
+}
+
+// Tạo tài khoản mới: role='user' (nhân viên), phòng ban mặc định Sale, status active,
+// mật khẩu tạm Drt$2022 (hiện cho admin gửi user; user tự đổi sau).
+app.post('/api/admin/create-user', requireAdmin, async (req, res) => {
+  const ten = String((req.body && req.body.full_name) || '').trim();
+  const mail = String((req.body && req.body.email) || '').trim().toLowerCase();
+  const phong = PHONG_BAN_HOP_LE.includes(req.body && req.body.department) ? req.body.department : 'Sale';
+  const pass = (String((req.body && req.body.password) || '').trim()) || TEMP_PASSWORD;
+  if (!ten) return res.status(400).json({ error: 'Thiếu họ tên.' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) return res.status(400).json({ error: 'Email không hợp lệ.' });
+  if (pass.length < 6) return res.status(400).json({ error: 'Mật khẩu cần tối thiểu 6 ký tự.' });
+  try {
+    const { data: created, error: cErr } = await supabaseAdmin.auth.admin.createUser({
+      email: mail, password: pass, email_confirm: true, user_metadata: { full_name: ten }
+    });
+    if (cErr) return res.status(400).json({ error: cErr.message });
+    const newId = created.user.id;
+    // Trigger đã tạo profile (status 'pending'); nâng lên active + set phòng ban.
+    // upsert phòng trường hợp trigger chưa kịp — role giữ mặc định 'user'.
+    const { error: uErr } = await supabaseAdmin.from('profiles')
+      .upsert({ id: newId, full_name: ten, email: mail, department: phong, status: 'active', role: 'user' }, { onConflict: 'id' });
+    if (uErr) return res.status(500).json({ error: 'Đã tạo tài khoản nhưng cập nhật hồ sơ lỗi: ' + uErr.message });
+    return res.json({ success: true, email: mail, password: pass });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+});
+
+// Đổi mật khẩu 1 người. Admin gõ mật khẩu tuỳ ý (body.password); bỏ trống → dùng mật khẩu tạm.
+app.post('/api/admin/reset-password', requireAdmin, async (req, res) => {
+  const id = String((req.body && req.body.userId) || '').trim();
+  const pass = (String((req.body && req.body.password) || '').trim()) || TEMP_PASSWORD;
+  if (!id) return res.status(400).json({ error: 'Thiếu userId.' });
+  if (pass.length < 6) return res.status(400).json({ error: 'Mật khẩu cần tối thiểu 6 ký tự.' });
+  try {
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(id, { password: pass });
+    if (error) return res.status(400).json({ error: error.message });
+    return res.json({ success: true, password: pass });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
 });
 
 // Start Server

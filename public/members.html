@@ -248,26 +248,38 @@
         <!-- Gợi ý phòng ban đã dùng (đổ động từ dữ liệu) -->
         <datalist id="dept-list"></datalist>
 
-  <!-- Thêm thành viên: KHÔNG tạo tài khoản trực tiếp được (xem ghi chú trong members.js) -->
+  <!-- Thêm thành viên: TẠO TÀI KHOẢN TRỰC TIẾP (server /api/admin/create-user + service_role) -->
   <div class="modal-backdrop" id="add-backdrop" aria-hidden="true">
     <div class="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="add-title">
       <div class="modal-head">
-        <h2 id="add-title">Thêm thành viên</h2>
+        <h2 id="add-title">Thêm tài khoản</h2>
         <button class="icon-btn" id="add-close" aria-label="Đóng">✕</button>
       </div>
       <div class="modal-body">
         <div class="notice info" style="margin-bottom:14px">
           <span>💡</span>
-          <div>Gửi link này cho người mới. Họ tự đăng ký, sau đó tên sẽ hiện ở mục
-          <b>Chờ duyệt</b> để bạn duyệt và xếp phòng ban.</div>
+          <div>Tạo tài khoản cho nhân viên mới. Họ đăng nhập bằng email + mật khẩu tạm, rồi tự đổi lại.</div>
         </div>
         <div class="field">
-          <label for="add-link">Link đăng ký</label>
-          <input id="add-link" type="text" readonly>
+          <label for="add-name">Họ và tên</label>
+          <input id="add-name" type="text" autocomplete="off" placeholder="Nguyễn Văn A">
         </div>
-        <div style="display:flex;gap:8px;justify-content:flex-end">
+        <div class="field">
+          <label for="add-email">Email đăng nhập</label>
+          <input id="add-email" type="email" autocomplete="off" placeholder="ten@email.com">
+        </div>
+        <div class="field">
+          <label for="add-dept">Phòng ban</label>
+          <select id="add-dept"></select>
+        </div>
+        <div class="field">
+          <label for="add-pass">Mật khẩu tạm</label>
+          <input id="add-pass" type="text" autocomplete="off" placeholder="Drt$2022">
+        </div>
+        <div id="add-result" class="notice" style="display:none;margin-top:12px"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
           <button class="btn btn-secondary btn-sm" id="add-cancel">Đóng</button>
-          <button class="btn btn-primary btn-sm" id="add-copy">Sao chép link</button>
+          <button class="btn btn-primary btn-sm" id="add-create">Tạo tài khoản</button>
         </div>
       </div>
     </div>
@@ -296,7 +308,7 @@
       </main>
 
       <footer class="portal-footer">
-        <span class="version-badge">v1.21</span>
+        <span class="version-badge">v1.22</span>
         <span>23/07/2026 · Thinksmart Insurance — lưu hành nội bộ</span>
       </footer>
     </div>
@@ -306,7 +318,7 @@
   <script src="/js/portal/config.js?v=8"></script>
   <script src="/js/portal/auth.js?v=4"></script>
   <script src="/js/ui-dialog.js?v=3"></script>
-  <script src="/js/portal/members.js?v=17"></script>
+  <script src="/js/portal/members.js?v=19"></script>
   <script src="/vendor/gsap.min.js"></script>
   <script src="/js/animations.js?v=4"></script>
 </body>

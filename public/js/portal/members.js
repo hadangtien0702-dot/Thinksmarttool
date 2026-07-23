@@ -85,37 +85,48 @@
   // theo trạng thái, phần còn lại gom vào menu.
   function actionsFor(p) {
     if (p.id === me.id) return '<span class="m-self">Bạn</span>';
-    if (!canManage(p)) return '<span class="m-self">—</span>';
 
     const isSuper = me.role === 'super_admin';
     const id = p.id;
     let chinh = '';          // hành động chính, luôn hiện
     const menu = [];         // các mục trong menu "⋯"
 
-    if (p.status === 'pending') {
-      chinh = '<button class="btn btn-primary btn-sm" data-act="approve" data-id="' + id + '">Duyệt</button>';
-    } else if (p.status === 'suspended') {
-      chinh = '<button class="btn btn-primary btn-sm" data-act="reactivate" data-id="' + id + '">Mở khoá</button>';
-    } else if (p.status === 'active') {
-      chinh = '<button class="btn btn-secondary btn-sm" data-act="dept" data-id="' + id + '">Phòng ban</button>';
+    // Duyệt / khoá / đổi role / xoá — theo canManage (super_admin: mọi người; admin: chỉ 'user')
+    if (canManage(p)) {
+      if (p.status === 'pending') {
+        chinh = '<button class="btn btn-primary btn-sm" data-act="approve" data-id="' + id + '">Duyệt</button>';
+      } else if (p.status === 'suspended') {
+        chinh = '<button class="btn btn-primary btn-sm" data-act="reactivate" data-id="' + id + '">Mở khoá</button>';
+      } else if (p.status === 'active') {
+        chinh = '<button class="btn btn-secondary btn-sm" data-act="dept" data-id="' + id + '">Phòng ban</button>';
+      }
+
+      if (p.status !== 'active') {
+        menu.push('<button data-act="dept" data-id="' + id + '">Đổi phòng ban</button>');
+      }
+      if (p.status === 'active' && isSuper) {
+        if (p.role === 'user') menu.push('<button data-act="to-admin" data-id="' + id + '">Đặt làm Admin</button>');
+        else if (p.role === 'admin') menu.push('<button data-act="to-user" data-id="' + id + '">Bỏ quyền Admin</button>');
+        else if (p.role === 'super_admin') menu.push('<button data-act="to-admin" data-id="' + id + '">Hạ xuống Admin</button>');
+      }
+      if (p.status === 'active') {
+        menu.push('<div class="m-menu-sep"></div>');
+        menu.push('<button class="is-danger" data-act="suspend" data-id="' + id + '">Tạm khoá</button>');
+      }
+      if (isSuper) {
+        if (p.status !== 'active') menu.push('<div class="m-menu-sep"></div>');
+        menu.push('<button class="is-danger" data-act="delete" data-id="' + id + '">Xoá khỏi danh sách</button>');
+      }
     }
 
-    if (p.status !== 'active') {
-      menu.push('<button data-act="dept" data-id="' + id + '">Đổi phòng ban</button>');
-    }
-    if (p.status === 'active' && isSuper) {
-      if (p.role === 'user') menu.push('<button data-act="to-admin" data-id="' + id + '">Đặt làm Admin</button>');
-      else if (p.role === 'admin') menu.push('<button data-act="to-user" data-id="' + id + '">Bỏ quyền Admin</button>');
-      else if (p.role === 'super_admin') menu.push('<button data-act="to-admin" data-id="' + id + '">Hạ xuống Admin</button>');
-    }
+    // "Đổi mật khẩu": admin & super_admin đổi được cho MỌI thành viên đang active (chủ tool 23/07:
+    // "admin làm luôn"). Tách khỏi canManage (đó là quyền khoá/xoá/đổi role, không phải reset pass).
     if (p.status === 'active') {
-      menu.push('<div class="m-menu-sep"></div>');
-      menu.push('<button class="is-danger" data-act="suspend" data-id="' + id + '">Tạm khoá</button>');
+      if (menu.length) menu.push('<div class="m-menu-sep"></div>');
+      menu.push('<button data-act="reset-pw" data-id="' + id + '">Đổi mật khẩu</button>');
     }
-    if (isSuper) {
-      if (p.status !== 'active') menu.push('<div class="m-menu-sep"></div>');
-      menu.push('<button class="is-danger" data-act="delete" data-id="' + id + '">Xoá khỏi danh sách</button>');
-    }
+
+    if (!chinh && !menu.length) return '<span class="m-self">—</span>';
 
     const nutMenu = menu.length
       ? '<span class="m-more-wrap">' +
@@ -440,6 +451,47 @@
     window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
   }
 
+  // ---- Gọi API admin (server dùng service_role) — LUÔN kèm token đăng nhập -----
+  async function goiAdminApi(path, body) {
+    const session = await TSTAuth.getSession();
+    if (!session) { await showAppAlert('Phiên đăng nhập đã hết hạn. Mời đăng nhập lại.', { tone: 'warning' }); return null; }
+    let res, data;
+    try {
+      res = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+        body: JSON.stringify(body || {})
+      });
+      data = await res.json().catch(function () { return {}; });
+    } catch (e) {
+      await showAppAlert('Không gọi được máy chủ: ' + e.message, { title: 'Lỗi kết nối', tone: 'danger' });
+      return null;
+    }
+    if (!res.ok) {
+      await showAppAlert((data && data.error) || ('Lỗi ' + res.status), { title: 'Không thực hiện được', tone: 'danger' });
+      return null;
+    }
+    return data;
+  }
+
+  // Đổi mật khẩu 1 thành viên (admin & super_admin — chủ tool 23/07). Admin GÕ ĐƯỢC mật khẩu
+  // tuỳ ý; điền sẵn Drt$2022 để giữ mặc định cho nhanh nếu muốn.
+  async function doiMatKhauThanhVien(id) {
+    const p = danhSach.find(function (x) { return x.id === id; });
+    const ten = p ? (p.full_name || p.email || 'thành viên này') : 'thành viên này';
+    const nhap = await showAppPrompt('Mật khẩu mới cho “' + ten + '” (giữ mặc định hoặc gõ mật khẩu khác):',
+      { title: 'Đổi mật khẩu', initialValue: 'Drt$2022', confirmText: 'Đổi mật khẩu' });
+    if (nhap === null) return;   // bấm Huỷ
+    const pass = String(nhap).trim();
+    if (pass.length < 6) { await showAppAlert('Mật khẩu cần tối thiểu 6 ký tự.', { tone: 'warning' }); return; }
+    setLoading(true);
+    const data = await goiAdminApi('/api/admin/reset-password', { userId: id, password: pass });
+    setLoading(false);
+    if (!data) return;
+    await showAppAlert('Đã đổi mật khẩu cho “' + ten + '”.\n\nMật khẩu mới:  ' + data.password +
+      '\n\nGửi cho họ.', { title: 'Xong', tone: 'success' });
+  }
+
   // ---- Thao tác --------------------------------------------------------------
   async function apply(patch, id, confirmText, tone) {
     if (confirmText && !(await showAppConfirm(confirmText, { tone: tone || 'warning' }))) return;
@@ -645,6 +697,8 @@
       moHopPhongBan('Chọn phòng ban cho: ' + (ten || 'thành viên này'), hienTai, function (val) {
         apply({ department: val }, id);
       });
+    } else if (act === 'reset-pw') {
+      doiMatKhauThanhVien(id);
     }
   }
 
@@ -752,15 +806,19 @@
     document.addEventListener('click', dongMenu);
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') dongMenu(); });
 
-    // Thêm thành viên — KHÔNG tạo tài khoản trực tiếp được từ trình duyệt:
-    // muốn tạo hộ người khác phải dùng khoá service_role của Supabase, mà khoá đó
-    // tuyệt đối không được nhúng vào web (ai xem mã nguồn cũng thấy → toàn quyền
-    // database). Nên luồng đúng là: gửi link đăng ký → họ tự tạo → admin duyệt.
+    // Thêm tài khoản TRỰC TIẾP — server /api/admin/create-user (service_role, có kiểm quyền
+    // admin). role='user', phòng ban chọn (mặc định Sale), status active, mật khẩu tạm Drt$2022.
     $('btn-add-member').addEventListener('click', function () {
-      $('add-link').value = location.origin + '/login';
+      $('add-name').value = '';
+      $('add-email').value = '';
+      $('add-dept').innerHTML = PHONG_BAN.map(function (d) {
+        return '<option value="' + esc(d) + '"' + (d === 'Sale' ? ' selected' : '') + '>' + esc(d) + '</option>';
+      }).join('');
+      $('add-pass').value = 'Drt$2022';   // điền sẵn — admin giữ hoặc gõ mật khẩu khác
+      const kq = $('add-result'); kq.style.display = 'none'; kq.textContent = '';
       $('add-backdrop').classList.add('open');
       $('add-backdrop').setAttribute('aria-hidden', 'false');
-      $('add-link').select();
+      $('add-name').focus();
     });
     function dongThemThanhVien() {
       $('add-backdrop').classList.remove('open');
@@ -771,13 +829,30 @@
     $('add-backdrop').addEventListener('click', function (e) {
       if (e.target === $('add-backdrop')) dongThemThanhVien();
     });
-    $('add-copy').addEventListener('click', function () {
-      const o = $('add-link'); o.select();
-      navigator.clipboard.writeText(o.value).then(function () {
-        const b = $('add-copy'); const cu = b.textContent;
-        b.textContent = 'Đã sao chép ✓';
-        setTimeout(function () { b.textContent = cu; }, 1800);
-      }).catch(function () { document.execCommand('copy'); });
+    $('add-create').addEventListener('click', async function () {
+      const ten = $('add-name').value.trim();
+      const mail = $('add-email').value.trim().toLowerCase();
+      const phong = $('add-dept').value;
+      const pass = $('add-pass').value.trim() || 'Drt$2022';
+      const kq = $('add-result');
+      if (!ten) { $('add-name').focus(); return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
+        kq.className = 'notice error'; kq.style.display = ''; kq.textContent = 'Email không hợp lệ.';
+        $('add-email').focus(); return;
+      }
+      if (pass.length < 6) {
+        kq.className = 'notice error'; kq.style.display = ''; kq.textContent = 'Mật khẩu cần tối thiểu 6 ký tự.';
+        $('add-pass').focus(); return;
+      }
+      const btn = $('add-create'); const cu = btn.textContent; btn.disabled = true; btn.textContent = 'Đang tạo…';
+      const data = await goiAdminApi('/api/admin/create-user', { full_name: ten, email: mail, department: phong, password: pass });
+      btn.disabled = false; btn.textContent = cu;
+      if (!data) return;
+      kq.className = 'notice info'; kq.style.display = '';
+      kq.innerHTML = 'Đã tạo tài khoản <b>' + esc(mail) + '</b>.<br>Mật khẩu: <b>' + esc(data.password) +
+        '</b> — gửi cho họ.';
+      $('add-name').value = ''; $('add-email').value = '';
+      await load();
     });
 
     // Hộp thoại phòng ban
