@@ -1538,8 +1538,8 @@ function flashButton(btn, text) {
 
 // Ghi sự kiện "tải về" để đo lường (xuất JPEG/PDF, tải brochure) — chủ tool 23/07:
 // "download mới biết sale dùng THẬT". Best-effort, KHÔNG chặn luồng (auth.js nuốt lỗi).
-function ghiTaiXuong() {
-  if (window.TSTAuth && TSTAuth.logUsage) TSTAuth.logUsage('download');
+function ghiTaiXuong(label) {
+  if (window.TSTAuth && TSTAuth.logUsage) TSTAuth.logUsage('download', label);
 }
 
 async function exportToJpeg() {
@@ -1561,7 +1561,7 @@ async function exportToJpeg() {
     link.click();
     document.body.removeChild(link);
 
-    ghiTaiXuong();
+    ghiTaiXuong(`${getProposalBaseName()} · JPEG`);
     updateStatus(`Đã xuất và tải xuống ảnh JPEG: ${jpgName}`);
   }, '#ffffff');
 }
@@ -1618,7 +1618,7 @@ async function exportToPdf() {
 
     const pdfName = `${getProposalBaseName()}.pdf`;
     pdf.save(pdfName);
-    ghiTaiXuong();
+    ghiTaiXuong(`${getProposalBaseName()} · PDF`);
     updateStatus(`Đã xuất PDF: ${pdfName}`);
   }, '#ffffff');
 }

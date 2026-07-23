@@ -222,8 +222,13 @@ function initEventListeners() {
   // dựng động nên phải delegate). Chỉ trong #library-view nên KHÔNG bắt nhầm link tạm
   // của export JPEG/PDF (link đó gắn vào <body>). Xem ghiTaiXuong() trong core.js.
   document.addEventListener('click', (e) => {
-    if (e.target.closest('#library-view a[download], #library-view .library-download, #library-view .library-card-btn')) {
-      if (typeof ghiTaiXuong === 'function') ghiTaiXuong();
+    const el = e.target.closest('#library-view a[download], #library-view .library-download, #library-view .library-card-btn');
+    if (el && typeof ghiTaiXuong === 'function') {
+      let nhan = 'Tài liệu';
+      const href = el.getAttribute('href') || '';
+      const m = href.match(/[?&]path=([^&]+)/);
+      if (m) { try { nhan = 'Tài liệu: ' + decodeURIComponent(m[1]).split('/').pop(); } catch (e2) {} }
+      ghiTaiXuong(nhan);
     }
   });
 

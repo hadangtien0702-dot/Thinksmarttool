@@ -794,6 +794,13 @@
       const b = e.target.closest('[data-preset]');
       if (b) datPreset(parseInt(b.getAttribute('data-preset'), 10));
     });
+    // Bấm dòng "Tải về" → popup chi tiết tải gì
+    $('uk-download-row').addEventListener('click', moChiTietTaiVe);
+    $('dl-close').addEventListener('click', dongChiTietTaiVe);
+    $('dl-backdrop').addEventListener('click', function (e) { if (e.target === $('dl-backdrop')) dongChiTietTaiVe(); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && $('dl-backdrop').classList.contains('open')) dongChiTietTaiVe();
+    });
   }
 
   function doiTab(which) {
@@ -811,11 +818,12 @@
     const msg = $('usage-msg');
     msg.style.display = 'none';
     const from90 = new Date(Date.now() - 90 * NGAY_MS).toISOString();  // nạp 90 ngày, lọc khoảng ở client
-    const { data, error } = await sb
-      .from('usage_events')
-      .select('user_id, kind, at')
-      .gte('at', from90)
-      .order('at', { ascending: false });
+    // Kèm 'label' (tải gì) — cột mới; nếu chưa chạy SQL ALTER thì nạp lại không có label.
+    let resp = await sb.from('usage_events').select('user_id, kind, at, label').gte('at', from90).order('at', { ascending: false });
+    if (resp.error && /label/i.test(resp.error.message || '')) {
+      resp = await sb.from('usage_events').select('user_id, kind, at').gte('at', from90).order('at', { ascending: false });
+    }
+    const { data, error } = resp;
 
     if (error) {
       const chuaCoBang = /usage_events/.test(error.message || '') &&
@@ -975,6 +983,41 @@
         '<span class="ta-right ur-dl" data-label="Tải về">' + (u.download || 0) + '</span>' +
       '</div>';
     }).join('');
+  }
+
+  // Popup "tải CÁI GÌ" — liệt kê sự kiện download trong khoảng đang chọn (chủ tool 23/07).
+  function moChiTietTaiVe() {
+    if (!khoangFrom || !khoangTo) return;
+    const f = batDauNgay(khoangFrom).getTime();
+    const t = batDauNgay(khoangTo).getTime() + NGAY_MS - 1;
+    const pmap = {}; (toanBo || []).forEach(function (p) { pmap[p.id] = p; });
+    const rows = usageEvents
+      .filter(function (e) { const ts = new Date(e.at).getTime(); return e.kind === 'download' && ts >= f && ts <= t; })
+      .sort(function (a, b) { return new Date(b.at).getTime() - new Date(a.at).getTime(); });
+
+    $('dl-range').textContent = fmtNgay(khoangFrom) + ' – ' + fmtNgay(khoangTo) + ' · ' + rows.length + ' lượt tải';
+    if (!rows.length) {
+      $('dl-rows').innerHTML = '';
+      $('dl-empty').style.display = 'flex';
+    } else {
+      $('dl-empty').style.display = 'none';
+      $('dl-rows').innerHTML = rows.map(function (e) {
+        const p = pmap[e.user_id] || {};
+        const ten = esc(p.full_name || p.email || '(không rõ)');
+        const nhan = e.label ? esc(e.label) : '<span class="ur-never">không rõ (bản cũ)</span>';
+        return '<div class="dl-row">' +
+          '<span class="dl-who" data-label="Thành viên">' + ten + '</span>' +
+          '<span class="dl-what" data-label="Tải gì">' + nhan + '</span>' +
+          '<span class="ta-right dl-when" data-label="Lúc">' + thoiGianTuong(new Date(e.at).getTime()) + '</span>' +
+        '</div>';
+      }).join('');
+    }
+    $('dl-backdrop').classList.add('open');
+    $('dl-backdrop').setAttribute('aria-hidden', 'false');
+  }
+  function dongChiTietTaiVe() {
+    $('dl-backdrop').classList.remove('open');
+    $('dl-backdrop').setAttribute('aria-hidden', 'true');
   }
 
   // ---- Khởi động -------------------------------------------------------------

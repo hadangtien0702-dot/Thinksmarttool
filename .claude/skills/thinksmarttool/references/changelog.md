@@ -3,6 +3,17 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
+### 2026-07-23 (tiếp 15 — CHỐT CUỐI NGÀY). ✅ TRACKING XONG, KHÔNG SỬA CODE.
+
+- Release hiện tại `v1.27`; `HEAD = origin/main = 89bc051`. Đã ghi đủ thay đổi của `v1.26` và `v1.27`.
+- Workbook `outputs/019f8dd8-version-tracking/Thinksmart Tool.xlsx` tăng 239→271 dòng;
+  `PIPELINE` = `v1.28 · ĐANG LÀM`, 10 mục WIP.
+- WIP chỉ đọc: 11 file code, +147/-26 — thêm `usage_events.label` và popup xem ai tải gì/lúc nào;
+  asset WIP `core=28`, `main=9`, `auth=6`, `members=24`, `portal.css=50`.
+- `DAILY LOG` cập nhật đúng dòng 2026-07-23, không tạo trùng; `CURRENT SNAPSHOT`, `FUNCTION MAP`,
+  `CHECKLIST` đã đồng bộ.
+- QA: `node --check` đạt 4 file JS đang đổi; workbook 6 sheet/6 table, 0 lỗi công thức, đã render toàn bộ.
+
 ### 2026-07-23 (tiếp 14 — HAI MỐC KIỂM TRA MỖI NGÀY). ✅ ĐANG HOẠT ĐỘNG.
 
 - Lượt đầu ngày chạy 07:30; lượt cuối ngày chạy 15:30 và rà soát toàn bộ thay đổi từ buổi sáng.
@@ -117,6 +128,33 @@ hiện tại rồi ghi lại**, theo khung gốc: Version → Chức năng → M
 - QA workbook: inspect đủ 6 sheet/6 table, 0 lỗi công thức `#REF!/#VALUE!/#DIV/0!/#NAME?/#N/A`;
   render trực quan toàn bộ 6 tab + riêng các dòng v1.25, không có nội dung bị cắt nghiêm trọng.
 - Không sửa mã ứng dụng trong lượt này; chỉ thêm workbook + entry knowledge-base này.
+
+### 2026-07-23 (tiếp 10 — Đo lường: POPUP "TẢI GÌ" + ghi label download). ✅ ĐÃ PUSH (v1.28).
+
+Chủ tool: bấm "Tải về" → xem chi tiết **tải CÁI GÌ** (ai · tải gì · lúc nào). Trước đó `download` chỉ ghi
+"có tải", chưa ghi "tải gì".
+
+**Data:** thêm cột `usage_events.label text` (**chủ tool chạy SQL** `alter table ... add column if not
+exists label text`). Ghi khi: xuất JPEG/PDF → `getProposalBaseName() + ' · JPEG|PDF'` (kèm tên khách);
+tải brochure → "Tài liệu: <tên file>" (lấy từ href trong delegation main.js). **Không throttle** download.
+`logUsage(kind, label)` (auth.js v5→6) chèn label; **RESILIENT** — nếu cột chưa tạo, chèn LẠI không label
+(khỏi mất sự kiện). `taiDoLuong` (members.js v23→24) select kèm label, lỗi cột → nạp lại không label.
+
+**UI:** dòng "Tải về" trong hộp khoảng thành **button** (`.ms-row-btn`, hover + mũi ›) → mở modal
+`#dl-backdrop`: liệt kê download trong khoảng (grid 3 cột: Thành viên · Tải gì · Lúc, sort mới nhất,
+lượt cũ chưa có label hiện "không rõ"). CSS `portal.css v49→50` (`.dl-*`, mobile ≤640 xếp thẻ).
+
+**⚠️ QUYẾT ĐỊNH PRIVACY (chủ tool CHỐT 23/07):** label chứa **TÊN KHÁCH** → lưu data khách lên Supabase
+(trước giờ dự án giữ hồ sơ khách ở máy, `4-Clients` gitignore). Chủ tool đồng ý lưu để **super_admin QA**
+(chỉ super_admin đọc `usage_events`). Chọn **Cách A** (lưu giá trị, không lưu ảnh) cho các bước sau.
+
+**Kiểm chứng** (harness, xoá sau): modal mở đúng, lọc **3 lượt tải** trong khoảng (loại open_tool/login/
+ngoài-khoảng), hiện ai/tải-gì/lúc, dòng cursor pointer. `node -c` OK auth/core/main/members.
+
+**Version:** `auth.js v6 · core.js v28 · main.js v9 · members.js v24 · portal.css v50` · badge v1.27→**v1.28**.
+
+**CÒN LÀM (chủ tool xin, xếp hàng):** ④ con mắt xem BẢN đã tải (Cách A: lưu giá trị đã điền → cột `detail
+jsonb`) · ③ Top brochure/mẫu chạy nhiều nhất (thêm kind `'view'`) · ② Online real-time (heartbeat + bảng presence).
 
 ### 2026-07-23 (tiếp 9 — MẪU ALLIANZ bản mới: thêm đường line + gỡ mục trùng). ✅ ĐÃ PUSH (v1.27).
 

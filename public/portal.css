@@ -1726,6 +1726,46 @@ body.dark-theme .up-field input[type="date"] { color-scheme: dark; }
 .usage-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
 .usage-presets .btn { flex: 1 1 auto; }
 
+/* Dòng "Tải về" bấm được (mở popup chi tiết) — trông như .ms-row nhưng là button */
+.ms-row-btn {
+  width: 100%; border: none; background: transparent; font: inherit; text-align: left;
+  cursor: pointer; border-radius: var(--r-sm);
+}
+.ms-row-btn:hover { background: var(--surface-3); }
+.ms-row-btn:hover .ms-row-more { color: var(--brand); transform: translateX(2px); }
+.ms-row-more { color: var(--text-3); font-weight: 800; display: inline-block; transition: transform var(--dur) var(--ease), color var(--dur) var(--ease); }
+
+/* Bảng trong popup "Chi tiết tải về" */
+.dl-thead, .dl-row {
+  display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.6fr) minmax(0, 0.7fr);
+  gap: 12px; align-items: center;
+}
+.dl-thead {
+  padding: 0 6px 8px; font-size: var(--fs-xs); font-weight: 700; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--divider);
+}
+.dl-thead .ta-right, .dl-row .ta-right { text-align: right; }
+.dl-row {
+  padding: 10px 6px; border-bottom: 1px solid var(--divider);
+  font-size: var(--fs-sm); color: var(--text-2);
+}
+.dl-row:last-child { border-bottom: none; }
+.dl-row .dl-who { font-weight: 600; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dl-row .dl-what { min-width: 0; word-break: break-word; }
+#dl-rows { max-height: 52vh; overflow: auto; }
+
+@media (max-width: 640px) {
+  .dl-thead { display: none; }
+  .dl-row {
+    grid-template-columns: 1fr; gap: 4px;
+    border: 1px solid var(--border); border-radius: var(--r-md); padding: 10px 12px; margin-bottom: 8px;
+  }
+  .dl-row > span { display: flex; justify-content: space-between; gap: 12px; text-align: right; }
+  .dl-row > span::before { content: attr(data-label); color: var(--text-3); font-weight: 600; font-size: var(--fs-xs); text-align: left; }
+  .dl-row .dl-who { white-space: normal; }
+  .dl-row .ta-right { text-align: right; }
+}
+
 @media (max-width: 900px) {
   .usage-layout { grid-template-columns: 1fr; }
 }

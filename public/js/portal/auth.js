@@ -116,7 +116,7 @@
   // Best-effort: lỗi/chưa cấu hình/chưa đăng nhập đều NUỐT im — đo lường hỏng
   // TUYỆT ĐỐI không được làm hỏng đăng nhập hay mở tool.
   const USAGE_THROTTLE_MS = 60 * 60 * 1000; // 1 giờ
-  async function logUsage(kind) {
+  async function logUsage(kind, label) {
     try {
       const sb = getClient();
       if (!sb) return;
@@ -129,7 +129,14 @@
       }
       const session = await getSession();
       if (!session) return;
-      await sb.from('usage_events').insert({ user_id: session.user.id, kind: kind });
+      const row = { user_id: session.user.id, kind: kind };
+      if (label) row.label = String(label).slice(0, 200);   // "tải gì" (chỉ 'download')
+      const { error } = await sb.from('usage_events').insert(row);
+      // Cột label chưa tạo (chưa chạy SQL ALTER) → ghi LẠI không kèm label, khỏi mất sự kiện.
+      if (error && row.label && /label/i.test(error.message || '')) {
+        delete row.label;
+        await sb.from('usage_events').insert(row);
+      }
     } catch (e) { /* nuốt lỗi — không chặn luồng chính */ }
   }
 

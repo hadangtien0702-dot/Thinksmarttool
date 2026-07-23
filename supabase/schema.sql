@@ -238,6 +238,7 @@ create table if not exists public.usage_events (
   id      bigint generated always as identity primary key,
   user_id uuid not null references public.profiles(id) on delete cascade,
   kind    text not null check (kind in ('login', 'open_tool', 'download')),
+  label   text,   -- CHI TIẾT (chỉ với 'download'): tải gì — "Proposal - <khách> · PDF" / "Tài liệu: ..."
   at      timestamptz not null default now()
 );
 
@@ -245,6 +246,8 @@ create table if not exists public.usage_events (
 alter table public.usage_events drop constraint if exists usage_events_kind_check;
 alter table public.usage_events add  constraint usage_events_kind_check
   check (kind in ('login', 'open_tool', 'download'));
+-- (23/07 nâng cấp) cột label: xem "tải CÁI GÌ" trong popup chi tiết ở tab Đo lường.
+alter table public.usage_events add column if not exists label text;
 
 alter table public.usage_events enable row level security;
 
