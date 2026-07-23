@@ -67,6 +67,27 @@ bản gốc lâu dài: `E:\2026\Claude\.claude\skills\`):
 
 ## Log bài học theo ngày
 
+### 2026-07-23 (bảng sửa "soi gương" bản vẽ + khoá đơn vị + rút gọn nhãn)
+
+- **BẢNG SỬA PHẢI ĐỌC NHƯ TỜ GIẤY.** Chủ tool: thứ tự ô trong bảng sửa phải theo đúng bố cục bản mẫu
+  (trên→dưới, trái→phải), "phần số 1 có bao nhiêu thì bên sửa y vậy". Cách tổng quát: **sort theo VỊ TRÍ
+  (Y↓ rồi X→)**, không hardcode từng mẫu — ra đúng danh sách chủ tool muốn cho MỌI mẫu. Kèm lưới 2 cột thì
+  ô cùng-hàng-trên-giấy tự nằm cạnh nhau → editor "soi gương" tờ báo giá.
+- **3 BẪY khi sort theo vị trí (đều đo ra chứ không đoán):** (1) 2 ô CÙNG HÀNG lệch Y ~1px (Giới tính vs
+  Tuổi) → sort thuần Y đảo thứ tự → **gộp theo dải Y** (`Math.round(y/20)`) rồi mới sort X. (2) Ô mà NHÃN
+  và GIÁ TRỊ ở xa nhau (thẻ Allianz: nhãn y=646, số y=750, có dòng phụ chen giữa) → sort theo số là sai →
+  **sort theo vị trí NHÃN**. (3) Combo biểu đồ: cột cao→số ở Y nhỏ → sort theo số ra 3,2,1 → **sort theo
+  nhãn tuổi/period** (cùng hàng, X=thứ tự cột).
+- **KHOÁ ĐƠN VỊ = giảm bối rối.** Chủ tool khen: ô "chỉ gõ số, đơn vị ($/năm/tuổi) chọn sẵn" cho sale biết
+  "ở đó điền gì rồi, chỉ việc đổi", không phải nghĩ. Đơn vị TÁCH TỪ chính giá trị mẫu (giữ hoa/thường), đừng
+  hardcode. Nhưng khi cần nhập chữ tự do (vd "trọn đời") thì phải BỎ khoá, chuyển sang ô gõ tự do + xem trước.
+- **Nhãn dài xuống 2 dòng làm ô 2-cột cao lệch → rút gọn "đủ ý".** "Tổng số tiền đóng (20 năm)"→"Tổng tiền
+  đóng". `align-items:start` cho grid để ô không kéo cao bằng nhau. Đổi nhãn nhớ đổi CẢ chỗ tham chiếu tên
+  nhãn trong code (vd `n.ten===`, `displayName===`) — nếu không, logic phụ (neoHauTo, splice) đứt thầm lặng.
+- **🔑 PANE PREVIEW ẨN VẪN ĐO ĐƯỢC bằng `getCTM`** (không cần screenshot — screenshot/getBoundingClientRect
+  chết khi pane không compositing). `docX = a*cx + c*cy + e`. Đã dùng để căn giữa badge I/II/III (dời
+  transform đúng offset đo được), và đo thứ tự/độ rộng ô. Đừng bỏ cuộc vì "không chụp được màn hình".
+
 ### 2026-07-22 (later 3 — icon thay chữ, một ngôn ngữ, bỏ tiêu đề thừa)
 
 - **Lặp một nhãn 64 lần thì nhãn đó thành nhiễu, không còn là thông tin.** Bảng 4 cột × 16 hàng

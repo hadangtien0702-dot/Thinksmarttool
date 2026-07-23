@@ -63,6 +63,17 @@ were force/committed earlier so they deploy), `Name Card/` (master is tracked de
 | `POST /api/svgs/clone` | Clone a template → `4-Clients/<name> - <base>.svg` (the "Tạo bản cho khách" / create-my-own flow) |
 | `POST /api/svgs/delete` | Delete a draft. HARD-RESTRICTED: only `.svg` files whose path starts with `4-Clients/` (masters can never be deleted) |
 | `GET /api/download?path=&inline=` | Streams a Brochure file (attachment, or `inline=1` for preview). Restricted to library folders |
+| `POST /api/admin/create-user` | **(23/07) Admin only.** Tạo tài khoản Supabase (role=user, phòng ban=Sale, status=active, mật khẩu `body.password` hoặc mặc định `Drt$2022`). Trả `{email, password}` |
+| `POST /api/admin/reset-password` | **(23/07) Admin only.** Đổi mật khẩu 1 user (`body.userId`, `body.password` tuỳ ý, tối thiểu 6, mặc định `Drt$2022`). Trả `{password}` |
+
+**🔑 ADMIN API (23/07/2026) — service_role, server-side.** 2 route trên dùng khoá `service_role` (BỎ QUA
+RLS) đọc từ **env** (`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`): local file `.env` (gitignore), live
+Vercel Production env. Chưa set → `supabaseAdmin=null` → route trả **503** (phần còn lại của tool vẫn chạy).
+Middleware **`requireAdmin`**: lấy `Authorization: Bearer <access_token>` → `supabaseAdmin.auth.getUser(token)`
+→ tra `profiles` → chỉ `admin`/`super_admin` + active mới qua (chủ tool 23/07: admin làm được đầy đủ, kể cả
+đổi pass super_admin). Client gọi kèm token: `(await TSTAuth.getSession()).access_token`.
+⚠️ TUYỆT ĐỐI không nhúng service_role vào client (config.js chỉ có anon key công khai). Deps: `@supabase/supabase-js`, `dotenv`.
+⚠️ **Đổi server.js phải RESTART server** (`taskkill //PID <pid> //F` cho PID nghe cổng 8000 rồi chạy lại).
 
 ## Frontend modules (`public/js/`, vanilla JS, plain globals — no bundler)
 

@@ -24,9 +24,32 @@ Insurance quote designs, grouped by carrier: **AIG**, **NLG**, and **Khách hàn
   edits): switching files asks to confirm (`confirmLeaveUnsaved()`), closing the tab warns (beforeunload),
   and **Xuất JPEG/PDF auto-saves the draft first** on client copies.
 - The right editor groups proposal fields into **1. Thông tin khách hàng**, **2. Kế hoạch & Quyền lợi**,
-  **3. Thông tin đại lý & Khác** using position/content heuristics in `populateTextsEditor()`. Some fields
-  are dropdowns (gender, rate class, US state); currency + US phone numbers auto-format.
+  **3. Thông tin đại lý & Khác** using position/content heuristics in `populateProposalTextsEditor()`
+  (proposal.js). Some fields are dropdowns (gender, rate class, US state); currency + US phone auto-format.
+- **🆕 Bảng sửa (23/07/2026) — 3 cơ chế, đều trong `populateProposalTextsEditor`:**
+  - **Sắp theo VỊ TRÍ bản vẽ** (đọc như tờ báo giá): Section 1+2 sort theo (Y↓ rồi X→), gộp cùng-hàng
+    bằng "dải Y 20px" (`Math.round(y/20)`). Ô Allianz sort theo `sortY/sortX` = vị trí NHÃN (không theo số);
+    combo IUL sort theo nhãn tuổi/cột (không theo số tiền — cột cao thấp khác nhau). Agent giữ thứ tự per-người.
+  - **Lưới 2 CỘT desktop** (`.text-group-items` grid ở `@media min-width:901px`, style.css): ô ngắn nửa hàng,
+    `.tb-full` (combo / ô có `.text-preview` / tên khách / no-data) cả hàng; mobile ≤900px giữ 1 cột.
+  - **KHOÁ ĐƠN VỊ** (`buildUnitLockBlock` + `unitInputGroup` + CSS `.unit-input-row`/`.unit-suffix`/`.unit-prefix`):
+    ô "số + đơn vị" chỉ gõ SỐ, đơn vị (`$`/`năm`/`tuổi`) khoá + tự fill. `$` = format-on-blur; `năm`/`tuổi`
+    tách từ chính giá trị mẫu (giữ hoa/thường). Áp: Thời gian đóng phí (năm), Bảo vệ đến khi nào (tuổi),
+    combo Term (năm), chart age IUL ("Tuổi" prefix).
+- **Ô đặc biệt Allianz (Section 2):** "Nhận từ tuổi (65-85)" + "Nhận đều đặn" (nhận SỐ→"trong N năm" HOẶC
+  chữ→"trọn đời", hàm `cauNhanDeuDan`). Cột Term để trống → ghi **"-"** trên bản vẽ (đồng nhất cột chưa dùng).
+- **Click chữ trên bản vẽ → nhảy tới ô editor** (`tagEditableCanvasElements` core.js + handler main.js):
+  MỌI input editor phải có `data-editor-id` thì mới click-to-edit được.
 - Export: **Xuất JPEG** + **Xuất PDF** (bottom of the right panel). Fonts are embedded on export.
+
+## 1b. Quản lý thành viên `/members` + ADMIN (super_admin/admin) — nâng cấp 23/07/2026
+
+- Trang `/members` (`members.js`): duyệt/khoá/đổi role/phòng ban thành viên (bảng `profiles` Supabase).
+- **🆕 Admin THÊM tài khoản + ĐỔI mật khẩu** (chủ tool 23/07, cả admin lẫn super_admin):
+  - "Thêm thành viên" giờ là form tạo tài khoản trực tiếp (Họ tên/Email/Phòng ban/Mật khẩu tạm `Drt$2022`).
+  - Mỗi thành viên active có mục **"Đổi mật khẩu"** trong menu ⋯ (gõ mật khẩu tuỳ ý, mặc định `Drt$2022`).
+  - Gọi 2 endpoint `/api/admin/*` (xem `architecture.md`) kèm access token; helper `goiAdminApi` trong members.js.
+  - Cần env `SUPABASE_SERVICE_ROLE_KEY` (server). Chưa set → nút báo lỗi 503.
 
 ## 2. Brochure  (download library)
 

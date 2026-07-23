@@ -521,26 +521,29 @@ trúng mèo), `aria-hidden=true`, cách đáy thẻ 25px, còn cách đáy canva
 
 **Version:** `style.css?v=72`, `js/main.js?v=8`.
 
-## Version hiện tại (2026-07-22 cuối ngày — ĐÃ PUSH lên `main`, đã deploy)
+## Version hiện tại (2026-07-23 cuối ngày — ĐÃ PUSH lên `main`, đã deploy)
 
-`main` ở commit **`d577388`**, cây làm việc sạch, đã push (`6220af0..d577388`).
-⚠️ Lượt push này kéo theo cả `c218020` (3 con mèo, đợt 15) vốn còn nằm local chưa đẩy —
-kiểm `git log origin/main` trước khi giả định thứ gì đã lên live.
-`main` = bản LIVE (tool.thinksmartinsurance.com), đang **BẮT ĐĂNG NHẬP** (config.js có khoá
-Supabase thật — chủ tool chốt 21/07, xem ghi chú ở đầu file).
+`main` ở commit **`3c120a3`**, cây làm việc sạch, đã push. `main` = bản LIVE
+(tool.thinksmartinsurance.com), **BẮT ĐĂNG NHẬP** (config.js có khoá Supabase thật).
 
-Badge UI **v1.20** (5 chỗ — `grep -rn "version-badge" public/*.html`), ngày 22/07/2026.
+**🆕 23/07 — server.js có 2 ENDPOINT ADMIN** (`/api/admin/create-user`, `/api/admin/reset-password`)
+dùng khoá `service_role` đọc từ **ENV** (`.env` local đã gitignore + **Vercel Production** env
+`SUPABASE_SERVICE_ROLE_KEY` + `SUPABASE_URL`). Middleware `requireAdmin` verify JWT người gọi.
+Deps MỚI: `@supabase/supabase-js`, `dotenv` (npm). ⚠️ `.env` KHÔNG lên git; `.env.example` (mẫu, có
+sẵn URL, KHÔNG có key) thì CÓ commit (`.gitignore` có dòng `!.env.example`). Xem `tools.md` mục Admin.
+
+Badge UI **v1.24** (5 chỗ — `grep -rn "version-badge" public/*.html`), ngày 23/07/2026.
 Cache-version của asset (đọc thẳng từ HTML, không chép tay):
 
 | File | Version | File | Version |
 |---|---|---|---|
-| `style.css` | `?v=75` | `portal.css` | `?v=45` |
+| `style.css` | `?v=78` | `portal.css` | `?v=45` |
 | `dialog.css` | `?v=4` | `js/ui-dialog.js` | `?v=3` |
-| `js/core.js` | `?v=25` | `js/proposal.js` | `?v=22` |
+| `js/core.js` | `?v=25` | `js/proposal.js` | `?v=35` |
 | `js/brochure.js` | `?v=11` | `js/sosanh.js` | `?v=10` |
 | `js/main.js` | `?v=7` | `js/namecard.js` | `?v=5` |
 | `js/animations.js` | `?v=4` | `js/portal/auth.js` | `?v=4` |
-| `js/portal/config.js` | `?v=8` | `js/portal/members.js` | `?v=17` |
+| `js/portal/config.js` | `?v=8` | `js/portal/members.js` | `?v=19` |
 | `js/portal/videos.js` | `?v=2` | | |
 
 Lệnh lấy đúng bảng này (đừng nhớ bằng đầu, số lệch là cache lỗi thầm lặng):
@@ -565,8 +568,13 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
   (`sidebar-version-footer` trong index.html — cập nhật tay khi deploy).
 - Fonts: `public/fonts/` chứa 11 file THẬT (7 SF Pro weights + 3 SF Pro italics + Bodoni Moda);
   export nhúng đủ 11. Đừng copy đè từ `5-Design-Sections/sf pro/` (bộ giả cũ).
-- Proposal carriers: AIG, NLG, **Allianz (empty — awaiting owner's design)**; the 3 master carriers
-  always render in the nav even with 0 templates (`MASTER_CARRIERS` in core.js).
+- Proposal carriers: AIG, NLG, **Allianz — ĐÃ CÓ MẪU FINAL** (`Max-Funded Allianz.svg`, live từ 23/07);
+  the 3 master carriers always render in the nav even with 0 templates (`MASTER_CARRIERS` in core.js).
+- **🆕 Bảng sửa (23/07):** ô sắp theo VỊ TRÍ bản vẽ (đọc như tờ báo giá) · lưới 2 CỘT desktop (>900px,
+  ô ngắn nửa hàng / `.tb-full` cả hàng) · KHOÁ ĐƠN VỊ `$`/`năm`/`tuổi` (chỉ gõ số) · ô "Nhận đều đặn"
+  nhận số HOẶC "trọn đời" · cột Term trống → "-" · click chữ trên bản vẽ nhảy tới ô (cần `data-editor-id`).
+- **🆕 Admin (23/07):** super_admin + admin THÊM tài khoản + ĐỔI mật khẩu ngay trên `/members`
+  (server-side service_role, mật khẩu gõ tuỳ ý mặc định `Drt$2022`). Xem `tools.md`.
 - `/api/svgs` workspace scan is now an ALLOWLIST (`PROPOSAL_SCAN_DIRS` in server.js:
   `2-Templates`, `4-Clients`, `Name Card`) — new root folders (design WIP etc.) can't leak into the tree.
 - Sale workflow: **Chọn mẫu → Điền → Lưu Nháp → Xuất** — context-aware header buttons, auto agent
@@ -582,12 +590,21 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 
 ## PENDING / open tasks
 
-> **BẮT ĐẦU PHIÊN MỚI ĐỌC 5 DÒNG NÀY:** MỘT nhánh `main` duy nhất, ở `d577388`, sạch, đã push
-> và deploy (22/07 cuối ngày). Live `tool.thinksmartinsurance.com` **BẮT ĐĂNG NHẬP** — ai chưa có
-> tài khoản đã duyệt là không vào được. Việc nên hỏi ngay: **A1**, **A2**, và **M1/M2** (mobile).
-> Muốn xem trang bị khoá đăng nhập: **ĐỪNG sửa `config.js` thật.** Tạo mirror tạm trong `public/`
-> (`sed` thay thẻ `<script src=config.js>` bằng config rỗng inline), đo xong **XOÁ NGAY** — file đó
-> đi qua cổng đăng nhập, để sót là Vercel phục vụ nó trên domain thật.
+> **BẮT ĐẦU PHIÊN MỚI ĐỌC 6 DÒNG NÀY:** MỘT nhánh `main` duy nhất, ở **`3c120a3`** (23/07 cuối ngày,
+> badge **v1.24**), sạch, đã push + deploy. Live `tool.thinksmartinsurance.com` **BẮT ĐĂNG NHẬP**.
+> Việc LỚN kế tiếp: **ĐO LƯỜNG SỬ DỤNG** (xem N1 dưới). Vercel Production ĐÃ có env service_role.
+> Muốn xem trang bị khoá đăng nhập / bảng sửa (login-gated): **ĐỪNG sửa `config.js` thật.** Tạo mirror
+> tạm trong `public/` (`sed` thay `<script src=/js/portal/config.js>` bằng `<script>window.TST_CONFIG=
+> {supabaseUrl:"",supabaseAnonKey:""}</script>` inline), resize desktop 1280, đo bằng getCTM/getBBox,
+> xong **XOÁ NGAY** — file đó qua cổng đăng nhập, để sót là Vercel phục vụ nó trên domain thật.
+
+**N1. ĐO LƯỜNG SỬ DỤNG (super_admin) — chủ tool 23/07, ĐÃ CHỐT HƯỚNG, chờ gật để làm.** Chủ tool muốn
+biết mỗi ngày bao nhiêu người thật sự đăng nhập/dùng tool ("build cho có hay dùng thật?"). **Hướng Data
+Analyst đã thống nhất: THU DỮ LIỆU TRƯỚC** (append-only), đừng làm "mức nhanh" lưu-đè-1-mốc (mất lịch sử
+vĩnh viễn). Kế hoạch: (1) bảng `usage_events` (user_id, ts) + RLS (user ghi của mình, super_admin đọc
+hết) — chạy anon key, KHÔNG cần service_role; (2) client ghi sự kiện lúc mở tool (throttle ~1 lần/giờ);
+(3) đọc số cho super_admin ở `/members`: "hôm nay X người dùng" + "gần nhất từng người", dashboard xu
+hướng 7/30 ngày thêm sau. Chủ tool sẽ chạy SQL tạo bảng (mình không đụng DB được).
 
 **M1. Bàn phím iOS vẫn che thanh thao tác đáy.** iOS neo `position: fixed` theo khung layout, và
 `interactive-widget=resizes-content` Safari chưa hỗ trợ → phải dùng VisualViewport API mới đẩy thanh
