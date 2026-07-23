@@ -19,6 +19,10 @@
   // Thêm/bớt phòng ban thì sửa đúng mảng này, không rải chuỗi ra chỗ khác.
   const PHONG_BAN = ['Sale', 'MKT', 'CS', 'Admin'];
 
+  // Quyền được phép TẠO qua form Thêm tài khoản (KHÔNG tạo super_admin qua UI).
+  // Server cũng kiểm lại theo ROLE_TAO_HOP_LE — đây chỉ là danh sách cho dropdown.
+  const QUYEN_TAO_MOI = ['user', 'admin'];
+
   // Danh sách người đang được tick chọn (id). Giữ nguyên qua mỗi lần load lại
   // để bấm một thao tác hàng loạt xong không mất hết lựa chọn còn dở.
   const dangChon = new Set();
@@ -31,6 +35,10 @@
   let locQuyen = null;
   const QUYEN_QUAN_TRI = ['admin', 'super_admin'];
   let timKiem = '';        // chuỗi tìm kiếm ĐÃ BỎ DẤU, rỗng = không tìm
+  let usageLoaded = false;  // tab Đo lường đã nạp lần đầu chưa (nạp lười khi mở tab)
+  let usageEvents = [];     // sự kiện 90 ngày gần nhất (nạp 1 lần, lọc khoảng ở client)
+  let khoangFrom = null;    // khoảng ngày đang xem (biểu đồ + bảng) — mặc định 14 ngày
+  let khoangTo = null;
 
   // --- PHÂN TRANG (22/07: chủ tool "phải scroll", xin chuyển sang dạng lật trang) ---
   // 12 hàng/trang: hàng cao 54px → 12×54 ≈ 650px, vừa một màn hình cùng tiêu đề và
@@ -752,6 +760,215 @@
     // Super Admin dùng được MỌI công cụ (chủ tool quyết 20/07/2026) — giữ mục Công cụ.
   }
 
+  // ---- ĐO LƯỜNG SỬ DỤNG (N1, 23/07/2026) — CHỈ Super Admin --------------------
+  // Đọc usage_events (RLS chỉ cho super_admin đọc). Nạp LƯỜI: chỉ query khi mở tab.
+  const NGAY_MS = 24 * 60 * 60 * 1000;
+  function ngayKey(ts) { const d = new Date(ts); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  function batDauNgay(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+  function fmtNgay(d) { return d.getDate() + '/' + (d.getMonth() + 1); }
+  function fmtInput(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function parseInput(v) { const p = (v || '').split('-'); return p.length === 3 ? new Date(+p[0], +p[1] - 1, +p[2]) : null; }
+
+  function thoiGianTuong(ts) {
+    if (!ts) return '<span class="ur-never">chưa</span>';
+    const s = Math.floor((Date.now() - ts) / 1000);
+    if (s < 60) return 'vừa xong';
+    if (s < 3600) return Math.floor(s / 60) + ' phút trước';
+    if (s < 86400) return Math.floor(s / 3600) + ' giờ trước';
+    const d = Math.floor(s / 86400);
+    if (d === 1) return 'hôm qua';
+    if (d < 30) return d + ' ngày trước';
+    const dt = new Date(ts);
+    return dt.getDate() + '/' + (dt.getMonth() + 1) + '/' + dt.getFullYear();
+  }
+
+  function initTracking() {
+    if (!me || me.role !== 'super_admin') return;   // tab chỉ dành cho super_admin
+    $('ms-tabs').style.display = '';   // bỏ inline none → về CSS inline-flex (hug nội dung)
+    $('tab-members').addEventListener('click', function () { doiTab('members'); });
+    $('tab-usage').addEventListener('click', function () { doiTab('usage'); });
+    // Hộp "Xem theo ngày": input từ/đến + nút nhanh → lọc biểu đồ + bảng (không đụng 3 thẻ trên)
+    $('usage-from').addEventListener('change', doiKhoangTuInput);
+    $('usage-to').addEventListener('change', doiKhoangTuInput);
+    $('usage-presets').addEventListener('click', function (e) {
+      const b = e.target.closest('[data-preset]');
+      if (b) datPreset(parseInt(b.getAttribute('data-preset'), 10));
+    });
+  }
+
+  function doiTab(which) {
+    const usage = which === 'usage';
+    $('tab-members').classList.toggle('is-on', !usage);
+    $('tab-members').setAttribute('aria-selected', String(!usage));
+    $('tab-usage').classList.toggle('is-on', usage);
+    $('tab-usage').setAttribute('aria-selected', String(usage));
+    $('page-content').style.display = usage ? 'none' : 'block';
+    $('tracking-content').style.display = usage ? 'block' : 'none';
+    if (usage && !usageLoaded) { usageLoaded = true; taiDoLuong(); }
+  }
+
+  async function taiDoLuong() {
+    const msg = $('usage-msg');
+    msg.style.display = 'none';
+    const from90 = new Date(Date.now() - 90 * NGAY_MS).toISOString();  // nạp 90 ngày, lọc khoảng ở client
+    const { data, error } = await sb
+      .from('usage_events')
+      .select('user_id, kind, at')
+      .gte('at', from90)
+      .order('at', { ascending: false });
+
+    if (error) {
+      const chuaCoBang = /usage_events/.test(error.message || '') &&
+        /(does not exist|could not find|schema cache)/i.test(error.message || '');
+      msg.className = 'notice error';
+      msg.innerHTML = '<span>⚠️</span><div>' + (chuaCoBang
+        ? 'Bảng <code>usage_events</code> chưa được tạo. Chạy phần SQL mới trong <code>supabase/schema.sql</code> (Supabase → SQL Editor → Run).'
+        : 'Không đọc được dữ liệu sử dụng: ' + esc(error.message)) + '</div>';
+      msg.style.display = 'flex';
+      usageEvents = [];
+    } else {
+      usageEvents = data || [];
+    }
+
+    veThe(usageEvents);   // 3 thẻ Hôm nay/7 ngày (cố định, không đổi theo khoảng)
+    khoiTaoKhoang();      // đặt khoảng mặc định 14 ngày + min/max cho ô ngày
+    apDungKhoang();       // lọc theo khoảng → số tổng + biểu đồ + bảng
+  }
+
+  // 3 thẻ liếc-nhanh (cố định Hôm nay / 7 ngày) — KHÔNG đổi theo khoảng đã chọn.
+  function veThe(events) {
+    const now = new Date();
+    const dauHomNay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const dau7 = dauHomNay - 6 * NGAY_MS;
+    const loginHomNay = new Set(), toolHomNay = new Set(), active7 = new Set();
+    events.forEach(function (e) {
+      const t = new Date(e.at).getTime();
+      if (e.kind === 'login' && t >= dauHomNay) loginHomNay.add(e.user_id);
+      if (e.kind === 'open_tool' && t >= dauHomNay) toolHomNay.add(e.user_id);
+      if (t >= dau7) active7.add(e.user_id);
+    });
+    $('uc-login-today').textContent = loginHomNay.size;
+    $('uc-tool-today').textContent = toolHomNay.size;
+    $('uc-active-7d').textContent = active7.size;
+  }
+
+  // Đặt khoảng mặc định 14 ngày (lần đầu) + giới hạn ô ngày trong 90 ngày đã nạp.
+  function khoiTaoKhoang() {
+    const homNay = batDauNgay(new Date());
+    if (!khoangTo) { khoangTo = homNay; khoangFrom = new Date(homNay.getTime() - 13 * NGAY_MS); }
+    $('usage-from').value = fmtInput(khoangFrom);
+    $('usage-to').value = fmtInput(khoangTo);
+    const min90 = fmtInput(new Date(homNay.getTime() - 90 * NGAY_MS));
+    const maxNay = fmtInput(homNay);
+    $('usage-from').min = min90; $('usage-from').max = maxNay;
+    $('usage-to').min = min90; $('usage-to').max = maxNay;
+  }
+
+  function doiKhoangTuInput() {
+    let f = parseInput($('usage-from').value);
+    let t = parseInput($('usage-to').value);
+    if (!f || !t) return;
+    if (f > t) { const tmp = f; f = t; t = tmp; }   // chọn ngược thì tự đảo
+    khoangFrom = f; khoangTo = t;
+    $('usage-from').value = fmtInput(f); $('usage-to').value = fmtInput(t);
+    apDungKhoang();
+  }
+
+  function datPreset(soNgay) {
+    const homNay = batDauNgay(new Date());
+    khoangTo = homNay;
+    khoangFrom = new Date(homNay.getTime() - (soNgay - 1) * NGAY_MS);
+    $('usage-from').value = fmtInput(khoangFrom);
+    $('usage-to').value = fmtInput(khoangTo);
+    apDungKhoang();
+  }
+
+  // Lọc usageEvents theo [khoangFrom, khoangTo] → số tổng trong hộp + biểu đồ + bảng.
+  function apDungKhoang() {
+    if (!khoangFrom || !khoangTo) return;
+    const f = batDauNgay(khoangFrom).getTime();
+    const t = batDauNgay(khoangTo).getTime() + NGAY_MS - 1;   // tới hết ngày "đến"
+    const trong = usageEvents.filter(function (e) { const ts = new Date(e.at).getTime(); return ts >= f && ts <= t; });
+
+    const login = new Set(), tool = new Set(), act = new Set();
+    const pmap = {}; (toanBo || []).forEach(function (p) { pmap[p.id] = p; });
+    const theoNguoi = {}, theoNgay = {};
+    trong.forEach(function (e) {
+      const ts = new Date(e.at).getTime();
+      if (e.kind === 'login') login.add(e.user_id);
+      if (e.kind === 'open_tool') tool.add(e.user_id);
+      act.add(e.user_id);
+      const u = theoNguoi[e.user_id] || (theoNguoi[e.user_id] = { lastLogin: 0, lastTool: 0, tool: 0 });
+      if (e.kind === 'login') u.lastLogin = Math.max(u.lastLogin, ts);
+      if (e.kind === 'open_tool') { u.lastTool = Math.max(u.lastTool, ts); u.tool++; }
+      const k = ngayKey(ts); (theoNgay[k] || (theoNgay[k] = new Set())).add(e.user_id);
+    });
+
+    $('uk-login').textContent = login.size;
+    $('uk-tool').textContent = tool.size;
+    $('uk-active').textContent = act.size;
+
+    const soNgay = Math.round((batDauNgay(khoangTo).getTime() - batDauNgay(khoangFrom).getTime()) / NGAY_MS) + 1;
+    $('usage-chart-range').textContent = fmtNgay(khoangFrom) + ' – ' + fmtNgay(khoangTo) + ' · ' + soNgay + ' ngày';
+
+    veBieuDoKhoang(theoNgay, khoangFrom, soNgay);
+    veBangNguoi(theoNguoi, pmap);
+  }
+
+  function veBieuDoKhoang(theoNgay, from, soNgay) {
+    const start = batDauNgay(from).getTime();
+    const cols = [];
+    let max = 1;
+    for (let i = 0; i < soNgay; i++) {
+      const d = new Date(start + i * NGAY_MS);
+      const set = theoNgay[ngayKey(d.getTime())];
+      const n = set ? set.size : 0;
+      if (n > max) max = n;
+      cols.push({ d: d, n: n });
+    }
+    // Nhiều cột (khoảng dài) thì thưa nhãn ngày cho đỡ rối; luôn hiện nhãn cột cuối.
+    const step = soNgay <= 16 ? 1 : Math.ceil(soNgay / 12);
+    $('usage-chart').innerHTML = cols.map(function (c, idx) {
+      const h = c.n ? Math.max(Math.round((c.n / max) * 100), 6) : 0;
+      const nhan = c.d.getDate() + '/' + (c.d.getMonth() + 1);
+      const hienX = (idx % step === 0) || idx === cols.length - 1;
+      return '<div class="uc-col" title="' + nhan + ': ' + c.n + ' người">' +
+               '<div class="uc-barwrap">' +
+                 '<span class="uc-n">' + (c.n || '') + '</span>' +
+                 '<span class="uc-bar' + (c.n ? '' : ' is-zero') + '" style="height:' + h + '%"></span>' +
+               '</div>' +
+               '<span class="uc-x">' + (hienX ? c.d.getDate() : '') + '</span>' +
+             '</div>';
+    }).join('');
+  }
+
+  function veBangNguoi(theoNguoi, pmap) {
+    const ids = Object.keys(theoNguoi);
+    if (!ids.length) {
+      $('usage-rows').innerHTML = '';
+      $('usage-empty').style.display = 'flex';
+      return;
+    }
+    $('usage-empty').style.display = 'none';
+    ids.sort(function (a, b) {
+      return Math.max(theoNguoi[b].lastLogin, theoNguoi[b].lastTool) -
+             Math.max(theoNguoi[a].lastLogin, theoNguoi[a].lastTool);
+    });
+    $('usage-rows').innerHTML = ids.map(function (id) {
+      const u = theoNguoi[id];
+      const p = pmap[id] || {};
+      const ten = esc(p.full_name || p.email || '(không rõ)');
+      const pb = esc(p.department || '—');
+      return '<div class="usage-row">' +
+        '<span class="ur-name" data-label="Thành viên">' + ten + '</span>' +
+        '<span data-label="Phòng ban">' + pb + '</span>' +
+        '<span data-label="Đăng nhập gần nhất">' + thoiGianTuong(u.lastLogin) + '</span>' +
+        '<span data-label="Mở tool gần nhất">' + thoiGianTuong(u.lastTool) + '</span>' +
+        '<span class="ta-right" data-label="Số lần mở tool">' + (u.tool || 0) + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
   // ---- Khởi động -------------------------------------------------------------
   async function boot() {
     if (!TSTAuth.configured) { $('config-notice').style.display = 'flex'; return; }
@@ -770,10 +987,16 @@
 
     sb = TSTAuth.getClient();
     $('page-content').style.display = 'block';
+    initTracking();   // bật tab "Đo lường" nếu là super_admin
     $('list-pending').addEventListener('click', onListClick);
     $('list-active').addEventListener('click', onListClick);
     $('list-suspended').addEventListener('click', onListClick);
     $('btn-refresh').addEventListener('click', load);
+    // Đang ở tab Đo lường mà bấm "↻ Tải lại" thì làm mới luôn số liệu sử dụng
+    // (load() ở trên làm mới profiles → tên trong bảng cũng cập nhật theo).
+    $('btn-refresh').addEventListener('click', function () {
+      if (me.role === 'super_admin' && $('tracking-content').style.display === 'block') taiDoLuong();
+    });
 
     // Ô chọn: bắt ở cấp #page-content vì hàng được vẽ lại sau mỗi lần load,
     // gắn trực tiếp vào từng ô sẽ mất listener.
@@ -814,6 +1037,9 @@
       $('add-dept').innerHTML = PHONG_BAN.map(function (d) {
         return '<option value="' + esc(d) + '"' + (d === 'Sale' ? ' selected' : '') + '>' + esc(d) + '</option>';
       }).join('');
+      $('add-role').innerHTML = QUYEN_TAO_MOI.map(function (r) {
+        return '<option value="' + esc(r) + '"' + (r === 'user' ? ' selected' : '') + '>' + esc(ROLE_LABEL[r] || r) + '</option>';
+      }).join('');
       $('add-pass').value = 'Drt$2022';   // điền sẵn — admin giữ hoặc gõ mật khẩu khác
       const kq = $('add-result'); kq.style.display = 'none'; kq.textContent = '';
       $('add-backdrop').classList.add('open');
@@ -833,6 +1059,7 @@
       const ten = $('add-name').value.trim();
       const mail = $('add-email').value.trim().toLowerCase();
       const phong = $('add-dept').value;
+      const quyen = $('add-role').value;
       const pass = $('add-pass').value.trim() || 'Drt$2022';
       const kq = $('add-result');
       if (!ten) { $('add-name').focus(); return; }
@@ -845,12 +1072,12 @@
         $('add-pass').focus(); return;
       }
       const btn = $('add-create'); const cu = btn.textContent; btn.disabled = true; btn.textContent = 'Đang tạo…';
-      const data = await goiAdminApi('/api/admin/create-user', { full_name: ten, email: mail, department: phong, password: pass });
+      const data = await goiAdminApi('/api/admin/create-user', { full_name: ten, email: mail, department: phong, role: quyen, password: pass });
       btn.disabled = false; btn.textContent = cu;
       if (!data) return;
       kq.className = 'notice info'; kq.style.display = '';
-      kq.innerHTML = 'Đã tạo tài khoản <b>' + esc(mail) + '</b>.<br>Mật khẩu: <b>' + esc(data.password) +
-        '</b> — gửi cho họ.';
+      kq.innerHTML = 'Đã tạo tài khoản <b>' + esc(mail) + '</b> (' + esc(ROLE_LABEL[data.role] || 'Nhân viên') +
+        ').<br>Mật khẩu: <b>' + esc(data.password) + '</b> — gửi cho họ.';
       $('add-name').value = ''; $('add-email').value = '';
       await load();
     });

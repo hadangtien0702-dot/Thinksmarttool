@@ -222,6 +222,39 @@ create policy "videos: admin xoá"
 create index if not exists videos_category_sort_idx
   on public.videos (category, sort_order, created_at desc);
 
+-- ----------------------------------------------------------------------------
+-- 3. USAGE_EVENTS — ĐO LƯỜNG SỬ DỤNG (N1, 2026-07-23). APPEND-ONLY.
+--    Mục đích: biết mỗi ngày bao nhiêu người thật sự đăng nhập / mở Công cụ
+--    ("build cho có hay dùng thật?"). Thu dữ liệu thô, KHÔNG lưu-đè-1-mốc, để
+--    sau này còn dựng lại được lịch sử theo ngày.
+--    kind: 'login' (đăng nhập thành công) | 'open_tool' (mở trang Công cụ)
+--    Chạy hoàn toàn bằng ANON KEY + RLS (KHÔNG cần service_role):
+--      • INSERT: mỗi người chỉ ghi được sự kiện của CHÍNH MÌNH (user_id = auth.uid()).
+--      • SELECT: CHỈ super_admin đọc (chủ tool chốt 23/07).
+--      • KHÔNG có policy UPDATE/DELETE → không ai sửa/xoá được qua web = giữ lịch sử.
+-- ----------------------------------------------------------------------------
+create table if not exists public.usage_events (
+  id      bigint generated always as identity primary key,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  kind    text not null check (kind in ('login', 'open_tool')),
+  at      timestamptz not null default now()
+);
+
+alter table public.usage_events enable row level security;
+
+drop policy if exists "usage: tự ghi sự kiện của mình" on public.usage_events;
+create policy "usage: tự ghi sự kiện của mình"
+  on public.usage_events for insert
+  with check (user_id = auth.uid());
+
+drop policy if exists "usage: chỉ super admin đọc" on public.usage_events;
+create policy "usage: chỉ super admin đọc"
+  on public.usage_events for select
+  using (public.is_super_admin());
+
+create index if not exists usage_events_at_idx      on public.usage_events (at desc);
+create index if not exists usage_events_user_at_idx on public.usage_events (user_id, at desc);
+
 -- ============================================================================
 -- SAU KHI CHẠY XONG — tạo SUPER ADMIN ĐẦU TIÊN (làm 1 lần):
 -- 1. Vào trang web → Đăng ký tài khoản bằng email của anh (nếu chưa có).

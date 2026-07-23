@@ -67,6 +67,47 @@ bản gốc lâu dài: `E:\2026\Claude\.claude\skills\`):
 
 ## Log bài học theo ngày
 
+### 2026-07-23 (tiếp 2 — N1 Đo lường: pane ẩn giết số đo BỀ RỘNG, không giết bề cao)
+- **🔑 PANE ẨN → `window.innerWidth = 0` → MỌI SỐ ĐO BỀ RỘNG LÀ RÁC; BỀ CAO thì vẫn đúng.** Đo tab bar
+  ra `width=8px` (chỉ padding) trong khi nút con `scrollWidth=140`, `parentW(body)=48`. Nguyên nhân:
+  Browser pane không hiển thị nên viewport co về ~0, mọi layout phụ thuộc chiều ngang
+  (`repeat(auto-fit, minmax(180px,1fr))` co còn 1 cột, grid table lệch cột) sập theo. **Nhưng** chiều
+  CAO đo chuẩn (card 111, chart 150px, bar scale đúng) vì cao không phụ thuộc viewport-width.
+  → Quy tắc: khi pane ẩn, **verify LOGIC + CHIỀU CAO + CSSOM (rule nào thắng)**, ĐỪNG tin số width.
+  `resize_window('desktop')` KHÔNG cứu được (vẫn `innerWidth=0`) — chỉ mở pane thật mới có bề ngang.
+  (Bổ sung bài học #7/#43: trước nói "pane đơ recalc", nay rõ thêm: **ẩn hẳn thì width = 0, không phải stale**.)
+- **VERIFY-BY-CONSTRUCTION khi không đo được:** không chụp/không đo width được thì **mượn pattern ĐÃ chạy tốt**
+  để khỏi phải kiểm mắt cái mới. Tab pill mượn `.auth-tabs`, thẻ số mượn `.stat-card`, bảng mượn grid của
+  `.member-table`. CSSOM xác nhận rule đúng (`.ms-tabs = inline-flex`) + logic + height đúng ⇒ đủ tin để giao,
+  ghi rõ "width chờ mở pane thật". Rẻ hơn nhiều so với dựng cơ chế đo width phức tạp cho một layout quen thuộc.
+- **Biểu đồ nhỏ = CSS thuần, đừng kéo thư viện.** 14 cột "người hoạt động/ngày" chỉ là div cao theo %
+  (`height: n/max*100%`), số trên đầu + ngày dưới chân, `flex-end`. Không cần chart lib cho thứ này.
+- **Nạp LƯỜI cho tab phụ:** tab "Đo lường" chỉ query `usage_events` khi mở tab lần đầu (`usageLoaded`),
+  không nạp lúc vào trang — người xem member list không phải trả phí query họ không cần.
+- **"THÊM" = additive, đừng bỏ thứ đang có.** Chủ tool xin "thêm hộp lịch chọn ngày" → giữ NGUYÊN 3 thẻ
+  "Hôm nay" (liếc nhanh), chỉ THÊM hộp lọc điều khiển biểu đồ+bảng. Đọc "thêm" theo nghĩa ít phá nhất:
+  không đổi ngữ nghĩa thẻ cũ, không cần hỏi lại. Nếu chủ tool muốn thẻ cũng đổi theo khoảng thì nói sau.
+- **Lọc khoảng ở CLIENT, nạp rộng 1 lần.** Nạp 90 ngày 1 lượt rồi lọc `[từ,đến]` trong bộ nhớ → kéo
+  ngày mượt, không query lại mỗi lần đổi. Khoá `min/max` ô ngày trong đúng cửa sổ đã nạp để không hứa
+  dữ liệu mình chưa có. Biểu đồ dài thì thưa nhãn (`step=ceil(n/12)`) thay vì nhồi 90 nhãn chồng nhau.
+
+### 2026-07-23 (tiếp — form Thêm tài khoản: ô select "trần" + comment của class nói dối)
+- **`<select>` KHÔNG class = trình duyệt vẽ mặc định (bé, trắng, lệch).** Ô Phòng ban trong form Thêm
+  tài khoản là `<select>` trần trong khi ô Phòng ban ở hộp thoại khác đã có `class="select-field"`. Sửa
+  = thêm đúng class đã có. **Trước khi tự nghĩ style cho một phần tử: grep phần tử CÙNG LOẠI trong app**
+  (lại một lần nữa đúng quy tắc 9/41 — lần này cho `<select>`).
+- **🔑 COMMENT CỦA CLASS CÓ THỂ NÓI DỐI — đo mới biết.** `.select-field` có comment "bám theo đúng
+  `.field input` để hai loại ô nhìn như một", nhưng đo ra: input 44px/`--r-md`/16px, select 40px/`--r-sm`/
+  `--fs-base`. Comment tuyên bố ý đồ mà code KHÔNG đạt. Đừng tin lời hứa trong comment — **dựng 2 loại ô
+  cạnh nhau, đọc `getBoundingClientRect`+computed style của CẢ HAI**, ra ngay chỗ lệch. Vá xong 5 ô đồng
+  loạt 44/10px/16px.
+- **Pane ẩn: screenshot chết nhưng `getBoundingClientRect` VẪN cho số layout thật.** Chụp màn hình báo
+  "not compositing frames"; cùng lúc `getBoundingClientRect().height` trả 44 đúng. Đo hình học/kích thước
+  thì dùng số layout (bR/getCTM/getComputedStyle), đừng chờ screenshot. (Bổ sung cho lesson getCTM.)
+- **Thêm ô chọn quyền phải có CHỐT AN TOÀN Ở SERVER, dropdown chỉ là tiện lợi.** Client gửi `role` nhưng
+  server tự whitelist `['user','admin']` (mặc định `user`), KHÔNG cho tạo `super_admin` qua UI. Quyền =
+  bề mặt tấn công leo thang; đừng để client tự quyết.
+
 ### 2026-07-23 (bảng sửa "soi gương" bản vẽ + khoá đơn vị + rút gọn nhãn)
 
 - **BẢNG SỬA PHẢI ĐỌC NHƯ TỜ GIẤY.** Chủ tool: thứ tự ô trong bảng sửa phải theo đúng bố cục bản mẫu

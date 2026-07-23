@@ -149,7 +149,7 @@
 
         <!-- Phiên bản app: cập nhật số này mỗi lần deploy (xem conventions.md) -->
         <div class="sidebar-version-footer">
-          <span class="version-badge">v1.24</span>
+          <span class="version-badge">v1.25</span>
           <span class="version-date">23/07/2026</span>
         </div>
       </aside>
@@ -360,7 +360,7 @@
        chưa cấu hình thì tool chạy mở như cũ. -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/portal/config.js?v=8"></script>
-  <script src="/js/portal/auth.js?v=4"></script>
+  <script src="/js/portal/auth.js?v=5"></script>
   <script>
     if (window.TSTAuth && TSTAuth.configured) {
       var sideLogout = document.getElementById('btn-logout-side');
@@ -375,6 +375,9 @@
       TSTAuth.requireLogin().then(function (r) {
         var p = r.profile;
         if (p && p.status !== 'active') { TSTAuth.signOut(); return; }   // chờ duyệt / tạm khoá / đã xoá
+        // Đo lường: người active mở được Công cụ = một lượt "sử dụng tool"
+        // (throttle 1 lần/giờ trong logUsage). Best-effort, không await.
+        if (p && TSTAuth.logUsage) TSTAuth.logUsage('open_tool');
         // Super Admin dùng được MỌI công cụ (chủ tool quyết 20/07/2026) — trước đây
         // bị đá về /members, giờ không chặn nữa.
         if (p && (p.role === 'admin' || p.role === 'super_admin')) {

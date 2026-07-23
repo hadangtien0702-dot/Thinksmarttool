@@ -109,6 +109,30 @@
     location.href = (typeof to === 'string' && /^\/(?!\/)/.test(to)) ? to : '/login';
   }
 
+  // ---- Đo lường sử dụng (N1, 23/07/2026) ---------------------------------
+  // Ghi 1 sự kiện vào usage_events (append-only) bằng anon key + RLS.
+  //   kind: 'login' (gọi lúc đăng nhập thành công) | 'open_tool' (gọi lúc mở /tool)
+  // 'open_tool' THROTTLE 1 lần/giờ/máy để refresh trang không phình bảng.
+  // Best-effort: lỗi/chưa cấu hình/chưa đăng nhập đều NUỐT im — đo lường hỏng
+  // TUYỆT ĐỐI không được làm hỏng đăng nhập hay mở tool.
+  const USAGE_THROTTLE_MS = 60 * 60 * 1000; // 1 giờ
+  async function logUsage(kind) {
+    try {
+      const sb = getClient();
+      if (!sb) return;
+      if (kind === 'open_tool') {
+        const k = 'tst-usage-open_tool';
+        let last = 0;
+        try { last = Number(localStorage.getItem(k) || 0); } catch (e) {}
+        if (Date.now() - last < USAGE_THROTTLE_MS) return; // đã ghi trong 1 giờ qua
+        try { localStorage.setItem(k, String(Date.now())); } catch (e) {}
+      }
+      const session = await getSession();
+      if (!session) return;
+      await sb.from('usage_events').insert({ user_id: session.user.id, kind: kind });
+    } catch (e) { /* nuốt lỗi — không chặn luồng chính */ }
+  }
+
   // ---- Đổi mật khẩu (22/07/2026) -----------------------------------------
   // Vì sao cần: 48 tài khoản sale được tạo hàng loạt bằng SQL với mật khẩu do admin
   // sinh sẵn. Không có màn này thì mật khẩu đầu tiên tồn tại vĩnh viễn — admin vẫn
@@ -230,5 +254,6 @@
     initShell: initShell,
     doiMatKhau: doiMatKhau,
     initDoiMatKhau: initDoiMatKhau,
+    logUsage: logUsage,
   };
 })();

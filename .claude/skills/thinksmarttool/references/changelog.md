@@ -32,6 +32,113 @@ Sau lần merge đầu, `main` thành hậu duệ nên merge ngược lại git 
 bảng So sánh biến mất khỏi localhost mà không báo gì — chủ tool phát hiện, không phải tôi.
 Đã đo 7 tên miền để xác nhận cách mới chạy đúng cả 2 phía.
 
+### 2026-07-23 (tiếp 7 — Đo lường: HỘP "XEM THEO NGÀY" + bố cục 2 cột). ✅ ĐÃ PUSH (v1.25).
+
+Chủ tool (sau khi chủ tool ĐÃ CHẠY SQL + xem tab chạy được): *"cho anh thêm một module dạng hộp này…
+anh muốn thêm lịch chọn ngày ở đây để anh xem"* (khoanh vùng bên phải tab Đo lường).
+
+**Cách làm — ADDITIVE, không bỏ gì:** giữ nguyên 3 thẻ "Hôm nay/7 ngày" (liếc nhanh, CỐ ĐỊNH), rồi
+bọc biểu đồ + bảng vào **bố cục 2 cột** (`.usage-layout` mượn `.members-layout`): trái = biểu đồ+bảng,
+phải = hộp **"Xem theo ngày"** (`.ms-panel`). Hộp gồm ô **Từ ngày / Đến ngày** (`<input type=date>`,
+`color-scheme` theo theme) + 4 nút nhanh **Hôm nay/7/14/30 ngày** + 3 dòng số tổng trong khoảng
+(Đăng nhập/Mở công cụ/Người hoạt động).
+
+**Cơ chế (members.js v21→22):** nạp **90 ngày** 1 lần vào `usageEvents` (trước là 30), **lọc khoảng ở
+CLIENT** — đổi ngày không query lại. `veThe()` = 3 thẻ cố định (today/7d, tách khỏi khoảng). `apDungKhoang()`
+lọc `[khoangFrom, khoangTo]` → số tổng hộp + `veBieuDoKhoang()` (bar theo đúng số ngày khoảng; >16 cột
+thì thưa nhãn `step=ceil(n/12)`) + `veBangNguoi()`. `datPreset(n)`→ from=today-(n-1). `doiKhoangTuInput()`
+đảo nếu chọn ngược. Mặc định 14 ngày; ô ngày `min/max` khoá trong 90 ngày đã nạp. Nút "↻ Tải lại" vẫn refresh.
+CSS `portal.css v47→48`: `.usage-layout/.usage-main/.usage-side`, `.usage-picker/.up-field` (date input như
+`.select-field`), `.usage-presets` (nút flex-wrap); mobile ≤900 stack 1 cột.
+
+**Kiểm chứng** (harness `public/_test-usage2.html`, 3 user/8 sự kiện trải today→day-20, đo rồi XOÁ):
+5 preset đều đúng — mặc-định 14 → hộp 2/3/3, 14 cột (3 có số), 3 hàng; Hôm nay → 1/2/2, 1 cột, 2 hàng;
+7 ngày → 2/3/3, 7 cột (2 có số); 30 ngày → 3/3/3, 30 cột (4 có số, kéo thêm sự kiện day-20). **3 thẻ trên
+LUÔN 1/2/3** bất kể preset (chứng minh lịch chỉ điều khiển biểu đồ+bảng, không đụng thẻ Hôm nay). Ô ngày,
+nhãn khoảng cập nhật chuẩn. `node -c` OK. (Bề rộng vẫn không đo được — pane ẩn; nhưng chủ tool đã thấy
+tab render đẹp ở trình duyệt thật lượt trước, CSS lần này mượn tiếp `.members-layout`/`.ms-panel`.)
+
+**Version:** `members.js v21→22`, `portal.css v47→48`. Badge vẫn v1.24.
+
+### 2026-07-23 (tiếp 6 — N1: ĐO LƯỜNG ĐĂNG NHẬP + SỬ DỤNG TOOL). ✅ SQL ĐÃ CHẠY (production) · ✅ ĐÃ PUSH (v1.25).
+
+Chủ tool: *"làm một trang tracking đăng nhập và sử dụng tool"*. Hỏi 3 điểm, chốt:
+**(1) Tab "Đo lường" TRONG /members** (không phải trang riêng) · **(2) mức đơn giản: đăng nhập +
+có-mở-tool** (không tách theo tool nào) · **(3) chỉ Super Admin xem.** Đúng hướng N1 đã chốt:
+**append-only, thu dữ liệu thô** (không lưu-đè-1-mốc), chạy **anon key + RLS, KHÔNG cần service_role**.
+
+**Bảng `usage_events`** (thêm vào `supabase/schema.sql` mục 3 — **CHỦ TOOL PHẢI CHẠY SQL này**):
+`id · user_id → profiles(id) · kind ('login'|'open_tool') · at`. RLS: INSERT `user_id = auth.uid()`
+(ai cũng ghi được sự kiện CỦA MÌNH), SELECT `is_super_admin()` (chỉ super_admin đọc), **KHÔNG có
+policy UPDATE/DELETE** → không sửa/xoá được qua web = giữ lịch sử. 2 index (`at`, `user_id,at`).
+
+**Ghi sự kiện** (client, best-effort — lỗi/chưa cấu hình đều NUỐT, không chặn luồng chính):
+- `auth.js` (v4→5): helper mới **`TSTAuth.logUsage(kind)`** → `insert usage_events`. `open_tool`
+  **throttle 1 lần/giờ/máy** qua `localStorage['tst-usage-open_tool']` để refresh không phình bảng.
+- `login.html`: sau `signInWithPassword` thành công → `await logUsage('login')` (await TRƯỚC khi
+  `afterLogin()` redirect, kẻo request bị huỷ).
+- `tool.html`: trong `requireLogin().then`, người active mở /tool → `logUsage('open_tool')` (không await).
+
+**Tab "Đo lường" ở /members** (`members.html` + `members.js` v20→21):
+- HTML: `#ms-tabs` (2 nút Thành viên/Đo lường, `display:none` mặc định) + panel `#tracking-content`.
+- `members.js`: `initTracking()` chỉ bật tab khi `me.role==='super_admin'`; `doiTab()` lật
+  page-content ↔ tracking-content; **nạp LƯỜI** (`taiDoLuong()` chỉ query khi mở tab lần đầu).
+  `taiDoLuong` đọc 30 ngày gần nhất; **bảng chưa tạo → báo rõ "chạy SQL trong schema.sql"** (regex bắt
+  lỗi PostgREST "could not find … schema cache" / Postgres "does not exist").
+- `veDoLuong()` tổng hợp CLIENT-SIDE (super_admin đọc hết): 3 thẻ số (hôm nay đăng nhập / hôm nay mở
+  tool / 7 ngày hoạt động — đều distinct user), biểu đồ **14 ngày** (mỗi cột = user distinct/ngày,
+  CSS thuần), **bảng theo người** (tên/phòng ban/đăng nhập gần nhất/mở tool gần nhất/tổng lần mở,
+  sort theo hoạt động gần nhất). Tên lấy từ `toanBo` (profiles đã tải). "↻ Tải lại" cũng làm mới tab.
+- CSS `portal.css` (v46→47): `.ms-tabs/.ms-tab` (pill mượn `.auth-tabs`), `.usage-cards/.usage-card`
+  (mượn `.stat-card`), `.usage-chart/.uc-*` (bar thuần CSS), `.usage-table` (grid 5 cột, mobile ≤760 xếp thẻ).
+
+**Kiểm chứng** (harness tạm `public/_test-usage.html` chép NGUYÊN VĂN 5 hàm render + dữ liệu giả 3 user/
+6 sự kiện, đo rồi **XOÁ NGAY**): logic **đúng hết** — hôm nay **1** đăng nhập / **2** mở tool / **3**
+hoạt động-7-ngày · **14** cột (3 cột có số) · **3** hàng sort đúng (An trên cùng: "vừa xong/vừa xong/2").
+Chiều cao render đúng (card 111, chart 150, bar scale theo max). CSSOM xác nhận `.ms-tabs = inline-flex`.
+⚠️ **KHÔNG đo được BỀ RỘNG** vì pane Browser đang ẩn → `viewport=0`, mọi số width co về 0 (bài học mới).
+`node -c` OK members.js + auth.js. CSS mượn pattern đã chạy tốt nên width sẽ đúng khi mở pane thật.
+
+**CÒN LẠI — CHỦ TOOL LÀM:** ① **Chạy SQL** mục 3 trong `supabase/schema.sql` (Supabase → SQL Editor → Run).
+② Đăng nhập **super_admin** ở localhost/live → /members → tab "Đo lường" xem số chạy chưa. ③ Chưa chạy
+SQL thì tab hiện thông báo "bảng chưa tạo" (không vỡ). Xong xuôi mới bump badge **v1.25** + push.
+
+**Version cuối lượt:** `auth.js?v=5`, `members.js?v=21`, `portal.css?v=47`. Badge vẫn v1.24.
+
+### 2026-07-23 (tiếp 5 — FORM "Thêm tài khoản": style ô Phòng ban + thêm ô QUYỀN). ✅ ĐÃ PUSH (v1.25).
+
+Chủ tool xem form Thêm tài khoản trên `/members`: (1) ô **Phòng ban** ra `<select>` mặc định của
+trình duyệt (bé, trắng, lệch hẳn các ô kia); (2) muốn **thêm ô Quyền** để chọn Nhân viên/Admin lúc tạo.
+
+**1. Ô Phòng ban thiếu class.** `add-dept` (`members.html`) là `<select>` TRẦN, không class → trình
+duyệt vẽ mặc định. Ô Phòng ban ở hộp thoại "Chọn phòng ban" (`dept-select`) thì CÓ `class="select-field"`.
+→ Thêm `class="select-field" style="width:100%"` cho `add-dept` (đúng lesson: **grep component cùng loại
+đã có trước khi tự nghĩ style**).
+
+**2. Thêm ô Quyền.** HTML: thêm `.field` mới `<select class="select-field" id="add-role">` ngay dưới
+Phòng ban. `members.js`: hằng mới `QUYEN_TAO_MOI = ['user','admin']`, đổ options qua `ROLE_LABEL`
+(Nhân viên/Admin, mặc định `user`); `add-create` đọc `add-role` → gửi `role` lên API; thông báo thành
+công kèm tên quyền. **KHÔNG cho tạo `super_admin` qua UI** (không có tiền lệ; super_admin = chủ tool).
+`server.js`: hằng `ROLE_TAO_HOP_LE = ['user','admin']`, `/api/admin/create-user` nhận `req.body.role`
+(kiểm whitelist, mặc định `user`) → upsert `role` thật (bỏ hardcode `'user'`) + trả `role` về client.
+Chốt an toàn: server tự kiểm lại role, dropdown client chỉ là tiện lợi.
+
+**3. Vá luôn lệch của `.select-field` (portal.css).** Đo ra input `.field input` = 44px/`--r-md`/16px,
+còn `.select-field` = 40px/`--r-sm`/`--fs-base` — **trái với chính comment của class ("bám theo .field
+input để hai loại ô nhìn như một")**. Căn `.select-field` → 44px + `--r-md` + 16px. Phạm vi: chỉ 3
+select trên `/members` (dept-select + add-dept + add-role); tool.html dùng bản `.select-field` RIÊNG
+trong `style.css` nên không đụng.
+
+**Kiểm chứng** (harness tạm `public/_test-add-modal.html` chép nguyên văn modal + logic đổ options,
+đo bằng getBoundingClientRect rồi **XOÁ NGAY** — pane ẩn nên screenshot chết, dùng số đo layout):
+5 ô (Họ tên/Email/Phòng ban/Quyền/Mật khẩu) **đồng loạt 44px cao · bo 10px · chữ 16px** — nhìn như một.
+Quyền: options ["Nhân viên","Admin"], value mặc định `user`. `node -c` OK server.js + members.js.
+Server-side tạo THẬT (role=admin) cần **chủ tool đăng nhập admin test** (giống lần build admin API 23/07).
+
+**Version:** `members.js v19→20`, `portal.css v45→46` (bump cả 4 trang index/login/videos/members).
+Badge vẫn v1.24 — **bump lên v1.25 khi push**. `git status` = 7 file (server.js + portal.css +
+members.js + 4 HTML). server.js đã đổi → server local đã chạy bản mới (khởi động sau khi sửa).
+
 ### 2026-07-23 (tiếp 4 — BẢNG SỬA: sắp thứ tự theo bản vẽ + LƯỚI 2 CỘT + rút gọn nhãn). ✅ ĐÃ PUSH (v1.23).
 
 Chủ tool: bảng sửa phải đọc **y như tờ báo giá** — thứ tự ô theo bố cục mẫu gốc, và ô ngắn xếp 2/hàng.
@@ -523,8 +630,13 @@ trúng mèo), `aria-hidden=true`, cách đáy thẻ 25px, còn cách đáy canva
 
 ## Version hiện tại (2026-07-23 cuối ngày — ĐÃ PUSH lên `main`, đã deploy)
 
-`main` ở commit **`3c120a3`**, cây làm việc sạch, đã push. `main` = bản LIVE
-(tool.thinksmartinsurance.com), **BẮT ĐĂNG NHẬP** (config.js có khoá Supabase thật).
+`main` = bản LIVE (tool.thinksmartinsurance.com), **BẮT ĐĂNG NHẬP** (config.js có khoá Supabase thật).
+✅ **ĐÃ PUSH badge v1.25** (23/07) — gộp 3 lượt (hash mới: xem `git log -1`):
+- **tiếp 5** — form Thêm tài khoản: style ô Phòng ban + ô Quyền + căn `.select-field` (server.js nhận `role`).
+- **tiếp 6** — N1 Đo lường: `usage_events` (SQL ĐÃ CHẠY trên production) + `logUsage` + tab "Đo lường" ở /members.
+- **tiếp 7** — hộp "Xem theo ngày" (lịch từ/đến + preset) lọc biểu đồ+bảng theo khoảng; bố cục 2 cột.
+File nhạy cảm vẫn gitignore. Version cuối: badge **v1.25** · `auth.js?v=5 · members.js?v=22 · portal.css?v=48`.
+⚠️ Live giờ BẮT ĐẦU ghi `usage_events` (mọi sale đăng nhập/mở tool). Còn mở: N1 nâng cấp (tách theo tool, dashboard 30/90 ngày).
 
 **🆕 23/07 — server.js có 2 ENDPOINT ADMIN** (`/api/admin/create-user`, `/api/admin/reset-password`)
 dùng khoá `service_role` đọc từ **ENV** (`.env` local đã gitignore + **Vercel Production** env
@@ -598,13 +710,15 @@ ra một file là việc đáng làm khi có thời gian (xem PENDING I).
 > {supabaseUrl:"",supabaseAnonKey:""}</script>` inline), resize desktop 1280, đo bằng getCTM/getBBox,
 > xong **XOÁ NGAY** — file đó qua cổng đăng nhập, để sót là Vercel phục vụ nó trên domain thật.
 
-**N1. ĐO LƯỜNG SỬ DỤNG (super_admin) — chủ tool 23/07, ĐÃ CHỐT HƯỚNG, chờ gật để làm.** Chủ tool muốn
-biết mỗi ngày bao nhiêu người thật sự đăng nhập/dùng tool ("build cho có hay dùng thật?"). **Hướng Data
-Analyst đã thống nhất: THU DỮ LIỆU TRƯỚC** (append-only), đừng làm "mức nhanh" lưu-đè-1-mốc (mất lịch sử
-vĩnh viễn). Kế hoạch: (1) bảng `usage_events` (user_id, ts) + RLS (user ghi của mình, super_admin đọc
-hết) — chạy anon key, KHÔNG cần service_role; (2) client ghi sự kiện lúc mở tool (throttle ~1 lần/giờ);
-(3) đọc số cho super_admin ở `/members`: "hôm nay X người dùng" + "gần nhất từng người", dashboard xu
-hướng 7/30 ngày thêm sau. Chủ tool sẽ chạy SQL tạo bảng (mình không đụng DB được).
+**N1. ĐO LƯỜNG SỬ DỤNG — ✅ ĐÃ DỰNG 23/07 (tiếp 6), ⚠️ CHỜ CHỦ TOOL CHẠY SQL + test.** Đã code xong
+theo hướng đã chốt (append-only, anon key + RLS, chỉ super_admin đọc). Chốt lúc làm: **tab "Đo lường"
+TRONG /members** (không phải trang riêng), **mức đơn giản** (đăng nhập + có-mở-tool, không tách theo
+tool nào), **chỉ super_admin**. Chi tiết ở mục "2026-07-23 (tiếp 6)" phía trên.
+→ **VIỆC CÒN LẠI CỦA CHỦ TOOL:** (a) chạy SQL bảng `usage_events` trong `supabase/schema.sql` (mục 3);
+(b) đăng nhập super_admin xem tab Đo lường; (c) duyệt → bump badge v1.25 + push. Chưa chạy SQL thì tab
+báo "bảng chưa tạo", phần còn lại không vỡ.
+→ **Nâng cấp sau (nếu chủ tool muốn):** tách theo TỪNG TOOL (thêm cột `tool` + kind cho Brochure/
+NameCard/SoSanh), dashboard xu hướng 30/90 ngày, xuất CSV. Schema hiện chỉ cần thêm cột, không phá dữ liệu cũ.
 
 **M1. Bàn phím iOS vẫn che thanh thao tác đáy.** iOS neo `position: fixed` theo khung layout, và
 `interactive-widget=resizes-content` Safari chưa hỗ trợ → phải dùng VisualViewport API mới đẩy thanh

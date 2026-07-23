@@ -17,6 +17,7 @@ const supabaseAdmin = (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY)
   : null;
 const TEMP_PASSWORD = 'Drt$2022';          // mật khẩu tạm mặc định (chủ tool 23/07) — user tự đổi sau
 const PHONG_BAN_HOP_LE = ['Sale', 'MKT', 'CS', 'Admin'];
+const ROLE_TAO_HOP_LE = ['user', 'admin']; // quyền được phép tạo qua form (KHÔNG tạo super_admin qua UI)
 
 // Body parser
 app.use(express.json({ limit: '50mb' }));
@@ -405,12 +406,13 @@ async function requireAdmin(req, res, next) {
   }
 }
 
-// Tạo tài khoản mới: role='user' (nhân viên), phòng ban mặc định Sale, status active,
-// mật khẩu tạm Drt$2022 (hiện cho admin gửi user; user tự đổi sau).
+// Tạo tài khoản mới: quyền chọn (mặc định 'user' nhân viên), phòng ban mặc định Sale,
+// status active, mật khẩu tạm Drt$2022 (hiện cho admin gửi user; user tự đổi sau).
 app.post('/api/admin/create-user', requireAdmin, async (req, res) => {
   const ten = String((req.body && req.body.full_name) || '').trim();
   const mail = String((req.body && req.body.email) || '').trim().toLowerCase();
   const phong = PHONG_BAN_HOP_LE.includes(req.body && req.body.department) ? req.body.department : 'Sale';
+  const role = ROLE_TAO_HOP_LE.includes(req.body && req.body.role) ? req.body.role : 'user';
   const pass = (String((req.body && req.body.password) || '').trim()) || TEMP_PASSWORD;
   if (!ten) return res.status(400).json({ error: 'Thiếu họ tên.' });
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) return res.status(400).json({ error: 'Email không hợp lệ.' });
@@ -421,12 +423,12 @@ app.post('/api/admin/create-user', requireAdmin, async (req, res) => {
     });
     if (cErr) return res.status(400).json({ error: cErr.message });
     const newId = created.user.id;
-    // Trigger đã tạo profile (status 'pending'); nâng lên active + set phòng ban.
-    // upsert phòng trường hợp trigger chưa kịp — role giữ mặc định 'user'.
+    // Trigger đã tạo profile (status 'pending'); nâng lên active + set phòng ban + quyền.
+    // upsert phòng trường hợp trigger chưa kịp.
     const { error: uErr } = await supabaseAdmin.from('profiles')
-      .upsert({ id: newId, full_name: ten, email: mail, department: phong, status: 'active', role: 'user' }, { onConflict: 'id' });
+      .upsert({ id: newId, full_name: ten, email: mail, department: phong, status: 'active', role: role }, { onConflict: 'id' });
     if (uErr) return res.status(500).json({ error: 'Đã tạo tài khoản nhưng cập nhật hồ sơ lỗi: ' + uErr.message });
-    return res.json({ success: true, email: mail, password: pass });
+    return res.json({ success: true, email: mail, password: pass, role: role });
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }

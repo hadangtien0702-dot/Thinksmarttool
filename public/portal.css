@@ -734,10 +734,12 @@ body.dark-theme .btn-danger-outline { color: #F87171; border-color: #F87171; }
    Bám theo đúng .field input để hai loại ô nhìn như một. */
 .select-field {
   width: 100%;
-  min-height: 40px; padding: 0 12px;
-  border: 1px solid var(--border); border-radius: var(--r-sm);
+  /* Khớp .field input để hai loại ô "nhìn như một": cùng cao 44, cùng bo --r-md,
+     cùng cỡ chữ 16px (16px cũng chống iOS auto-zoom như ô nhập). */
+  min-height: 44px; padding: 0 12px;
+  border: 1px solid var(--border); border-radius: var(--r-md);
   background: var(--surface-2); color: var(--text);
-  font-family: inherit; font-size: var(--fs-base); font-weight: 500;
+  font-family: inherit; font-size: 16px; font-weight: 500;
   cursor: pointer;
   transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
@@ -1601,4 +1603,127 @@ button:active, .btn:active, .icon-btn:active, .sidebar-nav a:active, .sidebar-fo
     opacity: 1;
     animation: tst-rail-trace 2.4s linear infinite;
   }
+}
+
+/* ============================================================================
+   ĐO LƯỜNG SỬ DỤNG (N1, 23/07/2026) — tab + thẻ số + biểu đồ + bảng theo người.
+   Chỉ hiện ở /members cho super_admin. Toàn token → theme tối tự đúng.
+   ============================================================================ */
+
+/* Tab chuyển Thành viên / Đo lường — mượn dáng .auth-tabs, hug nội dung */
+.ms-tabs {
+  display: inline-flex; gap: 4px; margin-bottom: 16px;
+  background: var(--surface-3); border-radius: var(--r-md); padding: 4px;
+}
+.ms-tab {
+  min-height: 34px; padding: 0 16px; border: none; background: transparent;
+  border-radius: var(--r-sm); cursor: pointer;
+  font-family: inherit; font-size: var(--fs-sm); font-weight: 600; color: var(--text-2);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.ms-tab:hover { color: var(--text); }
+.ms-tab.is-on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-xs); }
+
+/* Thẻ số hôm nay — mượn dáng .stat-card */
+.usage-cards {
+  display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin-bottom: 18px;
+}
+.usage-card {
+  display: flex; flex-direction: column; gap: 4px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 16px 18px; box-shadow: var(--shadow-xs);
+}
+.usage-card-label { font-size: var(--fs-xs); font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.4px; }
+.usage-card-value { font-size: 30px; font-weight: 800; color: var(--text); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.usage-card-sub { font-size: var(--fs-sm); color: var(--text-2); }
+
+/* Khối biểu đồ + bảng */
+.usage-block {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-xl); padding: 18px 20px; box-shadow: var(--shadow-xs);
+  margin-bottom: 16px;
+}
+.usage-block-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.usage-block-head h2 { font-size: var(--fs-md); font-weight: 800; letter-spacing: -0.2px; }
+.usage-hint { font-size: var(--fs-sm); color: var(--text-3); }
+
+/* Biểu đồ cột 14 ngày (thuần CSS, không thư viện) */
+.usage-chart { display: flex; align-items: stretch; gap: 6px; height: 150px; }
+.uc-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.uc-barwrap { flex: 1; width: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
+.uc-n { font-size: var(--fs-xs); font-weight: 700; color: var(--text-2); font-variant-numeric: tabular-nums; margin-bottom: 3px; min-height: 14px; }
+.uc-bar {
+  width: 66%; max-width: 34px; min-height: 3px;
+  background: var(--gradient-brand); border-radius: 5px 5px 0 0;
+  transition: height var(--dur) var(--ease);
+}
+.uc-bar.is-zero { background: var(--surface-3); }
+.uc-x { font-size: var(--fs-xs); color: var(--text-3); font-variant-numeric: tabular-nums; }
+
+/* Bảng theo người — grid 5 cột */
+.usage-thead, .usage-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 12px; align-items: center;
+}
+.usage-thead {
+  padding: 0 12px 8px; font-size: var(--fs-xs); font-weight: 700; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--divider);
+}
+.usage-thead .ta-right, .usage-row .ta-right { text-align: right; }
+.usage-row {
+  padding: 12px; border-bottom: 1px solid var(--divider);
+  font-size: var(--fs-sm); color: var(--text-2); font-variant-numeric: tabular-nums;
+}
+.usage-row:last-child { border-bottom: none; }
+.usage-row .ur-name {
+  font-weight: 600; color: var(--text);
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ur-never { color: var(--text-3); font-style: italic; }
+
+/* Mobile ≤760px: bảng theo người xếp dọc như thẻ (giống .member-row) */
+@media (max-width: 760px) {
+  .usage-thead { display: none; }
+  .usage-row {
+    grid-template-columns: 1fr; gap: 6px;
+    border: 1px solid var(--border); border-radius: var(--r-md);
+    padding: 12px 14px; margin-bottom: 10px;
+  }
+  .usage-row > span { display: flex; justify-content: space-between; gap: 12px; text-align: right; }
+  .usage-row > span::before {
+    content: attr(data-label); color: var(--text-3); font-weight: 600;
+    font-size: var(--fs-xs); text-align: left; flex: 0 0 auto;
+  }
+  .usage-row .ur-name { white-space: normal; }
+  .usage-row .ta-right { text-align: right; }
+}
+
+/* Bố cục 2 cột tab Đo lường: trái = biểu đồ + bảng, phải = hộp chọn ngày (mượn .members-layout) */
+.usage-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+.usage-main { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.usage-main .usage-block { margin-bottom: 0; }
+.usage-side { min-width: 0; }
+
+/* Hộp "Xem theo ngày" — dùng .ms-panel sẵn có, thêm phần chọn ngày */
+.usage-picker { display: flex; flex-direction: column; gap: 10px; padding: 2px 0 4px; }
+.up-field { display: flex; flex-direction: column; gap: 5px; }
+.up-field > span { font-size: var(--fs-xs); font-weight: 700; color: var(--text-3); }
+.up-field input[type="date"] {
+  width: 100%; min-height: 40px; padding: 0 12px;
+  border: 1px solid var(--border); border-radius: var(--r-md);
+  background: var(--surface-2); color: var(--text);
+  font-family: inherit; font-size: var(--fs-sm); cursor: pointer;
+  color-scheme: light;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+body.dark-theme .up-field input[type="date"] { color-scheme: dark; }
+.up-field input[type="date"]:hover { border-color: var(--border-strong); }
+.up-field input[type="date"]:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-ring); background: var(--surface); }
+.usage-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.usage-presets .btn { flex: 1 1 auto; }
+
+@media (max-width: 900px) {
+  .usage-layout { grid-template-columns: 1fr; }
 }
