@@ -111,20 +111,25 @@
 
   // ---- Đo lường sử dụng (N1, 23/07/2026) ---------------------------------
   // Ghi 1 sự kiện vào usage_events (append-only) bằng anon key + RLS.
-  //   kind: 'login' (gọi lúc đăng nhập thành công) | 'open_tool' (gọi lúc mở /tool)
-  // 'open_tool' THROTTLE 1 lần/giờ/máy để refresh trang không phình bảng.
+  //   kind: 'login' (đăng nhập thành công) | 'open_tool' (mở /tool) |
+  //         'download' (xuất/tải, kèm label+detail) | 'view' (mở XEM mẫu/brochure, kèm label)
+  // THROTTLE theo máy để refresh/click lại không phình bảng:
+  //   open_tool = 1 lần/giờ (chung); view = 1 lần/15' cho MỖI mẫu (key kèm label).
   // Best-effort: lỗi/chưa cấu hình/chưa đăng nhập đều NUỐT im — đo lường hỏng
-  // TUYỆT ĐỐI không được làm hỏng đăng nhập hay mở tool.
-  const USAGE_THROTTLE_MS = 60 * 60 * 1000; // 1 giờ
+  // TUYỆT ĐỐI không được làm hỏng đăng nhập / mở tool / mở mẫu.
+  const USAGE_THROTTLE_MS = { open_tool: 60 * 60 * 1000, view: 15 * 60 * 1000 };
   async function logUsage(kind, label, detail) {
     try {
       const sb = getClient();
       if (!sb) return;
-      if (kind === 'open_tool') {
-        const k = 'tst-usage-open_tool';
+      const throttleMs = USAGE_THROTTLE_MS[kind];
+      if (throttleMs) {
+        // Key kèm label để 'view' throttle RIÊNG từng mẫu; 'open_tool' label rỗng → 1 key chung
+        // (giữ nguyên key cũ 'tst-usage-open_tool' để không reset throttle đang chạy).
+        const k = 'tst-usage-' + kind + (label ? ':' + label : '');
         let last = 0;
         try { last = Number(localStorage.getItem(k) || 0); } catch (e) {}
-        if (Date.now() - last < USAGE_THROTTLE_MS) return; // đã ghi trong 1 giờ qua
+        if (Date.now() - last < throttleMs) return; // đã ghi trong khoảng throttle
         try { localStorage.setItem(k, String(Date.now())); } catch (e) {}
       }
       const session = await getSession();
@@ -142,6 +147,43 @@
         if (error) { await sb.from('usage_events').insert({ user_id: session.user.id, kind: kind }); }
       }
     } catch (e) { /* nuốt lỗi — không chặn luồng chính */ }
+  }
+
+  // ---- Đang online / heartbeat (N3, 23/07/2026) --------------------------
+  // MỖI NGƯỜI 1 dòng trong `presence`; heartbeat upsert last_seen mỗi ~45s khi web đang MỞ
+  // và HIỆN (visible). Super_admin đọc dòng last_seen < 2' = đang online.
+  // Best-effort tuyệt đối: bảng chưa tạo / lỗi mạng đều NUỐT im, không chặn gì.
+  const PRESENCE_MS = 45 * 1000;
+  let presenceTimer = null;
+  let presencePage = 'portal';
+
+  async function pingPresence() {
+    try {
+      const sb = getClient();
+      if (!sb) return;
+      const session = await getSession();
+      if (!session) return;
+      await sb.from('presence').upsert(
+        { user_id: session.user.id, last_seen: new Date().toISOString(), page: presencePage },
+        { onConflict: 'user_id' }
+      );
+    } catch (e) { /* nuốt lỗi */ }
+  }
+
+  // Bật heartbeat cho trang hiện tại. Idempotent (gọi nhiều lần chỉ chạy 1 timer).
+  //   page: 'tool' | 'portal' | 'members' | 'videos' — để super_admin biết ai đang ở đâu.
+  function startPresence(page) {
+    if (!configured) return;
+    if (page) presencePage = String(page);
+    if (presenceTimer) { pingPresence(); return; }  // đã chạy → chỉ ping tươi lại
+    pingPresence();                                  // ping ngay khi vào
+    presenceTimer = setInterval(function () {
+      if (document.visibilityState === 'visible') pingPresence();
+    }, PRESENCE_MS);
+    // Quay lại tab (từ ẩn → hiện) → ping ngay cho "đang online" tươi, khỏi chờ 45s.
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') pingPresence();
+    });
   }
 
   // ---- Đổi mật khẩu (22/07/2026) -----------------------------------------
@@ -240,6 +282,9 @@
         if (chip) chip.style.display = 'none';
         return;
       }
+      // Đã đăng nhập trên trang portal → bật heartbeat "đang online" (tool.html gọi riêng).
+      const path = location.pathname;
+      startPresence(/members/.test(path) ? 'members' : /videos/.test(path) ? 'videos' : 'portal');
       const name = p.full_name || p.email || 'Thành viên';
       const initial = name.trim().charAt(0) || '?';
       const elAvatar = document.getElementById('chip-avatar');
@@ -266,5 +311,6 @@
     doiMatKhau: doiMatKhau,
     initDoiMatKhau: initDoiMatKhau,
     logUsage: logUsage,
+    startPresence: startPresence,
   };
 })();

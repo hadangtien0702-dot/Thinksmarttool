@@ -805,8 +805,14 @@
     });
     $('dl-close').addEventListener('click', dongChiTietTaiVe);
     $('dl-backdrop').addEventListener('click', function (e) { if (e.target === $('dl-backdrop')) dongChiTietTaiVe(); });
+    // Thanh "đang online" → mở modal chi tiết
+    $('online-bar').addEventListener('click', moOnlineModal);
+    $('online-close').addEventListener('click', dongOnlineModal);
+    $('online-backdrop').addEventListener('click', function (e) { if (e.target === $('online-backdrop')) dongOnlineModal(); });
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && $('dl-backdrop').classList.contains('open')) dongChiTietTaiVe();
+      if (e.key !== 'Escape') return;
+      if ($('dl-backdrop').classList.contains('open')) dongChiTietTaiVe();
+      if ($('online-backdrop').classList.contains('open')) dongOnlineModal();
     });
   }
 
@@ -818,7 +824,119 @@
     $('tab-usage').setAttribute('aria-selected', String(usage));
     $('page-content').style.display = usage ? 'none' : 'block';
     $('tracking-content').style.display = usage ? 'block' : 'none';
+    if (usage) batDauOnline(); else dungOnline();   // "đang online" chỉ chạy khi xem tab
     if (usage && !usageLoaded) { usageLoaded = true; taiDoLuong(); }
+  }
+
+  // ---- Đang online (presence, N3, 23/07/2026) ---------------------------
+  // Đọc `presence` (RLS super_admin) mỗi 30s KHI đang mở tab Đo lường; ai last_seen < 2' = online.
+  const ONLINE_WINDOW_MS = 2 * 60 * 1000;   // ngưỡng "còn online"
+  const ONLINE_POLL_MS = 30 * 1000;         // nhịp tự làm mới
+  let onlineTimer = null;
+  let onlineRows = [];   // [{r: dòng presence, p: profile}] của lần poll gần nhất
+
+  function batDauOnline() {
+    if (onlineTimer) return;
+    taiOnline();                                  // vẽ ngay, khỏi chờ nhịp đầu
+    onlineTimer = setInterval(taiOnline, ONLINE_POLL_MS);
+  }
+  function dungOnline() {
+    if (onlineTimer) { clearInterval(onlineTimer); onlineTimer = null; }
+  }
+
+  function viTriTrang(page) {
+    const p = String(page || '');
+    if (/tool/.test(p)) return 'Đang mở Tool';
+    if (/members/.test(p)) return 'Trang thành viên';
+    if (/videos/.test(p)) return 'Xem video';
+    if (/portal|index/.test(p)) return 'Trang chính';
+    return p ? esc(p) : '—';
+  }
+
+  // Nhóm vị trí để đếm chip trên thanh: tool / videos / còn lại = portal.
+  function nhomViTri(page) {
+    const p = String(page || '');
+    if (/tool/.test(p)) return 'tool';
+    if (/videos/.test(p)) return 'videos';
+    return 'portal';
+  }
+
+  async function taiOnline() {
+    const hint = $('online-hint');
+    if (!$('online-bar')) return;
+    const since = new Date(Date.now() - ONLINE_WINDOW_MS).toISOString();
+    let resp;
+    try {
+      resp = await sb.from('presence')
+        .select('user_id, last_seen, page')
+        .gte('last_seen', since)
+        .order('last_seen', { ascending: false });
+    } catch (e) { return; }   // lỗi mạng tạm — giữ nguyên màn, nhịp sau thử lại
+    const { data, error } = resp;
+    if (error) {
+      const chuaCo = /presence/.test(error.message || '') &&
+        /(does not exist|could not find|schema cache)/i.test(error.message || '');
+      if (chuaCo) { dungOnline(); if (hint) hint.textContent = "Bảng 'presence' chưa được tạo — chạy SQL trong schema.sql."; }
+      onlineRows = []; veOnlineBar(); if (onlineModalMo()) veOnlineChiTiet();
+      return;
+    }
+    if (hint) hint.textContent = '';
+    const pmap = {}; (toanBo || []).forEach(function (p) { pmap[p.id] = p; });
+    onlineRows = (data || []).map(function (r) { return { r: r, p: pmap[r.user_id] || {} }; });
+    veOnlineBar();
+    if (onlineModalMo()) veOnlineChiTiet();   // modal đang mở → cập nhật luôn cho tươi
+  }
+
+  // Thanh tóm tắt (luôn hiện): số tổng + chip theo vị trí. Bấm → modal chi tiết.
+  function veOnlineBar() {
+    $('online-count').textContent = String(onlineRows.length);
+    const b = { tool: 0, portal: 0, videos: 0 };
+    onlineRows.forEach(function (o) { b[nhomViTri(o.r.page)]++; });
+    const chips = [];
+    if (b.tool)   chips.push('<span class="online-chip on-chip-tool">🛠 Tool ' + b.tool + '</span>');
+    if (b.portal) chips.push('<span class="online-chip">🏠 Trang chính ' + b.portal + '</span>');
+    if (b.videos) chips.push('<span class="online-chip">🎬 Video ' + b.videos + '</span>');
+    $('online-breakdown').innerHTML = chips.join('');
+  }
+
+  // Danh sách chi tiết trong modal: "đang mở Tool" LÊN ĐẦU, rồi tới mới nhất.
+  function veOnlineChiTiet() {
+    const box = $('online-detail-rows'), empty = $('online-detail-empty');
+    if (!box) return;
+    $('online-modal-sub').textContent = onlineRows.length
+      ? onlineRows.length + ' người đang online · tự làm mới mỗi 30 giây'
+      : 'Tính trong 2 phút gần nhất · tự làm mới mỗi 30 giây';
+    if (!onlineRows.length) { box.innerHTML = ''; empty.style.display = 'flex'; return; }
+    empty.style.display = 'none';
+    const rows = onlineRows.slice().sort(function (a, b) {
+      const ta = /tool/.test(String(a.r.page || '')) ? 1 : 0;
+      const tb = /tool/.test(String(b.r.page || '')) ? 1 : 0;
+      if (ta !== tb) return tb - ta;   // Tool lên đầu
+      return new Date(b.r.last_seen).getTime() - new Date(a.r.last_seen).getTime();
+    });
+    box.innerHTML = rows.map(function (o) {
+      const p = o.p;
+      const ten = esc(p.full_name || p.email || '(không rõ)');
+      const pb = p.department ? ' <span class="online-dept">· ' + esc(p.department) + '</span>' : '';
+      const laTool = /tool/.test(String(o.r.page || ''));
+      return '<div class="online-item' + (laTool ? ' is-tool' : '') + '">' +
+        '<span class="online-dot online-dot-sm"></span>' +
+        '<span class="online-name">' + ten + pb + '</span>' +
+        '<span class="online-where">' + viTriTrang(o.r.page) + '</span>' +
+        '<span class="online-ago">' + thoiGianTuong(new Date(o.r.last_seen).getTime()) + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  function onlineModalMo() { return $('online-backdrop').classList.contains('open'); }
+  function moOnlineModal() {
+    veOnlineChiTiet();
+    $('online-backdrop').classList.add('open');
+    $('online-backdrop').setAttribute('aria-hidden', 'false');
+  }
+  function dongOnlineModal() {
+    $('online-backdrop').classList.remove('open');
+    $('online-backdrop').setAttribute('aria-hidden', 'true');
   }
 
   async function taiDoLuong() {
@@ -913,13 +1031,15 @@
 
     const login = new Set(), tool = new Set(), act = new Set();
     let dl = 0;   // tải về đếm theo LƯỢT trong khoảng
+    let vw = 0;   // xem mẫu/brochure đếm theo LƯỢT trong khoảng
     const pmap = {}; (toanBo || []).forEach(function (p) { pmap[p.id] = p; });
-    const theoNguoi = {}, theoNgay = {};
+    const theoNguoi = {}, theoNgay = {}, theoMau = {};
     trong.forEach(function (e) {
       const ts = new Date(e.at).getTime();
       if (e.kind === 'login') login.add(e.user_id);
       if (e.kind === 'open_tool') tool.add(e.user_id);
       if (e.kind === 'download') dl++;
+      if (e.kind === 'view') { vw++; const nh = e.label || '(không rõ)'; theoMau[nh] = (theoMau[nh] || 0) + 1; }
       act.add(e.user_id);
       const u = theoNguoi[e.user_id] || (theoNguoi[e.user_id] = { lastLogin: 0, lastTool: 0, tool: 0, download: 0 });
       if (e.kind === 'login') u.lastLogin = Math.max(u.lastLogin, ts);
@@ -931,13 +1051,42 @@
     $('uk-login').textContent = login.size;
     $('uk-tool').textContent = tool.size;
     $('uk-download').textContent = dl;
+    $('uk-view').textContent = vw;
     $('uk-active').textContent = act.size;
 
     const soNgay = Math.round((batDauNgay(khoangTo).getTime() - batDauNgay(khoangFrom).getTime()) / NGAY_MS) + 1;
     $('usage-chart-range').textContent = fmtNgay(khoangFrom) + ' – ' + fmtNgay(khoangTo) + ' · ' + soNgay + ' ngày';
 
     veBieuDoKhoang(theoNgay, khoangFrom, soNgay);
+    veTopMau(theoMau);
     veBangNguoi(theoNguoi, pmap);
+  }
+
+  // Xếp hạng "mẫu / brochure chạy nhiều nhất" trong khoảng (N2). Đếm theo label sự kiện 'view'.
+  function veTopMau(theoMau) {
+    const arr = Object.keys(theoMau)
+      .map(function (k) { return { ten: k, n: theoMau[k] }; })
+      .sort(function (a, b) { return b.n - a.n; });
+    const box = $('usage-top-rows');
+    if (!arr.length) {
+      box.innerHTML = '';
+      $('usage-top-empty').style.display = 'flex';
+      return;
+    }
+    $('usage-top-empty').style.display = 'none';
+    const max = arr[0].n || 1;
+    box.innerHTML = arr.slice(0, 12).map(function (m, i) {
+      const pct = Math.max(Math.round((m.n / max) * 100), 4);
+      const laTaiLieu = /^Tài liệu:/.test(m.ten);
+      const ten = esc(laTaiLieu ? m.ten.replace(/^Tài liệu:\s*/, '') : m.ten);
+      const tag = laTaiLieu ? '<span class="top-tag top-tag-doc">Tài liệu</span>' : '<span class="top-tag top-tag-mau">Mẫu</span>';
+      return '<div class="top-row">' +
+        '<span class="top-rank' + (i < 3 ? ' is-top' : '') + '">' + (i + 1) + '</span>' +
+        '<span class="top-name" title="' + ten + '">' + tag + ten + '</span>' +
+        '<span class="top-barwrap"><span class="top-bar" style="width:' + pct + '%"></span></span>' +
+        '<span class="top-n">' + m.n + '</span>' +
+      '</div>';
+    }).join('');
   }
 
   function veBieuDoKhoang(theoNgay, from, soNgay) {

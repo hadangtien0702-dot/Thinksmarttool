@@ -70,6 +70,36 @@ bản gốc lâu dài: `E:\2026\Claude\.claude\skills\`):
 
 ## Log bài học theo ngày
 
+### 2026-07-23 (tiếp 5b — N3 đổi sang thanh-gọn-bấm-mở-chi-tiết + bẫy đo dark mode)
+- **Danh sách có thể ĐÔNG (tới ~100) → đừng liệt kê phẳng: dùng THANH TÓM TẮT bấm mở MODAL** (mượn đúng
+  pattern popup "Tải về" đã có). Thanh trả lời câu hỏi thật ("bao nhiêu người đang DÙNG Tool") bằng
+  **chip đếm theo nhóm** (Tool/Trang chính/Video); chi tiết đầy đủ để trong modal `max-height:52vh;
+  overflow:auto` (100 dòng vẫn cuộn gọn, header đứng yên). Chủ tool tự chốt hướng này ("thích thanh gọn
+  nhưng bấm vào hiện chi tiết") — hợp nguyên tắc "một màn một tiêu điểm".
+- **Trong danh sách, ưu tiên tín hiệu quan trọng lên đầu**: sort "đang mở Tool" trước rồi mới tới mới nhất —
+  người xem thấy ngay ai đang thực sự làm việc, không phải cuộn tìm.
+- **BẪY ĐO (củng cố quy tắc #7):** đo `background` của một `<button>` sau khi đã set/xoá inline style +
+  toggle `.dark-theme` nhiều lần → ra "trắng" SAI (CSSOM/transition kẹt, `!important` inline cũng bị phớt).
+  Tạo `<button>` MỚI cùng `var(--surface)` thì ra đúng dark → dấu hiệu DOM cũ bị nhiễu. **Reload trang với
+  dark bật SẴN từ đầu rồi đo** → đúng ngay (`#14161F`). Đừng sửa CSS theo số đo của DOM đã bị chọc.
+
+### 2026-07-23 (tiếp 5 — N2 leaderboard + N3 panel "Đang online")
+- **Polling real-time PHẢI cột vào vòng đời tab**: panel "Đang online" chỉ `setInterval(taiOnline, 30s)`
+  KHI mở tab Đo lường, và `clearInterval` khi rời tab (`batDauOnline`/`dungOnline` gọi trong `doiTab`).
+  Quên clear = poll mãi dưới nền, tốn request + pin. Thêm: bảng chưa tạo → `dungOnline()` + báo nhẹ,
+  đừng để 30s/lần spam lỗi.
+- **Heartbeat chỉ ping khi tab VISIBLE** (`document.visibilityState==='visible'`) + ping ngay lúc
+  `visibilitychange` về visible → "đang online" tươi mà không đốt request lúc tab ẩn.
+- **Trạng thái "sống" cần tín hiệu thị giác động nhưng có phanh**: chấm xanh `--success` pulse bằng
+  `box-shadow` keyframe (chạy compositor, rẻ) + `@media (prefers-reduced-motion: reduce)` tắt. Đừng
+  để chấm nhấp nháy vô hạn với ai tắt animation.
+- **Leaderboard = rank chip + tag phân loại + bar tỉ lệ + số tabular-nums**: top-3 tô `--brand-soft-2`
+  cho mắt bắt ngay; bar `width = n/max` (min 4% để hạng bét vẫn thấy vệt); `font-variant-numeric:
+  tabular-nums` để cột số thẳng hàng. Tag "Mẫu/Tài liệu" tái dùng `--brand-soft` vs `--surface-3`.
+- **Lại đúng quy tắc "grep token có sẵn, đừng nghĩ màu mới"**: cả 2 component chỉ ghép
+  `--success/--success-soft` (online) + `--brand*/--surface-3` (leaderboard) → tự đúng cả dark mode,
+  không thêm biến. Đo computed style xác nhận mọi token đổi đúng ở dark (harness, pane ẩn).
+
 ### 2026-07-23 (tiếp 4 — workbook cho người không biết kỹ thuật)
 - Năm tab vận hành dễ hiểu hơn hẳn khi mỗi tab trả lời một câu hỏi riêng: quy trình, chức năng, tình
   trạng hiện tại, việc cần làm và nhật ký ngày.

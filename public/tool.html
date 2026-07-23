@@ -149,7 +149,7 @@
 
         <!-- Phiên bản app: cập nhật số này mỗi lần deploy (xem conventions.md) -->
         <div class="sidebar-version-footer">
-          <span class="version-badge">v1.29</span>
+          <span class="version-badge">v1.30</span>
           <span class="version-date">23/07/2026</span>
         </div>
       </aside>
@@ -360,7 +360,7 @@
        chưa cấu hình thì tool chạy mở như cũ. -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/portal/config.js?v=8"></script>
-  <script src="/js/portal/auth.js?v=7"></script>
+  <script src="/js/portal/auth.js?v=8"></script>
   <script>
     if (window.TSTAuth && TSTAuth.configured) {
       var sideLogout = document.getElementById('btn-logout-side');
@@ -378,6 +378,8 @@
         // Đo lường: người active mở được Công cụ = một lượt "sử dụng tool"
         // (throttle 1 lần/giờ trong logUsage). Best-effort, không await.
         if (p && TSTAuth.logUsage) TSTAuth.logUsage('open_tool');
+        // Đang online: heartbeat cho biết người này đang mở TOOL (N3).
+        if (p && TSTAuth.startPresence) TSTAuth.startPresence('tool');
         // Super Admin dùng được MỌI công cụ (chủ tool quyết 20/07/2026) — trước đây
         // bị đá về /members, giờ không chặn nữa.
         if (p && (p.role === 'admin' || p.role === 'super_admin')) {
@@ -393,9 +395,9 @@
        (napThuVienPdf). Muốn đưa lại vào đây thì nhớ là đang đánh đổi tốc độ vào trang. -->
   <!-- Mỗi công cụ một file JS riêng — core nạp trước, main nạp cuối -->
   <script src="/js/ui-dialog.js?v=3"></script>
-  <script src="js/core.js?v=29"></script>
+  <script src="js/core.js?v=30"></script>
   <script src="js/proposal.js?v=35"></script>
-  <script src="js/brochure.js?v=11"></script>
+  <script src="js/brochure.js?v=12"></script>
   <script src="js/sosanh.js?v=10"></script>
   <script src="js/namecard.js?v=5"></script>
   <script src="js/main.js?v=9"></script>

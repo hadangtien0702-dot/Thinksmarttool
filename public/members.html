@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/vendor/animate.min.css">
-  <link rel="stylesheet" href="/portal.css?v=51">
+  <link rel="stylesheet" href="/portal.css?v=53">
   <link rel="stylesheet" href="/dialog.css?v=4">
 </head>
 <body>
@@ -255,6 +255,18 @@
         <div id="tracking-content" style="display:none">
           <div id="usage-msg" class="notice error" style="display:none"></div>
 
+          <!-- ĐANG ONLINE (N3) — thanh tóm tắt (số tổng + chip vị trí); BẤM → modal chi tiết -->
+          <div class="online-wrap">
+            <button type="button" class="online-bar" id="online-bar" title="Xem chi tiết ai đang online">
+              <span class="online-dot"></span>
+              <span class="online-count" id="online-count">0</span>
+              <span class="online-bar-label">đang online</span>
+              <span class="online-breakdown" id="online-breakdown"></span>
+              <span class="online-bar-more">Chi tiết ›</span>
+            </button>
+            <span class="online-hint" id="online-hint"></span>
+          </div>
+
           <div class="usage-cards">
             <div class="usage-card">
               <span class="usage-card-label">Hôm nay · Đăng nhập</span>
@@ -287,6 +299,19 @@
                   <span class="usage-hint" id="usage-chart-range">— · mỗi cột = số người khác nhau có đăng nhập hoặc mở tool</span>
                 </div>
                 <div class="usage-chart" id="usage-chart" role="img" aria-label="Biểu đồ người hoạt động theo ngày"></div>
+              </div>
+
+              <!-- TOP MẪU / BROCHURE CHẠY NHIỀU NHẤT (N2) — đếm lượt 'view' theo khoảng -->
+              <div class="usage-block">
+                <div class="usage-block-head">
+                  <h2>Top mẫu / brochure chạy nhiều nhất</h2>
+                  <span class="usage-hint">Trong khoảng đang chọn · đếm lượt sale mở xem</span>
+                </div>
+                <div class="usage-top" id="usage-top-rows"></div>
+                <div class="empty-state" id="usage-top-empty" style="display:none">
+                  <b>Chưa có lượt xem mẫu/brochure nào.</b>
+                  <span>Số liệu xuất hiện khi sale mở mẫu trong Tool hoặc mở tài liệu trong thư viện.</span>
+                </div>
               </div>
 
               <div class="usage-block">
@@ -327,6 +352,7 @@
                 <button type="button" class="ms-row ms-row-btn" id="uk-download-row" title="Xem chi tiết tải gì">
                   <span class="ms-label">Tải về (xuất/tải) <span class="ms-row-more">›</span></span><span class="ms-value is-ok" id="uk-download">—</span>
                 </button>
+                <div class="ms-row"><span class="ms-label">Xem mẫu/brochure</span><span class="ms-value" id="uk-view">—</span></div>
                 <div class="ms-row"><span class="ms-label">Người hoạt động</span><span class="ms-value" id="uk-active">—</span></div>
               </div>
             </aside>
@@ -418,10 +444,28 @@
       </div>
     </div>
   </div>
+
+  <!-- Chi tiết ĐANG ONLINE (bấm thanh "đang online") — ai · đang ở đâu · hoạt động lúc nào -->
+  <div class="modal-backdrop" id="online-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="online-modal-title">
+      <div class="modal-head">
+        <h2 id="online-modal-title">Ai đang online</h2>
+        <button class="icon-btn" id="online-close" aria-label="Đóng">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="online-modal-sub" style="color:var(--text-2);font-size:var(--fs-sm);margin-bottom:12px">Tính trong 2 phút gần nhất · tự làm mới mỗi 30 giây</p>
+        <div class="online-list" id="online-detail-rows"></div>
+        <div class="empty-state" id="online-detail-empty" style="display:none">
+          <b>Chưa có ai đang online.</b>
+          <span>Danh sách hiện khi có người đang mở web trong 2 phút gần nhất.</span>
+        </div>
+      </div>
+    </div>
+  </div>
       </main>
 
       <footer class="portal-footer">
-        <span class="version-badge">v1.29</span>
+        <span class="version-badge">v1.30</span>
         <span>23/07/2026 · Thinksmart Insurance — lưu hành nội bộ</span>
       </footer>
     </div>
@@ -429,9 +473,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/portal/config.js?v=8"></script>
-  <script src="/js/portal/auth.js?v=7"></script>
+  <script src="/js/portal/auth.js?v=8"></script>
   <script src="/js/ui-dialog.js?v=3"></script>
-  <script src="/js/portal/members.js?v=25"></script>
+  <script src="/js/portal/members.js?v=27"></script>
   <script src="/vendor/gsap.min.js"></script>
   <script src="/js/animations.js?v=4"></script>
 </body>

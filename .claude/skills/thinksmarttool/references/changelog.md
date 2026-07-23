@@ -3,6 +3,74 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
+### 2026-07-23 (tiếp 12 — N2 Top mẫu/brochure + N3 Đang online). ⏳ ĐÃ BUILD LOCAL, CHỜ CHỦ TOOL CHẠY SQL + DUYỆT PUSH (v1.30).
+
+Chủ tool: *"build tiếp 2 phần mới"* → làm cả hai việc cuối trong hàng đợi. Chủ tool chốt *"cứ build
+schema, anh sẽ tạo (chạy SQL) cho"* → em soạn SQL, **chủ tool chạy trong Supabase SQL Editor**.
+
+**① N2 — Top mẫu/brochure chạy nhiều nhất (kind='view').**
+- `schema.sql`: nới CHECK `usage_events.kind` thêm `'view'` (giống lúc thêm `'download'`). KHÔNG cột mới.
+- `auth.js` (v7→8): `logUsage` gộp throttle qua bảng `USAGE_THROTTLE_MS = {open_tool:1h, view:15'}`; key
+  kèm label → 'view' throttle RIÊNG từng mẫu (open_tool giữ key cũ `tst-usage-open_tool`, không reset).
+- `core.js` (v29→30): `ghiXemMau(fileInfo)` = `logUsage('view', tachTenMau().day)`; gọi trong `loadSvgContent`
+  KHI `isMaster` (sau khi canvas hiện). → đo "sale mở XEM mẫu gốc nào".
+- `brochure.js` (v11→12): `openLibraryItem` fire `logUsage('view','Tài liệu: '+tenSach)` khi mở brochure.
+- `members.js` (v25→26): `apDungKhoang` gom `theoMau`/`vw`; `veTopMau()` = leaderboard top-12 (rank·tag
+  Mẫu/Tài liệu·bar tỉ lệ·số). Thêm dòng "Xem mẫu/brochure" (`#uk-view`) trong hộp khoảng.
+- `members.html`: block "Top mẫu / brochure chạy nhiều nhất" (#usage-top-rows) sau biểu đồ.
+
+**② N3 — Đang online real-time (presence + heartbeat).**
+- `schema.sql`: bảng `presence(user_id pk, last_seen, page)` — **1 dòng/người, upsert** (KHÔNG append như
+  usage_events → không phình). RLS: tự insert+update dòng mình, chỉ super_admin đọc. Index last_seen desc.
+- `auth.js`: `startPresence(page)` heartbeat upsert `last_seen=now()` mỗi 45s KHI tab visible (idempotent,
+  best-effort). Gọi ở `initShell` (portal: 'portal'/'members'/'videos') + `tool.html` ('tool').
+- `members.js`: đọc `presence` last_seen < 2' mỗi 30s KHI mở tab Đo lường (`batDauOnline`/`dungOnline` theo
+  `doiTab`); `viTriTrang()` dịch page → "Đang mở Tool"…; bảng chưa tạo thì dừng poll + báo nhẹ.
+- **UI (chủ tool chốt "thích thanh gọn hiện tại nhưng bấm vào hiện chi tiết"):** THAY panel-liệt-kê bằng
+  **thanh tóm tắt** `#online-bar` (số tổng + chip theo vị trí `🛠 Tool N · 🏠 Trang chính M · 🎬 Video K`
+  qua `nhomViTri`/`veOnlineBar`) — BẤM mở **modal** `#online-backdrop` (mượn pattern popup "Tải về"):
+  `veOnlineChiTiet()` liệt kê đầy đủ, **"đang mở Tool" LÊN ĐẦU** rồi tới mới nhất; `#online-detail-rows`
+  `max-height:52vh; overflow:auto` → 100 người vẫn cuộn gọn, header modal đứng yên. Poll cập nhật cả modal
+  nếu đang mở. Lý do đổi: liệt kê phẳng 100 người thì dài/nặng; thanh trả lời ngay "bao nhiêu người đang
+  THỰC SỰ dùng Tool".
+- `members.html`: thanh `.online-bar` đầu tab + modal `#online-backdrop`; `portal.css` (v51→53): `.online-bar`
+  (clickable, hover viền brand), `.online-chip`/`.on-chip-tool`, `.online-item` (dùng chung cho modal),
+  `.top-*` (leaderboard) — mobile ẩn bar/where.
+
+**⚠️ CHỦ TOOL CHẠY SQL (Supabase → SQL Editor → Run) — 2 phần, đều idempotent:**
+```sql
+-- N2: nới kind nhận 'view'
+alter table public.usage_events drop constraint if exists usage_events_kind_check;
+alter table public.usage_events add  constraint usage_events_kind_check
+  check (kind in ('login','open_tool','download','view'));
+-- N3: bảng presence (chạy CẢ khối presence trong supabase/schema.sql — table + RLS + index)
+```
+(Đầy đủ nằm trong `supabase/schema.sql` mục `usage_events` + `PRESENCE`. Chạy nguyên 2 khối đó là đủ.)
+
+**Kiểm chứng** (harness `_test-n2n3.html` chép NGUYÊN VĂN markup `veTopMau`+online rồi ĐO CSSOM, **đã xoá**;
+pane ẩn nên screenshot chết → đo computed style như các lượt trước):
+- N3 light: dot `--success` xanh + anim `online-pulse`, badge `--success-soft`, grid 4 cột, "nơi" `--brand`.
+- N2 light: 6 dòng sort giảm, top-3 `is-top`, tag Mẫu/Tài liệu phân đúng, bar 100/75/58/42/25/17% (max=12),
+  rank `--brand-soft-2`, bar `--brand`. Không tràn (760=max-width).
+- Dark: mọi token đổi đúng (panel `--surface` #14161F, bar `--brand-400`…). Mobile 375: bar+`where` ẩn, grid
+  3 cột, `overflow=false`. `node -c` OK 4 file JS. `/tool`→`/login` không lỗi console (auth.js v8 sạch).
+- **N3 redesign (thanh+modal) — harness `_test-online2.html` 100 người, đo rồi XOÁ:** thanh desktop 1280 =
+  **1 dòng 49px**, chip `Tool 60·Trang chính 30·Video 10` đúng; modal 100 dòng CUỘN (632/3541px = 52vh),
+  **sort Tool-first** (60 đầu `is-tool`, 40 sau không); không tràn. Dark: `barBg=#14161F` (đo CLEAN sau reload
+  — lần đầu ra "trắng" là ARTIFACT do poke DOM/toggle nhiều lần; **bài học lại: reload rồi đo, đừng tin số
+  sau khi chọc inline style**). `node -c` OK.
+- 🔎 **Xác minh SQL bằng anon key (đọc-only):** dò `presence` → 200 = **chủ tool ĐÃ tạo bảng** ✓. Constraint
+  'view' không dò được qua anon (RLS chặn insert khách) → cần super_admin test insert.
+
+**CHƯA test được (cần CHỦ TOOL):** ① chạy 2 khối SQL trên. ② super_admin login → /members → tab Đo lường:
+xem panel "Đang online" (mở tool ở máy khác thấy tên) + leaderboard "Top mẫu/brochure" chạy số thật.
+③ OK mới push (badge đã để **v1.30**). Chưa chạy SQL thì: 'view' insert fail → nuốt im (không mất gì
+khác); panel online báo "bảng presence chưa tạo" + tự dừng poll.
+
+**Version cuối lượt:** `auth.js v8 · core.js v30 · brochure.js v12 · members.js v27 · portal.css v53` ·
+badge **v1.29→v1.30**. `git status`: chưa commit (chờ duyệt). ✅ HÀNG ĐỢI N2/N3 XONG PHẦN BUILD
+(gồm N3 redesign thanh+modal). Bảng `presence` đã tạo; còn constraint 'view' + test live super_admin.
+
 ### 2026-07-23 (tiếp 16 — VERSION TRACKING MỚI NHẤT Ở TRÊN). ✅ HOÀN TẤT, KHÔNG SỬA CODE.
 
 - Đảo thứ tự 271 dòng trong `outputs/019f8dd8-version-tracking/Thinksmart Tool.xlsx`: WIP/release mới ở hàng 5,

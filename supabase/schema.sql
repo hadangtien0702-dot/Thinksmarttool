@@ -237,15 +237,18 @@ create index if not exists videos_category_sort_idx
 create table if not exists public.usage_events (
   id      bigint generated always as identity primary key,
   user_id uuid not null references public.profiles(id) on delete cascade,
-  kind    text not null check (kind in ('login', 'open_tool', 'download')),
-  label   text,   -- CHI TIẾT (chỉ với 'download'): tải gì — "Proposal - <khách> · PDF" / "Tài liệu: ..."
+  kind    text not null check (kind in ('login', 'open_tool', 'download', 'view')),
+  label   text,   -- CHI TIẾT: 'download' = tải gì; 'view' = mẫu/brochure nào được mở
   at      timestamptz not null default now()
 );
 
--- Nâng cấp bảng đã tạo trước đó (idempotent): nới ràng buộc kind để nhận thêm 'download'.
+-- Nâng cấp bảng đã tạo trước đó (idempotent): nới ràng buộc kind để nhận thêm 'download' + 'view'.
 alter table public.usage_events drop constraint if exists usage_events_kind_check;
 alter table public.usage_events add  constraint usage_events_kind_check
-  check (kind in ('login', 'open_tool', 'download'));
+  check (kind in ('login', 'open_tool', 'download', 'view'));
+-- (23/07 - N2) 'view': sale MỞ XEM mẫu Proposal hoặc brochure trong thư viện → tab Đo lường xếp
+-- hạng "mẫu/brochure chạy nhiều nhất". label = tên mẫu ("Max-Funded Allianz") hoặc "Tài liệu: <tên>".
+-- KHÔNG cần cột mới — chỉ nới constraint kind ở trên là đủ.
 -- (23/07 nâng cấp) cột label: xem "tải CÁI GÌ" trong popup chi tiết ở tab Đo lường.
 alter table public.usage_events add column if not exists label text;
 -- (23/07 nâng cấp - Cách A) cột detail: giá trị sale ĐÃ ĐIỀN lúc xuất (Khách/Tuổi/Bang/số tiền…)
@@ -266,6 +269,40 @@ create policy "usage: chỉ super admin đọc"
 
 create index if not exists usage_events_at_idx      on public.usage_events (at desc);
 create index if not exists usage_events_user_at_idx on public.usage_events (user_id, at desc);
+
+-- ----------------------------------------------------------------------------
+-- PRESENCE — AI ĐANG ONLINE (N3, 23/07/2026). Không append như usage_events:
+-- MỖI NGƯỜI đúng 1 dòng, client "heartbeat" upsert last_seen mỗi ~45s khi mở web.
+-- Super_admin đọc dòng có last_seen trong ~2 phút gần nhất = đang online.
+-- (Chỉ 1 dòng/người → bảng luôn ≤ số tài khoản, không phình.)
+-- ----------------------------------------------------------------------------
+create table if not exists public.presence (
+  user_id   uuid primary key references public.profiles(id) on delete cascade,
+  last_seen timestamptz not null default now(),
+  page      text   -- đang ở đâu: "tool" | "portal" | "members" | "videos" (để super_admin biết vị trí)
+);
+
+alter table public.presence enable row level security;
+
+-- Ai cũng GHI/CẬP NHẬT dòng CỦA MÌNH (upsert = insert + update → cần cả 2 policy).
+drop policy if exists "presence: tự ghi của mình"    on public.presence;
+create policy "presence: tự ghi của mình"
+  on public.presence for insert
+  with check (user_id = auth.uid());
+
+drop policy if exists "presence: tự cập nhật của mình" on public.presence;
+create policy "presence: tự cập nhật của mình"
+  on public.presence for update
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
+
+-- Chỉ super_admin đọc "ai đang online".
+drop policy if exists "presence: chỉ super admin đọc" on public.presence;
+create policy "presence: chỉ super admin đọc"
+  on public.presence for select
+  using (public.is_super_admin());
+
+create index if not exists presence_last_seen_idx on public.presence (last_seen desc);
 
 -- ============================================================================
 -- SAU KHI CHẠY XONG — tạo SUPER ADMIN ĐẦU TIÊN (làm 1 lần):

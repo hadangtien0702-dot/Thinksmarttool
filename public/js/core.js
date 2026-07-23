@@ -509,6 +509,7 @@ async function loadSvgContent(fileInfo) {
       if (renderBox) renderBox.classList.add('svg-vao');   // fade-in bản mới
       ketThucTaiCanvas();                                  // canvas đã hiện → tắt spinner
       updateStatus(`Đang mở: ${fileInfo.name}`);
+      if (isMaster) ghiXemMau(fileInfo);                   // đo lường: 1 lượt XEM mẫu gốc (N2)
 
       // NHƯỜNG 2 KHUNG HÌNH cho trình duyệt VẼ XONG canvas, RỒI mới dựng "máy sửa"
       // (bảng chữ + bảng màu + click-to-edit). Mẫu nặng (~2.6MB) nhờ vậy HIỆN NGAY;
@@ -1540,6 +1541,15 @@ function flashButton(btn, text) {
 // "download mới biết sale dùng THẬT". Best-effort, KHÔNG chặn luồng (auth.js nuốt lỗi).
 function ghiTaiXuong(label, detail) {
   if (window.TSTAuth && TSTAuth.logUsage) TSTAuth.logUsage('download', label, detail);
+}
+
+// Ghi 1 lượt XEM mẫu gốc (kind='view') → tab Đo lường xếp hạng "mẫu chạy nhiều nhất" (N2).
+// label = tên sạch của mẫu ("Max-Funded Allianz"). Throttle 15'/mẫu nằm trong logUsage.
+function ghiXemMau(fileInfo) {
+  try {
+    const ten = (typeof tachTenMau === 'function' && tachTenMau(fileInfo).day) || (fileInfo && fileInfo.name) || 'Mẫu';
+    if (window.TSTAuth && TSTAuth.logUsage) TSTAuth.logUsage('view', ten);
+  } catch (e) { /* nuốt lỗi — đo lường không được chặn mở mẫu */ }
 }
 
 // Chụp GIÁ TRỊ sale đã điền lúc xuất (Cách A) — để super_admin bấm 👁 xem "điền đủ chưa".

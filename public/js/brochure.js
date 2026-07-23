@@ -254,6 +254,10 @@ function openLibraryItem(item) {
   // đội sale đọc "NLG IUL" chứ không cần biết định dạng. Tên file thật giữ nguyên.
   const tenSach = String(item.name).replace(/\.(jpe?g|png|pdf|svg|webp)$/i, '');
 
+  // Đo lường: 1 lượt XEM brochure/tài liệu (kind='view', N2). "Tài liệu:" khớp nhãn download →
+  // xếp hạng "chạy nhiều nhất" nhóm gọn. Throttle 15'/tài liệu nằm trong logUsage. Best-effort.
+  if (window.TSTAuth && TSTAuth.logUsage) TSTAuth.logUsage('view', 'Tài liệu: ' + tenSach);
+
   if (dom.activeFileTitle) {
     dom.activeFileTitle.textContent = tenSach;
     dom.activeFileTitle.classList.add('is-active');
