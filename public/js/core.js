@@ -1543,6 +1543,17 @@ function ghiTaiXuong(label, detail) {
   if (window.TSTAuth && TSTAuth.logUsage) TSTAuth.logUsage('download', label, detail);
 }
 
+// Như trên, NHƯNG kèm ảnh xem nhanh của đúng bản vừa xuất (27/07 — chủ tool muốn
+// mở lại xem "bản được tải về"). File tải về máy sale ĐÃ xong trước khi gọi hàm này;
+// upload chậm hay hỏng cũng không ảnh hưởng gì tới việc xuất.
+function ghiTaiXuongKemAnh(label, detail, canvas) {
+  if (!(window.TSTAuth && TSTAuth.logUsage)) return;
+  if (!TSTAuth.luuAnhBanXuat) { TSTAuth.logUsage('download', label, detail); return; }
+  TSTAuth.luuAnhBanXuat(canvas)
+    .then(function (duongDan) { TSTAuth.logUsage('download', label, detail, duongDan); })
+    .catch(function () { TSTAuth.logUsage('download', label, detail); });
+}
+
 // Ghi 1 lượt XEM mẫu gốc (kind='view') → tab Đo lường xếp hạng "mẫu chạy nhiều nhất" (N2).
 // label = tên sạch của mẫu ("Max-Funded Allianz"). Throttle 15'/mẫu nằm trong logUsage.
 function ghiXemMau(fileInfo) {
@@ -1585,7 +1596,7 @@ async function exportToJpeg() {
     link.click();
     document.body.removeChild(link);
 
-    ghiTaiXuong(`${getProposalBaseName()} · JPEG`, chupThongTinDaDien());
+    ghiTaiXuongKemAnh(`${getProposalBaseName()} · JPEG`, chupThongTinDaDien(), canvas);
     updateStatus(`Đã xuất và tải xuống ảnh JPEG: ${jpgName}`);
   }, '#ffffff');
 }
@@ -1642,7 +1653,7 @@ async function exportToPdf() {
 
     const pdfName = `${getProposalBaseName()}.pdf`;
     pdf.save(pdfName);
-    ghiTaiXuong(`${getProposalBaseName()} · PDF`, chupThongTinDaDien());
+    ghiTaiXuongKemAnh(`${getProposalBaseName()} · PDF`, chupThongTinDaDien(), canvas);
     updateStatus(`Đã xuất PDF: ${pdfName}`);
   }, '#ffffff');
 }

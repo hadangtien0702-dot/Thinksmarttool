@@ -1624,32 +1624,42 @@ button:active, .btn:active, .icon-btn:active, .sidebar-nav a:active, .sidebar-fo
 .ms-tab:hover { color: var(--text); }
 .ms-tab.is-on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-xs); }
 
-/* Thẻ số hôm nay — mượn dáng .stat-card */
-.usage-cards {
-  display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  margin-bottom: 18px;
+/* Dải số liệu — MỘT nguồn duy nhất, đổi theo khoảng đang chọn (gọn 27/07).
+   Thay cho 4 thẻ "Hôm nay" (3 dòng chữ, số 30px) + danh sách "Trong khoảng này"
+   ở cột phải: hai chỗ cùng tên chỉ số khác khoảng thời gian → đọc dễ nhầm. */
+.usage-stats {
+  display: grid; gap: 10px; grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-bottom: 12px;
 }
-.usage-card {
-  display: flex; flex-direction: column; gap: 4px;
+.ustat {
+  display: flex; flex-direction: column; gap: 2px; min-width: 0;
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--r-lg); padding: 16px 18px; box-shadow: var(--shadow-xs);
+  border-radius: var(--r-lg); padding: 10px 14px; box-shadow: var(--shadow-xs);
 }
-.usage-card-label { font-size: var(--fs-xs); font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.4px; }
-.usage-card-value { font-size: 30px; font-weight: 800; color: var(--text); line-height: 1.1; font-variant-numeric: tabular-nums; }
-.usage-card-sub { font-size: var(--fs-sm); color: var(--text-2); }
+.ustat-k {
+  font-size: var(--fs-xs); font-weight: 700; color: var(--text-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ustat-v { font-size: 22px; font-weight: 800; color: var(--text); line-height: 1.15; font-variant-numeric: tabular-nums; }
+.ustat-v.is-ok { color: var(--success); }
+/* Ô "Tải về" bấm được → popup chi tiết (giữ hành vi cũ của .ms-row-btn) */
+.ustat-btn { font: inherit; text-align: left; cursor: pointer; transition: border-color var(--dur) var(--ease); }
+.ustat-btn:hover { border-color: var(--brand); }
+.ustat-btn:hover .ms-row-more { color: var(--brand); transform: translateX(2px); }
+.ustat-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
 /* Khối biểu đồ + bảng */
 .usage-block {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--r-xl); padding: 18px 20px; box-shadow: var(--shadow-xs);
-  margin-bottom: 16px;
+  border-radius: var(--r-xl); padding: 14px 16px; box-shadow: var(--shadow-xs);
+  margin-bottom: 12px;
 }
-.usage-block-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.usage-block-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
 .usage-block-head h2 { font-size: var(--fs-md); font-weight: 800; letter-spacing: -0.2px; }
 .usage-hint { font-size: var(--fs-sm); color: var(--text-3); }
 
 /* Biểu đồ cột 14 ngày (thuần CSS, không thư viện) */
-.usage-chart { display: flex; align-items: stretch; gap: 6px; height: 150px; }
+.usage-chart { display: flex; align-items: stretch; gap: 6px; height: 132px; }
 .uc-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .uc-barwrap { flex: 1; width: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
 .uc-n { font-size: var(--fs-xs); font-weight: 700; color: var(--text-2); font-variant-numeric: tabular-nums; margin-bottom: 3px; min-height: 14px; }
@@ -1661,12 +1671,17 @@ button:active, .btn:active, .icon-btn:active, .sidebar-nav a:active, .sidebar-fo
 .uc-bar.is-zero { background: var(--surface-3); }
 .uc-x { font-size: var(--fs-xs); color: var(--text-3); font-variant-numeric: tabular-nums; }
 
-/* Bảng theo người — grid 5 cột */
+/* Bảng theo người — 7 cột. Tên tiếng Anh và Phòng ban có CỘT RIÊNG (27/07): dán chúng
+   sau tên thì tên dài ngắn khác nhau kéo chúng lệch mỗi hàng một chỗ, mắt không dóng
+   được — chủ tool gọi là "rối". Mọi cột trừ cột tên đều CỐ ĐỊNH px vì giá trị luôn ngắn
+   ("Henry", "Sale", "7 giờ trước", "3"); chỗ dư dồn hết cho cột tên. */
 .usage-thead, .usage-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.9fr) minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 0.7fr) minmax(0, 0.7fr);
+  grid-template-columns: minmax(0, 1fr) 130px 74px 132px 132px 76px 76px;
   gap: 12px; align-items: center;
 }
+.usage-row .ur-en, .usage-row .ur-pb { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ur-trong { color: var(--text-3); }
 /* Cột "Tải về" = tín hiệu dùng THẬT → làm nổi (chủ tool 23/07) */
 .usage-row .ur-dl { font-weight: 800; color: var(--brand); }
 .usage-thead {
@@ -1675,14 +1690,19 @@ button:active, .btn:active, .icon-btn:active, .sidebar-nav a:active, .sidebar-fo
 }
 .usage-thead .ta-right, .usage-row .ta-right { text-align: right; }
 .usage-row {
-  padding: 12px; border-bottom: 1px solid var(--divider);
+  padding: 8px 12px; border-bottom: 1px solid var(--divider);
   font-size: var(--fs-sm); color: var(--text-2); font-variant-numeric: tabular-nums;
 }
 .usage-row:last-child { border-bottom: none; }
 .usage-row .ur-name {
   font-weight: 600; color: var(--text);
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  min-width: 0; display: flex; align-items: center; gap: 8px;
 }
+/* Tên co lại và cắt bằng "…" — chip phòng ban KHÔNG được co (flex: 0 0 auto) */
+.ur-nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Tên tiếng Anh (suy từ email công ty) — phụ hoạ cho tên tiếng Việt, KHÔNG to ngang
+   tên chính. Không bọc nền để mắt không đọc nhầm thành chip. */
+.ur-en { font-size: var(--fs-sm); font-weight: 600; color: var(--brand); }
 .ur-never { color: var(--text-3); font-style: italic; }
 
 /* Mobile ≤760px: bảng theo người xếp dọc như thẻ (giống .member-row) */
@@ -1698,33 +1718,58 @@ button:active, .btn:active, .icon-btn:active, .sidebar-nav a:active, .sidebar-fo
     content: attr(data-label); color: var(--text-3); font-weight: 600;
     font-size: var(--fs-xs); text-align: left; flex: 0 0 auto;
   }
-  .usage-row .ur-name { white-space: normal; }
+  .usage-row .ur-nm { white-space: normal; }
+  /* Tên + chip phòng ban là MỘT cụm → đẩy cả cụm sang phải, không để space-between
+     bắn chip ra xa tên (hàng có 3 con: nhãn ::before, tên, chip). */
+  .usage-row .ur-name::before { margin-right: auto; }
   .usage-row .ta-right { text-align: right; }
 }
 
-/* Bố cục 2 cột tab Đo lường: trái = biểu đồ + bảng, phải = hộp chọn ngày (mượn .members-layout) */
-.usage-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
-.usage-main { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
-.usage-main .usage-block { margin-bottom: 0; }
-.usage-side { min-width: 0; }
-
-/* Hộp "Xem theo ngày" — dùng .ms-panel sẵn có, thêm phần chọn ngày */
-.usage-picker { display: flex; flex-direction: column; gap: 10px; padding: 2px 0 4px; }
-.up-field { display: flex; flex-direction: column; gap: 5px; }
-.up-field > span { font-size: var(--fs-xs); font-weight: 700; color: var(--text-3); }
-.up-field input[type="date"] {
-  width: 100%; min-height: 40px; padding: 0 12px;
+/* Hàng điều khiển: đang online (trái) + chọn khoảng ngày (phải) trên CÙNG một dòng.
+   Trước 27/07 hộp chọn ngày là cột phải 300px chạy suốt trang → hết nội dung ở ~2/3,
+   phần còn lại là khoảng trắng. Bỏ cột đó, biểu đồ/bảng lấy lại toàn bộ bề ngang. */
+.usage-bar { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; margin-bottom: 12px; }
+.usage-bar .online-bar { width: auto; flex: 0 1 auto; padding: 9px 14px; }
+.usage-bar .online-bar-more { margin-left: 6px; }
+/* Bộ chọn khoảng: dòng cuối TRONG khối biểu đồ (27/07). Đặt cạnh thứ nó điều khiển,
+   và lấp đúng vùng trống mà chủ tool chỉ ra. Có vạch ngăn để không dính vào cột. */
+.usage-filter {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  justify-content: space-between;
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--divider);
+}
+.up-sep { color: var(--text-3); font-weight: 700; margin: 0 -2px; }
+.up-inline { display: inline-flex; align-items: center; gap: 6px; }
+.up-inline input[type="date"] {
+  min-height: 36px; padding: 0 10px;
   border: 1px solid var(--border); border-radius: var(--r-md);
   background: var(--surface-2); color: var(--text);
   font-family: inherit; font-size: var(--fs-sm); cursor: pointer;
   color-scheme: light;
   transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
-body.dark-theme .up-field input[type="date"] { color-scheme: dark; }
-.up-field input[type="date"]:hover { border-color: var(--border-strong); }
-.up-field input[type="date"]:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-ring); background: var(--surface); }
-.usage-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
-.usage-presets .btn { flex: 1 1 auto; }
+body.dark-theme .up-inline input[type="date"] { color-scheme: dark; }
+.up-inline input[type="date"]:hover { border-color: var(--border-strong); }
+.up-inline input[type="date"]:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-ring); background: var(--surface); }
+/* Preset nằm ngang nên KHÔNG giãn đều nữa (cột 300px cũ mới cần flex:1 → vỡ 3+1 hàng) */
+.usage-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* Biểu đồ | Top mẫu nằm ngang hàng. align-items:start để khối thấp không bị kéo cao
+   theo khối cao — mỗi khối giữ đúng chiều cao nội dung của nó. */
+/* align-items để MẶC ĐỊNH (stretch): hai khối luôn cao BẰNG NHAU. Dùng `start` thì
+   khối biểu đồ giữ nguyên chiều cao nội dung → đáy cột trái hụt so với cột phải,
+   đẻ ra một mảng trắng to (đo được 195px) — chủ tool 27/07: "phần này trống nhìn kỳ". */
+.usage-grid {
+  display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 12px; margin-bottom: 12px;
+}
+.usage-grid .usage-block { margin-bottom: 0; display: flex; flex-direction: column; }
+/* Biểu đồ ĂN HẾT chiều cao còn thừa của khối thay vì cố định px → cột trái luôn đầy,
+   và biểu đồ càng cao càng dễ đọc. min-height để lúc "Top" ngắn thì cột cũng không bẹp.
+   Về 1 cột (≤1100px) trả lại 132px cố định, vì lúc đó cao thêm là trang dài thêm thật. */
+@media (min-width: 1101px) {
+  .usage-grid .usage-chart { height: auto; flex: 1 1 auto; min-height: 160px; }
+}
 
 /* Dòng "Tải về" bấm được (mở popup chi tiết) — trông như .ms-row nhưng là button */
 .ms-row-btn {
@@ -1735,9 +1780,50 @@ body.dark-theme .up-field input[type="date"] { color-scheme: dark; }
 .ms-row-btn:hover .ms-row-more { color: var(--brand); transform: translateX(2px); }
 .ms-row-more { color: var(--text-3); font-weight: 800; display: inline-block; transition: transform var(--dur) var(--ease), color var(--dur) var(--ease); }
 
-/* Bảng trong popup "Chi tiết tải về" */
-.dl-thead, .dl-row {
-  display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.5fr) minmax(0, 0.7fr) 44px;
+/* Popup "Chi tiết tải về" — ô tìm + danh sách gộp theo người (27/07) */
+/* Dòng giải thích vì sao lượt cũ chưa có ảnh — rỗng thì biến mất hẳn, không chừa chỗ */
+.dl-note { font-size: var(--fs-xs); color: var(--text-3); margin-bottom: 10px; line-height: 1.5; }
+.dl-note:empty { display: none; }
+.dl-search { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.dl-search .mem-search { flex: 1 1 auto; }
+.dl-hit { font-size: var(--fs-xs); color: var(--text-3); white-space: nowrap; }
+
+/* Một người = một dòng bấm được; danh sách lượt tải của họ nằm trong .dl-per-body */
+.dl-group { border-bottom: 1px solid var(--divider); }
+.dl-group:last-child { border-bottom: none; }
+/* Hàng người: GRID cột cố định, không phải flex (27/07). Flex thì tên dài ngắn khác
+   nhau đẩy "tên tiếng Anh" và "N lượt" lệch mỗi hàng một chỗ → chủ tool gọi là rối. */
+.dl-per {
+  width: 100%; display: grid; align-items: center; gap: 10px;
+  /* Cột cuối phải là px CỐ ĐỊNH, KHÔNG được max-content: mỗi .dl-per là một lưới riêng,
+     mà "gần nhất 7 giờ trước" ngắn hơn "gần nhất 3 ngày trước" → max-content cho ra bề
+     rộng khác nhau ở từng hàng, kéo lệch tất cả cột phía trước (đo được 5 mép khác nhau). */
+  grid-template-columns: 14px minmax(0, 1fr) 132px 72px 150px;
+  padding: 10px 8px; border: none; background: transparent; font: inherit;
+  text-align: left; cursor: pointer; border-radius: var(--r-sm);
+}
+.dl-per:hover { background: var(--surface-2); }
+.dl-per:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.dl-per-caret {
+  flex: 0 0 auto; color: var(--text-3); font-weight: 800; width: 12px;
+  transition: transform var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.dl-per.is-open .dl-per-caret { transform: rotate(90deg); color: var(--brand); }
+.dl-per-name { font-weight: 600; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dl-per-en {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: var(--fs-sm); font-weight: 600; color: var(--brand);
+}
+.dl-per-n {
+  justify-self: start; font-size: var(--fs-xs); font-weight: 800; white-space: nowrap;
+  background: var(--brand-soft); color: var(--brand); padding: 2px 8px; border-radius: 999px;
+}
+.dl-per-when { justify-self: end; font-size: var(--fs-xs); color: var(--text-3); white-space: nowrap; }
+.dl-per-body { padding: 0 8px 8px 30px; }
+
+/* Hàng lượt tải (trong nhóm) — bỏ cột "Thành viên" vì đã nằm ở dòng người bên trên */
+.dl-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) 110px 44px;
   gap: 12px; align-items: center;
 }
 /* 👁 xem "sale đã điền gì" + khối chi tiết bung ra */
@@ -1747,44 +1833,66 @@ body.dark-theme .up-field input[type="date"] { color-scheme: dark; }
 .dl-detail {
   margin: 2px 6px 10px; padding: 10px 12px;
   background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-md);
-  display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px;
+  display: block;
 }
+/* Bảng giá trị đã điền: 2 cột như cũ, nhưng nay là phần PHỤ nằm dưới ảnh (27/07) */
+.dl-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; }
+.dl-fields.is-phu { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--divider); }
+.dl-fields-head {
+  grid-column: 1 / -1; font-size: var(--fs-xs); font-weight: 700;
+  color: var(--text-3); text-transform: uppercase; letter-spacing: .4px;
+}
+/* Ảnh bản đã tải — thứ chính khi bấm 👁 */
+.dl-anh { display: flex; justify-content: center; }
+.dl-anh img {
+  max-width: 100%; height: auto; display: block;
+  border: 1px solid var(--border); border-radius: var(--r-sm); background: #fff;
+}
+.dl-anh-cho { font-size: var(--fs-sm); color: var(--text-3); padding: 14px 0; text-align: center; }
+/* 🔑 BẮT BUỘC: `display:grid` ở trên là SELECTOR CLASS nên THẮNG `[hidden]` của trình
+   duyệt (chỉ là selector thuộc tính). Thiếu dòng này thì mọi khối chi tiết luôn mở
+   sẵn và bấm 👁 không đổi gì trên màn hình — đúng lỗi chủ tool báo 27/07. */
+.dl-detail[hidden], .dl-per-body[hidden] { display: none; }
 .dl-f { display: flex; justify-content: space-between; gap: 10px; font-size: var(--fs-sm); border-bottom: 1px solid var(--divider); padding-bottom: 4px; min-width: 0; }
 .dl-f-k { color: var(--text-3); flex: 0 0 auto; }
 .dl-f-v { color: var(--text); font-weight: 600; text-align: right; min-width: 0; word-break: break-word; }
-@media (max-width: 640px) { .dl-detail { grid-template-columns: 1fr; } }
-.dl-thead {
-  padding: 0 6px 8px; font-size: var(--fs-xs); font-weight: 700; color: var(--text-3);
-  text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--divider);
-}
-.dl-thead .ta-right, .dl-row .ta-right { text-align: right; }
+@media (max-width: 640px) { .dl-fields { grid-template-columns: 1fr; } }
+/* .dl-thead đã bỏ 27/07: danh sách gộp theo người thì một hàng tiêu đề chung
+   không còn khớp với cấu trúc nữa (mỗi nhóm có danh sách riêng). */
+.dl-row .ta-right { text-align: right; }
 .dl-row {
-  padding: 10px 6px; border-bottom: 1px solid var(--divider);
+  padding: 7px 6px; border-bottom: 1px solid var(--divider);
   font-size: var(--fs-sm); color: var(--text-2);
 }
-.dl-row:last-child { border-bottom: none; }
-.dl-row .dl-who { font-weight: 600; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dl-row .dl-what { min-width: 0; word-break: break-word; }
+.dl-item:last-child .dl-row { border-bottom: none; }
+.dl-row .dl-what { min-width: 0; word-break: break-word; color: var(--text); }
 #dl-rows { max-height: 52vh; overflow: auto; }
 
 @media (max-width: 640px) {
-  .dl-thead { display: none; }
   .dl-row {
     grid-template-columns: 1fr; gap: 4px;
     border: 1px solid var(--border); border-radius: var(--r-md); padding: 10px 12px; margin-bottom: 8px;
   }
   .dl-row > span { display: flex; justify-content: space-between; gap: 12px; text-align: right; }
   .dl-row > span::before { content: attr(data-label); color: var(--text-3); font-weight: 600; font-size: var(--fs-xs); text-align: left; }
-  .dl-row .dl-who { white-space: normal; }
   .dl-row .ta-right { text-align: right; }
+  .dl-per-body { padding-left: 12px; }
+  .dl-search { flex-wrap: wrap; }
 }
 
-@media (max-width: 900px) {
-  .usage-layout { grid-template-columns: 1fr; }
+/* Màn hẹp: dải số liệu tự xuống hàng, biểu đồ/top mẫu về 1 cột, thanh lọc trải rộng */
+@media (max-width: 1100px) {
+  .usage-stats { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .usage-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .usage-bar .online-bar { width: 100%; }
+  .usage-filter { margin-left: 0; width: 100%; }
+  .usage-presets { flex: 1 1 100%; }
+  .usage-presets .btn { flex: 1 1 auto; }
 }
 
 /* ── ĐANG ONLINE (N3) — thanh tóm tắt (bấm → modal chi tiết) ────────── */
-.online-wrap { margin-bottom: 16px; }
 .online-bar {
   display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap; width: 100%;
   border: 1px solid var(--border); border-radius: var(--r-md);
@@ -1844,7 +1952,7 @@ body.dark-theme .up-field input[type="date"] { color-scheme: dark; }
 .usage-top { display: flex; flex-direction: column; }
 .top-row {
   display: grid; grid-template-columns: 26px minmax(0, 1.3fr) minmax(60px, 1fr) 34px;
-  align-items: center; gap: 10px; padding: 8px 2px;
+  align-items: center; gap: 10px; padding: 6px 2px;
   border-bottom: 1px solid var(--divider);
 }
 .top-row:last-child { border-bottom: none; }
@@ -1860,12 +1968,19 @@ body.dark-theme .up-field input[type="date"] { color-scheme: dark; }
   font-weight: 600; color: var(--text); font-size: var(--fs-sm);
   display: flex; align-items: center; gap: 8px;
 }
+/* Nhãn loại: gọi ĐÚNG TÊN SẢN PHẨM (Proposal / Brochure / Name Card / So sánh) —
+   chủ tool 27/07. Bỏ text-transform: viết hoa toàn bộ làm tên riêng khó đọc hơn. */
 .top-tag {
-  flex: 0 0 auto; font-size: 10px; font-weight: 800; letter-spacing: .02em;
-  padding: 2px 6px; border-radius: 5px; text-transform: uppercase;
+  flex: 0 0 auto; font-size: 11px; font-weight: 800; letter-spacing: .01em;
+  padding: 2px 7px; border-radius: 5px; white-space: nowrap;
 }
-.top-tag-mau { background: var(--brand-soft); color: var(--brand); }
-.top-tag-doc { background: var(--surface-3); color: var(--text-2); }
+.top-tag-mau { background: var(--brand-soft); color: var(--brand); }          /* Proposal */
+.top-tag-doc { background: var(--surface-3); color: var(--text-2); }          /* Brochure */
+/* Màu chữ lấy từ bộ ĐÃ ĐO ĐẠT AA (xem ghi chú ở .btn-warn-outline), không dùng
+   thẳng token --warning (đo 22/07 chỉ 3.62 trên nền sáng). */
+.top-tag-nc { background: var(--warning-soft); color: #96590A; }              /* Name Card */
+.top-tag-ss { background: var(--success-soft); color: var(--success); }       /* Bảng so sánh */
+body.dark-theme .top-tag-nc { color: #E9A23B; }
 .top-barwrap { height: 8px; background: var(--surface-3); border-radius: 999px; overflow: hidden; min-width: 0; }
 .top-bar { display: block; height: 100%; background: var(--brand); border-radius: 999px; }
 .top-n { text-align: right; font-weight: 800; color: var(--text); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }

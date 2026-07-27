@@ -796,13 +796,28 @@
     });
     // Bấm dòng "Tải về" → popup chi tiết tải gì
     $('uk-download-row').addEventListener('click', moChiTietTaiVe);
-    // Bấm 👁 → bung/gập khối "sale đã điền gì"
+    // Bấm tên người → bung/gập danh sách lượt tải của người đó; bấm 👁 → bung "đã điền gì"
     $('dl-rows').addEventListener('click', function (e) {
+      const per = e.target.closest('.dl-per');
+      if (per) {
+        const than = per.nextElementSibling;
+        if (!than) return;
+        const mo = than.hidden;              // đang đóng → mở
+        than.hidden = !mo;
+        per.setAttribute('aria-expanded', String(mo));
+        per.classList.toggle('is-open', mo);
+        return;
+      }
       const b = e.target.closest('.dl-eye');
       if (!b) return;
-      const d = $('dl-detail-' + b.getAttribute('data-idx'));
-      if (d) { d.hidden = !d.hidden; b.classList.toggle('is-open', !d.hidden); }
+      const idx = b.getAttribute('data-idx');
+      const d = $('dl-detail-' + idx);
+      if (!d) return;
+      d.hidden = !d.hidden;
+      b.classList.toggle('is-open', !d.hidden);
+      if (!d.hidden) napAnhBanXuat(idx, b.getAttribute('data-anh'));
     });
+    $('dl-search').addEventListener('input', locChiTietTaiVe);
     $('dl-close').addEventListener('click', dongChiTietTaiVe);
     $('dl-backdrop').addEventListener('click', function (e) { if (e.target === $('dl-backdrop')) dongChiTietTaiVe(); });
     // Thanh "đang online" → mở modal chi tiết
@@ -943,8 +958,12 @@
     const msg = $('usage-msg');
     msg.style.display = 'none';
     const from90 = new Date(Date.now() - 90 * NGAY_MS).toISOString();  // nạp 90 ngày, lọc khoảng ở client
-    // Kèm 'label' (tải gì) + 'detail' (đã điền gì) — cột mới; chưa chạy SQL thì tự lùi dần.
-    let resp = await sb.from('usage_events').select('user_id, kind, at, label, detail').gte('at', from90).order('at', { ascending: false });
+    // Kèm 'label' (tải gì) + 'detail' (đã điền gì) + 'anh' (ảnh bản đã xuất) — cột thêm dần
+    // qua các đợt; chưa chạy SQL thì TỰ LÙI về bộ cột cũ để trang vẫn chạy, không trắng.
+    let resp = await sb.from('usage_events').select('user_id, kind, at, label, detail, anh').gte('at', from90).order('at', { ascending: false });
+    if (resp.error && /(label|detail|anh|column)/i.test(resp.error.message || '')) {
+      resp = await sb.from('usage_events').select('user_id, kind, at, label, detail').gte('at', from90).order('at', { ascending: false });
+    }
     if (resp.error && /(label|detail|column)/i.test(resp.error.message || '')) {
       resp = await sb.from('usage_events').select('user_id, kind, at, label').gte('at', from90).order('at', { ascending: false });
       if (resp.error) {
@@ -966,29 +985,12 @@
       usageEvents = data || [];
     }
 
-    veThe(usageEvents);   // 3 thẻ Hôm nay/7 ngày (cố định, không đổi theo khoảng)
+    // 27/07: bỏ veThe() + 4 thẻ "Hôm nay" cố định — số liệu giờ CHỈ hiện ở dải
+    // .usage-stats và đổi theo khoảng đang chọn (preset "Hôm nay" cho lại đúng
+    // con số cũ). Gỡ phần tử khỏi HTML thì phải gỡ luôn chỗ JS ghi vào nó.
+    await taiBanDoThuVien();   // cần TRƯỚC veTopMau: tra đường dẫn để gắn đúng nhãn Brochure/So sánh
     khoiTaoKhoang();      // đặt khoảng mặc định 14 ngày + min/max cho ô ngày
     apDungKhoang();       // lọc theo khoảng → số tổng + biểu đồ + bảng
-  }
-
-  // 3 thẻ liếc-nhanh (cố định Hôm nay / 7 ngày) — KHÔNG đổi theo khoảng đã chọn.
-  function veThe(events) {
-    const now = new Date();
-    const dauHomNay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const dau7 = dauHomNay - 6 * NGAY_MS;
-    const loginHomNay = new Set(), toolHomNay = new Set(), active7 = new Set();
-    let dlHomNay = 0;   // TẢI VỀ đếm theo LƯỢT (mỗi lần xuất/tải = 1), không theo người
-    events.forEach(function (e) {
-      const t = new Date(e.at).getTime();
-      if (e.kind === 'login' && t >= dauHomNay) loginHomNay.add(e.user_id);
-      if (e.kind === 'open_tool' && t >= dauHomNay) toolHomNay.add(e.user_id);
-      if (e.kind === 'download' && t >= dauHomNay) dlHomNay++;
-      if (t >= dau7) active7.add(e.user_id);
-    });
-    $('uc-login-today').textContent = loginHomNay.size;
-    $('uc-tool-today').textContent = toolHomNay.size;
-    $('uc-download-today').textContent = dlHomNay;
-    $('uc-active-7d').textContent = active7.size;
   }
 
   // Đặt khoảng mặc định 14 ngày (lần đầu) + giới hạn ô ngày trong 90 ngày đã nạp.
@@ -1055,14 +1057,34 @@
     $('uk-active').textContent = act.size;
 
     const soNgay = Math.round((batDauNgay(khoangTo).getTime() - batDauNgay(khoangFrom).getTime()) / NGAY_MS) + 1;
-    $('usage-chart-range').textContent = fmtNgay(khoangFrom) + ' – ' + fmtNgay(khoangTo) + ' · ' + soNgay + ' ngày';
+    // Bộ chọn ngày nằm trong khối này nhưng lọc CẢ TRANG → phải nói ra, kẻo tưởng
+    // nó chỉ đổi mỗi biểu đồ (chủ tool 27/07 dời bộ chọn xuống đây).
+    $('usage-chart-range').textContent = fmtNgay(khoangFrom) + ' – ' + fmtNgay(khoangTo) +
+      ' · ' + soNgay + ' ngày · khoảng này áp dụng cho cả trang';
 
     veBieuDoKhoang(theoNgay, khoangFrom, soNgay);
     veTopMau(theoMau);
     veBangNguoi(theoNguoi, pmap);
   }
 
-  // Xếp hạng "mẫu / brochure chạy nhiều nhất" trong khoảng (N2). Đếm theo label sự kiện 'view'.
+  // Gọi ĐÚNG TÊN SẢN PHẨM (chủ tool 27/07: "mẫu và tài liệu là gì, phải để Brochure
+  // hoặc Proposal thì anh mới biết"). KHÔNG đổi mù: 'Mẫu' cũ gộp cả "Sale Name Card"
+  // (không phải Proposal), 'Tài liệu' cũ gộp cả bảng so sánh quyền lợi. Với tài liệu
+  // thì tra ĐƯỜNG DẪN thật trong thư viện để biết nó nằm ở mục nào.
+  function phanLoai(nhan, laTaiLieu) {
+    if (laTaiLieu) {
+      const ten = String(nhan).replace(/^Tài liệu:\s*/, '').trim();
+      const duongDan = (thuVienMap && thuVienMap[ten]) || '';
+      if (/^Bang so sanh/i.test(duongDan)) return { ten: 'So sánh', cls: 'top-tag-ss' };
+      if (/^Brochure\//i.test(duongDan)) return { ten: 'Brochure', cls: 'top-tag-doc' };
+      return { ten: 'Brochure', cls: 'top-tag-doc' };   // chưa tra được thì vẫn là thư viện tải về
+    }
+    // Mẫu mở trong Tool: Name Card là loại riêng, còn lại là Proposal (báo giá)
+    if (/name\s*card/i.test(nhan)) return { ten: 'Name Card', cls: 'top-tag-nc' };
+    return { ten: 'Proposal', cls: 'top-tag-mau' };
+  }
+
+  // Xếp hạng "Proposal / Brochure chạy nhiều nhất" trong khoảng (N2). Đếm theo label 'view'.
   function veTopMau(theoMau) {
     const arr = Object.keys(theoMau)
       .map(function (k) { return { ten: k, n: theoMau[k] }; })
@@ -1079,7 +1101,8 @@
       const pct = Math.max(Math.round((m.n / max) * 100), 4);
       const laTaiLieu = /^Tài liệu:/.test(m.ten);
       const ten = esc(laTaiLieu ? m.ten.replace(/^Tài liệu:\s*/, '') : m.ten);
-      const tag = laTaiLieu ? '<span class="top-tag top-tag-doc">Tài liệu</span>' : '<span class="top-tag top-tag-mau">Mẫu</span>';
+      const loai = phanLoai(m.ten, laTaiLieu);
+      const tag = '<span class="top-tag ' + loai.cls + '">' + loai.ten + '</span>';
       return '<div class="top-row">' +
         '<span class="top-rank' + (i < 3 ? ' is-top' : '') + '">' + (i + 1) + '</span>' +
         '<span class="top-name" title="' + ten + '">' + tag + ten + '</span>' +
@@ -1116,6 +1139,27 @@
     }).join('');
   }
 
+  // Tên tiếng Anh của sale = PHẦN TRƯỚC @ của email công ty (chủ tool 27/07 chỉ vào danh
+  // sách thành viên: henry@ = Mai Thành Trọng, casey@ = Nguyễn Vũ Yến Nhi, tommy@ = Huỳnh
+  // Thanh Long). DB không có trường riêng nên suy từ email. Hai chốt chặn:
+  //  (1) CHỈ email công ty — email cá nhân (gmail) phần trước @ là chuỗi vô nghĩa
+  //      ("xuanthuongqtkd"), hiện ra chỉ tổ rối;
+  //  (2) trùng với tên tiếng Việt rồi thì thôi (celine@ ↔ "Celine Nguyen" — không nói 2 lần).
+  const MAIL_CTY = '@thinksmartinsurance.com';
+  function tenTiengAnh(p) {
+    const mail = String((p && p.email) || '').toLowerCase();
+    if (mail.indexOf(MAIL_CTY) === -1) return '';
+    const local = mail.split('@')[0].replace(/[._-]+/g, ' ').trim();
+    if (!local) return '';
+    const goc = khongDau(String((p && p.full_name) || '')).replace(/\s+/g, '');
+    const canBo = local.replace(/\s+/g, '');
+    // Bỏ luôn kiểu email "chữ-cái-đầu + họ" (jhuynh ↔ "Hung Huynh") — đó là handle email,
+    // không phải tên tiếng Anh; hiện ra chỉ là nhiễu. Chặn ở độ dài >3 để tên ngắn thật
+    // (gus, ty…) không bị loại oan.
+    if (goc && (goc.indexOf(canBo) !== -1 || (canBo.length > 3 && goc.indexOf(canBo.slice(1)) !== -1))) return '';
+    return local.replace(/(^|\s)\S/g, function (c) { return c.toUpperCase(); });
+  }
+
   function veBangNguoi(theoNguoi, pmap) {
     const ids = Object.keys(theoNguoi);
     if (!ids.length) {
@@ -1128,14 +1172,25 @@
       return Math.max(theoNguoi[b].lastLogin, theoNguoi[b].lastTool) -
              Math.max(theoNguoi[a].lastLogin, theoNguoi[a].lastTool);
     });
-    $('usage-rows').innerHTML = ids.map(function (id) {
+    // Chỉ 10 người GẦN NHẤT (chủ tool 27/07). Cắt bớt thì PHẢI nói ra đang cắt bao nhiêu,
+    // không thì bảng trông như "cả đội chỉ có 10 người hoạt động".
+    const tong = ids.length;
+    const hien = ids.slice(0, 10);
+    $('usage-nguoi-hint').textContent = tong > hien.length
+      ? '10 người hoạt động gần nhất · còn ' + (tong - hien.length) + ' người nữa trong khoảng này'
+      : tong + ' người có hoạt động trong khoảng này';
+    $('usage-rows').innerHTML = hien.map(function (id) {
       const u = theoNguoi[id];
       const p = pmap[id] || {};
       const ten = esc(p.full_name || p.email || '(không rõ)');
-      const pb = esc(p.department || '—');
+      // Tên tiếng Anh + phòng ban để CỘT RIÊNG, không dán sau tên (chủ tool 27/07:
+      // "chia thành các cột, nhìn như này hơi rối"). Dán sau tên thì tên dài ngắn khác
+      // nhau kéo chúng lệch mỗi hàng một chỗ — mắt không có mốc nào để dóng theo.
+      const en = tenTiengAnh(p);
       return '<div class="usage-row">' +
-        '<span class="ur-name" data-label="Thành viên">' + ten + '</span>' +
-        '<span data-label="Phòng ban">' + pb + '</span>' +
+        '<span class="ur-name" data-label="Thành viên"><span class="ur-nm">' + ten + '</span></span>' +
+        '<span class="ur-en" data-label="Tên tiếng Anh">' + (en ? esc(en) : '<span class="ur-trong">—</span>') + '</span>' +
+        '<span class="ur-pb" data-label="Phòng ban">' + (p.department ? esc(p.department) : '<span class="ur-trong">—</span>') + '</span>' +
         '<span data-label="Đăng nhập gần nhất">' + thoiGianTuong(u.lastLogin) + '</span>' +
         '<span data-label="Mở tool gần nhất">' + thoiGianTuong(u.lastTool) + '</span>' +
         '<span class="ta-right" data-label="Mở tool">' + (u.tool || 0) + '</span>' +
@@ -1145,49 +1200,170 @@
   }
 
   // Popup "tải CÁI GÌ" — liệt kê sự kiện download trong khoảng đang chọn (chủ tool 23/07).
+  // Bản đồ "tên file → đường dẫn" của thư viện (Brochure / Bảng so sánh quyền lợi).
+  // Sự kiện download của brochure chỉ lưu TÊN file trong label ("Tài liệu: NLG IUL.jpg",
+  // xem main.js) nên muốn XEM lại đúng tài liệu thì phải tra ngược qua /api/library.
+  let thuVienMap = null;
+  async function taiBanDoThuVien() {
+    if (thuVienMap) return thuVienMap;
+    const map = {};
+    try {
+      const res = await fetch('/api/library');
+      const json = await res.json();
+      Object.keys(json.library || {}).forEach(function (mucLon) {
+        const nhom = json.library[mucLon] || {};
+        Object.keys(nhom).forEach(function (hang) {
+          (nhom[hang] || []).forEach(function (f) {
+            if (f && f.name && !map[f.name]) map[f.name] = f.path;
+          });
+        });
+      });
+      thuVienMap = map;   // chỉ cache khi đọc được, hỏng thì lần sau thử lại
+    } catch (e) { return map; }
+    return thuVienMap;
+  }
+
   function moChiTietTaiVe() {
     if (!khoangFrom || !khoangTo) return;
     const f = batDauNgay(khoangFrom).getTime();
     const t = batDauNgay(khoangTo).getTime() + NGAY_MS - 1;
     const pmap = {}; (toanBo || []).forEach(function (p) { pmap[p.id] = p; });
-    const rows = usageEvents
-      .filter(function (e) { const ts = new Date(e.at).getTime(); return e.kind === 'download' && ts >= f && ts <= t; })
+    const trongKhoang = usageEvents
+      .filter(function (e) { const ts = new Date(e.at).getTime(); return e.kind === 'download' && ts >= f && ts <= t; });
+    // CHỈ Proposal (chủ tool 27/07: "phần brochure thì anh không cần"). Brochure tải về
+    // chỉ là lấy nguyên file có sẵn — không có gì để soi; Proposal mới cho biết sale điền gì.
+    const rows = trongKhoang
+      .filter(function (e) { return !/^Tài liệu:/.test(e.label || ''); })
       .sort(function (a, b) { return new Date(b.at).getTime() - new Date(a.at).getTime(); });
+    const soBrochure = trongKhoang.length - rows.length;
 
-    $('dl-range').textContent = fmtNgay(khoangFrom) + ' – ' + fmtNgay(khoangTo) + ' · ' + rows.length + ' lượt tải';
+    // Số ở đây PHẢI khớp số dòng đang hiện, nếu không thì lệch với thẻ "Tải về" (đếm cả
+    // brochure) mà người xem không hiểu vì sao → nói thẳng phần bị ẩn.
+    const soCoAnh = rows.filter(function (e) { return !!e.anh; }).length;
+    $('dl-range').textContent = fmtNgay(khoangFrom) + ' – ' + fmtNgay(khoangTo) + ' · ' +
+      rows.length + ' lượt tải Proposal' + (soBrochure ? ' · ẩn ' + soBrochure + ' lượt tải Brochure' : '');
+    // Không nói ra thì bấm 👁 thấy bảng số liệu sẽ tưởng tính năng hỏng (chủ tool 27/07
+    // báo "chưa xem được"). Ảnh chỉ có với lượt xuất SAU khi bật lưu ảnh.
+    const ghiChu = $('dl-note');
+    if (!rows.length) { ghiChu.textContent = ''; }
+    else if (!soCoAnh) {
+      ghiChu.textContent = 'Chưa lượt nào có ảnh bản đã tải — ảnh chỉ lưu từ lúc bật tính năng ' +
+        '(27/07). Bấm 👁 ở các lượt cũ sẽ hiện thông tin sale đã điền.';
+    } else if (soCoAnh < rows.length) {
+      ghiChu.textContent = soCoAnh + '/' + rows.length + ' lượt có ảnh bản đã tải; số còn lại là lượt cũ, ' +
+        'bấm 👁 chỉ hiện thông tin đã điền.';
+    } else { ghiChu.textContent = ''; }
     if (!rows.length) {
       $('dl-rows').innerHTML = '';
       $('dl-empty').style.display = 'flex';
     } else {
       $('dl-empty').style.display = 'none';
-      $('dl-rows').innerHTML = rows.map(function (e, idx) {
-        const p = pmap[e.user_id] || {};
-        const ten = esc(p.full_name || p.email || '(không rõ)');
-        const nhan = e.label ? esc(e.label) : '<span class="ur-never">không rõ (bản cũ)</span>';
-        const coDetail = Array.isArray(e.detail) && e.detail.length;
-        const eye = coDetail
-          ? '<button type="button" class="dl-eye" data-idx="' + idx + '" title="Xem sale đã điền gì">👁</button>'
-          : '<span class="dl-eye-empty" title="Lượt cũ chưa lưu chi tiết">—</span>';
-        let chiTiet = '';
-        if (coDetail) {
-          chiTiet = '<div class="dl-detail" id="dl-detail-' + idx + '" hidden>' +
-            e.detail.map(function (f) {
-              return '<div class="dl-f"><span class="dl-f-k">' + esc(f.k) + '</span><span class="dl-f-v">' + esc(f.v) + '</span></div>';
-            }).join('') + '</div>';
-        }
-        return '<div class="dl-item">' +
-          '<div class="dl-row">' +
-            '<span class="dl-who" data-label="Thành viên">' + ten + '</span>' +
-            '<span class="dl-what" data-label="Tải gì">' + nhan + '</span>' +
-            '<span class="ta-right dl-when" data-label="Lúc">' + thoiGianTuong(new Date(e.at).getTime()) + '</span>' +
-            '<span class="ta-right dl-eye-cell">' + eye + '</span>' +
-          '</div>' + chiTiet +
+      // GỘP THEO TỪNG NGƯỜI (chủ tool 27/07: "làm gọn thành dropdown của từng người").
+      // Danh sách phẳng lặp tên một người 5–10 lần; gộp lại mỗi người 1 dòng, bung mới thấy.
+      // `rows` đã sort mới→cũ nên thứ tự trong nhóm và mốc "gần nhất" lấy luôn ds[0].
+      const nhomNguoi = {}; const thuTu = [];
+      rows.forEach(function (e) {
+        const k = e.user_id || 'khong-ro';
+        if (!nhomNguoi[k]) { nhomNguoi[k] = []; thuTu.push(k); }
+        nhomNguoi[k].push(e);
+      });
+      let idx = 0;
+      $('dl-rows').innerHTML = thuTu.map(function (k) {
+        const ds = nhomNguoi[k];
+        const p = pmap[k] || {};
+        const ten = p.full_name || p.email || '(không rõ)';
+        const en = tenTiengAnh(p);
+        const tim = [ten, en, p.email || ''];   // gom chữ để ô tìm khớp cả tên tiếng Anh lẫn tên khách
+
+        const than = ds.map(function (e) {
+          const myIdx = idx++;
+          const nhan = e.label ? esc(e.label) : '<span class="ur-never">không rõ (bản cũ)</span>';
+          const coDetail = Array.isArray(e.detail) && e.detail.length;
+          const coAnh = !!e.anh;
+          if (e.label) tim.push(e.label);
+          // 👁 = MỞ BẢN ĐÃ XUẤT (chủ tool 27/07). Lượt cũ chưa có ảnh thì lùi về bảng giá
+          // trị đã điền — có còn hơn không; hết cả hai mới là "—".
+          const eye = (coAnh || coDetail)
+            ? '<button type="button" class="dl-eye" data-idx="' + myIdx + '"' +
+              (coAnh ? ' data-anh="' + esc(e.anh) + '"' : '') +
+              ' title="' + (coAnh ? 'Xem bản đã tải về' : 'Bản cũ chưa lưu ảnh — xem giá trị đã điền') + '">👁</button>'
+            : '<span class="dl-eye-empty" title="Lượt xuất cũ, chưa lưu ảnh lẫn giá trị đã điền">—</span>';
+          let chiTiet = '';
+          if (coAnh || coDetail) {
+            // Ảnh nạp LƯỜI (lúc bấm mới xin link có hạn) — mở popup 50 dòng mà tải sẵn
+            // 50 ảnh thì vừa chậm vừa tốn băng thông của thứ chưa chắc ai xem.
+            const khungAnh = coAnh
+              ? '<div class="dl-anh" id="dl-anh-' + myIdx + '"><span class="dl-anh-cho">Đang mở bản đã tải…</span></div>'
+              : '';
+            const bangDaDien = coDetail
+              ? '<div class="dl-fields' + (coAnh ? ' is-phu' : '') + '">' +
+                (coAnh ? '<div class="dl-fields-head">Thông tin sale đã điền</div>' : '') +
+                e.detail.map(function (f) {
+                  tim.push(f.v);   // ⇒ gõ "Em Trang" là ra đúng người đã xuất bản đó
+                  return '<div class="dl-f"><span class="dl-f-k">' + esc(f.k) + '</span><span class="dl-f-v">' + esc(f.v) + '</span></div>';
+                }).join('') + '</div>'
+              : '';
+            chiTiet = '<div class="dl-detail" id="dl-detail-' + myIdx + '" hidden>' + khungAnh + bangDaDien + '</div>';
+          }
+          return '<div class="dl-item">' +
+            '<div class="dl-row">' +
+              '<span class="dl-what" data-label="Tải gì">' + nhan + '</span>' +
+              '<span class="ta-right dl-when" data-label="Lúc">' + thoiGianTuong(new Date(e.at).getTime()) + '</span>' +
+              '<span class="ta-right dl-eye-cell">' + eye + '</span>' +
+            '</div>' + chiTiet +
+          '</div>';
+        }).join('');
+
+        return '<div class="dl-group" data-tim="' + esc(khongDau(tim.join(' '))) + '" data-so="' + ds.length + '">' +
+          '<button type="button" class="dl-per" aria-expanded="false">' +
+            '<span class="dl-per-caret" aria-hidden="true">›</span>' +
+            '<span class="dl-per-name">' + esc(ten) + '</span>' +
+            '<span class="dl-per-en">' + (en ? esc(en) : '') + '</span>' +
+            '<span class="dl-per-n">' + ds.length + ' lượt</span>' +
+            '<span class="dl-per-when">gần nhất ' + thoiGianTuong(new Date(ds[0].at).getTime()) + '</span>' +
+          '</button>' +
+          '<div class="dl-per-body" hidden>' + than + '</div>' +
         '</div>';
       }).join('');
+      $('dl-search').value = '';   // mở lại popup thì trả ô tìm về trống
+      locChiTietTaiVe();
     }
     $('dl-backdrop').classList.add('open');
     $('dl-backdrop').setAttribute('aria-hidden', 'false');
   }
+  // Nạp ảnh "bản đã tải" khi bấm 👁. Bucket private → phải xin link có hạn 60s.
+  // Nạp MỘT LẦN cho mỗi dòng (đánh dấu data-xong) để gập/mở lại không xin link mới.
+  async function napAnhBanXuat(idx, duongDan) {
+    if (!duongDan) return;
+    const khung = $('dl-anh-' + idx);
+    if (!khung || khung.getAttribute('data-xong') === '1') return;
+    khung.setAttribute('data-xong', '1');
+    const link = TSTAuth.linkAnhBanXuat ? await TSTAuth.linkAnhBanXuat(duongDan) : null;
+    if (!link) {
+      // Nói ĐÚNG việc: link hỏng thường là do chưa tạo bucket/chưa chạy SQL, không phải mất bản
+      khung.innerHTML = '<span class="dl-anh-cho">Chưa mở được bản này. Kiểm tra bucket ' +
+        '<code>proposal-snapshots</code> trong Supabase đã tạo chưa.</span>';
+      khung.setAttribute('data-xong', '0');   // cho thử lại lần sau
+      return;
+    }
+    khung.innerHTML = '<a href="' + esc(link) + '" target="_blank" rel="noopener" ' +
+      'title="Mở ảnh cỡ đầy đủ ở tab mới"><img src="' + esc(link) + '" alt="Bản đã tải về" loading="lazy"></a>';
+  }
+
+  // Lọc theo ô tìm: ẩn/hiện cả NHÓM người. data-tim đã bỏ dấu sẵn lúc dựng (gõ "trong"
+  // ra "Trọng", gõ "em trang" ra người đã xuất bản báo giá cho khách đó).
+  function locChiTietTaiVe() {
+    const q = khongDau($('dl-search').value);
+    const nhom = $('dl-rows').querySelectorAll('.dl-group');
+    let nguoi = 0, luot = 0;
+    nhom.forEach(function (g) {
+      const hop = !q || g.getAttribute('data-tim').indexOf(q) !== -1;
+      g.style.display = hop ? '' : 'none';
+      if (hop) { nguoi++; luot += parseInt(g.getAttribute('data-so'), 10) || 0; }
+    });
+    $('dl-hit').textContent = q ? (nguoi ? nguoi + ' người · ' + luot + ' lượt' : 'không có ai khớp') : '';
+  }
+
   function dongChiTietTaiVe() {
     $('dl-backdrop').classList.remove('open');
     $('dl-backdrop').setAttribute('aria-hidden', 'true');

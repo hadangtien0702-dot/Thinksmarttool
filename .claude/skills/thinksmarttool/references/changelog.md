@@ -3,6 +3,83 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
+### 2026-07-27 (TAB ĐO LƯỜNG: gọn lại + xem BẢN ĐÃ TẢI). ✅ ĐÃ PUSH (v1.32).
+
+Một buổi dài, chủ tool sửa liên tục qua ảnh chụp. Kết quả đo được (bề rộng 1180px):
+**tab Đo lường 1537px → 1083px**, bảng "Theo từng người" **619 → 518px**, lệch đáy 2 cột **195 → 0px**.
+
+**① Gọn bố cục tab Đo lường** (`members.html` + `portal.css`)
+- BỎ 4 thẻ "Hôm nay" (`.usage-cards`) + cột phải 300px (`.usage-layout`/`.usage-side`/`.usage-picker`).
+  Lý do: số liệu hiện 2 nơi cùng tên chỉ số khác khoảng thời gian → đọc nhầm. Nay **một dải
+  `.usage-stats` 5 ô**, đổi theo khoảng đang chọn (preset "Hôm nay" cho lại con số cũ).
+  ⚠️ Gỡ 4 thẻ thì phải gỡ luôn `veThe()` trong members.js — không thì `null.textContent` giết hàm.
+- Biểu đồ | Top mẫu nằm **ngang hàng** (`.usage-grid`), `align-items` để MẶC ĐỊNH (stretch) và
+  `.usage-grid .usage-chart { flex:1 }` → cột trái luôn đầy, biểu đồ cao 150→289px MIỄN PHÍ.
+  Dùng `align-items:start` là để lại mảng trắng 195px ("phần này trống nhìn kỳ").
+- Bộ chọn ngày dời **vào trong khối biểu đồ** (dòng cuối, có vạch ngăn) — chủ tool: "đem xuống
+  đây luôn". Nó lọc CẢ TRANG nên dòng chú thích đầu khối phải ghi "khoảng này áp dụng cho cả trang".
+- Bảng "Theo từng người": **tối đa 10 người gần nhất**, và NÓI RÕ đang cắt bao nhiêu
+  ("còn 32 người nữa trong khoảng này") — cắt mà im lặng thì tưởng cả đội chỉ có 10 người.
+
+**② Gọi ĐÚNG TÊN SẢN PHẨM** — "mẫu/tài liệu" → **Proposal / Brochure / Name Card / So sánh**.
+KHÔNG đổi mù: `phanLoai()` tra ĐƯỜNG DẪN thật trong `/api/library` (Brochure/ vs Bang so sanh),
+còn mẫu thì tách "Sale Name Card" ra khỏi Proposal. Bỏ `text-transform: uppercase` (tên riêng
+viết hoa hết khó đọc). Màu nhãn Name Card lấy bộ đã đo đạt AA (#96590A), KHÔNG dùng `--warning`.
+
+**③ Popup "Chi tiết tải về"** (`members.js` + `portal.css`)
+- CHỈ Proposal (chủ tool: "brochure anh không cần"), nhưng nói thẳng phần bị ẩn ở dòng tiêu đề:
+  "53 lượt tải Proposal · ẩn 13 lượt tải Brochure" — nếu không, số này lệch thẻ "Tải về" (đếm cả 2).
+- **Gộp theo TỪNG NGƯỜI** (dropdown) + **ô tìm** (mượn `.mem-search` sẵn có). Ô tìm gom cả
+  `detail.v` nên gõ tên KHÁCH ("em trang") ra đúng người đã xuất bản đó. 3 người/6 lượt = 126px.
+- 🔑 **`.dl-detail{display:grid}` THẮNG thuộc tính `hidden`** → mọi khối chi tiết luôn mở, bấm 👁
+  không đổi gì. Phải thêm `.dl-detail[hidden]{display:none}`. Đây là lỗi có từ đầu, nay mới lộ.
+
+**④ XEM BẢN ĐÃ TẢI (mới)** — chủ tool: "muốn xem bản được tải về chứ không phải thông tin điền".
+File xuất chạy thẳng về máy sale (`canvas.toDataURL` → `<a download>`), server KHÔNG có bản nào.
+Nên phải LƯU thêm lúc xuất:
+- `supabase/schema.sql`: cột `usage_events.anh` + bucket PRIVATE `proposal-snapshots` + 2 policy
+  (sale chỉ ghi vào thư mục `<user_id>/`, chỉ super_admin đọc). Chủ tool đã chạy, kiểm ra `1|1|2`.
+- `auth.js` (v8→9): `luuAnhBanXuat(canvas)` thu nhỏ rồi upload; `linkAnhBanXuat()` xin signed URL 60s.
+  `logUsage` nhận thêm tham số `anh`.
+- `core.js` (v30→31): `ghiTaiXuongKemAnh()` gọi ở CẢ xuất JPEG lẫn PDF. Upload chạy SAU khi file
+  đã tải về máy → hỏng mạng/chưa tạo bucket cũng không ảnh hưởng việc xuất.
+- `members.js`: 👁 bung ảnh ngay trong dòng (nạp LƯỜI, bấm mới xin link), bấm ảnh mở tab mới.
+  Lượt cũ không có ảnh → lùi về bảng giá trị đã điền + dòng `#dl-note` giải thích vì sao.
+- **📏 SỐ ĐO (đo thật, 3 mẫu):** app xuất `scaleFactor=2` → canvas **1191×2682**, file sale tải
+  ~480KB. Ngưỡng thu nhỏ 1200px em đặt ban đầu **SAI** (lớn hơn 1191 → không bao giờ chạm).
+  Nay **900px · q0.75 ≈ 201KB/lượt ≈ 271MB/năm**. Bảng đánh đổi ghi ngay trên hằng số trong auth.js.
+
+**⑤ Tên tiếng Anh** = phần trước `@` của email công ty (henry@ = Mai Thành Trọng). DB không có
+trường riêng nên suy từ email, 2 chốt chặn: chỉ nhận `@thinksmartinsurance.com`; bỏ khi trùng tên
+tiếng Việt (celine@ ↔ "Celine Nguyen") hoặc là handle kiểu chữ-đầu+họ (jhuynh ↔ "Hung Huynh").
+Kiểm đúng 12/12 người trong danh sách thật.
+
+**⑥ CHIA CỘT** (chủ tool: "nhìn như này hơi rối") — tên tiếng Anh/chip dán sau tên thì tên dài ngắn
+khác nhau kéo chúng lệch mỗi hàng một chỗ. Bảng nay **7 cột** (thêm Tên tiếng Anh · Phòng ban),
+hàng người trong popup dùng **grid cột cố định**.
+- 🔑 Cột cuối KHÔNG được `max-content`: mỗi `.dl-per` là một lưới RIÊNG, "gần nhất 7 giờ trước"
+  ngắn hơn "gần nhất 3 ngày trước" → bề rộng khác nhau mỗi hàng, kéo lệch mọi cột phía trước
+  (đo được 5 mép khác nhau: 811–829). Đổi sang 150px cố định → 0 cột lệch.
+
+**Kiểm chứng:** không đăng nhập được `/members` nên dựng **bản đo tạm** (`public/_qc-*.html`, đã xoá
+sau khi đo) dùng đúng `portal.css` + dữ liệu như ảnh chụp, đo `getBoundingClientRect`. Cách đo "thẳng
+cột": lấy MÉP TRÁI của từng cột trên mọi hàng — thẳng thì chỉ ra ĐÚNG MỘT giá trị.
+⚠️ Lần đo đầu số "cũ" là RÁC vì em đã sửa CSS dùng chung nên khối cũ bị nén theo → phải dựng lại
+đúng CSS gốc scope vào `#old` mới có baseline thật (1764 → 1537px).
+
+**🔑 BÀI HỌC (2 cái đắt nhất):**
+1. **Thêm JS mà quên tạo phần tử trong HTML** → `$('dl-note')` = null → `.textContent` ném lỗi →
+   popup KHÔNG MỞ (nút vẫn nhận cú bấm nên trông như "bấm không ăn"). Đã viết phép kiểm quét mọi
+   `$('...')` trong members.js đối chiếu members.html: **88 ID, không thiếu cái nào**. Chạy nó mỗi
+   lần thêm/bớt phần tử.
+2. **Chạy file schema trong REPO, đừng chạy tab SQL đã lưu trong Supabase.** Tab "Tracking Data
+   Login" là bản cũ chưa có `kind='view'` → lỗi 23514 "violated by some row"; và vì Supabase chạy
+   cả file trong MỘT giao dịch nên toàn bộ bị huỷ, kể cả phần không liên quan. Đã ghi cảnh báo +
+   câu lệnh soi vào `schema.sql` ngay trên dòng constraint đó.
+
+**Version:** badge **v1.31→v1.32** (5 trang) · `portal.css v53→62` · `members.js v28→35` ·
+`auth.js v8→9` · `core.js v30→31`.
+
 ### 2026-07-23 (tiếp 13 — THÊM PHÒNG BAN "Agent"). ✅ ĐÃ PUSH (v1.31).
 
 Chủ tool: *"thêm cho anh phòng ban agent"*. Phòng ban có **whitelist ở 2 NƠI** (phải sửa cả hai, nếu chỉ

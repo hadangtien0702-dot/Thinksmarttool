@@ -243,6 +243,12 @@ create table if not exists public.usage_events (
 );
 
 -- Nâng cấp bảng đã tạo trước đó (idempotent): nới ràng buộc kind để nhận thêm 'download' + 'view'.
+-- ⚠️ BẪY (gặp 27/07/2026): nếu trong bảng ĐANG CÓ dòng mang kind ngoài 4 loại này, câu
+-- `add constraint` bên dưới báo lỗi 23514 "is violated by some row" — và vì Supabase SQL
+-- Editor chạy cả file trong MỘT giao dịch nên TOÀN BỘ file bị huỷ, kể cả những phần không
+-- liên quan (cột `anh`, bucket ảnh…). Soi dòng lạ trước khi chạy lại:
+--    select kind, count(*) from public.usage_events group by kind order by 2 desc;
+-- Rồi hoặc xoá mấy dòng rác đó, hoặc nới danh sách kind cho đúng thực tế.
 alter table public.usage_events drop constraint if exists usage_events_kind_check;
 alter table public.usage_events add  constraint usage_events_kind_check
   check (kind in ('login', 'open_tool', 'download', 'view'));
@@ -254,6 +260,10 @@ alter table public.usage_events add column if not exists label text;
 -- (23/07 nâng cấp - Cách A) cột detail: giá trị sale ĐÃ ĐIỀN lúc xuất (Khách/Tuổi/Bang/số tiền…)
 -- → super_admin bấm 👁 xem "điền đủ thông tin khách chưa". Chỉ super_admin đọc (RLS như trên).
 alter table public.usage_events add column if not exists detail jsonb;
+-- (27/07 nâng cấp) cột anh: đường dẫn ẢNH XEM NHANH của đúng bản sale đã xuất, trong
+-- Storage bucket `proposal-snapshots` (xem phần STORAGE cuối file). Chủ tool 27/07:
+-- "xem ở đây là muốn xem BẢN ĐƯỢC TẢI VỀ chứ không phải thông tin điền".
+alter table public.usage_events add column if not exists anh text;
 
 alter table public.usage_events enable row level security;
 
@@ -303,6 +313,39 @@ create policy "presence: chỉ super admin đọc"
   using (public.is_super_admin());
 
 create index if not exists presence_last_seen_idx on public.presence (last_seen desc);
+
+-- ============================================================================
+-- STORAGE — ẢNH XEM NHANH BẢN ĐÃ XUẤT (27/07/2026)
+-- Sale bấm xuất JPEG/PDF → ngoài file tải về máy, web đẩy thêm một ảnh THU NHỎ
+-- (~1200px, ~150KB) lên đây để Super Admin mở lại xem đúng bản đã gửi khách.
+-- Đường dẫn: `<user_id>/<thời gian>-<ngẫu nhiên>.jpg` — thư mục đầu PHẢI là user_id,
+-- đó là thứ RLS dựa vào để chặn người này ghi đè bản của người kia.
+-- Bucket PRIVATE: mở ảnh phải xin link có hạn 60s (createSignedUrl), không có link công khai.
+-- ⚠️ Ảnh chứa dữ liệu khách hàng thật (tên, tuổi, tiểu bang, số tiền) — chủ tool đã
+-- chốt 27/07: chấp nhận lưu, CHỈ Super Admin đọc.
+-- ============================================================================
+insert into storage.buckets (id, name, public)
+values ('proposal-snapshots', 'proposal-snapshots', false)
+on conflict (id) do nothing;
+
+-- Sale chỉ ghi được vào ĐÚNG thư mục mang user_id của mình
+drop policy if exists "snapshot: tự tải lên thư mục của mình" on storage.objects;
+create policy "snapshot: tự tải lên thư mục của mình"
+  on storage.objects for insert to authenticated
+  with check (
+    bucket_id = 'proposal-snapshots'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- Chỉ Super Admin đọc (kể cả chính chủ cũng không cần đọc lại → không mở thêm cửa)
+drop policy if exists "snapshot: chỉ super admin đọc" on storage.objects;
+create policy "snapshot: chỉ super admin đọc"
+  on storage.objects for select to authenticated
+  using (bucket_id = 'proposal-snapshots' and public.is_super_admin());
+
+-- Dọn ảnh cũ hơn 90 ngày (chạy tay khi cần, hoặc đặt lịch bằng pg_cron nếu đã bật):
+--   delete from storage.objects
+--   where bucket_id = 'proposal-snapshots' and created_at < now() - interval '90 days';
 
 -- ============================================================================
 -- SAU KHI CHẠY XONG — tạo SUPER ADMIN ĐẦU TIÊN (làm 1 lần):

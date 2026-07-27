@@ -70,6 +70,56 @@ bản gốc lâu dài: `E:\2026\Claude\.claude\skills\`):
 
 ## Log bài học theo ngày
 
+### 2026-07-27 (làm gọn tab Đo lường — 6 vòng sửa theo ảnh chụp của chủ tool)
+
+- **"Gọn hơn" trước hết là bỏ chỗ NÓI HAI LẦN, không phải bóp padding.** Tab Đo lường hiện cùng tên
+  chỉ số ở 2 khung khác nhau (4 thẻ "Hôm nay" + danh sách "Trong khoảng này") — người xem phải đọc
+  kỹ mới biết số nào thuộc khoảng nào. Gộp về MỘT dải đổi theo khoảng: giảm 394px mà không mất
+  thông tin nào. Bóp padding cả trang chỉ được ~15%.
+- **`align-items: start` trong lưới 2 cột = tự tạo mảng trắng.** Cột "Top mẫu" 477px, cột biểu đồ
+  282px → hụt đáy 195px, chủ tool nhìn ra ngay ("phần này trống nhìn kỳ"). Để `align-items` MẶC
+  ĐỊNH (stretch) + cho phần tử chính `flex: 1` là hết, và **biểu đồ cao thêm 139px MIỄN PHÍ** (trang
+  không dài thêm pixel nào vì cột kia vốn đã cao hơn). → Chỗ trống trong lưới là chỗ CHƯA DÙNG, không
+  phải chỗ nghỉ.
+- **🔑 `hidden` THUA mọi selector class.** `.dl-detail{display:grid}` (class) thắng `[hidden]{display:none}`
+  (thuộc tính) của trình duyệt → khối chi tiết LUÔN mở, bấm 👁 không đổi gì. Bất kỳ phần tử nào định
+  bật/tắt bằng `hidden` mà có luật `display` riêng thì PHẢI viết thêm `.x[hidden]{display:none}`.
+  Chứng minh bằng cách bật/tắt đúng dòng CSS đó trên trình duyệt: `none` ↔ `grid`.
+- **🔑 Mỗi hàng tự dựng lưới riêng → `max-content` làm LỆCH CỘT giữa các hàng.** Hàng người trong popup
+  để cột cuối `max-content`; "gần nhất 7 giờ trước" ngắn hơn "gần nhất 3 ngày trước" nên bề rộng khác
+  nhau, kéo lệch mọi cột phía trước (đo được 5 mép: 811–829). Đổi sang px cố định → 0 lệch.
+  (Cách khác là `subgrid` — xem Quy tắc 18 sổ chung.)
+- **Phép đo "cột có thẳng không": lấy MÉP TRÁI của cùng một cột trên MỌI hàng, thẳng thì chỉ ra ĐÚNG
+  MỘT giá trị.** Rẻ, không cần nhìn mắt, và bắt được đúng thứ chủ tool khoanh đỏ.
+- **Dán nhãn phụ ngay sau tên = lệch, vì tên dài ngắn khác nhau.** Tên tiếng Anh + phòng ban phải có
+  CỘT RIÊNG bề rộng cố định. Đổi lại: bảng 5 → 7 cột, nhưng đọc dễ hơn hẳn. Gọn ≠ ít cột; **thẳng
+  hàng quan trọng hơn ít cột**.
+- **Cắt bớt danh sách thì PHẢI nói ra đang cắt bao nhiêu.** "10 người hoạt động gần nhất · còn 32
+  người nữa trong khoảng này" — cắt mà im lặng thì người xem tưởng cả đội chỉ có 10 người hoạt động.
+- **Gọi ĐÚNG TÊN SẢN PHẨM, và đừng đổi mù.** "Mẫu/Tài liệu" là chữ nội bộ, chủ tool không đọc ra
+  được: *"phải để là Brochure hoặc Proposal thì anh mới biết chứ"*. Nhưng nhãn "Mẫu" cũ gộp cả "Sale
+  Name Card" (không phải Proposal) và "Tài liệu" gộp cả bảng so sánh → phải tra ĐƯỜNG DẪN thật rồi
+  mới gắn nhãn. Đổi nhãn cũng là đổi NGỮ NGHĨA, không phải đổi chữ.
+- **Nhãn viết HOA TOÀN BỘ giết tên riêng.** "PROPOSAL/BROCHURE/NAME CARD" khó đọc hơn "Proposal /
+  Brochure / Name Card" — bỏ `text-transform: uppercase` cho nhãn chứa tên riêng.
+- **Điều khiển đặt cạnh thứ nó điều khiển — nhưng phải nói rõ phạm vi.** Chủ tool bảo đưa bộ chọn
+  ngày xuống trong khối biểu đồ. Nằm trong một khối thì dễ tưởng chỉ lọc khối đó, nên dòng chú thích
+  phải ghi "khoảng này áp dụng cho cả trang" (4 chữ, không tốn chiều cao).
+- **Danh sách phẳng lặp tên người 5–10 lần → gộp thành dropdown theo người + ô tìm.** 3 người/6 lượt
+  còn 126px. Ô tìm gom cả giá trị `detail` nên gõ tên KHÁCH ra đúng người đã xuất bản đó — người
+  dùng thật tìm theo "khách nào" chứ không chỉ "sale nào".
+- **Muốn xem "bản đã tải" thì phải LƯU nó lúc xuất — không có đường vòng.** File xuất chạy thẳng từ
+  canvas về máy sale, server không giữ bản nào. Trước khi hứa tính năng, kiểm luồng dữ liệu thật.
+- **📏 Ngưỡng thu nhỏ ảnh phải ĐO rồi mới đặt.** Đặt 1200px trong khi app xuất canvas 1191px → ngưỡng
+  KHÔNG BAO GIỜ chạm, ảnh lưu gần nguyên cỡ (314KB thay vì ~150KB đã hứa với chủ tool). Đo 3 mẫu
+  thật mới ra bảng đánh đổi (1191/900/800 px × q0.8/0.75) và chọn được 900·q0.75 ≈ 201KB.
+- **🔑 Thêm JS mà quên tạo phần tử trong HTML = nút "bấm không ăn".** `$('dl-note')` null →
+  `.textContent` ném lỗi → hàm chết trước dòng mở popup; nút vẫn nhận cú bấm (có viền focus) nên
+  trông như UI hỏng. Đã viết phép kiểm quét mọi `$('...')` trong members.js đối chiếu members.html
+  (88 ID). **Chạy nó mỗi lần thêm/bớt phần tử** — đây là chiều NGƯỢC của bài học 21/07.
+- **Baseline đo "trước/sau" phải dựng lại đúng CSS GỐC.** Sửa CSS dùng chung xong mới đo thì khối
+  "cũ" cũng bị nén theo → số "trước" là rác (1764 vs 1537 thật). Scope luật cũ vào `#old` rồi mới đo.
+
 ### 2026-07-23 (tiếp 5b — N3 đổi sang thanh-gọn-bấm-mở-chi-tiết + bẫy đo dark mode)
 - **Danh sách có thể ĐÔNG (tới ~100) → đừng liệt kê phẳng: dùng THANH TÓM TẮT bấm mở MODAL** (mượn đúng
   pattern popup "Tải về" đã có). Thanh trả lời câu hỏi thật ("bao nhiêu người đang DÙNG Tool") bằng

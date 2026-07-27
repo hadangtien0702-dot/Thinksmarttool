@@ -118,7 +118,9 @@
   // Best-effort: lỗi/chưa cấu hình/chưa đăng nhập đều NUỐT im — đo lường hỏng
   // TUYỆT ĐỐI không được làm hỏng đăng nhập / mở tool / mở mẫu.
   const USAGE_THROTTLE_MS = { open_tool: 60 * 60 * 1000, view: 15 * 60 * 1000 };
-  async function logUsage(kind, label, detail) {
+  // `anh` (27/07) = đường dẫn ảnh xem nhanh của bản đã xuất, trong Storage `proposal-snapshots`.
+  // Chủ tool: "xem ở đây là muốn xem BẢN ĐƯỢC TẢI VỀ chứ không phải thông tin điền".
+  async function logUsage(kind, label, detail, anh) {
     try {
       const sb = getClient();
       if (!sb) return;
@@ -137,16 +139,82 @@
       const row = { user_id: session.user.id, kind: kind };
       if (label) row.label = String(label).slice(0, 200);          // "tải gì" (chỉ 'download')
       if (detail) row.detail = detail;                             // giá trị đã điền (Cách A)
+      if (anh) row.anh = String(anh).slice(0, 300);                // ảnh xem nhanh bản đã xuất
       let { error } = await sb.from('usage_events').insert(row);
-      // Cột label/detail chưa tạo (chưa chạy SQL ALTER) → bỏ cột thiếu, ghi lại để không mất sự kiện.
-      if (error && /(label|detail)/i.test(error.message || '')) {
+      // Cột chưa tạo (chưa chạy SQL ALTER) → bỏ cột thiếu, ghi lại để không mất sự kiện.
+      if (error && /(label|detail|anh)/i.test(error.message || '')) {
         if (/detail/i.test(error.message || '')) delete row.detail;
         if (/label/i.test(error.message || '')) delete row.label;
+        if (/\banh\b/i.test(error.message || '')) delete row.anh;
         ({ error } = await sb.from('usage_events').insert(row));
         // Trường hợp thiếu cả 2 nhưng lỗi chỉ báo 1 → thử lần cuối tối giản.
         if (error) { await sb.from('usage_events').insert({ user_id: session.user.id, kind: kind }); }
       }
     } catch (e) { /* nuốt lỗi — không chặn luồng chính */ }
+  }
+
+  // ---- Ảnh xem nhanh bản đã xuất (27/07/2026) ----------------------------
+  // Sale bấm xuất → ngoài file tải về máy, đẩy thêm 1 ảnh THU NHỎ lên Storage để
+  // Super Admin mở lại xem đúng bản đã gửi khách. Chốt của chủ tool: bản xem nhanh
+  // (~1200px) chứ không lưu bản gốc — nhẹ hơn ~3 lần, 1GB miễn phí dùng được nhiều năm.
+  // Bucket PRIVATE `proposal-snapshots`, đường dẫn `<user_id>/<thời gian>-<ngẫu nhiên>.jpg`
+  // (RLS: sale chỉ ghi được vào thư mục của mình; chỉ super_admin đọc — xem schema.sql).
+  const ANH_BUCKET = 'proposal-snapshots';
+  // ⚠️ ĐO THẬT 27/07 trên 3 mẫu proposal (AIG IUL / AIG Termlife / Max-Funded Allianz):
+  // app xuất ở scaleFactor 2 → canvas 1191×2682, file sale tải về ~480KB.
+  //   giữ nguyên 1191 · q0.80 → ~314KB/lượt  (~420MB/năm)
+  //   thu về  900 · q0.80 → ~224KB/lượt  (~302MB/năm)
+  //   thu về  900 · q0.75 → ~201KB/lượt  (~271MB/năm)   ← đang dùng
+  //   thu về  800 · q0.75 → ~174KB/lượt  (~234MB/năm)
+  // Ngưỡng 1200 là SAI (lớn hơn 1191 nên không bao giờ thu nhỏ). 900px = 1.5× cỡ thiết
+  // kế gốc (595px) nên vẫn đọc rõ số liệu — đó là mục đích của bản xem nhanh.
+  const ANH_RONG_TOI_DA = 900;
+  const ANH_CHAT_LUONG = 0.75;
+  // Best-effort TUYỆT ĐỐI: hỏng gì cũng nuốt và trả null. Lưu ảnh KHÔNG được phép
+  // làm hỏng việc xuất file — đó mới là việc chính của sale.
+  async function luuAnhBanXuat(canvas) {
+    try {
+      const sb = getClient();
+      if (!sb || !canvas || !canvas.width) return null;
+      const session = await getSession();
+      if (!session) return null;
+
+      // Thu nhỏ (giữ tỉ lệ). Ảnh gốc rộng hơn ANH_RONG_TOI_DA mới phải vẽ lại.
+      let nguon = canvas;
+      if (canvas.width > ANH_RONG_TOI_DA) {
+        const ti = ANH_RONG_TOI_DA / canvas.width;
+        const nho = document.createElement('canvas');
+        nho.width = ANH_RONG_TOI_DA;
+        nho.height = Math.round(canvas.height * ti);
+        const ctx = nho.getContext('2d');
+        ctx.fillStyle = '#ffffff';                       // JPEG không có trong suốt
+        ctx.fillRect(0, 0, nho.width, nho.height);
+        ctx.drawImage(canvas, 0, 0, nho.width, nho.height);
+        nguon = nho;
+      }
+      const blob = await new Promise(function (xong) {
+        nguon.toBlob(xong, 'image/jpeg', ANH_CHAT_LUONG);
+      });
+      if (!blob) return null;
+
+      const ten = Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.jpg';
+      const duongDan = session.user.id + '/' + ten;      // thư mục = user_id → khớp RLS
+      const { error } = await sb.storage.from(ANH_BUCKET)
+        .upload(duongDan, blob, { contentType: 'image/jpeg', upsert: false });
+      if (error) return null;                            // chưa tạo bucket / hết quota → bỏ qua
+      return duongDan;
+    } catch (e) { return null; }
+  }
+
+  // Super Admin mở ảnh: bucket private nên phải xin link có hạn (60 giây).
+  async function linkAnhBanXuat(duongDan) {
+    try {
+      const sb = getClient();
+      if (!sb || !duongDan) return null;
+      const { data, error } = await sb.storage.from(ANH_BUCKET).createSignedUrl(duongDan, 60);
+      if (error || !data) return null;
+      return data.signedUrl;
+    } catch (e) { return null; }
   }
 
   // ---- Đang online / heartbeat (N3, 23/07/2026) --------------------------
@@ -311,6 +379,8 @@
     doiMatKhau: doiMatKhau,
     initDoiMatKhau: initDoiMatKhau,
     logUsage: logUsage,
+    luuAnhBanXuat: luuAnhBanXuat,     // sale xuất → lưu ảnh xem nhanh (core.js gọi)
+    linkAnhBanXuat: linkAnhBanXuat,   // super_admin mở lại (members.js gọi)
     startPresence: startPresence,
   };
 })();

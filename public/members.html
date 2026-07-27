@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/vendor/animate.min.css">
-  <link rel="stylesheet" href="/portal.css?v=53">
+  <link rel="stylesheet" href="/portal.css?v=62">
   <link rel="stylesheet" href="/dialog.css?v=4">
 </head>
 <body>
@@ -255,8 +255,10 @@
         <div id="tracking-content" style="display:none">
           <div id="usage-msg" class="notice error" style="display:none"></div>
 
-          <!-- ĐANG ONLINE (N3) — thanh tóm tắt (số tổng + chip vị trí); BẤM → modal chi tiết -->
-          <div class="online-wrap">
+          <!-- HÀNG ĐIỀU KHIỂN (gọn 27/07): trái = ĐANG ONLINE (N3, bấm → modal),
+               phải = chọn khoảng ngày. Trước đây khoảng ngày nằm ở cột phải 300px
+               nên ăn cả chiều ngang mà 2/3 dưới bỏ trống. -->
+          <div class="usage-bar">
             <button type="button" class="online-bar" id="online-bar" title="Xem chi tiết ai đang online">
               <span class="online-dot"></span>
               <span class="online-count" id="online-count">0</span>
@@ -264,98 +266,78 @@
               <span class="online-breakdown" id="online-breakdown"></span>
               <span class="online-bar-more">Chi tiết ›</span>
             </button>
-            <span class="online-hint" id="online-hint"></span>
+          </div>
+          <span class="online-hint" id="online-hint"></span>
+
+          <!-- DẢI SỐ LIỆU — MỘT nguồn duy nhất, đổi theo khoảng đang chọn.
+               (Trước 27/07 số hiện 2 nơi: 4 thẻ "Hôm nay" + danh sách "Trong khoảng
+               này" ở cột phải → cùng tên chỉ số, khác khoảng, dễ đọc nhầm.) -->
+          <div class="usage-stats">
+            <div class="ustat"><span class="ustat-k">Đăng nhập</span><span class="ustat-v" id="uk-login">—</span></div>
+            <div class="ustat"><span class="ustat-k">Mở công cụ</span><span class="ustat-v" id="uk-tool">—</span></div>
+            <button type="button" class="ustat ustat-btn" id="uk-download-row" title="Xem chi tiết tải gì">
+              <span class="ustat-k">Tải về (xuất/tải) <span class="ms-row-more">›</span></span>
+              <span class="ustat-v is-ok" id="uk-download">—</span>
+            </button>
+            <div class="ustat"><span class="ustat-k">Xem Proposal/Brochure</span><span class="ustat-v" id="uk-view">—</span></div>
+            <div class="ustat"><span class="ustat-k">Người hoạt động</span><span class="ustat-v" id="uk-active">—</span></div>
           </div>
 
-          <div class="usage-cards">
-            <div class="usage-card">
-              <span class="usage-card-label">Hôm nay · Đăng nhập</span>
-              <span class="usage-card-value" id="uc-login-today">—</span>
-              <span class="usage-card-sub">người đăng nhập</span>
+          <!-- 2 cột ngang hàng: biểu đồ | top mẫu (trước đây xếp dọc, mỗi khối full width) -->
+          <div class="usage-grid">
+            <div class="usage-block">
+              <div class="usage-block-head">
+                <h2>Người hoạt động mỗi ngày</h2>
+                <span class="usage-hint" id="usage-chart-range">— · mỗi cột = số người khác nhau có đăng nhập hoặc mở tool</span>
+              </div>
+              <div class="usage-chart" id="usage-chart" role="img" aria-label="Biểu đồ người hoạt động theo ngày"></div>
+              <!-- Bộ chọn khoảng nằm NGAY DƯỚI biểu đồ (chủ tool 27/07: "chỗ này đem
+                   xuống đây luôn") — điều khiển đứng cạnh thứ nó điều khiển. Nó lọc
+                   cho CẢ TRANG, nên dòng chú thích ở đầu khối phải nói rõ điều đó. -->
+              <div class="usage-filter">
+                <label class="up-inline"><input type="date" id="usage-from" aria-label="Từ ngày"></label>
+                <span class="up-sep" aria-hidden="true">–</span>
+                <label class="up-inline"><input type="date" id="usage-to" aria-label="Đến ngày"></label>
+                <div class="usage-presets" id="usage-presets">
+                  <button class="btn btn-secondary btn-sm" type="button" data-preset="1">Hôm nay</button>
+                  <button class="btn btn-secondary btn-sm" type="button" data-preset="7">7 ngày</button>
+                  <button class="btn btn-secondary btn-sm" type="button" data-preset="14">14 ngày</button>
+                  <button class="btn btn-secondary btn-sm" type="button" data-preset="30">30 ngày</button>
+                </div>
+              </div>
             </div>
-            <div class="usage-card">
-              <span class="usage-card-label">Hôm nay · Mở công cụ</span>
-              <span class="usage-card-value" id="uc-tool-today">—</span>
-              <span class="usage-card-sub">người dùng tool</span>
-            </div>
-            <div class="usage-card">
-              <span class="usage-card-label">Hôm nay · Tải về</span>
-              <span class="usage-card-value" id="uc-download-today">—</span>
-              <span class="usage-card-sub">lượt xuất / tải</span>
-            </div>
-            <div class="usage-card">
-              <span class="usage-card-label">7 ngày qua</span>
-              <span class="usage-card-value" id="uc-active-7d">—</span>
-              <span class="usage-card-sub">người hoạt động</span>
+
+            <!-- TOP MẪU / BROCHURE CHẠY NHIỀU NHẤT (N2) — đếm lượt 'view' theo khoảng -->
+            <div class="usage-block">
+              <div class="usage-block-head">
+                <h2>Top Proposal / Brochure chạy nhiều nhất</h2>
+                <span class="usage-hint">Trong khoảng đang chọn · đếm lượt sale mở xem</span>
+              </div>
+              <div class="usage-top" id="usage-top-rows"></div>
+              <div class="empty-state" id="usage-top-empty" style="display:none">
+                <b>Chưa có lượt xem Proposal/Brochure nào.</b>
+                <span>Số liệu xuất hiện khi sale mở Proposal trong Tool hoặc mở Brochure trong thư viện.</span>
+              </div>
             </div>
           </div>
 
-          <!-- 2 cột: trái = biểu đồ + bảng (đổi theo khoảng), phải = hộp chọn ngày -->
-          <div class="usage-layout">
-            <div class="usage-main">
-              <div class="usage-block">
-                <div class="usage-block-head">
-                  <h2>Người hoạt động mỗi ngày</h2>
-                  <span class="usage-hint" id="usage-chart-range">— · mỗi cột = số người khác nhau có đăng nhập hoặc mở tool</span>
-                </div>
-                <div class="usage-chart" id="usage-chart" role="img" aria-label="Biểu đồ người hoạt động theo ngày"></div>
-              </div>
-
-              <!-- TOP MẪU / BROCHURE CHẠY NHIỀU NHẤT (N2) — đếm lượt 'view' theo khoảng -->
-              <div class="usage-block">
-                <div class="usage-block-head">
-                  <h2>Top mẫu / brochure chạy nhiều nhất</h2>
-                  <span class="usage-hint">Trong khoảng đang chọn · đếm lượt sale mở xem</span>
-                </div>
-                <div class="usage-top" id="usage-top-rows"></div>
-                <div class="empty-state" id="usage-top-empty" style="display:none">
-                  <b>Chưa có lượt xem mẫu/brochure nào.</b>
-                  <span>Số liệu xuất hiện khi sale mở mẫu trong Tool hoặc mở tài liệu trong thư viện.</span>
-                </div>
-              </div>
-
-              <div class="usage-block">
-                <div class="usage-block-head">
-                  <h2>Theo từng người</h2>
-                  <span class="usage-hint">Trong khoảng đang chọn · sắp theo hoạt động gần nhất</span>
-                </div>
-                <div class="usage-table">
-                  <div class="usage-thead">
-                    <span>Thành viên</span><span>Phòng ban</span><span>Đăng nhập gần nhất</span>
-                    <span>Mở tool gần nhất</span><span class="ta-right">Mở tool</span><span class="ta-right">Tải về</span>
-                  </div>
-                  <div id="usage-rows"></div>
-                </div>
-                <div class="empty-state" id="usage-empty" style="display:none">
-                  <b>Chưa có dữ liệu trong khoảng này.</b>
-                  <span>Đổi khoảng ngày ở hộp bên phải, hoặc chờ mọi người đăng nhập và mở công cụ.</span>
-                </div>
-              </div>
+          <div class="usage-block">
+            <div class="usage-block-head">
+              <h2>Theo từng người</h2>
+              <span class="usage-hint" id="usage-nguoi-hint">Trong khoảng đang chọn · sắp theo hoạt động gần nhất</span>
             </div>
-
-            <aside class="usage-side" aria-label="Chọn khoảng thời gian">
-              <div class="ms-panel">
-                <div class="ms-panel-head">Xem theo ngày</div>
-                <div class="usage-picker">
-                  <label class="up-field"><span>Từ ngày</span><input type="date" id="usage-from"></label>
-                  <label class="up-field"><span>Đến ngày</span><input type="date" id="usage-to"></label>
-                  <div class="usage-presets" id="usage-presets">
-                    <button class="btn btn-secondary btn-sm" type="button" data-preset="1">Hôm nay</button>
-                    <button class="btn btn-secondary btn-sm" type="button" data-preset="7">7 ngày</button>
-                    <button class="btn btn-secondary btn-sm" type="button" data-preset="14">14 ngày</button>
-                    <button class="btn btn-secondary btn-sm" type="button" data-preset="30">30 ngày</button>
-                  </div>
-                </div>
-                <div class="ms-panel-head ms-sub">Trong khoảng này</div>
-                <div class="ms-row"><span class="ms-label">Đăng nhập</span><span class="ms-value" id="uk-login">—</span></div>
-                <div class="ms-row"><span class="ms-label">Mở công cụ</span><span class="ms-value" id="uk-tool">—</span></div>
-                <button type="button" class="ms-row ms-row-btn" id="uk-download-row" title="Xem chi tiết tải gì">
-                  <span class="ms-label">Tải về (xuất/tải) <span class="ms-row-more">›</span></span><span class="ms-value is-ok" id="uk-download">—</span>
-                </button>
-                <div class="ms-row"><span class="ms-label">Xem mẫu/brochure</span><span class="ms-value" id="uk-view">—</span></div>
-                <div class="ms-row"><span class="ms-label">Người hoạt động</span><span class="ms-value" id="uk-active">—</span></div>
+            <div class="usage-table">
+              <div class="usage-thead">
+                <span>Thành viên</span><span>Tên tiếng Anh</span><span>Phòng ban</span>
+                <span>Đăng nhập gần nhất</span><span>Mở tool gần nhất</span>
+                <span class="ta-right">Mở tool</span><span class="ta-right">Tải về</span>
               </div>
-            </aside>
+              <div id="usage-rows"></div>
+            </div>
+            <div class="empty-state" id="usage-empty" style="display:none">
+              <b>Chưa có dữ liệu trong khoảng này.</b>
+              <span>Đổi khoảng ngày ở thanh trên đầu, hoặc chờ mọi người đăng nhập và mở công cụ.</span>
+            </div>
           </div>
         </div>
 
@@ -428,18 +410,29 @@
   <div class="modal-backdrop" id="dl-backdrop" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="dl-title">
       <div class="modal-head">
-        <h2 id="dl-title">Chi tiết tải về</h2>
+        <h2 id="dl-title">Chi tiết tải về — Proposal</h2>
         <button class="icon-btn" id="dl-close" aria-label="Đóng">✕</button>
       </div>
       <div class="modal-body">
-        <p id="dl-range" style="color:var(--text-2);font-size:var(--fs-sm);margin-bottom:12px"></p>
+        <p id="dl-range" style="color:var(--text-2);font-size:var(--fs-sm);margin-bottom:6px"></p>
+        <!-- Vì sao có/không có ảnh bản đã tải — members.js ghi vào, để trống thì tự ẩn -->
+        <p class="dl-note" id="dl-note"></p>
+        <!-- Ô tìm (27/07): tìm được cả theo TÊN SALE lẫn TÊN KHÁCH trong bản đã xuất -->
+        <div class="dl-search">
+          <!-- Mượn nguyên .mem-search của ô tìm thành viên: cùng dáng, không đẻ CSS mới -->
+          <div class="mem-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="search" id="dl-search" autocomplete="off"
+                   placeholder="Tìm theo tên sale hoặc tên khách hàng…" aria-label="Tìm trong danh sách tải về">
+          </div>
+          <span class="dl-hit" id="dl-hit" aria-live="polite"></span>
+        </div>
         <div class="dl-table">
-          <div class="dl-thead"><span>Thành viên</span><span>Tải gì</span><span class="ta-right">Lúc</span><span class="ta-right">Xem</span></div>
           <div id="dl-rows"></div>
         </div>
         <div class="empty-state" id="dl-empty" style="display:none">
-          <b>Chưa có lượt tải nào trong khoảng này.</b>
-          <span>Lượt tải xuất hiện khi sale xuất JPEG/PDF hoặc tải tài liệu.</span>
+          <b>Chưa có lượt tải Proposal nào trong khoảng này.</b>
+          <span>Lượt tải xuất hiện khi sale xuất JPEG/PDF từ Tool. Lượt tải Brochure không liệt kê ở đây.</span>
         </div>
       </div>
     </div>
@@ -465,7 +458,7 @@
       </main>
 
       <footer class="portal-footer">
-        <span class="version-badge">v1.31</span>
+        <span class="version-badge">v1.32</span>
         <span>23/07/2026 · Thinksmart Insurance — lưu hành nội bộ</span>
       </footer>
     </div>
@@ -473,9 +466,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/portal/config.js?v=8"></script>
-  <script src="/js/portal/auth.js?v=8"></script>
+  <script src="/js/portal/auth.js?v=9"></script>
   <script src="/js/ui-dialog.js?v=3"></script>
-  <script src="/js/portal/members.js?v=28"></script>
+  <script src="/js/portal/members.js?v=35"></script>
   <script src="/vendor/gsap.min.js"></script>
   <script src="/js/animations.js?v=4"></script>
 </body>
