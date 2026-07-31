@@ -614,6 +614,14 @@ async function saveSvgToServer() {
 // Shared flow: dùng cho cả Proposal (bản cho khách) lẫn Name Card ("Tạo bản riêng").
 async function createNewProposal() {
   if (!appState.activeFile || !appState.activeSvgDoc) {
+    // Đang khoá Báo giá thì câu "chọn bản mẫu ở cột bên trái" là chỉ đường vào ngõ cụt —
+    // bên trái không còn mẫu nào để chọn. Nói đúng lý do, kẻo sale đi tìm mãi rồi nhắn
+    // hỏi admin. Nút này vẫn giữ nguyên vì Name Card KHÔNG bị khoá, vẫn cần nó.
+    if (appState.khoaProposal) {
+      showAppAlert('Mẫu báo giá đang tạm khoá để cập nhật nội dung.\n\nAnh chị dùng tạm Brochure và Name Card — mục này sẽ mở lại ngay khi xong.',
+        { title: 'Đang chỉnh sửa nội dung', tone: 'warning' });
+      return;
+    }
     showAppAlert('Hãy chọn một bản mẫu (IUL hoặc Term Life) ở cột bên trái trước.', { title: 'Chưa chọn mẫu' });
     return;
   }
