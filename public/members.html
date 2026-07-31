@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/vendor/animate.min.css">
-  <link rel="stylesheet" href="/portal.css?v=62">
+  <link rel="stylesheet" href="/portal.css?v=64">
   <link rel="stylesheet" href="/dialog.css?v=4">
 </head>
 <body>
@@ -385,6 +385,46 @@
     </div>
   </div>
 
+  <!-- Sửa tài khoản — GOM mọi thứ vào MỘT hộp (chủ tool 31/07): trước đây phòng ban,
+       quyền, mật khẩu mỗi thứ một nút rải trong menu "⋯". Server: /api/admin/update-user -->
+  <div class="modal-backdrop" id="edit-backdrop" aria-hidden="true">
+    <div class="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+      <div class="modal-head">
+        <h2 id="edit-title">Sửa tài khoản</h2>
+        <button class="icon-btn" id="edit-close" aria-label="Đóng">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="edit-who" style="color:var(--text-2);font-size:var(--fs-sm);margin-bottom:12px"></p>
+        <div class="field">
+          <label for="edit-name">Họ và tên</label>
+          <input id="edit-name" type="text" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="edit-email">Email đăng nhập</label>
+          <input id="edit-email" type="email" autocomplete="off">
+          <p class="field-hint" id="edit-email-warn" hidden>Đổi email xong, người này phải đăng nhập bằng email MỚI — nhớ báo họ.</p>
+        </div>
+        <div class="field">
+          <label for="edit-dept">Phòng ban</label>
+          <select class="select-field" id="edit-dept" style="width:100%"></select>
+        </div>
+        <div class="field" id="edit-role-field">
+          <label for="edit-role">Quyền</label>
+          <select class="select-field" id="edit-role" style="width:100%"></select>
+        </div>
+        <div class="field">
+          <label for="edit-pass">Mật khẩu mới</label>
+          <input id="edit-pass" type="text" autocomplete="off" placeholder="Để trống nếu không đổi">
+        </div>
+        <div id="edit-result" class="notice" style="display:none;margin-top:12px"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+          <button class="btn btn-secondary btn-sm" id="edit-cancel">Huỷ</button>
+          <button class="btn btn-primary btn-sm" id="edit-save">Lưu thay đổi</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Chọn phòng ban — danh sách CỐ ĐỊNH, thay cho window.prompt (chủ tool 21/07) -->
   <div class="modal-backdrop" id="dept-backdrop" aria-hidden="true">
     <div class="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="dept-title">
@@ -458,17 +498,17 @@
       </main>
 
       <footer class="portal-footer">
-        <span class="version-badge">v1.32</span>
-        <span>23/07/2026 · Thinksmart Insurance — lưu hành nội bộ</span>
+        <span class="version-badge">v1.33</span>
+        <span>31/07/2026 · Thinksmart Insurance — lưu hành nội bộ</span>
       </footer>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/portal/config.js?v=8"></script>
-  <script src="/js/portal/auth.js?v=9"></script>
+  <script src="/js/portal/auth.js?v=10"></script>
   <script src="/js/ui-dialog.js?v=3"></script>
-  <script src="/js/portal/members.js?v=35"></script>
+  <script src="/js/portal/members.js?v=39"></script>
   <script src="/vendor/gsap.min.js"></script>
   <script src="/js/animations.js?v=4"></script>
 </body>

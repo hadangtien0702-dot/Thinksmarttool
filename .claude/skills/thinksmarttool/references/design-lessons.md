@@ -68,7 +68,57 @@ bản gốc lâu dài: `E:\2026\Claude\.claude\skills\`):
     dải `CÁCH ĐỌC` ngay trước bảng; cột người dùng cần xem đặt trước, cột kỹ thuật vẫn giữ nhưng ghi
     rõ `(kỹ thuật)` và làm mờ. Không xoá chiều sâu — chỉ mở dần theo nhu cầu.
 
+18. ☠️ **Container FLEX thì con TRỰC TIẾP phải là THẺ, không được là chuỗi chữ trần.**
+    `.notice` (`display:flex`) mà gán `innerHTML = 'Đã tạo <b>x</b> mật khẩu <b>y</b>'` thì mỗi
+    text node và mỗi `<b>` thành **một anonymous flex item riêng** → 7 cột hẹp, chữ rơi dọc từng từ.
+    Mọi `.notice` viết tay trong HTML đều đúng khuôn `<span>` icon + `<div>` chữ; code sinh động
+    phải ép cùng khuôn đó (`veKetQua()` trong members.js). (31/07 — chủ tool: *"sao em làm xấu thế"*)
+19. ☠️ **`height: 100%` trên khối chứa nội dung ngắn = đẩy mọi thứ phía sau ra khỏi màn hình.**
+    `.library-view-group` luôn cao bằng canvas dù chỉ có 2 trang → nút "Tải file PDF trọn bộ" nằm
+    ở **927px trong khung 900px**, tức ngoài vùng nhìn thấy. Đội sale than "thiếu nút tải" suốt.
+    Chiều cao để `auto`, việc cuộn giao cho ĐÚNG MỘT khung cha. (31/07)
+    → **Nút hành động chính mà phải cuộn mới thấy thì coi như không có.** Sau khi sửa layout,
+    luôn đo `nút.bottom <= khung.height` chứ đừng chỉ nhìn "trông có vẻ ổn".
+20. **Pop-up có ô nhập thì bấm ra ngoài KHÔNG được đóng thẳng.** So **từng ô với giá trị gốc**;
+    khác thì hỏi, giống thì đóng luôn (đừng hỏi vô cớ). Bọc **mọi** đường đóng — ngoài · ✕ · Huỷ ·
+    Esc — chứ vá mỗi backdrop là còn 3 lối mất dữ liệu. Ô có giá trị điền sẵn (mật khẩu tạm
+    `Drt$2022`) **không tính** là "đã gõ". (31/07)
+21. **Khối thông tin để GỬI ĐI chỉ chứa thứ người nhận cần.** Ô kết quả sau khi tạo tài khoản từng
+    bày cả "Quyền: Nhân viên" — nhân viên nhận email+mật khẩu không cần biết mình được xếp hạng gì,
+    mà bày ra thì thành phân cấp. Rộng hơn: **vai trò nội bộ chỉ hiện cho người CÓ vai** (admin
+    cần biết mình ngồi ghế nào), nhân viên thì **xoá hẳn** chip chứ đừng để rỗng. (31/07)
+22. **Menu "⋯" phải liệt kê ĐỦ việc làm được, kể cả việc đã có nút riêng bên ngoài.** Bỏ bớt cho
+    "khỏi trùng" nghe hợp lý nhưng bắt người dùng nhớ cái nào nằm trong cái nào nằm ngoài.
+    Trùng lặp ở đây rẻ hơn nhiều so với việc họ tưởng tính năng không tồn tại. (31/07 — chủ tool:
+    *"ở nút 3 chấm đang bị thiếu"*)
+23. **Hộp cảnh báo phải nói cái BỊ MẤT, không nói "không thể hoàn tác".** "Xoá vĩnh viễn" kéo theo
+    cả lịch sử tab Đo lường của người đó (`on delete cascade`) — viết thẳng ra, kèm **đường thay
+    thế** ("chỉ muốn chặn đăng nhập thì dùng Tạm khoá"). Việc mất sạch thì hỏi **2 lần**, lần 2
+    bắt **gõ lại đúng email** — bấm nhầm hai lần liên tiếp thì dễ, gõ đúng email người mình không
+    định xoá thì khó. Và **không làm bản hàng loạt** cho thao tác không lùi được. (31/07)
+
 ## Log bài học theo ngày
+
+### 2026-07-31 (quyền admin quản lý tài khoản — 5 vòng sửa theo ảnh chụp của chủ tool)
+
+Phiên này chủ tool bắt **3 lỗi giao diện** mà em đã "kiểm cú pháp sạch" rồi mới đưa ra. Cả 3 đều
+thuộc loại *chạy vẫn ra kết quả, chỉ nhìn mới biết sai* — đúng lý do phải đo bằng mắt lẫn bằng số.
+
+- **Vỡ layout ô kết quả** (bài 18): nguyên nhân là `display:flex` của `.notice`, không phải font
+  hay spacing. Đo được: **7 flex item → 2**. Bài học rộng hơn: *trước khi gán `innerHTML` vào một
+  phần tử có sẵn, đọc CSS của nó xem nó là flex/grid không.*
+- **Nút tải nằm ngoài màn hình** (bài 19): đo **312px → 44px** khoảng trống, nút **927 → 654px**
+  trong khung 900px. Đây là lỗi đã ảnh hưởng đội sale thật (họ than trong nhóm Teams).
+- **Mất chữ đang gõ khi bấm ra ngoài** (bài 20): vá đủ **7/7 đường đóng** của 2 pop-up.
+
+**Bẫy đo đã tránh được:** hộp `showAppConfirm` phải nổi TRÊN pop-up. Không đoán theo z-index —
+kiểm cả hai điều kiện: `900 > 500` **và** cả hai cùng gắn thẳng `<body>` (`ui-dialog.js` dùng
+`document.body.appendChild`), vì z-index chỉ so được trong cùng stacking context.
+
+**Cách đo khi không đăng nhập được:** dựng trang đo tạm trong `public/` nạp **đúng file CSS thật**
+của dự án + chép y nguyên DOM mà JS sinh ra, bật/tắt thuộc tính nghi ngờ để lấy số trước/sau, rồi
+**xoá file đo ngay**. Đo được thật, nhưng phải nói rõ giới hạn: bàn đo dùng khối cao cố định, chưa
+phải ảnh brochure thật.
 
 ### 2026-07-27 (làm gọn tab Đo lường — 6 vòng sửa theo ảnh chụp của chủ tool)
 

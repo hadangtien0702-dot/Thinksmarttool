@@ -3,6 +3,77 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
+### 2026-07-31 (QUYỀN ADMIN: sửa · thêm · xoá tài khoản). ✅ ĐÃ PUSH (v1.33).
+
+Chủ tool đặt hàng: *"anh cần quyền admin có thể thay đổi - thêm - xóa tài khoản"*, lý do
+*"cho các manager chủ động xóa nhân viên của mình"*. Chốt bậc thang: **Super Admin xoá được
+Admin, ngược lại thì không.**
+
+**① Hai API mới trong `server.js`** (sau `/api/admin/reset-password`)
+- `POST /api/admin/update-user` — sửa **một lần**: `full_name` · `email` (auth) · `department` ·
+  `role` · `password`. Trường nào KHÔNG gửi thì không đụng tới (phân biệt "không gửi" với
+  "gửi rỗng"). Đổi auth (email/mật khẩu) chạy TRƯỚC profiles — email trùng người khác thì dừng
+  ngay, tránh cảnh hồ sơ đã đổi mà đăng nhập vẫn email cũ.
+- `POST /api/admin/delete-user` — `hard:false` = mềm (`status='deleted'`, auth CÒN → email chưa
+  dùng lại được); `hard:true` = `auth.admin.deleteUser` ⇒ profiles/usage_events/presence bay theo
+  `on delete cascade` ⇒ **MẤT lịch sử tab Đo lường của người đó**.
+- ☠️ Bậc thang kiểm bằng `loiBacThang(caller, target)` **TẠI SERVER**, không tin DB: service_role
+  đi vào nhánh `auth.uid() is null` của trigger `enforce_member_update` nên trigger cho qua hết.
+- `schema.sql` **KHÔNG đổi một câu lệnh nào** (đo: `git diff | grep '^+' | grep -v '^+--'` = 0 dòng).
+  Chỉ thêm 7 dòng chú thích giải thích vì sao trigger giữ mức chặt cũ làm hàng rào cuối.
+  → **Không phải chạy SQL gì trên Supabase Dashboard.**
+
+**② Giao diện `members.js` + `members.html`**
+- Hộp **"Sửa tài khoản"** (`#edit-backdrop`) gom 4 mục rải rác cũ (phòng ban · đặt/bỏ Admin ·
+  đổi mật khẩu). Ô "Quyền" CHỈ super_admin thấy. Đổi email hiện cảnh báo cam ngay + hỏi lại lúc Lưu.
+- Menu `⋯` **luôn** có "Sửa tài khoản" kể cả khi nút "Sửa" đã hiện ngoài hàng (chủ tool: *"ở nút
+  3 chấm đang bị thiếu"*). Thêm "Xoá khỏi danh sách" + "Xoá vĩnh viễn…" cho cả admin.
+- Xoá vĩnh viễn hỏi **2 lần**, lần 2 phải **gõ lại đúng email**. Hộp cảnh báo nói thẳng cái BỊ MẤT
+  (lịch sử Đo lường), không nói chung chung "không thể hoàn tác". **Không có bản hàng loạt** —
+  xoá hàng loạt chỉ là xoá mềm.
+- Xoá đi qua API (`goiAdminApiIm` — bản im, không bật hộp thoại, dùng trong vòng lặp hàng loạt),
+  KHÔNG update thẳng Supabase, vì trigger DB vẫn chặn admin.
+
+**③ Ba lỗi giao diện chủ tool bắt trong phiên**
+- ☠️ **`.notice` là FLEX** → gán thẳng `innerHTML` có `<b>` làm mỗi mẩu chữ thành một flex item:
+  ô kết quả "Đã tạo tài khoản" **rơi thành 5 cột hẹp**. Đo: **7 flex item → 2**. Sửa bằng
+  `veKetQua()` (ép khuôn `<span>` icon + `<div>` chữ) + `.notice > div { min-width: 0 }`.
+  Nhân thể bày Email/Mật khẩu thành khối `.cred-box` + nút **"Sao chép để gửi"**.
+  **KHÔNG bày "Quyền"** ở khối này (chủ tool: *"không được cho nhân viên thấy mình là quyền gì"*).
+- ☠️ **`.library-view-group { height: 100% }`** → khối trang brochure luôn cao bằng cả canvas dù
+  chỉ 2 trang, đẩy thanh "Tải file PDF trọn bộ" xuống đáy. Đo trên khung 900px: khoảng trống
+  **312px → 44px**, nút từ **927px (NGOÀI màn hình) → 654px**. Sửa: `height: auto`, để
+  `.library-view.has-group` lo cuộn (nó đã có `overflow-y:auto` — hai khung cuộn lồng nhau là thừa).
+  → Đội sale đã than đúng lỗi này trong nhóm Teams ("Thiếu nút tải về rồi anh em ơi").
+- **Bấm ra ngoài pop-up là mất sạch chữ đang gõ.** Nay **7/7 đường đóng** (ngoài · ✕ · Huỷ · Esc,
+  cả hộp Thêm lẫn Sửa) đi qua `thuDongHopSua()` / `thuDongThemThanhVien()`: so TỪNG Ô với giá trị
+  gốc, có khác mới hỏi. Hộp hỏi nổi trên pop-up được vì dialog `z-index:900` > modal `500` và cả
+  hai cùng gắn thẳng `<body>`.
+
+**④ Giấu vai với nhân viên** (3 trang cả đội vào được)
+`index.html` · `videos.html` · `auth.js` (menu tài khoản): role `user` → **xoá hẳn** chip;
+admin/super_admin vẫn thấy (cần biết mình ngồi ghế nào). `/members` giữ nguyên — vào được đó thì
+đã là admin. Bắt luôn lỗi cũ: `auth.js` viết `role === 'admin' ? 'Admin' : 'Nhân viên'` nên
+**Super Admin bị gắn nhãn "Nhân viên"**.
+
+**⑤ Kiểm chứng — 31/31 ĐẠT trên Supabase THẬT**
+Script `kiem-tra-quyen-admin.js` (scratchpad): tạo 4 tài khoản nháp `zz-test-*@example.com`,
+đăng nhập lấy token THẬT, gọi API qua HTTP thật, rồi xoá sạch.
+- Admin: sửa tên/mật khẩu/email nhân viên ✅ (đăng nhập bằng email+mật khẩu MỚI vào được, email cũ
+  chết); xoá mềm ✅; xoá vĩnh viễn ✅; **tạo lại tài khoản CÙNG EMAIL vừa xoá ✅** (chứng minh sạch thật).
+- Admin bị chặn: sửa/xoá Admin khác `403`, sửa Super Admin `403`, tự cấp quyền `403`, tự xoá `400`,
+  không token `401` — và hồ sơ nạn nhân **không đổi một chữ**.
+- Super Admin: đổi quyền Admin ✅, **xoá được Admin** ✅, tự hạ quyền mình `400`.
+- Dọn dẹp: `profiles` 91 tổng / **87 chưa xoá mềm** (khớp đúng số trên màn hình), rác trong
+  `profiles` và `auth.users` = **KHÔNG CÒN**.
+- ⚠️ CHƯA đo: thao tác bấm chuột trên giao diện (không đăng nhập được bằng tài khoản chủ tool).
+  Rủi ro còn lại là *ẩn/hiện nút sai*, **không phải lỗ hổng** — tầng API đã chặn.
+
+**⑥ `.gitignore`** thêm `outputs/` (thư mục kết quả Claude sinh ra) — cùng lý do `3-Export-PDF/`.
+Đã soi bản hiện có: 0 email, 0 số điện thoại.
+
+Versions: `members.js?v=39` · `auth.js?v=10` · `portal.css?v=64` · `style.css?v=82` · badge **v1.33**.
+
 ### 2026-07-27 (TAB ĐO LƯỜNG: gọn lại + xem BẢN ĐÃ TẢI). ✅ ĐÃ PUSH (v1.32).
 
 Một buổi dài, chủ tool sửa liên tục qua ảnh chụp. Kết quả đo được (bề rộng 1180px):

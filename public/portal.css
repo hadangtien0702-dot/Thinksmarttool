@@ -412,6 +412,21 @@ body.dark-theme .btn-danger-outline { color: #F87171; border-color: #F87171; }
   font-size: var(--fs-base);
 }
 .notice b { font-weight: 700; }
+/* ⚠️ .notice là FLEX: con TRỰC TIẾP của nó phải đúng 2 thẻ (<span> icon + <div> chữ).
+   Nhét chuỗi có <b> vào innerHTML là mỗi mẩu chữ thành một cột hẹp — xem veKetQua()
+   trong members.js. Đừng bỏ .notice > div đi. */
+.notice > div { min-width: 0; }
+
+/* Khối "thông tin đăng nhập" trong ô kết quả — nhãn trái, giá trị bên phải,
+   để admin đọc rồi gửi cho người mới. */
+.cred-box { display: grid; gap: 6px; margin: 10px 0 12px; }
+.cred-box > div { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cred-box span { flex: 0 0 74px; font-size: var(--fs-sm); font-weight: 700; color: var(--text-2); }
+.cred-box code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--fs-sm); background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-sm); padding: 3px 8px; word-break: break-all;
+}
 .notice.warn { background: var(--warning-soft); border-color: transparent; color: var(--text); }
 .notice.error { background: var(--danger-soft); border-color: transparent; }
 .notice.info { background: var(--brand-soft); border-color: transparent; }
@@ -458,6 +473,13 @@ body.dark-theme .btn-danger-outline { color: #F87171; border-color: #F87171; }
   transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
 .field input::placeholder { color: var(--text-3); }
+/* Dòng nhắc dưới ô nhập — chỉ hiện khi có hậu quả người dùng cần biết trước
+   (vd. đổi email đăng nhập thì người kia phải dùng email mới).
+   Màu lấy đúng bộ đã đo ở .btn-warn-outline (#96590A / #E9A23B), KHÔNG dùng
+   thẳng token --warning: đo 22/07 nó chỉ đạt 3.62 trên nền sáng. */
+.field-hint { margin: 6px 0 0; font-size: var(--fs-xs); line-height: 1.45; color: #96590A; }
+body.dark-theme .field-hint { color: #E9A23B; }
+.field-hint[hidden] { display: none; }
 .field input:hover { border-color: var(--border-strong); }
 .field input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-ring); background: var(--surface); }
 

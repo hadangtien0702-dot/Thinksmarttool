@@ -116,6 +116,13 @@ as $$ select exists (
 --   • super_admin: toàn quyền trên người khác.
 --   • admin: chỉ thao tác trên 'user'; KHÔNG đổi role; KHÔNG xoá (status='deleted').
 --   • còn lại: chặn.
+--
+-- ⚠️ (31/07/2026) LUẬT SẢN PHẨM ĐÃ NỚI, TRIGGER NÀY THÌ KHÔNG — cố ý.
+-- Chủ tool cho admin (manager) xoá được nhân viên của mình. Việc xoá đó KHÔNG đi
+-- qua trigger này: client gọi POST /api/admin/delete-user, server dùng service_role
+-- (auth.uid() is null → nhánh "tin cậy" ở đầu hàm) và TỰ kiểm bậc thang bằng
+-- loiBacThang() trong server.js. Trigger giữ nguyên mức chặt để làm hàng rào cuối
+-- cho đường client gọi thẳng Supabase. Sửa luật quyền thì phải sửa CẢ HAI NƠI.
 -- ----------------------------------------------------------------------------
 create or replace function public.enforce_member_update()
 returns trigger

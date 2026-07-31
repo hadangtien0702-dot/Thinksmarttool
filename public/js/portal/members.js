@@ -3,8 +3,12 @@
 // 3 role: super_admin > admin > user. 4 trạng thái: pending/active/suspended/deleted.
 // Bảo mật THẬT ở DB (RLS + trigger enforce_member_update); UI dưới đây chỉ ẩn/hiện
 // nút cho khớp — không thay thế cho tầng chặn database.
-//   • Super Admin: duyệt, đổi phòng ban, cấp/gỡ quyền, tạm khoá, xoá — trên mọi người.
-//   • Admin: duyệt + tạm khoá + đổi phòng ban — CHỈ trên Nhân viên (user).
+//   • Super Admin: duyệt, sửa hồ sơ, cấp/gỡ quyền, tạm khoá, xoá — trên MỌI người.
+//   • Admin (manager): duyệt, sửa hồ sơ, tạm khoá, XOÁ — CHỈ trên Nhân viên (user).
+//     Không đụng được Admin khác, không đụng Super Admin, không cấp/gỡ quyền.
+// (31/07/2026) Admin được quyền xoá — chủ tool: "cho các manager chủ động xoá nhân
+// viên của mình". Xoá + sửa hồ sơ đi qua /api/admin/* (service_role) chứ không update
+// thẳng Supabase, vì trigger DB vẫn giữ luật cũ làm hàng rào cuối; server kiểm bậc thang.
 // ============================================================================
 (function () {
   'use strict';
@@ -78,6 +82,26 @@
     });
   }
 
+  // ---- Ô kết quả trong hộp Thêm / Sửa ----------------------------------------
+  // ☠️ BẪY (chủ tool bắt được 31/07/2026: "sao em làm xấu thế"): `.notice` là FLEX
+  // container. Nhét thẳng chuỗi có <b> vào innerHTML thì MỖI đoạn chữ và mỗi thẻ
+  // thành MỘT flex item riêng → 5 cột hẹp, chữ rơi dọc từng từ. Mọi .notice trong
+  // HTML đều viết đúng 2 con: <span> icon + <div> nội dung — hàm này ép đúng khuôn đó.
+  // Sửa nội dung ô kết quả thì LUÔN đi qua đây, đừng gán innerHTML trực tiếp.
+  function veKetQua(el, kieu, noiDung) {
+    const icon = kieu === 'error' ? '⚠️' : (kieu === 'ok' ? '✅' : '💡');
+    el.className = 'notice ' + (kieu === 'error' ? 'error' : 'info');
+    el.style.display = '';
+    el.innerHTML = '<span>' + icon + '</span><div>' + noiDung + '</div>';
+  }
+
+  // Khối "thông tin đăng nhập" — nhãn trái, giá trị phải, để admin đọc và gửi đi.
+  function theCred(hang) {
+    return '<div class="cred-box">' + hang.map(function (h) {
+      return '<div><span>' + esc(h[0]) + '</span><code>' + esc(h[1]) + '</code></div>';
+    }).join('') + '</div>';
+  }
+
   // Người đang đăng nhập có được thao tác lên hàng `p` không?
   //   super_admin: mọi người (trừ chính mình). admin: chỉ 'user' (trừ chính mình).
   function canManage(p) {
@@ -94,42 +118,44 @@
   function actionsFor(p) {
     if (p.id === me.id) return '<span class="m-self">Bạn</span>';
 
-    const isSuper = me.role === 'super_admin';
     const id = p.id;
     let chinh = '';          // hành động chính, luôn hiện
     const menu = [];         // các mục trong menu "⋯"
 
-    // Duyệt / khoá / đổi role / xoá — theo canManage (super_admin: mọi người; admin: chỉ 'user')
+    // Duyệt / sửa / khoá / xoá — theo canManage (super_admin: mọi người; admin: chỉ 'user').
+    // Chủ tool 31/07: admin (manager) chủ động XOÁ được nhân viên của mình — trước đó
+    // xoá là đặc quyền riêng của super_admin.
     if (canManage(p)) {
       if (p.status === 'pending') {
         chinh = '<button class="btn btn-primary btn-sm" data-act="approve" data-id="' + id + '">Duyệt</button>';
       } else if (p.status === 'suspended') {
         chinh = '<button class="btn btn-primary btn-sm" data-act="reactivate" data-id="' + id + '">Mở khoá</button>';
       } else if (p.status === 'active') {
-        chinh = '<button class="btn btn-secondary btn-sm" data-act="dept" data-id="' + id + '">Phòng ban</button>';
+        chinh = '<button class="btn btn-secondary btn-sm" data-act="edit" data-id="' + id + '">Sửa</button>';
       }
 
-      if (p.status !== 'active') {
-        menu.push('<button data-act="dept" data-id="' + id + '">Đổi phòng ban</button>');
-      }
-      if (p.status === 'active' && isSuper) {
-        if (p.role === 'user') menu.push('<button data-act="to-admin" data-id="' + id + '">Đặt làm Admin</button>');
-        else if (p.role === 'admin') menu.push('<button data-act="to-user" data-id="' + id + '">Bỏ quyền Admin</button>');
-        else if (p.role === 'super_admin') menu.push('<button data-act="to-admin" data-id="' + id + '">Hạ xuống Admin</button>');
-      }
+      // Một cửa "Sửa tài khoản" thay cho 4 mục rải rác (phòng ban / đặt-bỏ Admin /
+      // đổi mật khẩu) — chủ tool 31/07 "gom vào chung một hộp".
+      // LUÔN có trong menu, kể cả khi nút "Sửa" đã hiện sẵn ngoài hàng (chủ tool
+      // 31/07: "ở nút 3 chấm đang bị thiếu"). Mở menu ra là thấy ĐỦ việc làm được
+      // với người này — đừng bắt người dùng nhớ cái nào nằm ngoài, cái nào nằm trong.
+      menu.push('<button data-act="edit" data-id="' + id + '">Sửa tài khoản</button>');
+      // Ngăn cách chỉ kẻ khi PHÍA TRÊN đã có mục — kẻ ngay dòng đầu menu thì nó là
+      // một gạch lửng lơ, không ngăn cách cái gì.
+      const nganCach = function () { if (menu.length) menu.push('<div class="m-menu-sep"></div>'); };
       if (p.status === 'active') {
-        menu.push('<div class="m-menu-sep"></div>');
+        nganCach();
         menu.push('<button class="is-danger" data-act="suspend" data-id="' + id + '">Tạm khoá</button>');
       }
-      if (isSuper) {
-        if (p.status !== 'active') menu.push('<div class="m-menu-sep"></div>');
-        menu.push('<button class="is-danger" data-act="delete" data-id="' + id + '">Xoá khỏi danh sách</button>');
-      }
+      nganCach();
+      menu.push('<button class="is-danger" data-act="delete" data-id="' + id + '">Xoá khỏi danh sách</button>');
+      menu.push('<button class="is-danger" data-act="delete-hard" data-id="' + id + '">Xoá vĩnh viễn…</button>');
     }
 
-    // "Đổi mật khẩu": admin & super_admin đổi được cho MỌI thành viên đang active (chủ tool 23/07:
-    // "admin làm luôn"). Tách khỏi canManage (đó là quyền khoá/xoá/đổi role, không phải reset pass).
-    if (p.status === 'active') {
+    // "Đổi mật khẩu" RỜI: chỉ còn cho người mình KHÔNG quản lý được (vd. admin đổi hộ
+    // admin khác) — giữ đúng quyết định 23/07 "admin làm luôn". Người quản lý được thì
+    // ô mật khẩu đã nằm sẵn trong hộp Sửa, bày thêm ở đây là nói hai lần.
+    if (p.status === 'active' && !canManage(p)) {
       if (menu.length) menu.push('<div class="m-menu-sep"></div>');
       menu.push('<button data-act="reset-pw" data-id="' + id + '">Đổi mật khẩu</button>');
     }
@@ -460,9 +486,11 @@
   }
 
   // ---- Gọi API admin (server dùng service_role) — LUÔN kèm token đăng nhập -----
-  async function goiAdminApi(path, body) {
+  // Bản IM: trả { data, error } chứ KHÔNG bật hộp thoại. Dùng cho vòng lặp hàng loạt —
+  // 40 người lỗi mà mỗi người một hộp thoại thì không ai bấm hết nổi.
+  async function goiAdminApiIm(path, body) {
     const session = await TSTAuth.getSession();
-    if (!session) { await showAppAlert('Phiên đăng nhập đã hết hạn. Mời đăng nhập lại.', { tone: 'warning' }); return null; }
+    if (!session) return { error: 'Phiên đăng nhập đã hết hạn. Mời đăng nhập lại.', hetPhien: true };
     let res, data;
     try {
       res = await fetch(path, {
@@ -472,14 +500,22 @@
       });
       data = await res.json().catch(function () { return {}; });
     } catch (e) {
-      await showAppAlert('Không gọi được máy chủ: ' + e.message, { title: 'Lỗi kết nối', tone: 'danger' });
+      return { error: 'Không gọi được máy chủ: ' + e.message, ketNoi: true };
+    }
+    if (!res.ok) return { error: (data && data.error) || ('Lỗi ' + res.status) };
+    return { data: data };
+  }
+
+  // Bản thường: tự báo lỗi bằng hộp thoại, trả về data hoặc null.
+  async function goiAdminApi(path, body) {
+    const kq = await goiAdminApiIm(path, body);
+    if (kq.error) {
+      await showAppAlert(kq.error, kq.hetPhien
+        ? { tone: 'warning' }
+        : { title: kq.ketNoi ? 'Lỗi kết nối' : 'Không thực hiện được', tone: 'danger' });
       return null;
     }
-    if (!res.ok) {
-      await showAppAlert((data && data.error) || ('Lỗi ' + res.status), { title: 'Không thực hiện được', tone: 'danger' });
-      return null;
-    }
-    return data;
+    return kq.data;
   }
 
   // Đổi mật khẩu 1 thành viên (admin & super_admin — chủ tool 23/07). Admin GÕ ĐƯỢC mật khẩu
@@ -498,6 +534,175 @@
     if (!data) return;
     await showAppAlert('Đã đổi mật khẩu cho “' + ten + '”.\n\nMật khẩu mới:  ' + data.password +
       '\n\nGửi cho họ.', { title: 'Xong', tone: 'success' });
+  }
+
+  // ---- HỘP "SỬA TÀI KHOẢN" (chủ tool 31/07) ----------------------------------
+  // Một cửa cho: họ tên · email đăng nhập · phòng ban · quyền · mật khẩu.
+  // Chỉ gửi lên server những trường THỰC SỰ đổi — tránh vô tình ghi đè thứ mình
+  // không định đụng, và để server phân biệt "không gửi" với "gửi rỗng".
+  let dangSua = null;   // hồ sơ đang mở trong hộp
+
+  function moHopSua(id) {
+    const p = danhSach.find(function (x) { return x.id === id; });
+    if (!p) return;
+    dangSua = p;
+    $('edit-who').textContent = 'Đang sửa: ' + (p.full_name || p.email || 'thành viên này');
+    $('edit-name').value = p.full_name || '';
+    $('edit-email').value = p.email || '';
+    $('edit-pass').value = '';
+    $('edit-email-warn').hidden = true;
+    $('edit-dept').innerHTML = '<option value="">— Không thuộc phòng ban —</option>' +
+      PHONG_BAN.map(function (d) {
+        return '<option value="' + esc(d) + '"' + (d === (p.department || '').trim() ? ' selected' : '') + '>' + esc(d) + '</option>';
+      }).join('');
+
+    // Quyền: CHỈ Super Admin đổi được (server chặn lại lần nữa). Danh sách chọn vẫn
+    // là user/admin — không phong Super Admin qua giao diện; chỉ thêm mục super_admin
+    // khi người đang sửa vốn đã là Super Admin, để ô này hiển thị đúng giá trị hiện có.
+    const laSuper = me.role === 'super_admin';
+    $('edit-role-field').style.display = laSuper ? '' : 'none';
+    const dsQuyen = QUYEN_TAO_MOI.slice();
+    if (p.role === 'super_admin') dsQuyen.push('super_admin');
+    $('edit-role').innerHTML = dsQuyen.map(function (r) {
+      return '<option value="' + esc(r) + '"' + (r === p.role ? ' selected' : '') + '>' + esc(ROLE_LABEL[r] || r) + '</option>';
+    }).join('');
+
+    const kq = $('edit-result'); kq.style.display = 'none'; kq.textContent = '';
+    $('edit-backdrop').classList.add('open');
+    $('edit-backdrop').setAttribute('aria-hidden', 'false');
+    $('edit-name').focus();
+  }
+
+  function dongHopSua() {
+    dangSua = null;
+    $('edit-backdrop').classList.remove('open');
+    $('edit-backdrop').setAttribute('aria-hidden', 'true');
+  }
+
+  // Đang gõ dở gì chưa? So từng ô với hồ sơ gốc.
+  function coThayDoiSua() {
+    if (!dangSua) return false;
+    const p = dangSua;
+    if ($('edit-pass').value.trim()) return true;
+    if ($('edit-name').value.trim() !== (p.full_name || '')) return true;
+    if ($('edit-email').value.trim().toLowerCase() !== (p.email || '').trim().toLowerCase()) return true;
+    if ($('edit-dept').value !== (p.department || '').trim()) return true;
+    if (me.role === 'super_admin' && $('edit-role').value !== p.role) return true;
+    return false;
+  }
+
+  // MỌI đường đóng hộp Sửa (bấm ra ngoài · Esc · Huỷ · ✕) đều phải đi qua đây.
+  // Chủ tool 31/07: "vô tình bấm ra ngoài thì mất pop-up và thông tin đang sửa".
+  // Chưa gõ gì thì đóng luôn cho nhẹ tay; đã gõ rồi thì hỏi — công gõ của người
+  // dùng không được biến mất chỉ vì một cú bấm trượt.
+  async function thuDongHopSua() {
+    if (coThayDoiSua() && !(await showAppConfirm(
+      'Bỏ những thay đổi chưa lưu cho “' + ((dangSua && (dangSua.full_name || dangSua.email)) || 'thành viên này') + '”?',
+      { title: 'Chưa lưu', tone: 'warning', confirmText: 'Bỏ thay đổi' }))) return;
+    dongHopSua();
+  }
+
+  async function luuSuaTaiKhoan() {
+    if (!dangSua) return;
+    const p = dangSua;
+    const kq = $('edit-result');
+    const ten = $('edit-name').value.trim();
+    const mail = $('edit-email').value.trim().toLowerCase();
+    const phong = $('edit-dept').value;
+    const quyen = me.role === 'super_admin' ? $('edit-role').value : p.role;
+    const pass = $('edit-pass').value.trim();
+
+    function bao(msg) { veKetQua(kq, 'error', esc(msg)); }
+    if (!ten) { bao('Họ tên không được để trống.'); $('edit-name').focus(); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) { bao('Email không hợp lệ.'); $('edit-email').focus(); return; }
+    if (pass && pass.length < 6) { bao('Mật khẩu cần tối thiểu 6 ký tự.'); $('edit-pass').focus(); return; }
+
+    const body = { userId: p.id };
+    if (ten !== (p.full_name || '')) body.full_name = ten;
+    if (mail !== (p.email || '').trim().toLowerCase()) body.email = mail;
+    if (phong !== (p.department || '').trim()) body.department = phong;
+    if (quyen !== p.role) body.role = quyen;
+    if (pass) body.password = pass;
+    if (Object.keys(body).length === 1) { dongHopSua(); return; }   // không đổi gì thì đóng luôn
+
+    // Đổi email = đổi lối vào của người ta → hỏi lại trước khi gửi.
+    if (body.email && !(await showAppConfirm(
+      'Đổi email đăng nhập của “' + (p.full_name || p.email) + '”\n\n' +
+      'Từ:  ' + (p.email || '(chưa có)') + '\nSang: ' + mail + '\n\n' +
+      'Sau khi đổi, họ CHỈ đăng nhập được bằng email mới. Nhớ báo cho họ.',
+      { title: 'Xác nhận đổi email', tone: 'warning' }))) return;
+
+    const nut = $('edit-save'); const cu = nut.textContent;
+    nut.disabled = true; nut.textContent = 'Đang lưu…';
+    const data = await goiAdminApi('/api/admin/update-user', body);
+    nut.disabled = false; nut.textContent = cu;
+    if (!data) return;
+
+    dongHopSua();
+    await load();
+    const doiGi = [];
+    if (body.full_name) doiGi.push('họ tên');
+    if (body.email) doiGi.push('email đăng nhập → ' + data.email);
+    if (body.department !== undefined) doiGi.push('phòng ban');
+    if (body.role) doiGi.push('quyền → ' + (ROLE_LABEL[body.role] || body.role));
+    if (body.password) doiGi.push('mật khẩu → ' + pass);
+    await showAppAlert('Đã cập nhật “' + ten + '”.\n\n• ' + doiGi.join('\n• ') +
+      (body.password || body.email ? '\n\nGửi thông tin đăng nhập mới cho họ.' : ''),
+      { title: 'Xong', tone: 'success' });
+  }
+
+  // ---- XOÁ: hai mức, cố ý tách rời -------------------------------------------
+  // Mềm  = ẩn khỏi danh sách, khôi phục được, tài khoản đăng nhập VẪN CÒN
+  //        ⇒ email đó chưa dùng lại để tạo người mới được.
+  // Vĩnh viễn = xoá sạch, kéo theo toàn bộ lịch sử của họ ở tab Đo lường.
+  async function xoaMem(id) {
+    const p = danhSach.find(function (x) { return x.id === id; });
+    const ten = p ? (p.full_name || p.email || 'thành viên này') : 'thành viên này';
+    if (!(await showAppConfirm(
+      'Xoá “' + ten + '” khỏi danh sách?\n\n' +
+      'Họ sẽ không đăng nhập được nữa, nhưng tài khoản vẫn còn trong hệ thống để khôi phục nếu cần.\n' +
+      'Muốn dùng lại chính email này cho người khác thì phải chọn “Xoá vĩnh viễn”.',
+      { tone: 'warning' }))) return;
+    setLoading(true);
+    const data = await goiAdminApi('/api/admin/delete-user', { userId: id, hard: false });
+    setLoading(false);
+    if (data) await load();
+  }
+
+  async function xoaVinhVien(id) {
+    const p = danhSach.find(function (x) { return x.id === id; });
+    if (!p) return;
+    const ten = p.full_name || p.email || 'thành viên này';
+    const mail = (p.email || '').trim();
+
+    // Hỏi lần 1 — nói thẳng cái BỊ MẤT, không nói chung chung "không thể hoàn tác".
+    if (!(await showAppConfirm(
+      'XOÁ VĨNH VIỄN “' + ten + '”?\n\n' +
+      'Mất luôn và KHÔNG khôi phục được:\n' +
+      '• Tài khoản đăng nhập (' + (mail || 'không có email') + ')\n' +
+      '• Toàn bộ lịch sử của họ ở tab Đo lường — đã tải gì, xem mẫu nào, đăng nhập lúc nào\n\n' +
+      'Đổi lại: email này dùng lại được để tạo tài khoản mới.\n' +
+      'Chỉ muốn chặn họ đăng nhập thì dùng “Tạm khoá” hoặc “Xoá khỏi danh sách”.',
+      { title: 'Xoá vĩnh viễn', tone: 'danger', confirmText: 'Tôi hiểu, đi tiếp' }))) return;
+
+    // Hỏi lần 2 — gõ lại email. Bấm nhầm hai lần liên tiếp thì được, gõ đúng email
+    // của người mình không định xoá thì khó hơn nhiều.
+    const goi = await showAppPrompt('Gõ lại email của người này để xác nhận:\n\n' + mail,
+      { title: 'Xác nhận lần cuối', confirmText: 'Xoá vĩnh viễn' });
+    if (goi === null) return;
+    if (String(goi).trim().toLowerCase() !== mail.toLowerCase()) {
+      await showAppAlert('Email gõ vào không khớp — chưa xoá gì cả.', { tone: 'warning' });
+      return;
+    }
+
+    setLoading(true);
+    const data = await goiAdminApi('/api/admin/delete-user', { userId: id, hard: true });
+    setLoading(false);
+    if (!data) return;
+    dangChon.delete(id);
+    await load();
+    await showAppAlert('Đã xoá vĩnh viễn “' + ten + '”. Email ' + mail + ' nay dùng lại được.',
+      { title: 'Đã xoá', tone: 'success' });
   }
 
   // ---- Thao tác --------------------------------------------------------------
@@ -562,9 +767,9 @@
       }
     });
 
-    // Xoá là quyền riêng của Super Admin (đè lên phần tính ở trên)
-    const btnXoa = $('bulk-delete');
-    if (btnXoa && me.role !== 'super_admin') btnXoa.style.display = 'none';
+    // (31/07) Bỏ chốt "xoá chỉ dành cho Super Admin" — nay admin xoá được nhân viên
+    // của mình; ai được xoá ai đã do canManage + nguoiHopLe('delete') quyết, và
+    // server /api/admin/delete-user kiểm lại lần nữa.
     // Đồng bộ ô "chọn tất cả" — tính theo DỮ LIỆU CẢ NHÓM, không theo hàng đang hiển thị.
     // Tính theo hàng hiển thị thì lật sang trang chưa chọn ai là ô này tự bỏ tick, dù
     // 40 người ở trang khác vẫn đang được chọn — sai và gây hiểu nhầm nguy hiểm.
@@ -617,7 +822,10 @@
       if (act === 'approve') return p.status === 'pending';
       if (act === 'suspend') return p.status === 'active';
       if (act === 'reactivate') return p.status === 'suspended';
-      if (act === 'delete') return me.role === 'super_admin';
+      // Xoá hàng loạt = xoá MỀM, và chỉ trên người mình quản được (canManage đã lọc ở trên).
+      // Xoá vĩnh viễn CỐ Ý không có bản hàng loạt: mất sạch không lùi được thì phải làm
+      // từng người, hỏi hai lần.
+      if (act === 'delete') return true;
       if (act === 'dept') return true;
       return false;
     });
@@ -635,6 +843,14 @@
     setLoading(true);
     const loi = [];
     for (const p of ds) {
+      // Xoá đi ĐƯỜNG SERVER, không update thẳng Supabase: trigger enforce_member_update
+      // ở DB vẫn chặn admin đặt status='deleted' (đó là hàng rào cuối cùng, giữ nguyên).
+      // Quyền của admin được cấp ở tầng API — nơi có kiểm bậc thang bằng service_role.
+      if (act === 'delete') {
+        const kq = await goiAdminApiIm('/api/admin/delete-user', { userId: p.id, hard: false });
+        if (kq.error) loi.push((p.full_name || p.email || p.id) + ': ' + kq.error);
+        continue;
+      }
       const { error } = await sb.from('profiles').update(patch).eq('id', p.id);
       if (error) loi.push((p.full_name || p.email || p.id) + ': ' + error.message);
     }
@@ -692,19 +908,12 @@
       apply({ status: 'active' }, id, 'Mở khoá cho thành viên này để họ đăng nhập lại?');
     } else if (act === 'suspend') {
       apply({ status: 'suspended' }, id, 'Tạm khoá tài khoản này? Họ sẽ không đăng nhập được cho tới khi mở khoá lại.');
+    } else if (act === 'edit') {
+      moHopSua(id);
     } else if (act === 'delete') {
-      apply({ status: 'deleted' }, id, 'Xoá thành viên này khỏi danh sách? Tài khoản vẫn còn trong hệ thống để khôi phục nếu cần, nhưng sẽ không đăng nhập được.');
-    } else if (act === 'to-admin') {
-      apply({ role: 'admin' }, id, 'Cấp quyền Admin cho người này? Admin có thể duyệt và quản lý Nhân viên.');
-    } else if (act === 'to-user') {
-      apply({ role: 'user' }, id, 'Hạ người này về Nhân viên (bỏ quyền Admin)?');
-    } else if (act === 'dept') {
-      const p = danhSach.find(function (x) { return x.id === id; });
-      const hienTai = p && p.department ? p.department.trim() : '';
-      const ten = p && p.full_name ? p.full_name.trim() : (p ? p.email : '');
-      moHopPhongBan('Chọn phòng ban cho: ' + (ten || 'thành viên này'), hienTai, function (val) {
-        apply({ department: val }, id);
-      });
+      xoaMem(id);
+    } else if (act === 'delete-hard') {
+      xoaVinhVien(id);
     } else if (act === 'reset-pw') {
       doiMatKhauThanhVien(id);
     }
@@ -1450,10 +1659,18 @@
       $('add-backdrop').classList.remove('open');
       $('add-backdrop').setAttribute('aria-hidden', 'true');
     }
-    $('add-close').addEventListener('click', dongThemThanhVien);
-    $('add-cancel').addEventListener('click', dongThemThanhVien);
+    // Giống hộp Sửa: đang gõ dở mà bấm trượt ra ngoài thì không được mất công gõ.
+    // Chỉ tính Họ tên + Email — ô mật khẩu luôn có sẵn "Drt$2022" nên không kể là "đã gõ".
+    async function thuDongThemThanhVien() {
+      const dangGo = $('add-name').value.trim() || $('add-email').value.trim();
+      if (dangGo && !(await showAppConfirm('Bỏ thông tin tài khoản đang nhập?',
+        { title: 'Chưa tạo', tone: 'warning', confirmText: 'Bỏ' }))) return;
+      dongThemThanhVien();
+    }
+    $('add-close').addEventListener('click', thuDongThemThanhVien);
+    $('add-cancel').addEventListener('click', thuDongThemThanhVien);
     $('add-backdrop').addEventListener('click', function (e) {
-      if (e.target === $('add-backdrop')) dongThemThanhVien();
+      if (e.target === $('add-backdrop')) thuDongThemThanhVien();
     });
     $('add-create').addEventListener('click', async function () {
       const ten = $('add-name').value.trim();
@@ -1464,22 +1681,56 @@
       const kq = $('add-result');
       if (!ten) { $('add-name').focus(); return; }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
-        kq.className = 'notice error'; kq.style.display = ''; kq.textContent = 'Email không hợp lệ.';
-        $('add-email').focus(); return;
+        veKetQua(kq, 'error', 'Email không hợp lệ.'); $('add-email').focus(); return;
       }
       if (pass.length < 6) {
-        kq.className = 'notice error'; kq.style.display = ''; kq.textContent = 'Mật khẩu cần tối thiểu 6 ký tự.';
-        $('add-pass').focus(); return;
+        veKetQua(kq, 'error', 'Mật khẩu cần tối thiểu 6 ký tự.'); $('add-pass').focus(); return;
       }
       const btn = $('add-create'); const cu = btn.textContent; btn.disabled = true; btn.textContent = 'Đang tạo…';
       const data = await goiAdminApi('/api/admin/create-user', { full_name: ten, email: mail, department: phong, role: quyen, password: pass });
       btn.disabled = false; btn.textContent = cu;
       if (!data) return;
-      kq.className = 'notice info'; kq.style.display = '';
-      kq.innerHTML = 'Đã tạo tài khoản <b>' + esc(mail) + '</b> (' + esc(ROLE_LABEL[data.role] || 'Nhân viên') +
-        ').<br>Mật khẩu: <b>' + esc(data.password) + '</b> — gửi cho họ.';
+      // Việc kế tiếp của admin là GỬI thông tin này cho người mới → bày rõ từng dòng
+      // và cho copy một phát, thay vì bắt bôi đen trong một đoạn văn.
+      // ⚠️ CHỈ Email + Mật khẩu. KHÔNG bày "Quyền" ở đây (chủ tool 31/07: "không được
+      // cho nhân viên thấy mình là quyền gì"): khối này để admin chụp/copy gửi thẳng
+      // cho người mới, lộ vai trò nội bộ ra ngoài là không nên. Ô "Quyền" ngay phía
+      // trên cũng đã nói rồi — nhắc lại là nói hai lần.
+      veKetQua(kq, 'ok',
+        '<b>Đã tạo tài khoản cho ' + esc(ten) + '</b>' +
+        theCred([['Email', mail], ['Mật khẩu', data.password]]) +
+        '<button type="button" class="btn btn-secondary btn-sm" id="add-copy">Sao chép để gửi</button>');
+      const nutChep = $('add-copy');
+      nutChep.addEventListener('click', async function () {
+        const noiDung = 'Email: ' + mail + '\nMật khẩu: ' + data.password;
+        try {
+          await navigator.clipboard.writeText(noiDung);
+          nutChep.textContent = 'Đã sao chép ✓';
+          setTimeout(function () { nutChep.textContent = 'Sao chép để gửi'; }, 2000);
+        } catch (e) {
+          // Trình duyệt chặn clipboard (không phải https/localhost) — vẫn phải có
+          // đường lấy được nội dung, không được im lặng thất bại.
+          await showAppAlert(noiDung, { title: 'Chép tay giúp em nhé', tone: 'info' });
+        }
+      });
       $('add-name').value = ''; $('add-email').value = '';
       await load();
+    });
+
+    // Hộp "Sửa tài khoản"
+    $('edit-save').addEventListener('click', luuSuaTaiKhoan);
+    $('edit-close').addEventListener('click', thuDongHopSua);
+    $('edit-cancel').addEventListener('click', thuDongHopSua);
+    $('edit-backdrop').addEventListener('click', function (e) {
+      if (e.target === $('edit-backdrop')) thuDongHopSua();
+    });
+    // Nhắc hậu quả NGAY khi email bị sửa khác đi, không đợi tới lúc bấm Lưu.
+    $('edit-email').addEventListener('input', function () {
+      const goc = dangSua ? (dangSua.email || '').trim().toLowerCase() : '';
+      $('edit-email-warn').hidden = this.value.trim().toLowerCase() === goc;
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && $('edit-backdrop').classList.contains('open')) thuDongHopSua();
     });
 
     // Hộp thoại phòng ban

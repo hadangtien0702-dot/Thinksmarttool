@@ -449,6 +449,129 @@ app.post('/api/admin/reset-password', requireAdmin, async (req, res) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// SUA HO SO + XOA TAI KHOAN (chu tool chot 31/07/2026: "cho cac manager chu dong
+// xoa nhan vien cua minh"). BAC THANG QUYEN — chi quan duoc nguoi CAP DUOI:
+//   • super_admin: moi nguoi, ke ca admin.
+//   • admin: CHI 'user' — khong dung admin khac, khong dung super_admin,
+//     khong cap/go quyen (viec do cua super_admin).
+//   • khong ai doi quyen hoac xoa CHINH MINH (chong tu khoa).
+// ☠️ service_role BO QUA trigger enforce_member_update ⇒ luat tren phai kiem
+// ngay TAI DAY. Khong duoc trong cho DB chan ho nhu duong client goi thang Supabase.
+// ---------------------------------------------------------------------------
+async function layMucTieu(userId) {
+  const { data, error } = await supabaseAdmin
+    .from('profiles').select('id, full_name, email, role, status').eq('id', userId).single();
+  return (error || !data) ? null : data;
+}
+
+// Tra ve chuoi loi neu nguoi goi KHONG duoc dong den muc tieu; null = duoc phep.
+function loiBacThang(caller, target) {
+  if (caller.role === 'super_admin') return null;
+  if (caller.role === 'admin') {
+    return target.role === 'user'
+      ? null
+      : 'Admin chi quan ly duoc Nhan vien. Tai khoan nay phai do Super Admin xu ly.';
+  }
+  return 'Khong co quyen.';
+}
+
+// Sua ho so: ho ten, email dang nhap, phong ban, quyen, mat khau — mot lan goi.
+// Truong nao khong gui thi giu nguyen (undefined = khong dong toi).
+app.post('/api/admin/update-user', requireAdmin, async (req, res) => {
+  const b = req.body || {};
+  const id = String(b.userId || '').trim();
+  if (!id) return res.status(400).json({ error: 'Thiếu userId.' });
+
+  const target = await layMucTieu(id);
+  if (!target) return res.status(404).json({ error: 'Không tìm thấy tài khoản này.' });
+
+  const laChinhMinh = target.id === req.caller.id;
+  if (!laChinhMinh) {
+    const loi = loiBacThang(req.caller, target);
+    if (loi) return res.status(403).json({ error: loi });
+  }
+
+  const hoSo = {};
+  if (b.full_name !== undefined) {
+    const ten = String(b.full_name).trim();
+    if (!ten) return res.status(400).json({ error: 'Họ tên không được để trống.' });
+    hoSo.full_name = ten;
+  }
+  let mailMoi = null;
+  if (b.email !== undefined) {
+    const mail = String(b.email).trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) return res.status(400).json({ error: 'Email không hợp lệ.' });
+    if (mail !== String(target.email || '').trim().toLowerCase()) { mailMoi = mail; hoSo.email = mail; }
+  }
+  if (b.department !== undefined) {
+    hoSo.department = PHONG_BAN_HOP_LE.includes(b.department) ? b.department : '';
+  }
+  if (b.role !== undefined && String(b.role) !== target.role) {
+    if (req.caller.role !== 'super_admin') return res.status(403).json({ error: 'Chỉ Super Admin mới đổi được quyền.' });
+    if (laChinhMinh) return res.status(400).json({ error: 'Không thể tự đổi quyền của chính mình.' });
+    if (!['user', 'admin', 'super_admin'].includes(b.role)) return res.status(400).json({ error: 'Quyền không hợp lệ.' });
+    hoSo.role = b.role;
+  }
+  let passMoi = null;
+  if (b.password !== undefined && String(b.password).trim()) {
+    passMoi = String(b.password).trim();
+    if (passMoi.length < 6) return res.status(400).json({ error: 'Mật khẩu cần tối thiểu 6 ký tự.' });
+  }
+
+  try {
+    // auth TRUOC (email/mat khau): email trung nguoi khac thi Supabase bao loi o
+    // day va dung lai — tranh canh profiles da doi ma dang nhap van email cu.
+    if (mailMoi || passMoi) {
+      const patch = {};
+      if (mailMoi) { patch.email = mailMoi; patch.email_confirm = true; }
+      if (passMoi) patch.password = passMoi;
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(id, patch);
+      if (error) return res.status(400).json({ error: error.message });
+    }
+    if (Object.keys(hoSo).length) {
+      const { error } = await supabaseAdmin.from('profiles').update(hoSo).eq('id', id);
+      if (error) return res.status(500).json({ error: 'Đã đổi đăng nhập nhưng lưu hồ sơ lỗi: ' + error.message });
+    }
+    return res.json({ success: true, email: mailMoi || target.email, doiEmail: !!mailMoi, doiMatKhau: !!passMoi });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+});
+
+// Xoa tai khoan — hai muc do:
+//   hard=false (mem): profiles.status='deleted' → an khoi danh sach, khoi phuc duoc,
+//                     NHUNG tai khoan dang nhap van con ⇒ email do CHUA dung lai duoc.
+//   hard=true  (han): auth.admin.deleteUser → profiles / usage_events / presence
+//                     bay theo (on delete cascade) ⇒ MAT luon lich su tab Do luong.
+app.post('/api/admin/delete-user', requireAdmin, async (req, res) => {
+  const b = req.body || {};
+  const id = String(b.userId || '').trim();
+  const xoaHan = b.hard === true;
+  if (!id) return res.status(400).json({ error: 'Thiếu userId.' });
+  if (id === req.caller.id) return res.status(400).json({ error: 'Không thể tự xoá tài khoản của chính mình.' });
+
+  const target = await layMucTieu(id);
+  if (!target) return res.status(404).json({ error: 'Không tìm thấy tài khoản này.' });
+  const loi = loiBacThang(req.caller, target);
+  if (loi) return res.status(403).json({ error: loi });
+
+  try {
+    if (xoaHan) {
+      const { error } = await supabaseAdmin.auth.admin.deleteUser(id);
+      if (error) return res.status(400).json({ error: error.message });
+      // profiles co "on delete cascade" nen thuong tu bay; don not neu con sot.
+      await supabaseAdmin.from('profiles').delete().eq('id', id);
+      return res.json({ success: true, hard: true, email: target.email });
+    }
+    const { error } = await supabaseAdmin.from('profiles').update({ status: 'deleted' }).eq('id', id);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ success: true, hard: false, email: target.email });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+});
+
 // Start Server
 app.listen(PORT, () => {
   console.log(`==================================================`);

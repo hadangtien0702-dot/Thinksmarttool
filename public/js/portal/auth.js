@@ -364,7 +364,15 @@
       if (elName) elName.textContent = name;
       if (elMenuName) elMenuName.textContent = name;
       if (elMenuMail) elMenuMail.textContent = p.email || '';
-      if (elMenuRole) elMenuRole.textContent = p.role === 'admin' ? 'Admin' : 'Nhân viên';
+      // Menu tài khoản: chỉ người CÓ QUYỀN mới thấy vai của mình (chủ tool 31/07) —
+      // nhân viên thì bỏ hẳn dòng này đi. Tiện thể sửa lỗi cũ: dòng này từng viết
+      // `role === 'admin' ? 'Admin' : 'Nhân viên'` nên SUPER ADMIN bị gắn nhãn
+      // "Nhân viên" — sai hẳn vai. Nay tra bảng cho đúng cả 3 mức.
+      if (elMenuRole) {
+        const NHAN_VAI = { super_admin: 'Super Admin', admin: 'Admin' };
+        if (NHAN_VAI[p.role]) elMenuRole.textContent = NHAN_VAI[p.role];
+        else elMenuRole.remove();
+      }
     });
   }
 

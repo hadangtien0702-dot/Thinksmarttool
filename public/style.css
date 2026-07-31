@@ -1500,8 +1500,14 @@ body.no-editor .sidebar-right { display: none; }
    -------------------------------------------------------------------------- */
 .library-view-group {
   width: 100%;
-  height: 100%;
-  overflow-y: auto;
+  /* ☠️ TRƯỚC 31/07/2026 chỗ này là `height: 100%; overflow-y: auto`.
+     Khối trang brochure vì thế LUÔN cao bằng cả khung canvas dù chỉ có 2 trang
+     → thanh "Tải file PDF trọn bộ" nằm NGAY SAU nó bị đẩy xuống tận đáy, cách
+     nội dung một khoảng trắng lớn. Chủ tool 31/07: "nút download bị tọt xuống
+     dưới luôn, người ta không biết thì không download được".
+     Nay để content quyết chiều cao; việc cuộn do .library-view.has-group lo
+     (nó đã có overflow-y: auto) — hai khung cuộn lồng nhau cũng là thừa. */
+  height: auto;
   padding: 40px;
   display: flex;
   flex-wrap: wrap;

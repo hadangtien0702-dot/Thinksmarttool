@@ -57,6 +57,11 @@ _Archive/
 # theo dõi bằng `git rm --cached` (vẫn còn nguyên trên máy). (22/07/2026)
 3-Export-PDF/
 
+# Thư mục KẾT QUẢ do Claude sinh ra (báo cáo, bảng theo dõi phiên bản…). Cùng lý do
+# với 3-Export-PDF/: không phải mã nguồn, và lần sau có thể chứa dữ liệu khách.
+# Đã kiểm bản hiện tại (Thinksmart Tool.xlsx): 0 email, 0 số điện thoại. (31/07/2026)
+outputs/
+
 # Third-party design skills — installed locally, NOT redistributed on the public repo
 # (frontend-design: (c) Anthropic all-rights-reserved; ui-ux-pro-max: no license file).
 # Reinstall notes: .claude/skills/thinksmarttool/references/conventions.md
