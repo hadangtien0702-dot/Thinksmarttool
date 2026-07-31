@@ -3,6 +3,79 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
+### 2026-07-31 (chiều — KHOÁ MỤC BÁO GIÁ + sửa tab Đo lường). ✅ ĐÃ PUSH (v1.34).
+
+**① 🔒 TẠM KHOÁ MỤC BÁO GIÁ VỚI NHÂN VIÊN** — việc GẤP, chủ tool đang sửa nội dung mẫu.
+Sale lấy bản dở gửi khách = sai số liệu với khách hàng thật.
+- `appState.khoaProposal` (core.js), bật ở `tool.html` khi `p.role === 'user'`.
+- `renderProposalNavSection` trả về sớm: 0 mục bấm được, nhưng VẪN hiện tiêu đề +
+  badge cam "Đang cập nhật" + hộp giải thích. **Ẩn sạch thì sale tưởng tool hỏng.**
+- ⚠️ `requireLogin` BẤT ĐỒNG BỘ → cây thư mục có thể dựng xong TRƯỚC khi biết role.
+  Phải gọi lại `renderFileTree()`, không thì nhân viên vẫn thấy nguyên danh sách.
+- `createNewProposal()` báo đúng lý do khi đang khoá (trước đó chỉ đường vào ngõ cụt:
+  "chọn bản mẫu ở cột bên trái" — mà cột trái đã khoá). Nút KHÔNG ẩn vì Name Card
+  không bị khoá, vẫn cần nó.
+- **MỞ LẠI:** `appState.khoaProposal = false` trong `tool.html` (có ghi chú tại chỗ)
+  + bump `js/core.js?v=` và `js/proposal.js?v=`.
+- Đo: chạy thật hàm dựng cây với cờ bật → 0 mục bấm được, 0 lỗi console. Live đã phục vụ
+  đúng `proposal.js?v=36` / `core.js?v=33`.
+- ⚠️ **CÒN HỞ, chủ tool CHƯA quyết:** khoá mới áp cho role `user` (**77 người**).
+  Còn **11 tài khoản `admin`** (leader/sale: Trương Trọng Nhân, Huỳnh Thanh Long,
+  Ty Trieu, Vincent, Mai Thành Trọng…) **VẪN mở được Báo giá**. Super Admin đúng 1
+  người (`hadangtien0702@gmail.com`). Đề xuất: khoá cả admin.
+
+**② ☠️ LỖI THẬT: "Ai đang online" chưa từng chạy với ai ngoài super_admin.**
+Đo: bảng `presence` có **đúng 1 dòng** trong khi **4 người** có sự kiện thật trong 1 giờ.
+Thử ghi bằng token user thường: `insert` thuần OK, nhưng `upsert` (đúng câu
+`pingPresence()` chạy) trả **42501 — new row violates row-level security policy**.
+`upsert` = `INSERT ... ON CONFLICT DO UPDATE` nên cần **cả policy UPDATE** — policy đó
+CÓ trong `schema.sql` nhưng **chưa tồn tại trên DB thật** (đúng bẫy đã ghi: SQL Editor
+chạy cả file trong MỘT giao dịch, lỗi một chỗ là huỷ sạch phần sau).
+**→ CHỦ TOOL PHẢI CHẠY:**
+```sql
+drop policy if exists "presence: tự cập nhật của mình" on public.presence;
+create policy "presence: tự cập nhật của mình" on public.presence for update
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+```
+Chưa chạy → tính năng vẫn chỉ hiện mình chủ tool. **Chưa xác nhận lại sau khi chạy.**
+
+**③ Biểu đồ "Người hoạt động mỗi ngày" — 4 vòng sửa theo ảnh chụp**
+- ☠️ **CẮT hẳn những ngày TRƯỚC ngày đầu tiên có số liệu.** Hệ đo lường bật 23/07 nên
+  30 ngày = 21 cột rỗng, 60 ngày = 51 cột rỗng → cụm cột dồn góc phải, chủ tool:
+  *"biểu đồ gì đây em"*, *"thấy gớm vậy em"*. Vòng đầu em chỉ dán thêm dòng ghi chú —
+  **đó là vá bề mặt**, mảng trắng vẫn nguyên.
+  ⚠️ CHỈ cắt phần ĐẦU. Ngày 0 người nằm GIỮA vùng đã có số liệu là thông tin thật.
+  → Hệ quả: hiện 14/30/60 ngày đều ra 9 cột như nhau cho tới khi dữ liệu dày lên.
+- ☠️ **`flex: 1` không có trần** → cột "Top mẫu" kéo biểu đồ cao 420px trong khi thanh
+  rộng 31px = **12,7:1** (cây kim). `max-height: 260px` → **7,6:1**. Kèm
+  `.usage-filter { margin-top: auto }` để cột trái không hở đáy.
+- `gap` và `--uc-bar-max` co giãn theo SỐ CỘT THỰC (không theo `soNgay`).
+- Bỏ 21 gạch xám: ngày 0 người không vẽ thanh nào (`min-height: 3px` là nhiễu).
+
+**④ Bộ lọc + 3 khối bị chen chữ**
+- Gỡ 2 ô nhập ngày (chủ tool "không cần") → gỡ luôn `doiKhoangTuInput`, `fmtInput`,
+  `parseInput`. Pill còn **14/30/60**, mốc đang chọn **tô đặc màu tím** (`.is-on` +
+  `danhDauPreset()`) — bỏ ô ngày rồi thì đây là chỉ báo DUY NHẤT, dựa vào viền focus
+  là mất dấu ngay khi bấm chỗ khác.
+- ☠️ `.usage-block-head` nhét tiêu đề + chú thích CHUNG MỘT HÀNG → chú thích 3–4 mệnh đề
+  bám sát làm tiêu đề mất trọng lượng (chủ tool khoanh đỏ cả 3 khối). `flex-wrap` không
+  cứu được vì chú thích vẫn vừa một dòng. → `display: block`, chú thích xuống dòng riêng.
+- ☠️ `.usage-bar .online-bar { width: auto }` còn sót từ hồi `.usage-bar` chứa HAI thứ;
+  27/07 hộp chọn ngày dời đi, dòng này ở lại → thanh online co thành viên thuốc chơ vơ.
+  → **Gỡ phần tử khỏi container thì phải rà lại CSS viết CHO container đó.**
+
+**⑤ Skill mới**: `data-analysis` (github.com/dongzhang84/data-analysis-skill, MIT) cài vào
+`~/.claude/skills/`. Lưu ý: 2 script Python tự chạy `pip install` khi thiếu pandas/openpyxl.
+
+**CÒN TREO (chủ tool đã giao, CHƯA làm):**
+- Bảng "Theo từng người": cột THÀNH VIÊN ăn hết chỗ dư → tên cách "TÊN TIẾNG ANH" ~700px.
+  ⚠️ KHÔNG được gộp 2 cột lại — chủ tool đã chốt tách riêng ngày 27/07.
+- Cột **TẢI VỀ** trong bảng đó phải bấm được → mở popup "đã tải gì" (hạ tầng có sẵn:
+  `moChiTietTaiVe` + `#dl-backdrop`).
+
+Versions: `core.js?v=33` · `proposal.js?v=36` · `style.css?v=83` · `members.js?v=41` ·
+`portal.css?v=66` · `auth.js?v=10` · badge **v1.34**.
+
 ### 2026-07-31 (QUYỀN ADMIN: sửa · thêm · xoá tài khoản). ✅ ĐÃ PUSH (v1.33).
 
 Chủ tool đặt hàng: *"anh cần quyền admin có thể thay đổi - thêm - xóa tài khoản"*, lý do
