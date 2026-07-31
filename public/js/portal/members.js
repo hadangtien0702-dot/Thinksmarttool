@@ -975,8 +975,6 @@
   function ngayKey(ts) { const d = new Date(ts); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
   function batDauNgay(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
   function fmtNgay(d) { return d.getDate() + '/' + (d.getMonth() + 1); }
-  function fmtInput(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-  function parseInput(v) { const p = (v || '').split('-'); return p.length === 3 ? new Date(+p[0], +p[1] - 1, +p[2]) : null; }
 
   function thoiGianTuong(ts) {
     if (!ts) return '<span class="ur-never">chưa</span>';
@@ -996,9 +994,8 @@
     $('ms-tabs').style.display = '';   // bỏ inline none → về CSS inline-flex (hug nội dung)
     $('tab-members').addEventListener('click', function () { doiTab('members'); });
     $('tab-usage').addEventListener('click', function () { doiTab('usage'); });
-    // Hộp "Xem theo ngày": input từ/đến + nút nhanh → lọc biểu đồ + bảng (không đụng 3 thẻ trên)
-    $('usage-from').addEventListener('change', doiKhoangTuInput);
-    $('usage-to').addEventListener('change', doiKhoangTuInput);
+    // Mốc nhanh 14/30/60 → lọc biểu đồ + bảng (không đụng 3 thẻ trên).
+    // Hai ô nhập ngày đã GỠ 31/07 theo yêu cầu chủ tool ("không cần").
     $('usage-presets').addEventListener('click', function (e) {
       const b = e.target.closest('[data-preset]');
       if (b) datPreset(parseInt(b.getAttribute('data-preset'), 10));
@@ -1202,34 +1199,33 @@
     apDungKhoang();       // lọc theo khoảng → số tổng + biểu đồ + bảng
   }
 
-  // Đặt khoảng mặc định 14 ngày (lần đầu) + giới hạn ô ngày trong 90 ngày đã nạp.
+  // Đặt khoảng mặc định 14 ngày (lần đầu). Hai ô nhập ngày đã gỡ 31/07 nên không còn
+  // phải đồng bộ giá trị/min/max cho chúng nữa.
   function khoiTaoKhoang() {
     const homNay = batDauNgay(new Date());
     if (!khoangTo) { khoangTo = homNay; khoangFrom = new Date(homNay.getTime() - 13 * NGAY_MS); }
-    $('usage-from').value = fmtInput(khoangFrom);
-    $('usage-to').value = fmtInput(khoangTo);
-    const min90 = fmtInput(new Date(homNay.getTime() - 90 * NGAY_MS));
-    const maxNay = fmtInput(homNay);
-    $('usage-from').min = min90; $('usage-from').max = maxNay;
-    $('usage-to').min = min90; $('usage-to').max = maxNay;
+    danhDauPreset(soNgayCuaKhoang());
   }
 
-  function doiKhoangTuInput() {
-    let f = parseInput($('usage-from').value);
-    let t = parseInput($('usage-to').value);
-    if (!f || !t) return;
-    if (f > t) { const tmp = f; f = t; t = tmp; }   // chọn ngược thì tự đảo
-    khoangFrom = f; khoangTo = t;
-    $('usage-from').value = fmtInput(f); $('usage-to').value = fmtInput(t);
-    apDungKhoang();
+  function soNgayCuaKhoang() {
+    if (!khoangFrom || !khoangTo) return 0;
+    return Math.round((batDauNgay(khoangTo).getTime() - batDauNgay(khoangFrom).getTime()) / NGAY_MS) + 1;
+  }
+
+  // Mốc đang chọn phải NHÌN LÀ BIẾT. Bỏ hai ô ngày rồi thì dải nút này là chỉ báo duy
+  // nhất cho "đang xem khoảng nào" — dựa vào viền focus là sai, bấm ra chỗ khác một cái
+  // là mất dấu.
+  function danhDauPreset(soNgay) {
+    document.querySelectorAll('#usage-presets [data-preset]').forEach(function (b) {
+      b.classList.toggle('is-on', parseInt(b.getAttribute('data-preset'), 10) === soNgay);
+    });
   }
 
   function datPreset(soNgay) {
     const homNay = batDauNgay(new Date());
     khoangTo = homNay;
     khoangFrom = new Date(homNay.getTime() - (soNgay - 1) * NGAY_MS);
-    $('usage-from').value = fmtInput(khoangFrom);
-    $('usage-to').value = fmtInput(khoangTo);
+    danhDauPreset(soNgay);
     apDungKhoang();
   }
 
@@ -1268,8 +1264,10 @@
     const soNgay = Math.round((batDauNgay(khoangTo).getTime() - batDauNgay(khoangFrom).getTime()) / NGAY_MS) + 1;
     // Bộ chọn ngày nằm trong khối này nhưng lọc CẢ TRANG → phải nói ra, kẻo tưởng
     // nó chỉ đổi mỗi biểu đồ (chủ tool 27/07 dời bộ chọn xuống đây).
+    // Cắt "khoảng này áp dụng…" → "áp dụng…": dòng này còn được nối thêm cảnh báo
+    // thiếu số liệu ở cuối (veBieuDoKhoang), dài quá thì chính nó thành cái rối.
     $('usage-chart-range').textContent = fmtNgay(khoangFrom) + ' – ' + fmtNgay(khoangTo) +
-      ' · ' + soNgay + ' ngày · khoảng này áp dụng cho cả trang';
+      ' · ' + soNgay + ' ngày · áp dụng cho cả trang';
 
     veBieuDoKhoang(theoNgay, khoangFrom, soNgay);
     veTopMau(theoMau);
@@ -1332,16 +1330,51 @@
       if (n > max) max = n;
       cols.push({ d: d, n: n });
     }
-    // Nhiều cột (khoảng dài) thì thưa nhãn ngày cho đỡ rối; luôn hiện nhãn cột cuối.
-    const step = soNgay <= 16 ? 1 : Math.ceil(soNgay / 12);
-    $('usage-chart').innerHTML = cols.map(function (c, idx) {
+    // ☠️ CẮT PHẦN ĐẦU CHƯA TỪNG CÓ SỐ LIỆU (chủ tool 31/07: "biểu đồ gì đây em",
+    // "thấy gớm vậy em"). Hệ đo lường mới bật 23/07/2026 nên chọn 30 ngày là 21 cột
+    // rỗng, chọn 60 ngày là 51 cột rỗng — cụm cột dồn hết vào góc phải, không đọc ra gì.
+    // Trước đó chỉ dán thêm một dòng ghi chú: đó là VÁ BỀ MẶT, mảng trắng vẫn nguyên.
+    // Nay bỏ hẳn những ngày TRƯỚC ngày đầu tiên có ghi nhận.
+    // ⚠️ CHỈ cắt phần ĐẦU. Ngày 0 người nằm GIỮA vùng đã có số liệu là thông tin thật
+    // ("hôm đó không ai dùng") — cắt đi là nói dối biểu đồ.
+    const iDau = cols.findIndex(function (c) { return c.n > 0; });
+    const daCat = iDau > 0 ? iDau : 0;
+    const veCols = daCat ? cols.slice(daCat) : cols;
+
+    const oGhiChu = $('usage-chart-range');
+    if (oGhiChu) {
+      if (iDau === -1) oGhiChu.textContent += ' · chưa có số liệu trong khoảng này';
+      else if (daCat) oGhiChu.textContent += ' · biểu đồ tính từ ' + fmtNgay(veCols[0].d) +
+        ' (ngày đầu có số liệu)';
+    }
+
+    // Nhiều cột thì thưa nhãn ngày cho đỡ rối; luôn hiện nhãn cột cuối.
+    // Tính theo SỐ CỘT THỰC SỰ VẼ, không theo soNgay — cắt xong mà vẫn thưa nhãn theo
+    // 60 ngày thì 9 cột chỉ còn 2 nhãn.
+    const soCot = veCols.length;
+    const step = soCot <= 16 ? 1 : Math.ceil(soCot / 12);
+    const chart = $('usage-chart');
+
+    // ☠️ `gap: 6px` CỐ ĐỊNH là thủ phạm làm cột mảnh như cây kim khi khoảng dài
+    // (đo 31/07 với 30 cột / bề rộng 1240px): 29 khe × 6px ăn mất 174px, mỗi ô còn
+    // 15,9px, thanh `width: 66%` chỉ còn **11px** trong khi cao 136px — tỉ lệ 12,3:1.
+    // Khe VÀ trần bề rộng thanh đều co giãn theo số cột: ít cột thì cho thanh dày hẳn
+    // (khoảng rộng mà thanh vẫn 34px thì nhìn lỏng lẻo), nhiều cột thì siết lại.
+    chart.style.gap = (soCot > 20 ? 3 : soCot > 14 ? 4 : 6) + 'px';
+    chart.style.setProperty('--uc-bar-max', (soCot <= 10 ? 46 : soCot <= 20 ? 38 : 34) + 'px');
+
+    chart.innerHTML = veCols.map(function (c, idx) {
       const h = c.n ? Math.max(Math.round((c.n / max) * 100), 6) : 0;
       const nhan = c.d.getDate() + '/' + (c.d.getMonth() + 1);
       const hienX = (idx % step === 0) || idx === cols.length - 1;
+      // Ngày không có ai hoạt động thì KHÔNG vẽ gì. Trước đây vẫn vẽ một thanh
+      // `min-height: 3px` màu xám → 21 gạch mờ rải khắp đáy, nhìn như nhiễu chứ
+      // không đọc ra thông tin gì (khoảng trống đã tự nói "ngày này không ai dùng").
+      const thanh = c.n ? '<span class="uc-bar" style="height:' + h + '%"></span>' : '';
       return '<div class="uc-col" title="' + nhan + ': ' + c.n + ' người">' +
                '<div class="uc-barwrap">' +
                  '<span class="uc-n">' + (c.n || '') + '</span>' +
-                 '<span class="uc-bar' + (c.n ? '' : ' is-zero') + '" style="height:' + h + '%"></span>' +
+                 thanh +
                '</div>' +
                '<span class="uc-x">' + (hienX ? c.d.getDate() : '') + '</span>' +
              '</div>';

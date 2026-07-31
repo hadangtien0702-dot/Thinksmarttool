@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/vendor/animate.min.css">
-  <link rel="stylesheet" href="style.css?v=82">
+  <link rel="stylesheet" href="style.css?v=83">
   <link rel="stylesheet" href="/dialog.css?v=4">
 </head>
 <body>
@@ -149,7 +149,7 @@
 
         <!-- Phiên bản app: cập nhật số này mỗi lần deploy (xem conventions.md) -->
         <div class="sidebar-version-footer">
-          <span class="version-badge">v1.33</span>
+          <span class="version-badge">v1.34</span>
           <span class="version-date">31/07/2026</span>
         </div>
       </aside>
@@ -380,6 +380,20 @@
         if (p && TSTAuth.logUsage) TSTAuth.logUsage('open_tool');
         // Đang online: heartbeat cho biết người này đang mở TOOL (N3).
         if (p && TSTAuth.startPresence) TSTAuth.startPresence('tool');
+        // ---- KHOÁ MỤC BÁO GIÁ VỚI NHÂN VIÊN (chủ tool 31/07/2026) ----------------
+        // Nội dung mẫu báo giá đang được sửa; sale lấy bản dở gửi khách là SAI SỐ LIỆU
+        // với khách hàng thật của một công ty bảo hiểm nhân thọ — loại lỗi không sửa sau
+        // được. Chỉ khoá role 'user'; admin/super_admin vẫn vào để sửa nội dung.
+        // ⚠️ MỞ LẠI: đổi dòng dưới thành `appState.khoaProposal = false;` (hoặc xoá hẳn
+        // khối này) rồi bump `js/core.js?v=` + `js/proposal.js?v=` trong tool.html.
+        if (p && p.role === 'user') {
+          appState.khoaProposal = true;
+          // requireLogin là bất đồng bộ — cây thư mục có thể đã dựng XONG trước khi biết
+          // role. Không vẽ lại thì nhân viên vẫn thấy nguyên danh sách mẫu.
+          if (typeof renderFileTree === 'function' && appState.svgsList && appState.svgsList.length) {
+            renderFileTree();
+          }
+        }
         // Super Admin dùng được MỌI công cụ (chủ tool quyết 20/07/2026) — trước đây
         // bị đá về /members, giờ không chặn nữa.
         if (p && (p.role === 'admin' || p.role === 'super_admin')) {
@@ -395,8 +409,8 @@
        (napThuVienPdf). Muốn đưa lại vào đây thì nhớ là đang đánh đổi tốc độ vào trang. -->
   <!-- Mỗi công cụ một file JS riêng — core nạp trước, main nạp cuối -->
   <script src="/js/ui-dialog.js?v=3"></script>
-  <script src="js/core.js?v=31"></script>
-  <script src="js/proposal.js?v=35"></script>
+  <script src="js/core.js?v=32"></script>
+  <script src="js/proposal.js?v=36"></script>
   <script src="js/brochure.js?v=12"></script>
   <script src="js/sosanh.js?v=10"></script>
   <script src="js/namecard.js?v=5"></script>

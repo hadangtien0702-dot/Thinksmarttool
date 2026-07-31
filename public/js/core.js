@@ -14,6 +14,11 @@
 
 // --- STATE MANAGEMENT ---
 let appState = {
+  // KHOÁ MỤC BÁO GIÁ VỚI NHÂN VIÊN (chủ tool 31/07/2026): nội dung mẫu báo giá đang
+  // được sửa, sale mà lấy bản dở gửi khách là sai số liệu với khách hàng thật.
+  // Bật ở tool.html sau khi biết role (chỉ role 'user' bị khoá; admin/super_admin
+  // vẫn vào để sửa nội dung). Mở lại: đặt về false trong tool.html.
+  khoaProposal: false,
   mode: 'server', // 'server' = local Express backend | 'static' = deployed (Vercel), browser-only
   svgsList: [],
   library: { brochure: {}, namecard: {} }, // downloadable assets grouped by carrier

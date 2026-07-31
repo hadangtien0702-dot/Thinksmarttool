@@ -1416,6 +1416,25 @@ select.text-input-field option, .select-field option { background-color: var(--s
   padding: 1px 7px; margin-left: 8px;
   font-variant-numeric: tabular-nums;
 }
+
+/* ---- MỤC BÁO GIÁ ĐANG TẠM KHOÁ (chủ tool 31/07/2026) ----------------------
+   Nhân viên vẫn THẤY mục, nhưng không có gì để bấm + có lời giải thích. Ẩn sạch
+   thì sale tưởng tool hỏng hoặc mình bị mất quyền. Màu chữ lấy #96590A (đã đo đạt
+   AA trên nền sáng) — KHÔNG dùng thẳng token --warning, nó chỉ 3.62:1. */
+.nav-badge-lock {
+  font-size: var(--fs-2xs); font-weight: 800; letter-spacing: 0.2px;
+  color: #96590A; background: var(--warning-soft); border-radius: var(--r-pill);
+  padding: 2px 8px; margin-left: 8px; white-space: nowrap;
+}
+body.dark-theme .nav-badge-lock { color: #E9A23B; }
+.nav-section.is-locked .tree-folder-arrow { display: none; }   /* không có gì để mở ra */
+.nav-locked-note {
+  display: flex; flex-direction: column; gap: 4px;
+  margin: 4px 8px 8px; padding: 12px 14px;
+  background: var(--warning-soft); border-radius: var(--r-md);
+  font-size: var(--fs-sm); line-height: 1.5; color: var(--text-2);
+}
+.nav-locked-note b { color: var(--text); font-weight: 700; }
 .nav-empty { padding: 9px 14px; font-size: var(--fs-sm); text-align: left; align-items: flex-start; color: var(--text-3); line-height: 1.5; }
 
 /* --------------------------------------------------------------------------

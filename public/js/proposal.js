@@ -86,6 +86,25 @@ const US_STATES = [
 
 // --- NAV SECTION: "Proposal / Báo giá" (gọi từ renderFileTree trong js/main.js) ---
 function renderProposalNavSection(container, proposals, q) {
+  // ĐANG KHOÁ (nhân viên): KHÔNG dựng danh sách mẫu nào cả — không có mục để bấm thì
+  // không có đường mở nhầm. Cố ý vẫn hiện tiêu đề "Proposal / Báo giá" kèm lời giải
+  // thích: ẩn sạch thì sale tưởng tool hỏng hoặc mình bị mất quyền, lại nhắn hỏi.
+  if (appState.khoaProposal) {
+    const sec = makeCollapsibleFolder(
+      'Proposal / Báo giá <span class="nav-badge-lock">Đang cập nhật</span>',
+      { extraClass: 'nav-section is-locked', iconHTML: NAV_ICONS.proposal }
+    );
+    const hop = document.createElement('div');
+    hop.className = 'nav-locked-note';
+    hop.innerHTML =
+      '<b>Đang chỉnh sửa nội dung</b>' +
+      '<span>Mẫu báo giá tạm khoá để cập nhật số liệu. Anh chị dùng tạm ' +
+      '<b>Brochure</b> và <b>Name Card</b> — mục này sẽ mở lại ngay khi xong.</span>';
+    sec.content.appendChild(hop);
+    container.appendChild(sec.folder);
+    return 0;
+  }
+
   const propGroups = {};
   proposals.forEach(f => {
     const c = carrierOf(f);
