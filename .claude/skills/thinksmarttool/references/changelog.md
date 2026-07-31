@@ -3,6 +3,45 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
+### 2026-07-31 (khuya 2 — 4 MẪU BẢN XUẤT LẠI, số La Mã đã outline). ✅ ĐÃ PUSH (v1.37).
+
+Chủ tool xuất lại toàn bộ 4 mẫu sau khi phát hiện **NLG Term Life mất số "II"** (ô huy hiệu
+trống trơn) ở bản v1.35.
+
+**Đã thay + nén** (quy trình như v1.35, bản cũ ở `_Archive/templates-cu-2026-07-31-lan2/`):
+| Mẫu | MB | Ô panel | **Ô đại lý** | Rác |
+|---|---|---|---|---|
+| AIG IUL | 2,02 | 16 | **4** | 0 |
+| AIG Term Life | 2,01 | 13 | **4** | 0 |
+| NLG IUL | 2,60 (nén từ 8,18) | 16 | **4** | 0 |
+| NLG Term Life | 2,60 (nén từ 8,17) | 13 | **4** | 0 |
+Chữ/số giống HỆT bản chủ tool gửi · hai nơi khớp mã băm · cây thư mục đúng 5 mẫu.
+
+**☠️ BÁO ĐỘNG GIẢ — suýt kết luận "mất hết số La Mã".**
+Quét `<text>` thấy 3/4 mẫu KHÔNG có số La Mã nào → tưởng bản mới xoá mất. Thực ra chủ tool
+đã **create outlines** (chữ thành `<path>`), nên dò theo `<text>` không ra.
+→ Render thật rồi **đếm phần tử nằm TRONG ô huy hiệu**: mục I có 1 nét, mục "PHÍ CHẤM DỨT"
+có **2 nét** = chữ "II" — đủ ở cả 4 mẫu, **NLG Term Life đã hết trống**.
+→ Bài học: **dò theo LOẠI THẺ là mong manh.** Chữ có thể là `<text>`, có thể là `<path>`.
+Muốn biết "ô này có chữ không" thì phải RENDER rồi đo hình học, đừng grep thẻ.
+
+**Đo lệch số La Mã (chủ tool nghi "II bị lệch") — KHÔNG lệch:**
+II lệch hơn I: **0,14–0,15 px ngang · 0,05–0,07 px dọc** trên ô 28px = **0,5%**. Mắt không thấy.
+Có thật: ô huy hiệu lệch cỡ nhau (mục I **27,5** · "MỨC CHI TRẢ" **28,1** · "PHÍ CHẤM DỨT" **28,6** px).
+
+**⚠️ CÒN SÓT (đã báo chủ tool):** `NLG Term Life` còn **một `<text>` chữ "I"** chưa outline
+tại X=26,4 Y=458,6, **chồng lên** bản đã outline và lệch **1,25 px ngang** → nhìn kỹ thấy dày/nhoè.
+KHÔNG gây lỗi tool (panel vẫn đúng 13 ô, 0 rác). Lần xuất sau outline nốt là xong.
+
+**Bẫy công cụ đo gặp trong phiên:** bàn đo fetch thẳng `/Export/...` → 404 vì Express chỉ phục vụ
+`public/`. Kết quả rỗng, suýt đọc thành "ô trống không có chữ". Phải qua
+`/api/svgs/content?path=...`. → **Kết quả rỗng thì nghi ĐƯỜNG TẢI trước khi nghi dữ liệu.**
+
+Versions: badge **v1.37** (chỉ đổi file mẫu + badge, mã nguồn giữ nguyên v1.36).
+
+**CÒN TREO:** (1) chủ tool nghiệm thu số liệu rồi mới **mở khoá** mục Báo giá cho 77 nhân viên;
+(2) chưa quyết có khoá luôn **11 admin** không.
+
 ### 2026-07-31 (khuya — SỬA LỖI DÒ TRƯỜNG ĐẠI LÝ sau khi thay mẫu). ✅ ĐÃ PUSH (v1.36).
 
 ☠️ **LỖI DO TÔI GÂY RA khi thay 4 mẫu ở v1.35 — và luật đã ghi sẵn từ 15/07 mà tôi không tra.**
