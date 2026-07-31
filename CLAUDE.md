@@ -31,6 +31,36 @@ nguồn anh Tiến đưa. Thiếu thì **hỏi**, không đoán.
 Sai một con số trong bảng minh hoạ quyền lợi là **sai với khách hàng thật** của một
 công ty bảo hiểm nhân thọ. Đây là loại lỗi không có "sửa sau cũng được".
 
+## 2b. LUẬT VỀ 4 MẪU PROPOSAL — đọc TRƯỚC khi thay file mẫu
+
+Đưa lên đây (thay vì để trong changelog 245 KB) vì **31/07/2026 tôi đã vấp đúng chỗ này**:
+luật dưới có sẵn trong changelog từ 15/07 mà tôi không tra, thay mẫu mới xong làm vỡ.
+Anh Tiến: *"anh nhớ cái này đã note lại rồi mà em, em không kiểm tra hả em?"*
+
+**① Mục "3. Thông tin đại lý" CHỈ ĐƯỢC CÓ ĐÚNG 4 Ô:**
+Tên Agent Assistant · SĐT Agent Assistant · Tên Licensed Agent · SĐT Licensed Agent.
+CEO **không** được sửa. Thừa ô nào cũng là lỗi — sale gõ nhầm vào tiêu đề là phá bản vẽ.
+
+**② Bộ dò trường neo theo NHÃN, không theo toạ độ.** Vùng đại lý = mọi dòng nằm DƯỚI chữ
+`PRESENTED BY` (`yPresentedBy` trong `js/proposal.js`). Ngưỡng cứng `Y >= 1100` cũ **đã vỡ**
+khi chủ tool xuất lại mẫu với bố cục dịch xuống. Đừng quay về ngưỡng cứng.
+
+**③ Thay file mẫu — 5 bước, thiếu bước nào cũng có lỗi thật đã xảy ra:**
+1. **Sao lưu** bản đang chạy trước khi ghi đè.
+2. Thay vào **CẢ HAI** nơi: `2-Templates/<hãng>/` **và** `public/templates/`. Đối chiếu mã băm.
+   `2-Templates/` bị gitignore → thứ chạy trên live là `public/templates/`.
+3. ☠️ **Sao lưu KHÔNG được để trong `2-Templates/`** — thư mục đó bị `PROPOSAL_SCAN_DIRS`
+   quét, cây thư mục lập tức thành 9 mẫu (4 bản cũ hiện trùng tên). Để ở `_Archive/`.
+4. **Nén ảnh nền nếu > 2800px.** File xuất ra chỉ 1190px bề ngang. Đo 31/07: NLG
+   5802px → 2800px = **8,18 → 2,60 MB (−68%)**. **GIỮ PNG** — ảnh có vùng trong suốt
+   (alpha 0..255), chuyển JPEG nhẹ hơn 6 lần nhưng **hỏng nền**.
+5. **Kiểm bằng chính hàm thật của tool** (`loadSvgContent` + `populateProposalTextsEditor`
+   chạy trong một trang đo tạm), và **IN RA ĐỌC TỪNG Ô** — đếm số ô rồi báo xong là cách
+   tôi để lọt 7 ô rác ngày 31/07.
+
+**④ Số La Mã trong huy hiệu mục có thể là `<text>` HOẶC `<path>`** (chủ tool create outlines).
+Đừng grep `<text>` rồi kết luận "mất chữ" — phải render và **đếm phần tử nằm trong ô huy hiệu**.
+
 ## 3. Chạy thử ở máy
 
 ```bash
