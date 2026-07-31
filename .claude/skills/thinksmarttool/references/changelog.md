@@ -3,6 +3,46 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
+### 2026-07-31 (khuya — SỬA LỖI DÒ TRƯỜNG ĐẠI LÝ sau khi thay mẫu). ✅ ĐÃ PUSH (v1.36).
+
+☠️ **LỖI DO TÔI GÂY RA khi thay 4 mẫu ở v1.35 — và luật đã ghi sẵn từ 15/07 mà tôi không tra.**
+
+Chủ tool: *"các phần về thông tin đại lý chỉ được chỉnh 04 phần này — anh nhớ cái này đã note
+lại rồi mà em, em không kiểm tra hả em?"* Đúng: luật "Section 3 chỉ có 4 trường" nằm trong
+changelog 15/07, tôi thay mẫu mới mà không đọc lại.
+
+**Triệu chứng:** mục 3 hiện tới 11 ô, gồm `II` · `PHÍ CHẤM DỨT HỢP ĐỒNG SỚM` ·
+`EARLY SURRENDER CHARGE` · `Nếu người tham gia` · `hủy` · `hoặc` · `ngưng đóng phí` —
+toàn TIÊU ĐỀ và chữ trong đoạn văn, đều sửa được. Sale gõ nhầm là phá bản vẽ.
+
+**Nguyên nhân:** `isAgentZone = absoluteY >= 1100` — ngưỡng CỨNG. Mẫu mới bố cục dịch
+xuống nên khối "II. PHÍ CHẤM DỨT…" rơi vào vùng đó.
+
+**Sửa gốc — neo theo NHÃN, không theo toạ độ:** tìm Y của `PRESENTED BY` rồi chỉ nhận dòng
+nằm DƯỚI nó. Đo cả 4 mẫu: nhãn này LUÔN CÓ (Y = 1349 / 1259 / 1347 / 1255), trường đại lý
+thật luôn ở dưới, mọi thứ lọt nhầm luôn ở trên. Bố cục dịch bao nhiêu cũng đúng. Không tìm
+thấy nhãn thì lùi về ngưỡng cũ. Chặn thêm số La Mã đứng một mình (`/^[IVX]{1,4}$/`).
+
+**Đo lại bằng chính hàm thật, ĐỌC NỘI DUNG từng ô (không chỉ đếm):**
+| Mẫu | Tổng ô trước → sau | Ô đại lý | Rác còn lại |
+|---|---|---|---|
+| AIG IUL | 22 → **16** | **đúng 4** | 0 |
+| AIG Term Life | 23 → **13** | **đúng 4** | 0 |
+| NLG IUL | 22 → **16** | **đúng 4** | 0 |
+| NLG Term Life | 22 → **13** | **đúng 4** | 0 |
+4 ô đúng luật: Tên/SĐT Agent Assistant · Tên/SĐT Licensed Agent. CEO vẫn bị loại.
+
+☠️☠️ **BÀI HỌC LỚN NHẤT PHIÊN — ĐẾM Ô KHÔNG PHẢI LÀ KIỂM.**
+Ở v1.35 tôi đã chạy đúng hàm thật, báo "4/4 mẫu dựng panel 22–23 ô, 12/12 lần sửa ăn đúng"
+rồi kết luận đạt. **Cả hai con số đều thật, và cả hai đều vô nghĩa** — tôi chỉ đếm số ô và
+thử 3 ô ĐẦU (vốn là Khách hàng/Tuổi/Mức bảo vệ, luôn đúng). Chưa bao giờ mở ra ĐỌC 22 ô đó
+là những gì. Nếu đọc thì thấy ngay 7 ô rác.
+→ Với thứ sinh ra danh sách cho người dùng: **in hết ra và đọc bằng mắt**, đừng dừng ở tổng số.
+→ Và **thay mẫu/đổi dữ liệu đầu vào thì phải TRA LẠI LUẬT CŨ trong changelog trước**, vì
+   mọi bộ dò dựa trên toạ độ đều mong manh trước một file xuất lại.
+
+**CÒN TREO:** chủ tool báo **số La Mã "II" bị lệch** trong huy hiệu — chưa đo, chưa sửa.
+
 ### 2026-07-31 (tối — 4 MẪU NỘI DUNG MỚI + thiết kế lại tab Đo lường). ✅ ĐÃ PUSH (v1.35).
 
 **① THAY 4 MẪU PROPOSAL** — chủ tool tự cập nhật nội dung, giao qua `Export/`.

@@ -625,6 +625,22 @@ function populateProposalTextsEditor(svgEl, textElements) {
   const planItems = [];
   const planExtras = []; // non-$ editable labels: "20 năm", "120 tuổi", "Tuổi 63", "Cash Value at 63"
 
+  // ☠️ NEO KHỐI ĐẠI LÝ THEO NHÃN "PRESENTED BY", KHÔNG dùng ngưỡng Y cứng (sửa 31/07/2026).
+  // Ngưỡng cũ `Y >= 1100` vỡ ngay khi chủ tool xuất lại mẫu với bố cục dịch xuống: tiêu đề
+  // mục "II" / "PHÍ CHẤM DỨT HỢP ĐỒNG SỚM" / "EARLY SURRENDER CHARGE" rơi vào vùng đó và
+  // hiện thành 3 ô "Tên Agent Assistant" sửa được — trong khi chúng là TIÊU ĐỀ, không phải
+  // trường (chủ tool: "2 cái này đâu có được chỉnh sửa đâu em").
+  // Đo 31/07 trên cả 4 mẫu mới: "PRESENTED BY" LUÔN CÓ (Y = 1349 / 1259 / 1347 / 1255), và
+  // mọi trường đại lý thật nằm DƯỚI nó, mọi thứ lọt nhầm nằm TRÊN nó. Neo bằng chính nhãn
+  // của khối thì bố cục dịch bao nhiêu cũng đúng.
+  let yPresentedBy = 0;
+  textElements.forEach((e) => {
+    if (/^PRESENTED BY$/i.test(getLineTextContent(e).trim())) {
+      const y = getAbsoluteY(e);
+      if (y > yPresentedBy) yPresentedBy = y;
+    }
+  });
+
   textElements.forEach((el) => {
     // data-editor-id sits on the first tspan of a line → read the FULL line, not just that tspan
     const textContent = getLineTextContent(el).trim();
@@ -745,7 +761,9 @@ function populateProposalTextsEditor(svgEl, textElements) {
     // IUL names Y ≈ 1272, phones Y ≈ 1286 | TERMLIFE names Y ≈ 1173, phones Y ≈ 1187
     // Bottom bars: TERMLIFE Y ≈ 1224, IUL Y ≈ 1322 → both excluded by content pattern
     else {
-      const isAgentZone = absoluteY >= 1100; // Wide range, use content patterns to exclude bottom bar
+      // Dưới nhãn "PRESENTED BY" mới là khối đại lý. Không tìm thấy nhãn (mẫu lạ) thì
+      // lùi về ngưỡng cũ để không mất trắng trường — thà thừa còn hơn trống trơn.
+      const isAgentZone = yPresentedBy ? (absoluteY > yPresentedBy) : (absoluteY >= 1100);
       const isAgentColumn = absoluteX < 400; // Excludes CEO column (X≈420)
 
       // Exclude bottom bar items by content (address, website, CEO phone in footer)
@@ -755,7 +773,9 @@ function populateProposalTextsEditor(svgEl, textElements) {
                           textContent === '(678) 825-3737';
 
       // Skip label rows
-      const isLabel = /^(Agent Assistant|Licensed Agent|CEO|PRESENTED BY)$/.test(textContent);
+      // Nhãn tĩnh + SỐ LA MÃ đánh mục (I, II, III…) — không bao giờ là tên người.
+      const isLabel = /^(Agent Assistant|Licensed Agent|CEO|PRESENTED BY)$/.test(textContent) ||
+                      /^[IVX]{1,4}$/.test(textContent);
 
       // Only allow name/phone rows (short text, not static label)
       // US format "(346) 858-4277" or an all-digits number like "0938169130"
