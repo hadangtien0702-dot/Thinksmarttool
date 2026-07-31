@@ -319,6 +319,19 @@ create policy "presence: chỉ super admin đọc"
   on public.presence for select
   using (public.is_super_admin());
 
+-- ☠️ BẮT BUỘC (thêm 31/07/2026) — THIẾU CÂU NÀY LÀ TÍNH NĂNG "ĐANG ONLINE" CHẾT CÂM.
+-- Mỗi người phải đọc được ĐÚNG DÒNG CỦA MÌNH. Không phải để xem, mà vì client ghi
+-- heartbeat bằng `upsert`, và PostgREST dịch upsert thành `INSERT ... ON CONFLICT DO
+-- UPDATE` — lệnh này phải ĐỌC hàng để dò trùng khoá. Không có quyền đọc thì Postgres
+-- trả 42501, pingPresence() nuốt lỗi, và không ai biết là hỏng.
+-- Đo 31/07 bằng token user thường: insert ghi được · update trả 204 mà KHÔNG ghi gì ·
+-- upsert luôn 42501. Bảng khi đó có đúng 1 dòng (super_admin) trong khi 4 người đang dùng.
+-- Policy này KHÔNG lộ ai đang online cho nhau: mỗi người chỉ thấy dòng của chính mình.
+drop policy if exists "presence: tự đọc dòng của mình" on public.presence;
+create policy "presence: tự đọc dòng của mình"
+  on public.presence for select
+  using (user_id = auth.uid());
+
 create index if not exists presence_last_seen_idx on public.presence (last_seen desc);
 
 -- ============================================================================

@@ -136,6 +136,13 @@ function initEventListeners() {
   // Zoom & Pan Mouse Wheel events
   if (dom.canvasContainer) {
     dom.canvasContainer.addEventListener('wheel', (e) => {
+      // ☠️ ĐỪNG NUỐT WHEEL Ở VÙNG CHỈ ĐỌC (chủ tool 31/07: "trang này anh scroll không
+      // được"). Thư viện Brochure (#library-view) và Bảng so sánh (#doc-viewport) chỉ
+      // để ĐỌC — không có gì để zoom — nhưng chúng nằm trong .canvas-container nên
+      // `preventDefault()` ở đây chặn luôn cuộn của trình duyệt.
+      // Cảnh báo này đã ghi sẵn trong sosanh.js từ 22/07 ("main.js nuốt wheel để đổi
+      // thành zoom → LĂN CHUỘT KHÔNG CUỘN ĐƯỢC") mà vẫn để sót đúng chỗ Brochure.
+      if (e.target.closest('#library-view, #doc-viewport')) return;
       e.preventDefault();
       // Delta direction mapping
       const delta = -e.deltaY * 0.0015;

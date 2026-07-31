@@ -3,6 +3,79 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
+### 2026-07-31 (tối — 4 MẪU NỘI DUNG MỚI + thiết kế lại tab Đo lường). ✅ ĐÃ PUSH (v1.35).
+
+**① THAY 4 MẪU PROPOSAL** — chủ tool tự cập nhật nội dung, giao qua `Export/`.
+- Vào **CẢ HAI** nơi (`2-Templates/` + `public/templates/`), khớp mã băm từng cặp.
+  Bản cũ lưu ở `_Archive/templates-cu-2026-07-31/`. `Export/` đã gitignore (20MB, trùng).
+- ☠️ **BẪY 1: đừng để bản sao lưu trong `2-Templates/`** — thư mục đó BỊ TOOL QUÉT
+  (`PROPOSAL_SCAN_DIRS`), cây thư mục lập tức thành **9 mẫu**: 4 bản cũ hiện trùng tên
+  cạnh 4 bản mới, sale mở nhầm là gửi khách số liệu sai. Dời sang `_Archive/` → về 5.
+- ☠️ **BẪY 2: ảnh nền NLG 5802×3750 làm file phình 2,3 → 8,2 MB.** Nén còn **2800px**
+  (bằng chuẩn AIG đang chạy tốt, vẫn gấp 2,4 lần bề rộng file xuất thật 1190px):
+  **8,18 → 2,60 MB (−68%)**. GIỮ PNG, KHÔNG chuyển JPEG dù nhẹ hơn 6 lần — ảnh có
+  vùng trong suốt (alpha 0..255), JPEG là hỏng nền. Phương án 256 màu nhẹ thêm 4 lần
+  nhưng chỉ 32,8 dB → bỏ, nền gradient dễ lộ vệt.
+- **Kiểm chứng bằng CHÍNH HÀM THẬT của tool** (`loadSvgContent` + `populateProposalTextsEditor`
+  chạy trong trang đo): 4/4 mẫu dựng panel **22–23 ô**, nhận **73–91 dòng**; gõ chuỗi thử
+  vào ô rồi đọc ngược bản vẽ → **12/12 lần ăn đúng**. File mẫu không bị phép thử ghi rác
+  (`KIEMTHU` xuất hiện 0 lần), hai nơi vẫn khớp.
+- ⚠️ **Số liệu quyền lợi thì CHỦ TOOL phải tự nghiệm thu** — không được tự đối chiếu/suy ra.
+
+**② ☠️ LỖI CUỘN Ở BROCHURE** (chủ tool: "trang này anh scroll không được").
+`main.js` bắt `wheel` trên cả `.canvas-container` và `preventDefault()` để đổi thành zoom.
+Vùng Brochure nằm trong đó → lăn chuột bị nuốt, mà cũng chẳng zoom được gì (chế độ chỉ đọc).
+Sửa: `if (e.target.closest('#library-view, #doc-viewport')) return;`.
+→ Cảnh báo này ĐÃ ghi trong `sosanh.js` từ 22/07 mà lúc đó chỉ vá riêng Bảng so sánh.
+**Vá riêng một chỗ cho lỗi dùng chung = để lại quả bom cho chỗ còn lại.**
+
+**③ ☠️ "AI ĐANG ONLINE" — nguyên nhân THẬT (đo 2 vòng mới ra).**
+Vòng 1 em đoán thiếu UPDATE policy → chủ tool chạy SQL → **VẪN HỎNG**.
+Đo tách bạch mới ra: `insert` ghi được · `update` trả **204 KHÔNG LỖI mà KHÔNG ghi gì** ·
+`upsert` luôn 42501. Thủ phạm là **quyền SELECT**: PostgREST dịch upsert thành
+`INSERT ... ON CONFLICT DO UPDATE`, lệnh này phải ĐỌC hàng để dò trùng khoá, mà policy
+cũ chỉ cho super_admin đọc.
+→ Thêm policy `presence: tự đọc dòng của mình` (`user_id = auth.uid()`) vào `schema.sql`.
+**KHÔNG lộ ai đang online cho nhau** — đo được: người thường đọc đúng **1 dòng** của mình.
+Sau khi chạy: ping ghi được, `page` đổi đúng, `last_seen` tươi lại, mỗi người **1 dòng**.
+Thực tế trên máy chủ tool: thanh hiện `2 đang online · 🛠 Tool 1` — lần đầu chạy thật từ 23/07.
+⚠️ **Bài học: `update` không báo lỗi KHÔNG có nghĩa là đã ghi. Phải đọc lại giá trị.**
+
+**④ Cắt 87% text phụ** (chủ tool 3 lần: "không ai đọc dòng text phụ mà dài như thế này").
+Nguyên tắc: **chỉ giữ thứ KHÔNG suy ra được từ cái mắt đang thấy.** 486 → 64 ký tự.
+- Phụ đề biểu đồ 89→11 (`18/7 – 31/7`) · ghi chú mốc 136→15 (`Số liệu từ 23/7`)
+- Khối Top: **xoá hẳn** 45 ký tự · Bảng người 63→16 (`còn 48 người nữa`)
+- Popup tải về 153→22; bỏ cả câu kể chuyện lịch sử ảnh chỉ lưu từ 27/07.
+☠️ Ngay sau khi bị nhắc, em còn thêm một dòng **136 ký tự** — dài hơn dòng vừa bị chê.
+**Định viết câu giải thích trong UI thì DỪNG: hỏi nó có nói được bằng bố cục/màu/bỏ bớt không.**
+
+**⑤ Thiết kế lại 2 bảng + thẻ online**
+- ☠️ `1fr` cho cột tên + các cột px cố định = **chỗ dư dồn HẾT vào cột tên**.
+  Bảng "Theo từng người": cột tên **1134 → 295px**, khoảng trắng **1043 → 204px**.
+  Popup: cột tên 756 → 260px. Popup **bỏ hẳn `fr`** → phần dư dồn ra RÌA PHẢI.
+  **Thà trống ở rìa (mắt bỏ qua) còn hơn trống giữa bảng (bắt mắt nhảy).**
+- Nhãn 1 dòng, hết trùng tên: `Đăng nhập cuối` · `Mở tool cuối` · `Lần mở` · `Lần tải`.
+- **Cột "Lần tải" BẤM ĐƯỢC** → mở popup lọc sẵn người đó, 1 người thì tự bung. Số 0 không làm nút.
+- Bấm 👁 **không bung xuống dưới** nữa → panel TRÁI 420px, sticky, danh sách đứng yên.
+  **CÓ ẢNH THẬT thì KHÔNG bày bảng "Thông tin sale đã điền"** (chủ tool) — bảng chỉ còn
+  là đường lùi cho lượt cũ chưa lưu ảnh.
+  ⚠️ Dọn code chết suýt nuốt mất `tim.push(f.v)` — thứ làm ô tìm khớp giá trị đã điền.
+- Thanh **đang online dời xuống cạnh bảng** (`.usage-grid-nguoi`, cột 300px), dựng lại
+  thành thẻ thống kê 4 hàng bằng `grid-area`; breakdown **dạng cột** (tên trái — số phải,
+  dóng thẳng mép). Màn <1100px trả về dạng ngang.
+- Biểu đồ: bỏ `max-width` của bảng (chỗ trống đã có thẻ online lấp).
+
+**⑥ ☠️ TỰ LÀM VỠ BỐ CỤC:** lúc rút ngắn text em **nuốt mất một `</div>`** → khối biểu đồ
+không đóng, "Top Proposal" lọt vào trong nó, lưới 2 cột chỉ còn 1 con. Em `node --check`
+JS nhưng **không kiểm HTML**. → **Sửa cấu trúc HTML thì phải ĐẾM THẺ ngay sau đó**
+(`<div>` vs `</div>`), và đánh dấu `<!-- /.tên-khối -->` tại chỗ đóng.
+
+Versions: `core.js?v=33` · `proposal.js?v=36` · `main.js?v=10` · `style.css?v=83` ·
+`members.js?v=47` · `portal.css?v=74` · `auth.js?v=10` · badge **v1.35**.
+
+**CÒN TREO:** (1) chủ tool nghiệm thu số liệu 4 mẫu trên live rồi mới **mở khoá** mục Báo giá;
+(2) chưa quyết có khoá luôn **11 tài khoản admin** không — hiện họ vẫn mở được Báo giá.
+
 ### 2026-07-31 (chiều — KHOÁ MỤC BÁO GIÁ + sửa tab Đo lường). ✅ ĐÃ PUSH (v1.34).
 
 **① 🔒 TẠM KHOÁ MỤC BÁO GIÁ VỚI NHÂN VIÊN** — việc GẤP, chủ tool đang sửa nội dung mẫu.

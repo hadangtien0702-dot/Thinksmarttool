@@ -231,6 +231,17 @@
       if (!sb) return;
       const session = await getSession();
       if (!session) return;
+      // ☠️ ĐANG HỎNG VỚI MỌI NGƯỜI TRỪ SUPER ADMIN — chờ 1 câu SQL (31/07/2026).
+      // Đo bằng token user thường:
+      //   insert  → ghi được
+      //   update  → trả 204 KHÔNG LỖI nhưng KHÔNG ghi gì (0 hàng khớp)
+      //   upsert  → 42501 "new row violates row-level security policy"
+      // Nguyên nhân: `presence` chỉ có policy SELECT cho super_admin. `upsert` bị
+      // PostgREST dịch thành `INSERT ... ON CONFLICT DO UPDATE`, mà ON CONFLICT phải
+      // ĐỌC hàng để dò trùng khoá → không có quyền đọc thì Postgres chặn.
+      // Cách sửa nằm ở DB, không phải ở đây: thêm policy cho mỗi người đọc ĐÚNG DÒNG
+      // CỦA MÌNH (không lộ ai đang online cho nhau) — xem supabase/schema.sql.
+      // ⚠️ Bài học: `update` không báo lỗi KHÔNG có nghĩa là đã ghi. Phải đọc lại giá trị.
       await sb.from('presence').upsert(
         { user_id: session.user.id, last_seen: new Date().toISOString(), page: presencePage },
         { onConflict: 'user_id' }

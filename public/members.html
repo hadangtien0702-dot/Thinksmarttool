@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/vendor/animate.min.css">
-  <link rel="stylesheet" href="/portal.css?v=66">
+  <link rel="stylesheet" href="/portal.css?v=74">
   <link rel="stylesheet" href="/dialog.css?v=4">
 </head>
 <body>
@@ -255,20 +255,6 @@
         <div id="tracking-content" style="display:none">
           <div id="usage-msg" class="notice error" style="display:none"></div>
 
-          <!-- HÀNG ĐIỀU KHIỂN (gọn 27/07): trái = ĐANG ONLINE (N3, bấm → modal),
-               phải = chọn khoảng ngày. Trước đây khoảng ngày nằm ở cột phải 300px
-               nên ăn cả chiều ngang mà 2/3 dưới bỏ trống. -->
-          <div class="usage-bar">
-            <button type="button" class="online-bar" id="online-bar" title="Xem chi tiết ai đang online">
-              <span class="online-dot"></span>
-              <span class="online-count" id="online-count">0</span>
-              <span class="online-bar-label">đang online</span>
-              <span class="online-breakdown" id="online-breakdown"></span>
-              <span class="online-bar-more">Chi tiết ›</span>
-            </button>
-          </div>
-          <span class="online-hint" id="online-hint"></span>
-
           <!-- DẢI SỐ LIỆU — MỘT nguồn duy nhất, đổi theo khoảng đang chọn.
                (Trước 27/07 số hiện 2 nơi: 4 thẻ "Hôm nay" + danh sách "Trong khoảng
                này" ở cột phải → cùng tên chỉ số, khác khoảng, dễ đọc nhầm.) -->
@@ -304,14 +290,18 @@
                   <button class="btn btn-secondary btn-sm" type="button" data-preset="30">30 ngày</button>
                   <button class="btn btn-secondary btn-sm" type="button" data-preset="60">60 ngày</button>
                 </div>
-              </div>
-            </div>
+                <!-- ☠️ NGẮN. Chủ tool 31/07: "không ai đọc dòng text phụ mà dài như thế này".
+                     Chỉ 5 chữ, nằm CÙNG HÀNG với dải nút (đúng chỗ mắt đang nhìn sau khi
+                     bấm) — đủ để hiểu vì sao 30/60 ngày cho cùng kết quả với 14. Ẩn hẳn
+                     khi số liệu đã đủ dày. Đừng viết thành câu giải thích. -->
+                <span class="usage-range-note" id="usage-range-note" hidden></span>
+              </div><!-- /.usage-filter -->
+            </div><!-- /.usage-block — biểu đồ -->
 
             <!-- TOP MẪU / BROCHURE CHẠY NHIỀU NHẤT (N2) — đếm lượt 'view' theo khoảng -->
             <div class="usage-block">
               <div class="usage-block-head">
                 <h2>Top Proposal / Brochure chạy nhiều nhất</h2>
-                <span class="usage-hint">Trong khoảng đang chọn · đếm lượt sale mở xem</span>
               </div>
               <div class="usage-top" id="usage-top-rows"></div>
               <div class="empty-state" id="usage-top-empty" style="display:none">
@@ -321,6 +311,11 @@
             </div>
           </div>
 
+          <!-- Chủ tool 31/07: "cái này đem xuống dưới đây cho gọn". Thanh ĐANG ONLINE
+               dời từ đầu trang xuống nằm CẠNH bảng — vừa lấp đúng mảng trắng bên phải
+               bảng, vừa gom "ai đang online" với "ai đã làm gì" về cùng một chỗ (cùng
+               nói về CON NGƯỜI). -->
+          <div class="usage-grid-nguoi">
           <div class="usage-block">
             <div class="usage-block-head">
               <h2>Theo từng người</h2>
@@ -328,9 +323,12 @@
             </div>
             <div class="usage-table">
               <div class="usage-thead">
+                <!-- Nhãn 1 DÒNG hết. Cũ: "Đăng nhập gần nhất" / "Mở tool gần nhất" xuống 2 dòng
+                     nên lệch baseline với các cột khác; và "Mở tool gần nhất" (thời điểm) đứng
+                     ngay cạnh "Mở tool" (số lần) — hai cột khác hẳn nhau mà cùng tên. -->
                 <span>Thành viên</span><span>Tên tiếng Anh</span><span>Phòng ban</span>
-                <span>Đăng nhập gần nhất</span><span>Mở tool gần nhất</span>
-                <span class="ta-right">Mở tool</span><span class="ta-right">Tải về</span>
+                <span>Đăng nhập cuối</span><span>Mở tool cuối</span>
+                <span class="ta-right">Lần mở</span><span class="ta-right">Lần tải</span>
               </div>
               <div id="usage-rows"></div>
             </div>
@@ -338,7 +336,21 @@
               <b>Chưa có dữ liệu trong khoảng này.</b>
               <span>Đổi khoảng ngày ở thanh trên đầu, hoặc chờ mọi người đăng nhập và mở công cụ.</span>
             </div>
-          </div>
+          </div><!-- /.usage-block — Theo từng người -->
+
+            <aside class="usage-side-online">
+              <div class="usage-bar">
+                <button type="button" class="online-bar" id="online-bar" title="Xem chi tiết ai đang online">
+                  <span class="online-dot"></span>
+                  <span class="online-count" id="online-count">0</span>
+                  <span class="online-bar-label">đang online</span>
+                  <span class="online-breakdown" id="online-breakdown"></span>
+                  <span class="online-bar-more">Chi tiết ›</span>
+                </button>
+              </div>
+              <span class="online-hint" id="online-hint"></span>
+            </aside>
+          </div><!-- /.usage-grid-nguoi -->
         </div>
 
         <!-- Gợi ý phòng ban đã dùng (đổ động từ dữ liệu) -->
@@ -467,8 +479,14 @@
           </div>
           <span class="dl-hit" id="dl-hit" aria-live="polite"></span>
         </div>
-        <div class="dl-table">
-          <div id="dl-rows"></div>
+        <!-- Bấm 👁 KHÔNG bung ảnh xuống dưới nữa (chủ tool 31/07: "dropdown dài quá,
+             cho nó hiện sang bên trái"). Ảnh mở ra ở panel TRÁI, danh sách giữ nguyên
+             chỗ bên phải — không bị đẩy dài ra, không mất chỗ đang đọc. -->
+        <div class="dl-main" id="dl-main">
+          <aside class="dl-preview" id="dl-preview" hidden></aside>
+          <div class="dl-table">
+            <div id="dl-rows"></div>
+          </div>
         </div>
         <div class="empty-state" id="dl-empty" style="display:none">
           <b>Chưa có lượt tải Proposal nào trong khoảng này.</b>
@@ -498,7 +516,7 @@
       </main>
 
       <footer class="portal-footer">
-        <span class="version-badge">v1.34</span>
+        <span class="version-badge">v1.35</span>
         <span>31/07/2026 · Thinksmart Insurance — lưu hành nội bộ</span>
       </footer>
     </div>
@@ -508,7 +526,7 @@
   <script src="/js/portal/config.js?v=8"></script>
   <script src="/js/portal/auth.js?v=10"></script>
   <script src="/js/ui-dialog.js?v=3"></script>
-  <script src="/js/portal/members.js?v=41"></script>
+  <script src="/js/portal/members.js?v=47"></script>
   <script src="/vendor/gsap.min.js"></script>
   <script src="/js/animations.js?v=4"></script>
 </body>

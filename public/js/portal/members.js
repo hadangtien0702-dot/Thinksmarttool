@@ -1002,6 +1002,23 @@
     });
     // Bấm dòng "Tải về" → popup chi tiết tải gì
     $('uk-download-row').addEventListener('click', moChiTietTaiVe);
+    // Bấm SỐ ở cột "Lần tải" của một người → cùng popup đó nhưng lọc sẵn tên họ.
+    // Dùng lại ô tìm + locChiTietTaiVe() có sẵn, không dựng thêm đường lọc thứ hai.
+    $('usage-rows').addEventListener('click', function (e) {
+      const nut = e.target.closest('.ur-dl-btn');
+      if (!nut) return;
+      moChiTietTaiVe();
+      const ten = nut.getAttribute('data-ten') || '';
+      if (ten) { $('dl-search').value = ten; locChiTietTaiVe(); }
+      // Chỉ một người thì bung luôn danh sách — bấm vào số rồi còn phải bấm thêm
+      // một lần nữa mới thấy là thừa một bước.
+      const hien = Array.prototype.filter.call(
+        $('dl-rows').querySelectorAll('.dl-group'), function (g) { return g.style.display !== 'none'; });
+      if (hien.length === 1) {
+        const nutNguoi = hien[0].querySelector('.dl-per');
+        if (nutNguoi && nutNguoi.getAttribute('aria-expanded') !== 'true') nutNguoi.click();
+      }
+    });
     // Bấm tên người → bung/gập danh sách lượt tải của người đó; bấm 👁 → bung "đã điền gì"
     $('dl-rows').addEventListener('click', function (e) {
       const per = e.target.closest('.dl-per');
@@ -1017,11 +1034,9 @@
       const b = e.target.closest('.dl-eye');
       if (!b) return;
       const idx = b.getAttribute('data-idx');
-      const d = $('dl-detail-' + idx);
-      if (!d) return;
-      d.hidden = !d.hidden;
-      b.classList.toggle('is-open', !d.hidden);
-      if (!d.hidden) napAnhBanXuat(idx, b.getAttribute('data-anh'));
+      // Bấm lại đúng con mắt đang mở → đóng panel. Bấm con mắt KHÁC → đổi nội dung panel.
+      if (dangXemIdx === idx) dongPanelXem();
+      else moPanelXem(idx, b);
     });
     $('dl-search').addEventListener('input', locChiTietTaiVe);
     $('dl-close').addEventListener('click', dongChiTietTaiVe);
@@ -1113,10 +1128,19 @@
     $('online-count').textContent = String(onlineRows.length);
     const b = { tool: 0, portal: 0, videos: 0 };
     onlineRows.forEach(function (o) { b[nhomViTri(o.r.page)]++; });
+    // Tách TÊN và SỐ ra 2 thẻ riêng (chủ tool 31/07: "làm dạng cột"): ở cột phải chúng
+    // xếp thành từng dòng, tên trái — số phải, các con số dóng thẳng một mép nên liếc
+    // là so được. Gộp thành một chuỗi "🛠 Tool 1" thì CSS không tách nổi.
+    // Màn hẹp vẫn hiển thị như viên chip nằm ngang (xem portal.css).
     const chips = [];
-    if (b.tool)   chips.push('<span class="online-chip on-chip-tool">🛠 Tool ' + b.tool + '</span>');
-    if (b.portal) chips.push('<span class="online-chip">🏠 Trang chính ' + b.portal + '</span>');
-    if (b.videos) chips.push('<span class="online-chip">🎬 Video ' + b.videos + '</span>');
+    function chip(lop, icon, ten, so) {
+      return '<span class="online-chip ' + lop + '">' +
+             '<span class="oc-k">' + icon + ' ' + ten + '</span>' +
+             '<span class="oc-v">' + so + '</span></span>';
+    }
+    if (b.tool)   chips.push(chip('on-chip-tool', '🛠', 'Tool', b.tool));
+    if (b.portal) chips.push(chip('', '🏠', 'Trang chính', b.portal));
+    if (b.videos) chips.push(chip('', '🎬', 'Video', b.videos));
     $('online-breakdown').innerHTML = chips.join('');
   }
 
@@ -1264,10 +1288,10 @@
     const soNgay = Math.round((batDauNgay(khoangTo).getTime() - batDauNgay(khoangFrom).getTime()) / NGAY_MS) + 1;
     // Bộ chọn ngày nằm trong khối này nhưng lọc CẢ TRANG → phải nói ra, kẻo tưởng
     // nó chỉ đổi mỗi biểu đồ (chủ tool 27/07 dời bộ chọn xuống đây).
-    // Cắt "khoảng này áp dụng…" → "áp dụng…": dòng này còn được nối thêm cảnh báo
-    // thiếu số liệu ở cuối (veBieuDoKhoang), dài quá thì chính nó thành cái rối.
-    $('usage-chart-range').textContent = fmtNgay(khoangFrom) + ' – ' + fmtNgay(khoangTo) +
-      ' · ' + soNgay + ' ngày · áp dụng cho cả trang';
+    // ☠️ CHỈ khoảng ngày. Bỏ "N ngày" (nút mốc đã tô tím nói rồi) và "áp dụng cho cả
+    // trang" (đúng với MỌI khối, nói ở đây là thừa). Chủ tool 31/07: "không ai đọc dòng
+    // text phụ mà dài như thế này".
+    $('usage-chart-range').textContent = fmtNgay(khoangFrom) + ' – ' + fmtNgay(khoangTo);
 
     veBieuDoKhoang(theoNgay, khoangFrom, soNgay);
     veTopMau(theoMau);
@@ -1341,11 +1365,19 @@
     const daCat = iDau > 0 ? iDau : 0;
     const veCols = daCat ? cols.slice(daCat) : cols;
 
-    const oGhiChu = $('usage-chart-range');
-    if (oGhiChu) {
-      if (iDau === -1) oGhiChu.textContent += ' · chưa có số liệu trong khoảng này';
-      else if (daCat) oGhiChu.textContent += ' · biểu đồ tính từ ' + fmtNgay(veCols[0].d) +
-        ' (ngày đầu có số liệu)';
+    // Lời giải thích đặt NGAY DƯỚI dải nút mốc, không nhét vào dòng phụ đề trên cùng:
+    // người dùng vừa bấm nút xong thì mắt đang ở đó, và một thông điệp chỉ nói MỘT nơi.
+    const oNote = $('usage-range-note');
+    if (oNote) {
+      if (iDau === -1) {
+        oNote.textContent = 'Chưa có số liệu nào trong khoảng này.';
+        oNote.hidden = false;
+      } else if (daCat) {
+        oNote.textContent = 'Số liệu từ ' + fmtNgay(veCols[0].d);
+        oNote.hidden = false;
+      } else {
+        oNote.hidden = true;
+      }
     }
 
     // Nhiều cột thì thưa nhãn ngày cho đỡ rối; luôn hiện nhãn cột cuối.
@@ -1418,9 +1450,11 @@
     // không thì bảng trông như "cả đội chỉ có 10 người hoạt động".
     const tong = ids.length;
     const hien = ids.slice(0, 10);
-    $('usage-nguoi-hint').textContent = tong > hien.length
-      ? '10 người hoạt động gần nhất · còn ' + (tong - hien.length) + ' người nữa trong khoảng này'
-      : tong + ' người có hoạt động trong khoảng này';
+    // Chỉ giữ phần KHÔNG nhìn thấy được: còn bao nhiêu người bị cắt. "10 người gần nhất"
+    // thì đếm số dòng là ra; đủ người rồi thì im hẳn.
+    const oHintNguoi = $('usage-nguoi-hint');
+    oHintNguoi.textContent = tong > hien.length ? 'còn ' + (tong - hien.length) + ' người nữa' : '';
+    oHintNguoi.hidden = tong <= hien.length;
     $('usage-rows').innerHTML = hien.map(function (id) {
       const u = theoNguoi[id];
       const p = pmap[id] || {};
@@ -1429,14 +1463,22 @@
       // "chia thành các cột, nhìn như này hơi rối"). Dán sau tên thì tên dài ngắn khác
       // nhau kéo chúng lệch mỗi hàng một chỗ — mắt không có mốc nào để dóng theo.
       const en = tenTiengAnh(p);
+      // Cột "Lần tải" BẤM ĐƯỢC → mở popup chi tiết, lọc sẵn đúng người đó (chủ tool 31/07:
+      // "có thể click vào đây để xem nhanh những cái gì đã được tải"). Số 0 thì KHÔNG làm
+      // nút — không có gì để xem mà vẫn mời bấm là bẫy người dùng.
+      const soTai = u.download || 0;
+      const oTai = soTai
+        ? '<button type="button" class="ur-dl-btn" data-ten="' + esc(p.full_name || p.email || '') +
+          '" title="Xem ' + soTai + ' lượt tải của ' + ten + '">' + soTai + '</button>'
+        : '<span class="ur-trong">0</span>';
       return '<div class="usage-row">' +
         '<span class="ur-name" data-label="Thành viên"><span class="ur-nm">' + ten + '</span></span>' +
         '<span class="ur-en" data-label="Tên tiếng Anh">' + (en ? esc(en) : '<span class="ur-trong">—</span>') + '</span>' +
         '<span class="ur-pb" data-label="Phòng ban">' + (p.department ? esc(p.department) : '<span class="ur-trong">—</span>') + '</span>' +
-        '<span data-label="Đăng nhập gần nhất">' + thoiGianTuong(u.lastLogin) + '</span>' +
-        '<span data-label="Mở tool gần nhất">' + thoiGianTuong(u.lastTool) + '</span>' +
-        '<span class="ta-right" data-label="Mở tool">' + (u.tool || 0) + '</span>' +
-        '<span class="ta-right ur-dl" data-label="Tải về">' + (u.download || 0) + '</span>' +
+        '<span data-label="Đăng nhập cuối">' + thoiGianTuong(u.lastLogin) + '</span>' +
+        '<span data-label="Mở tool cuối">' + thoiGianTuong(u.lastTool) + '</span>' +
+        '<span class="ta-right" data-label="Lần mở">' + (u.tool || 0) + '</span>' +
+        '<span class="ta-right ur-dl" data-label="Lần tải">' + oTai + '</span>' +
       '</div>';
     }).join('');
   }
@@ -1482,19 +1524,17 @@
     // Số ở đây PHẢI khớp số dòng đang hiện, nếu không thì lệch với thẻ "Tải về" (đếm cả
     // brochure) mà người xem không hiểu vì sao → nói thẳng phần bị ẩn.
     const soCoAnh = rows.filter(function (e) { return !!e.anh; }).length;
-    $('dl-range').textContent = fmtNgay(khoangFrom) + ' – ' + fmtNgay(khoangTo) + ' · ' +
-      rows.length + ' lượt tải Proposal' + (soBrochure ? ' · ẩn ' + soBrochure + ' lượt tải Brochure' : '');
+    // ☠️ MỘT dòng, hai mẩu. Bỏ "ẩn N lượt tải Brochure" (chủ tool 27/07 đã chốt
+    // "brochure anh không cần") và bỏ hẳn dòng ghi chú dài phía dưới.
+    $('dl-range').textContent = fmtNgay(khoangFrom) + ' – ' + fmtNgay(khoangTo) +
+      ' · ' + rows.length + ' lượt';
     // Không nói ra thì bấm 👁 thấy bảng số liệu sẽ tưởng tính năng hỏng (chủ tool 27/07
     // báo "chưa xem được"). Ảnh chỉ có với lượt xuất SAU khi bật lưu ảnh.
+    // Dòng ghi chú CŨ dài 2 câu, giải thích chuyện lịch sử (ảnh chỉ lưu từ 27/07) mà
+    // người dùng không làm gì được với nó. Chỉ giữ khi CHƯA có ảnh nào — lúc đó bấm 👁
+    // ra bảng số liệu dễ tưởng hỏng. Có ảnh rồi thì im.
     const ghiChu = $('dl-note');
-    if (!rows.length) { ghiChu.textContent = ''; }
-    else if (!soCoAnh) {
-      ghiChu.textContent = 'Chưa lượt nào có ảnh bản đã tải — ảnh chỉ lưu từ lúc bật tính năng ' +
-        '(27/07). Bấm 👁 ở các lượt cũ sẽ hiện thông tin sale đã điền.';
-    } else if (soCoAnh < rows.length) {
-      ghiChu.textContent = soCoAnh + '/' + rows.length + ' lượt có ảnh bản đã tải; số còn lại là lượt cũ, ' +
-        'bấm 👁 chỉ hiện thông tin đã điền.';
-    } else { ghiChu.textContent = ''; }
+    ghiChu.textContent = (rows.length && !soCoAnh) ? 'Các lượt cũ chưa có ảnh — bấm 👁 xem thông tin đã điền.' : '';
     if (!rows.length) {
       $('dl-rows').innerHTML = '';
       $('dl-empty').style.display = 'flex';
@@ -1530,29 +1570,22 @@
               (coAnh ? ' data-anh="' + esc(e.anh) + '"' : '') +
               ' title="' + (coAnh ? 'Xem bản đã tải về' : 'Bản cũ chưa lưu ảnh — xem giá trị đã điền') + '">👁</button>'
             : '<span class="dl-eye-empty" title="Lượt xuất cũ, chưa lưu ảnh lẫn giá trị đã điền">—</span>';
-          let chiTiet = '';
-          if (coAnh || coDetail) {
-            // Ảnh nạp LƯỜI (lúc bấm mới xin link có hạn) — mở popup 50 dòng mà tải sẵn
-            // 50 ảnh thì vừa chậm vừa tốn băng thông của thứ chưa chắc ai xem.
-            const khungAnh = coAnh
-              ? '<div class="dl-anh" id="dl-anh-' + myIdx + '"><span class="dl-anh-cho">Đang mở bản đã tải…</span></div>'
-              : '';
-            const bangDaDien = coDetail
-              ? '<div class="dl-fields' + (coAnh ? ' is-phu' : '') + '">' +
-                (coAnh ? '<div class="dl-fields-head">Thông tin sale đã điền</div>' : '') +
-                e.detail.map(function (f) {
-                  tim.push(f.v);   // ⇒ gõ "Em Trang" là ra đúng người đã xuất bản đó
-                  return '<div class="dl-f"><span class="dl-f-k">' + esc(f.k) + '</span><span class="dl-f-v">' + esc(f.v) + '</span></div>';
-                }).join('') + '</div>'
-              : '';
-            chiTiet = '<div class="dl-detail" id="dl-detail-' + myIdx + '" hidden>' + khungAnh + bangDaDien + '</div>';
-          }
+          // Lưu dữ liệu để dựng panel TRÁI lúc bấm 👁 — không dựng sẵn inline nữa
+          // (chủ tool 31/07: bung xuống dưới làm danh sách dài quá).
+          dlChiTiet[myIdx] = { anh: e.anh || '', detail: coDetail ? e.detail : null, nhan: e.label || '' };
+          // ⚠️ GIỮ dòng này khi dọn code: giá trị sale đã điền phải vào `tim` thì ô tìm
+          // mới khớp được — gõ "Em Trang" ra đúng người đã xuất bản báo giá cho khách đó.
+          // (Suýt xoá mất lúc chuyển sang panel trái 31/07.)
+          if (coDetail) e.detail.forEach(function (f) { tim.push(f.v); });
+          // KHÔNG dựng khối chi tiết inline nữa — nội dung dựng vào panel TRÁI lúc bấm 👁
+          // (moPanelXem). Ảnh vẫn nạp LƯỜI: mở popup 50 dòng mà tải sẵn 50 ảnh thì vừa
+          // chậm vừa tốn băng thông của thứ chưa chắc ai xem.
           return '<div class="dl-item">' +
             '<div class="dl-row">' +
               '<span class="dl-what" data-label="Tải gì">' + nhan + '</span>' +
               '<span class="ta-right dl-when" data-label="Lúc">' + thoiGianTuong(new Date(e.at).getTime()) + '</span>' +
               '<span class="ta-right dl-eye-cell">' + eye + '</span>' +
-            '</div>' + chiTiet +
+            '</div>' +
           '</div>';
         }).join('');
 
@@ -1561,12 +1594,15 @@
             '<span class="dl-per-caret" aria-hidden="true">›</span>' +
             '<span class="dl-per-name">' + esc(ten) + '</span>' +
             '<span class="dl-per-en">' + (en ? esc(en) : '') + '</span>' +
-            '<span class="dl-per-n">' + ds.length + ' lượt</span>' +
-            '<span class="dl-per-when">gần nhất ' + thoiGianTuong(new Date(ds[0].at).getTime()) + '</span>' +
+            // Chip chỉ SỐ (chữ "lượt" lặp lại ở 10 hàng là nhiễu; nghĩa nằm ở title).
+            // Bỏ "gần nhất " — cột này chỉ có thể là mốc gần nhất, nói ra là thừa.
+            '<span class="dl-per-n" title="' + ds.length + ' lượt tải">' + ds.length + '</span>' +
+            '<span class="dl-per-when">' + thoiGianTuong(new Date(ds[0].at).getTime()) + '</span>' +
           '</button>' +
           '<div class="dl-per-body" hidden>' + than + '</div>' +
         '</div>';
       }).join('');
+      dongPanelXem();              // mở lại popup thì đóng panel xem của lần trước
       $('dl-search').value = '';   // mở lại popup thì trả ô tìm về trống
       locChiTietTaiVe();
     }
@@ -1575,6 +1611,51 @@
   }
   // Nạp ảnh "bản đã tải" khi bấm 👁. Bucket private → phải xin link có hạn 60s.
   // Nạp MỘT LẦN cho mỗi dòng (đánh dấu data-xong) để gập/mở lại không xin link mới.
+  // ---- Panel XEM BẢN ĐÃ TẢI (bên trái danh sách) ----------------------------
+  const dlChiTiet = {};      // idx → { anh, detail, nhan }
+  let dangXemIdx = null;     // con mắt nào đang mở
+
+  function dongPanelXem() {
+    dangXemIdx = null;
+    const pn = $('dl-preview');
+    pn.hidden = true; pn.innerHTML = '';
+    $('dl-main').classList.remove('has-preview');
+    document.querySelectorAll('.dl-eye.is-open').forEach(function (x) { x.classList.remove('is-open'); });
+  }
+
+  function moPanelXem(idx, nut) {
+    const ct = dlChiTiet[idx];
+    if (!ct) return;
+    dangXemIdx = idx;
+    document.querySelectorAll('.dl-eye.is-open').forEach(function (x) { x.classList.remove('is-open'); });
+    if (nut) nut.classList.add('is-open');
+
+    // ☠️ CÓ ẢNH THẬT thì KHÔNG bày bảng "Thông tin sale đã điền" (chủ tool 31/07:
+    // "đã có bảng preview thực tế rồi thì anh không cần bảng chi tiết này nữa").
+    // Ảnh chính là bản khách nhận — mọi giá trị đều nằm trên đó, bày lại thành bảng
+    // là nói hai lần và kéo panel dài gấp đôi.
+    // Bảng CHỈ còn là đường lùi cho lượt CŨ chưa lưu ảnh — lúc đó nó là thứ duy nhất.
+    const bang = (!ct.anh && ct.detail)
+      ? '<div class="dl-fields">' +
+        ct.detail.map(function (f) {
+          return '<div class="dl-f"><span class="dl-f-k">' + esc(f.k) + '</span><span class="dl-f-v">' + esc(f.v) + '</span></div>';
+        }).join('') + '</div>'
+      : '';
+    const khungAnh = ct.anh
+      ? '<div class="dl-anh" id="dl-anh-' + idx + '"><span class="dl-anh-cho">Đang mở bản đã tải…</span></div>'
+      : '';
+    $('dl-preview').innerHTML =
+      '<div class="dl-preview-head">' +
+        '<b>' + (ct.nhan ? esc(ct.nhan) : 'Bản đã tải') + '</b>' +
+        '<button type="button" class="icon-btn" id="dl-preview-close" aria-label="Đóng bản xem">✕</button>' +
+      '</div>' +
+      '<div class="dl-preview-body">' + khungAnh + bang + '</div>';
+    $('dl-preview').hidden = false;
+    $('dl-main').classList.add('has-preview');
+    $('dl-preview-close').addEventListener('click', dongPanelXem);
+    if (ct.anh) napAnhBanXuat(idx, ct.anh);
+  }
+
   async function napAnhBanXuat(idx, duongDan) {
     if (!duongDan) return;
     const khung = $('dl-anh-' + idx);

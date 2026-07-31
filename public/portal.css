@@ -1712,15 +1712,111 @@ button:active, .btn:active, .icon-btn:active, .sidebar-nav a:active, .sidebar-fo
    sau tên thì tên dài ngắn khác nhau kéo chúng lệch mỗi hàng một chỗ, mắt không dóng
    được — chủ tool gọi là "rối". Mọi cột trừ cột tên đều CỐ ĐỊNH px vì giá trị luôn ngắn
    ("Henry", "Sale", "7 giờ trước", "3"); chỗ dư dồn hết cho cột tên. */
+/* Bảy cột này chứa toàn giá trị ngắn ("Sale", "3 giờ trước", "11"). Trước 31/07 phải đặt
+   `max-width: 1240px` để bảng khỏi kéo full 1850px làm mọi cột thừa chỗ. NAY KHÔNG CẦN
+   NỮA: mảng trắng bên phải đã được thanh "đang online" lấp vào (xem .usage-grid-nguoi),
+   nên bảng cứ đầy cột trái của lưới. */
+
+/* ---- Bảng "Theo từng người" + thanh ĐANG ONLINE nằm cạnh nhau (chủ tool 31/07) ----
+   Gom hai thứ cùng nói về CON NGƯỜI về một chỗ, và lấp đúng khoảng trắng bên phải bảng. */
+.usage-grid-nguoi {
+  display: grid; grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 12px; align-items: start;
+}
+.usage-grid-nguoi > .usage-block { margin-bottom: 0; }
+.usage-side-online { display: flex; flex-direction: column; gap: 8px; }
+.usage-side-online .usage-bar { margin-bottom: 0; }
+
+/* ☠️ Ở cột 300px, cứ `flex-direction: column` là 5 mẩu rơi thành 5 dòng rời rạc
+   (chấm · số · chữ · chip · link) — chủ tool 31/07: "thiết kế lại cho đẹp".
+   Dựng lại thành THẺ THỐNG KÊ bằng grid-area, KHÔNG đụng HTML:
+       ● ĐANG ONLINE       ← nhãn nhỏ, chữ hoa
+       2                   ← con số là nhân vật chính
+       🔧 Tool 1  🏠 Trang chính 1
+       ─────────────────
+                Chi tiết › */
+.usage-side-online .online-bar {
+  display: grid; align-items: center; gap: 6px 8px; padding: 16px;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "dot   nhan"
+    "so    so"
+    "chip  chip"
+    "them  them";
+}
+.usage-side-online .online-dot        { grid-area: dot; }
+.usage-side-online .online-bar-label  {
+  grid-area: nhan; font-size: var(--fs-xs); font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-3);
+}
+/* Con số là thứ người ta liếc vào để biết ngay → to, không nhốt trong viên thuốc nữa. */
+.usage-side-online .online-count {
+  grid-area: so; justify-self: start; padding: 0; min-width: 0; height: auto;
+  background: none; color: var(--success);
+  font-size: 34px; font-weight: 800; line-height: 1.1; letter-spacing: -1px;
+}
+/* DẠNG CỘT (chủ tool 31/07): mỗi vị trí một dòng, tên trái — số phải. Các con số dóng
+   thẳng một mép nên liếc là so được ngay; chip nằm ngang thì số trôi theo độ dài tên. */
+.usage-side-online .online-breakdown {
+  grid-area: chip; margin-top: 2px;
+  flex-direction: column; align-items: stretch; gap: 4px; width: 100%;
+}
+.usage-side-online .online-chip {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  border-radius: var(--r-sm); padding: 7px 10px; font-size: var(--fs-sm);
+}
+.usage-side-online .oc-k { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.usage-side-online .oc-v { font-weight: 800; font-variant-numeric: tabular-nums; }
+.usage-side-online .online-bar-more  {
+  grid-area: them; justify-self: end; margin-left: 0; margin-top: 6px;
+  padding-top: 10px; border-top: 1px solid var(--divider); width: 100%; text-align: right;
+}
+/* Màn hẹp: hai khối xếp chồng → thanh online trở về dạng NGANG như cũ. */
+@media (max-width: 1100px) {
+  .usage-grid-nguoi { grid-template-columns: 1fr; }
+  .usage-side-online .online-bar {
+    display: flex; flex-direction: row; align-items: center; gap: 8px 10px; padding: 12px 14px;
+  }
+  .usage-side-online .online-count {
+    font-size: var(--fs-md); padding: 0 8px; min-width: 26px; height: 24px;
+    background: var(--success-soft); border-radius: 999px; letter-spacing: 0;
+  }
+  .usage-side-online .online-bar-label { font-size: var(--fs-sm); text-transform: none; letter-spacing: 0; color: var(--text-2); }
+  .usage-side-online .online-bar-more { margin-left: auto; border-top: none; padding-top: 0; margin-top: 0; width: auto; }
+  .usage-side-online .online-breakdown { flex-direction: row; align-items: center; width: auto; gap: 6px; }
+  .usage-side-online .online-chip { display: inline-flex; gap: 5px; padding: 3px 9px; font-size: var(--fs-xs); }
+}
 .usage-thead, .usage-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 130px 74px 132px 132px 76px 76px;
+  /* ☠️ CŨ: `minmax(0, 1fr)` cho cột Thành viên + 6 cột px CỐ ĐỊNH → toàn bộ chỗ dư dồn
+     HẾT vào cột tên. Ở màn 1850px, cột tên thành ~1150px trong khi tên chỉ chiếm ~150px:
+     gần 1000px trắng giữa tên và "Tên tiếng Anh", mắt phải nhảy qua một khoảng trống lớn
+     mới đọc được dòng tiếp (chủ tool 31/07: "hơi có vấn đề ở việc sắp xếp cột").
+     NAY: 4 cột chữ cùng co giãn theo `fr` nên chỗ dư chia đều, không cột nào phình.
+     Hai cột số + Phòng ban giữ px vì giá trị luôn ngắn ("Sale", "11", "0"). */
+  grid-template-columns:
+    minmax(180px, 1.5fr)   /* Thành viên     */
+    minmax(120px, 1fr)     /* Tên tiếng Anh  */
+    92px                   /* Phòng ban      */
+    minmax(118px, 1fr)     /* Đăng nhập cuối */
+    minmax(118px, 1fr)     /* Mở tool cuối   */
+    84px                   /* Lần mở         */
+    84px;                  /* Lần tải        */
   gap: 12px; align-items: center;
 }
 .usage-row .ur-en, .usage-row .ur-pb { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ur-trong { color: var(--text-3); }
-/* Cột "Tải về" = tín hiệu dùng THẬT → làm nổi (chủ tool 23/07) */
+/* Cột "Lần tải" = tín hiệu dùng THẬT → làm nổi (chủ tool 23/07), và từ 31/07 BẤM ĐƯỢC
+   để xem người đó đã tải gì. Phải nhìn ra là bấm được: gạch chân mờ + đổi nền khi rê. */
 .usage-row .ur-dl { font-weight: 800; color: var(--brand); }
+.ur-dl-btn {
+  border: none; background: transparent; font: inherit; font-weight: 800;
+  color: var(--brand); cursor: pointer; padding: 2px 7px; border-radius: var(--r-sm);
+  text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--brand) 45%, transparent);
+}
+.ur-dl-btn:hover { background: var(--brand-soft); text-decoration-color: var(--brand); }
+.ur-dl-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
 .usage-thead {
   padding: 0 12px 8px; font-size: var(--fs-xs); font-weight: 700; color: var(--text-3);
   text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--divider);
@@ -1801,6 +1897,12 @@ body.dark-theme .up-inline input[type="date"] { color-scheme: dark; }
   background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 700;
 }
 .usage-presets .btn.is-on:hover { background: var(--brand); border-color: var(--brand); }
+/* Dòng giải thích ngay dưới dải mốc — chỉ hiện khi khoảng chọn RỘNG HƠN số liệu đang có,
+   tức là lúc bấm mốc khác mà biểu đồ không đổi. Im lặng khi mọi thứ bình thường. */
+.usage-range-note {
+  margin: 8px 0 0; font-size: var(--fs-sm); line-height: 1.5; color: var(--text-3);
+}
+.usage-range-note[hidden] { display: none; }
 
 /* Biểu đồ | Top mẫu nằm ngang hàng. align-items:start để khối thấp không bị kéo cao
    theo khối cao — mỗi khối giữ đúng chiều cao nội dung của nó. */
@@ -1855,7 +1957,14 @@ body.dark-theme .up-inline input[type="date"] { color-scheme: dark; }
   /* Cột cuối phải là px CỐ ĐỊNH, KHÔNG được max-content: mỗi .dl-per là một lưới riêng,
      mà "gần nhất 7 giờ trước" ngắn hơn "gần nhất 3 ngày trước" → max-content cho ra bề
      rộng khác nhau ở từng hàng, kéo lệch tất cả cột phía trước (đo được 5 mép khác nhau). */
-  grid-template-columns: 14px minmax(0, 1fr) 132px 72px 150px;
+  /* Cùng lỗi với bảng "Theo từng người": cột tên `1fr` nuốt hết chỗ dư nên tên cách
+     "tên tiếng Anh" một khoảng trắng lớn. Cho cột tên và cột tên-tiếng-Anh cùng co giãn.
+     Cột cuối vẫn PHẢI là px cố định (xem ghi chú ngay trên). */
+  /* KHÔNG dùng `fr` ở đây: hễ có fr là cột tên nuốt sạch chỗ dư (đo 31/07: cột tên 551px
+     cho một cái tên 95px → 456px trắng ngay sau tên). Đặt trần px cho từng cột thì tổng
+     nhỏ hơn bề ngang popup, phần dư dồn ra RÌA PHẢI — mắt bỏ qua được, thay vì phải nhảy
+     qua một khoảng trắng nằm giữa hai thông tin liền nhau. */
+  grid-template-columns: 14px minmax(150px, 260px) minmax(110px, 190px) 48px 130px;
   padding: 10px 8px; border: none; background: transparent; font: inherit;
   text-align: left; cursor: pointer; border-radius: var(--r-sm);
 }
@@ -1871,9 +1980,11 @@ body.dark-theme .up-inline input[type="date"] { color-scheme: dark; }
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-size: var(--fs-sm); font-weight: 600; color: var(--brand);
 }
+/* Chip chỉ còn CON SỐ (bỏ chữ "lượt" lặp ở mọi hàng) → cho nó tròn đều, canh giữa. */
 .dl-per-n {
-  justify-self: start; font-size: var(--fs-xs); font-weight: 800; white-space: nowrap;
-  background: var(--brand-soft); color: var(--brand); padding: 2px 8px; border-radius: 999px;
+  justify-self: start; font-size: var(--fs-xs); font-weight: 800;
+  background: var(--brand-soft); color: var(--brand); border-radius: 999px;
+  min-width: 26px; padding: 3px 8px; text-align: center; font-variant-numeric: tabular-nums;
 }
 .dl-per-when { justify-self: end; font-size: var(--fs-xs); color: var(--text-3); white-space: nowrap; }
 .dl-per-body { padding: 0 8px 8px 30px; }
@@ -1924,6 +2035,34 @@ body.dark-theme .up-inline input[type="date"] { color-scheme: dark; }
 .dl-item:last-child .dl-row { border-bottom: none; }
 .dl-row .dl-what { min-width: 0; word-break: break-word; color: var(--text); }
 #dl-rows { max-height: 52vh; overflow: auto; }
+
+/* ---- XEM BẢN ĐÃ TẢI: panel TRÁI, không bung xuống dưới (chủ tool 31/07) ----------
+   Cũ: bấm 👁 là ảnh proposal cao ~1000px chen vào GIỮA danh sách, đẩy mọi thứ bên dưới
+   đi xa và làm mất chỗ đang đọc. Nay ảnh ra một cột riêng, danh sách đứng yên. */
+.dl-main { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-items: start; }
+.dl-main.has-preview { grid-template-columns: 420px minmax(0, 1fr); }
+.dl-preview {
+  border: 1px solid var(--border); border-radius: var(--r-md);
+  background: var(--surface-2); overflow: hidden;
+  position: sticky; top: 0;
+}
+.dl-preview[hidden] { display: none; }
+.dl-preview-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-bottom: 1px solid var(--divider);
+  font-size: var(--fs-sm); background: var(--surface);
+}
+.dl-preview-head b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+.dl-preview-body { max-height: 52vh; overflow: auto; padding: 12px; }
+.dl-preview-body .dl-anh { margin: 0 0 10px; }
+.dl-preview-body .dl-anh img { width: 100%; height: auto; display: block; border-radius: var(--r-sm); }
+
+/* Màn hẹp: quay lại xếp chồng — panel nằm TRÊN danh sách, vẫn không chen vào giữa. */
+@media (max-width: 900px) {
+  .dl-main.has-preview { grid-template-columns: 1fr; }
+  .dl-preview { position: static; }
+  .dl-preview-body { max-height: 40vh; }
+}
 
 @media (max-width: 640px) {
   .dl-row {

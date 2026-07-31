@@ -62,6 +62,11 @@ _Archive/
 # Đã kiểm bản hiện tại (Thinksmart Tool.xlsx): 0 email, 0 số điện thoại. (31/07/2026)
 outputs/
 
+# Thư mục chủ tool BỎ FILE MẪU MỚI vào để bàn giao. Bản dùng thật đã nằm ở
+# public/templates/ — commit thêm ở đây là nhân đôi 20MB và nằm lại trong lịch sử
+# git vĩnh viễn (đúng bài học file .ai từng chiếm 186MB). (31/07/2026)
+Export/
+
 # Third-party design skills — installed locally, NOT redistributed on the public repo
 # (frontend-design: (c) Anthropic all-rights-reserved; ui-ux-pro-max: no license file).
 # Reinstall notes: .claude/skills/thinksmarttool/references/conventions.md
