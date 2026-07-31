@@ -85,6 +85,36 @@ const US_STATES = [
 ];
 
 // --- NAV SECTION: "Proposal / Báo giá" (gọi từ renderFileTree trong js/main.js) ---
+// ---- THÔNG BÁO "ĐÃ CẬP NHẬT MẪU" (chủ tool 31/07/2026) ---------------------
+// Sale vừa bị khoá mục Báo giá cả buổi sáng; mở lại mà im lặng thì họ không biết
+// mẫu đã đổi nội dung, vẫn tưởng là bản cũ. Báo đúng MỘT lần, đúng chỗ (đầu mục
+// Báo giá), bấm "Đã hiểu" là thôi — không phải hộp thoại chặn ngang màn hình.
+// ⚠️ Lần cập nhật mẫu SAU: đổi MA_THONG_BAO thành mốc mới thì thông báo hiện lại
+// cho tất cả mọi người. Giữ nguyên mã = ai đã tắt thì không thấy nữa.
+const MA_THONG_BAO = 'mau-2026-07-31';
+const KHOA_TB = 'tst-tb-capnhat';
+
+function daTatThongBao() {
+  try { return localStorage.getItem(KHOA_TB) === MA_THONG_BAO; } catch (e) { return false; }
+}
+
+function makeBangTinCapNhat() {
+  const hop = document.createElement('div');
+  hop.className = 'nav-update-note';
+  hop.innerHTML =
+    '<div class="nun-top">' +
+      '<b>Mẫu báo giá đã cập nhật</b>' +
+      '<button type="button" class="nun-close" aria-label="Đã hiểu, ẩn thông báo">✕</button>' +
+    '</div>' +
+    '<span>4 mẫu AIG và NLG nay dùng nội dung mới nhất (31/07). ' +
+    'Anh chị tạo bản cho khách như bình thường.</span>';
+  hop.querySelector('.nun-close').addEventListener('click', function () {
+    try { localStorage.setItem(KHOA_TB, MA_THONG_BAO); } catch (e) {}
+    hop.remove();
+  });
+  return hop;
+}
+
 function renderProposalNavSection(container, proposals, q) {
   // ĐANG KHOÁ (nhân viên): KHÔNG dựng danh sách mẫu nào cả — không có mục để bấm thì
   // không có đường mở nhầm. Cố ý vẫn hiện tiêu đề "Proposal / Báo giá" kèm lời giải
@@ -113,6 +143,9 @@ function renderProposalNavSection(container, proposals, q) {
   // Khi không tìm kiếm: luôn hiện đủ các hãng chính (kể cả hãng chưa có mẫu, vd Allianz)
   if (!q) MASTER_CARRIERS.forEach(c => { propGroups[c] = propGroups[c] || []; });
   const propSection = makeCollapsibleFolder('Proposal / Báo giá', { extraClass: 'nav-section', iconHTML: NAV_ICONS.proposal });
+  // Thông báo cập nhật — chỉ khi KHÔNG đang tìm kiếm (đang tìm thì màn hình là kết quả,
+  // chen thông báo vào là nhiễu) và người dùng chưa bấm tắt.
+  if (!q && !daTatThongBao()) propSection.content.appendChild(makeBangTinCapNhat());
   let propCount = 0;
   Object.keys(propGroups).sort(carrierSort).forEach(carrier => {
     const items = propGroups[carrier];

@@ -3,6 +3,31 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
+### 2026-07-31 (chốt — MỞ KHOÁ mục Báo giá + bảng tin cập nhật). ✅ ĐÃ PUSH (v1.38).
+
+Chủ tool nghiệm thu 4 mẫu mới trên live xong → **mở khoá cho 77 nhân viên**.
+
+**① Mở khoá:** gỡ khối `if (p.role === 'user') appState.khoaProposal = true` trong `tool.html`.
+`appState.khoaProposal` **giữ nguyên trong core.js** — lần sau cần khoá chỉ bật lại 1 dòng
+(có ghi mẫu câu sẵn trong comment tại chỗ). Đo: mở khoá → 0 khối khoá, mẫu bấm được;
+bật lại cờ → khối khoá hiện, 0 mẫu bấm được.
+
+**② Bảng tin "Mẫu báo giá đã cập nhật"** (`makeBangTinCapNhat` trong `proposal.js`).
+Sale bị khoá cả buổi sáng; mở lại mà im lặng thì họ không biết mẫu đã đổi nội dung.
+- Nền **xanh** (tin đã xong), khác hẳn nền **cam** của bảng "đang khoá" → nhìn MÀU là biết
+  loại tin, khỏi đọc chữ.
+- Đặt ở **đầu mục Báo giá** — đúng chỗ liên quan, KHÔNG dùng hộp thoại chặn ngang màn hình.
+- Có nút ✕ tắt hẳn, nhớ bằng `localStorage['tst-tb-capnhat'] = MA_THONG_BAO`.
+  **Lần cập nhật mẫu sau: đổi `MA_THONG_BAO` là thông báo hiện lại cho tất cả mọi người.**
+- KHÔNG hiện khi đang tìm kiếm (màn hình lúc đó là kết quả, chen vào là nhiễu).
+- Đo: bình thường → có tin + có nút tắt · đang tìm → không hiện · bấm tắt → ẩn, vẽ lại
+  vẫn ẩn, localStorage đã lưu đúng mã.
+
+Versions: `core.js?v=34` · `proposal.js?v=38` · `style.css?v=84` · badge **v1.38**.
+
+**CÒN TREO:** chưa quyết có khoá **11 admin** khỏi mục Báo giá không (giờ đã mở cho tất cả
+nên câu hỏi này hết cấp thiết); `NLG Term Life` còn 1 chữ "I" chưa outline (không gây lỗi).
+
 ### 2026-07-31 (khuya 2 — 4 MẪU BẢN XUẤT LẠI, số La Mã đã outline). ✅ ĐÃ PUSH (v1.37).
 
 Chủ tool xuất lại toàn bộ 4 mẫu sau khi phát hiện **NLG Term Life mất số "II"** (ô huy hiệu

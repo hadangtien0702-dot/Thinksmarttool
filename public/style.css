@@ -1417,6 +1417,24 @@ select.text-input-field option, .select-field option { background-color: var(--s
   font-variant-numeric: tabular-nums;
 }
 
+/* ---- BẢNG TIN "ĐÃ CẬP NHẬT MẪU" (chủ tool 31/07/2026) ---------------------
+   Nền xanh (tin vui/đã xong), khác hẳn nền cam của bảng "đang khoá" ngay dưới —
+   nhìn MÀU là biết loại tin, khỏi phải đọc chữ. Có nút ✕ để tắt hẳn: thông báo
+   không có đường tắt thì lần thứ ba đã thành phiền. */
+.nav-update-note {
+  display: flex; flex-direction: column; gap: 4px;
+  margin: 4px 8px 10px; padding: 11px 13px;
+  background: var(--success-soft); border-radius: var(--r-md);
+  font-size: var(--fs-sm); line-height: 1.5; color: var(--text-2);
+}
+.nav-update-note .nun-top { display: flex; align-items: center; gap: 8px; }
+.nav-update-note b { flex: 1; color: var(--text); font-weight: 700; }
+.nun-close {
+  border: none; background: transparent; cursor: pointer; line-height: 1;
+  color: var(--text-3); font-size: 13px; padding: 2px 4px; border-radius: var(--r-sm);
+}
+.nun-close:hover { background: var(--surface-3); color: var(--text); }
+
 /* ---- MỤC BÁO GIÁ ĐANG TẠM KHOÁ (chủ tool 31/07/2026) ----------------------
    Nhân viên vẫn THẤY mục, nhưng không có gì để bấm + có lời giải thích. Ẩn sạch
    thì sale tưởng tool hỏng hoặc mình bị mất quyền. Màu chữ lấy #96590A (đã đo đạt
