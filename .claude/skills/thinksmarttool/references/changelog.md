@@ -3,9 +3,15 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
-### 2026-07-31 (đêm — TAB "KHOÁ MỤC" + nới quyền cho Admin). ✅ ĐÃ PUSH (v1.39).
+### 2026-08-10 — TAB "KHOÁ MỤC" + nới quyền cho Admin. ✅ ĐÃ PUSH (v1.39).
 
-Chủ tool: *"thêm cho anh một tab trong quản lí thành viên để chủ động khoá những phần
+> ⚠️ Mục này ban đầu tôi ghi nhầm ngày 31/07 (phiên làm việc bị ngắt quãng rồi tiếp
+> tục sang ngày khác, tôi cứ theo quán tính ghi tiếp ngày cũ). Ngày THẬT lấy từ
+> `git log`: commit `4fb04b1` lúc **10/08/2026 08:20**. Mọi mục v1.38 trở về trước
+> đúng là 31/07. → Bài học: đầu phiên và trước mỗi lần ghi nhật ký phải chạy
+> `date`, đừng suy ngày từ mục trước đó.
+
+(Ngày thật: 10/08/2026.) Chủ tool: *"thêm cho anh một tab trong quản lí thành viên để chủ động khoá những phần
 anh đang cần cập nhật"*. Trước đó muốn khoá phải sửa code + push mỗi lần.
 
 **① Bảng `khoa_muc` + tab thứ 3 "Khoá mục"**

@@ -14,7 +14,7 @@
 
 // --- STATE MANAGEMENT ---
 let appState = {
-  // KHOÁ MỤC (31/07/2026) — Super Admin tự bật/tắt ở tab "Khoá mục" trong Quản lý
+  // KHOÁ MỤC (10/08/2026) — Super Admin tự bật/tắt ở tab "Khoá mục" trong Quản lý
   // thành viên; trạng thái nằm ở bảng `khoa_muc` trên Supabase, KHÔNG hardcode nữa.
   // Chỉ role 'user' bị khoá — admin/super_admin luôn vào được để còn cập nhật nội dung.
   // Mã mục khớp với bảng: proposal · brochure · namecard · compare.
@@ -1693,7 +1693,7 @@ function updateStatus(message) {
 }
 
 
-// ---- NẠP TRẠNG THÁI KHOÁ MỤC (31/07/2026) ----------------------------------
+// ---- NẠP TRẠNG THÁI KHOÁ MỤC (10/08/2026) ----------------------------------
 // Đọc bảng `khoa_muc` rồi áp cho role 'user'. Admin/Super Admin không bao giờ bị khoá
 // — họ là người đang cập nhật nội dung, khoá họ là tự khoá đường sửa.
 // Best-effort: chưa tạo bảng / lỗi mạng đều NUỐT IM và coi như không khoá gì. Thà mở

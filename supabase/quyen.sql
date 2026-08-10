@@ -11,7 +11,7 @@
 -- CHẠY LẠI AN TOÀN (idempotent): toàn bộ là drop-then-create.
 -- Không tạo bảng — bảng nằm ở `schema.sql`. Dựng mới từ đầu thì chạy schema.sql trước.
 --
--- Lập 2026-07-31.
+-- Lập 2026-08-10.
 -- ============================================================================
 
 
@@ -72,7 +72,7 @@ create policy "presence: admin doc"
 -- ----------------------------------------------------------------------------
 -- 2. USAGE_EVENTS — nhật ký sử dụng (đăng nhập · mở tool · tải · xem)
 --
--- ⚠️ NỚI 31/07/2026 — ĐẢO NGƯỢC quyết định 27/07 ("chỉ super_admin đọc").
+-- ⚠️ NỚI 10/08/2026 — ĐẢO NGƯỢC quyết định 27/07 ("chỉ super_admin đọc").
 -- Chủ tool chốt: cho 11 Admin (leader/manager) theo dõi được đội của họ.
 -- HỆ QUẢ ĐÃ BÁO VÀ ĐƯỢC CHẤP NHẬN: Admin đọc được cột `detail` — tên, tuổi,
 -- tiểu bang, số tiền của khách hàng thật mà sale đã điền.
@@ -95,7 +95,7 @@ create policy "usage: admin doc"
 --
 -- Ai cũng ĐỌC được (bắt buộc: Tool phải biết mục nào đang khoá thì mới ẩn được;
 -- ở đây không có gì bí mật, chỉ là trạng thái bật/tắt).
--- Admin + Super Admin SỬA được (chủ tool chốt 31/07: leader tự khoá phần của mình).
+-- Admin + Super Admin SỬA được (chủ tool chốt 10/08: leader tự khoá phần của mình).
 -- ----------------------------------------------------------------------------
 drop policy if exists "khoa_muc: ai dang nhap cung doc" on public.khoa_muc;
 create policy "khoa_muc: ai dang nhap cung doc"
@@ -115,7 +115,7 @@ create policy "khoa_muc: admin sua"
 --
 -- ☠️ ĐÂY LÀ DỮ LIỆU KHÁCH HÀNG THẬT: ảnh có tên, tuổi, tiểu bang, số tiền của
 -- từng khách. Bucket để PRIVATE, mở ảnh phải xin link có hạn 60 giây.
--- ⚠️ NỚI 31/07/2026 cho Admin đọc (cùng đợt với usage_events). KHÔNG BAO GIỜ
+-- ⚠️ NỚI 10/08/2026 cho Admin đọc (cùng đợt với usage_events). KHÔNG BAO GIỜ
 -- nới thêm cho role 'user'.
 -- ----------------------------------------------------------------------------
 drop policy if exists "snapshot: tự tải lên thư mục của mình" on storage.objects;

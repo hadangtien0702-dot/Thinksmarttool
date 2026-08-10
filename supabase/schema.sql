@@ -279,7 +279,7 @@ create policy "usage: tự ghi sự kiện của mình"
   on public.usage_events for insert
   with check (user_id = auth.uid());
 
--- ⚠️ NỚI 31/07/2026 (chủ tool chốt) — ĐẢO NGƯỢC quyết định 27/07 "chỉ super_admin đọc".
+-- ⚠️ NỚI 10/08/2026 (chủ tool chốt) — ĐẢO NGƯỢC quyết định 27/07 "chỉ super_admin đọc".
 -- Lý do: chủ tool dùng tab Đo lường thấy ổn, muốn 11 Admin (leader/manager) cũng theo dõi
 -- được đội của họ. HỆ QUẢ ĐÃ ĐƯỢC BÁO VÀ CHẤP NHẬN: Admin xem được cột `detail`
 -- (tên/tuổi/tiểu bang/số tiền khách sale đã điền) và mở được ảnh bản đã gửi khách.
@@ -407,7 +407,7 @@ create policy "snapshot: tự tải lên thư mục của mình"
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
--- ⚠️ NỚI 31/07/2026: Admin + Super Admin đọc. Đây là ẢNH BẢN BÁO GIÁ ĐÃ GỬI KHÁCH —
+-- ⚠️ NỚI 10/08/2026: Admin + Super Admin đọc. Đây là ẢNH BẢN BÁO GIÁ ĐÃ GỬI KHÁCH —
 -- có tên, tuổi, tiểu bang, số tiền của khách hàng thật. Chủ tool đã được báo hệ quả này
 -- và chấp nhận, để leader theo dõi được đội mình. KHÔNG nới thêm cho role 'user'.
 drop policy if exists "snapshot: chỉ super admin đọc" on storage.objects;

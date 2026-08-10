@@ -990,7 +990,7 @@
   }
 
   function initTracking() {
-    // NỚI 31/07/2026 (chủ tool): trước đây 2 tab "Đo lường" + "Khoá mục" chỉ super_admin.
+    // NỚI 10/08/2026 (chủ tool): trước đây 2 tab "Đo lường" + "Khoá mục" chỉ super_admin.
     // Nay Admin (leader/manager) cũng vào được — chủ tool dùng thấy ổn, muốn leader theo
     // dõi đội mình và tự khoá mục khi đang cập nhật nội dung.
     // ⚠️ Mở tab ở đây KHÔNG đủ: 4 policy trong schema.sql cũng phải là is_admin(), không
@@ -1094,7 +1094,7 @@
     if (which === 'khoa') taiKhoaMuc();
   }
 
-  // ---- KHOÁ MỤC (31/07/2026) — chỉ Super Admin --------------------------------
+  // ---- KHOÁ MỤC (10/08/2026) — chỉ Super Admin --------------------------------
   // Chủ tool tự khoá từng phần của Tool khi đang cập nhật, không phải sửa code + push.
   // ⚠️ Dùng UPDATE chứ KHÔNG upsert: 4 dòng đã được SQL tạo sẵn, và upsert =
   // `INSERT ... ON CONFLICT DO UPDATE` phải ĐỌC hàng để dò trùng khoá → rất dễ vướng

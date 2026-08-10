@@ -61,6 +61,49 @@ khi chủ tool xuất lại mẫu với bố cục dịch xuống. Đừng quay 
 **④ Số La Mã trong huy hiệu mục có thể là `<text>` HOẶC `<path>`** (chủ tool create outlines).
 Đừng grep `<text>` rồi kết luận "mất chữ" — phải render và **đếm phần tử nằm trong ô huy hiệu**.
 
+## 2c. KHOÁ MỤC — chủ tool tự khoá từng phần khi đang cập nhật (10/08/2026)
+
+Trước đây muốn khoá phải sửa code + push. Nay bật/tắt ngay trên web.
+
+- **Ở đâu:** `/members` → tab thứ 3 **"Khoá mục"**. Super Admin **và Admin** đều dùng được.
+- **Khoá được 4 mục:** `proposal` · `brochure` · `namecard` · `compare` (khớp cây thư mục Tool).
+- **Khoá chỉ áp cho role `user`** (77 nhân viên). Admin/Super Admin luôn vào được — họ là
+  người đang cập nhật nội dung, khoá họ là tự khoá đường sửa.
+- **Trạng thái nằm ở bảng `khoa_muc` trên Supabase**, KHÔNG phải localStorage — khoá phải
+  áp cho cả đội, để ở máy chủ tool thì chỉ mình chủ tool thấy.
+- ☠️ **Dùng `UPDATE`, KHÔNG `upsert`.** 4 dòng đã tạo sẵn bằng SQL. `upsert` bị PostgREST
+  dịch thành `INSERT ... ON CONFLICT DO UPDATE` — lệnh này phải ĐỌC hàng để dò trùng khoá,
+  chính là lỗi đã làm tính năng "ai đang online" chết câm suốt 8 ngày mà không ai biết.
+- **Lỗi mạng khi đọc bảng → coi như không khoá gì.** Thà mở nhầm một lúc còn hơn cả đội
+  đứng hình vì một cú timeout.
+
+## 2d. ⚠️ AI ĐƯỢC XEM DỮ LIỆU KHÁCH HÀNG (nới 10/08/2026 — ĐẢO NGƯỢC quyết định 27/07)
+
+Chủ tool chốt cho **11 Admin** xem tab Đo lường. Hệ quả đã được báo và chấp nhận:
+
+| Nguồn | Ai đọc được | Chứa gì |
+|---|---|---|
+| `usage_events` | **Admin** + Super Admin | ai tải gì · cột `detail` = tên/tuổi/tiểu bang/số tiền khách sale đã điền |
+| `proposal-snapshots` | **Admin** + Super Admin | **ảnh bản báo giá đã gửi khách** |
+| `presence` | **Admin** + Super Admin | ai đang online |
+| `khoa_muc` | ai cũng ĐỌC · Admin+ **SỬA** | trạng thái khoá (không có dữ liệu khách) |
+
+27/07 chủ tool từng chốt ngược lại: *"ảnh chứa dữ liệu khách hàng thật — CHỈ Super Admin
+đọc"*. **Đừng tự siết lại** khi thấy mâu thuẫn — đây là thay đổi có chủ ý.
+→ Siết lại (nếu chủ tool đổi ý): đổi `is_admin()` về `is_super_admin()` trong
+  `supabase/quyen.sql`, rồi chạy lại file đó.
+
+## 2e. HAI FILE SQL — dùng cái nào
+
+| File | Khi nào |
+|---|---|
+| `supabase/schema.sql` (436 dòng) | Dựng lại **từ đầu**: bảng, trigger, bucket |
+| `supabase/quyen.sql` (145 dòng) | **Chỉ chỉnh quyền** — thứ hay phải đụng nhất |
+
+Tách ra vì Supabase SQL Editor chạy **cả file trong MỘT giao dịch**: lỗi một chỗ là huỷ
+sạch phần sau (đã dính 27/07 — mất luôn cột `anh` và bucket ảnh dù không liên quan).
+Cả hai đều **chạy lại an toàn**.
+
 ## 3. Chạy thử ở máy
 
 ```bash
