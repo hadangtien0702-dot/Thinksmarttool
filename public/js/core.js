@@ -18,7 +18,7 @@ let appState = {
   // thành viên; trạng thái nằm ở bảng `khoa_muc` trên Supabase, KHÔNG hardcode nữa.
   // Chỉ role 'user' bị khoá — admin/super_admin luôn vào được để còn cập nhật nội dung.
   // Mã mục khớp với bảng: proposal · brochure · namecard · compare.
-  khoaMuc: { proposal: false, brochure: false, namecard: false, compare: false },
+  khoaMuc: { proposal: false, brochure: false, namecard: false, compare: false, sms: false },
   loiNhanKhoa: {},   // mã mục → lời nhắn riêng (nếu Super Admin có gõ)
   // GIỮ cho tương thích: proposal.js đọc cờ này. Luôn đồng bộ với khoaMuc.proposal.
   khoaProposal: false,
@@ -736,6 +736,8 @@ const NAV_ICONS = {
   proposal:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>',
   brochure: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
   namecard: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2.2"/><line x1="13" y1="10" x2="18" y2="10"/><line x1="13" y1="14" x2="17" y2="14"/></svg>',
+  // bong bóng chat — mục "SMS / Tin nhắn mẫu" (10/08/2026)
+  sms: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/><line x1="8.5" y1="10" x2="15.5" y2="10"/><line x1="8.5" y1="13.5" x2="13" y2="13.5"/></svg>',
   carrier: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
   file: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>',
   fileDl: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
@@ -809,19 +811,25 @@ function carrierSort(a, b) {
 }
 
 // Build a collapsible folder shell → { folder, content }
-function makeCollapsibleFolder(labelHTML, { extraClass = '', open = true, iconHTML = '' } = {}) {
+// gapDuoc = false → KHÔNG có mũi tên, KHÔNG bấm gập được, luôn mở (mục SMS,
+// chủ tool 10/08/2026: "remove dropdown này đi em"). Bỏ mũi tên mà giữ chỗ bấm
+// gập là tệ nhất: người dùng lỡ bấm là mục biến mất, mà không có gì cho biết
+// bấm lại chỗ nào để mở ra.
+function makeCollapsibleFolder(labelHTML, { extraClass = '', open = true, iconHTML = '', gapDuoc = true } = {}) {
   const folderEl = document.createElement('div');
-  folderEl.className = `tree-folder ${extraClass} ${open ? 'open' : ''}`.replace(/\s+/g, ' ').trim();
+  folderEl.className = `tree-folder ${extraClass} ${gapDuoc ? (open ? 'open' : '') : 'open'}`.replace(/\s+/g, ' ').trim();
 
   const headerEl = document.createElement('div');
-  headerEl.className = 'tree-folder-header';
+  headerEl.className = 'tree-folder-header' + (gapDuoc ? '' : ' khong-gap');
   headerEl.innerHTML = `
     ${iconHTML ? `<span class="tree-folder-icon">${iconHTML}</span>` : ''}
     <span class="tree-folder-label">${labelHTML}</span>
-    <span class="tree-folder-arrow">${NAV_ICONS.arrow}</span>
+    ${gapDuoc ? `<span class="tree-folder-arrow">${NAV_ICONS.arrow}</span>` : ''}
   `;
-  headerEl.addEventListener('click', () => folderEl.classList.toggle('open'));
-  makeKeyboardActivatable(headerEl);
+  if (gapDuoc) {
+    headerEl.addEventListener('click', () => folderEl.classList.toggle('open'));
+    makeKeyboardActivatable(headerEl);
+  }
 
   const contentEl = document.createElement('div');
   contentEl.className = 'tree-folder-content';

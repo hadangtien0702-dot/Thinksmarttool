@@ -348,8 +348,8 @@ create index if not exists presence_last_seen_idx on public.presence (last_seen 
 -- Vì sao phải để trên SERVER, không dùng localStorage: khoá phải áp cho CẢ ĐỘI.
 -- Lưu ở máy chủ tool thì chỉ mình chủ tool thấy, 77 sale vẫn vào bình thường.
 --
--- `muc` khớp đúng 4 mục trên cây thư mục của Tool:
---   'proposal' · 'brochure' · 'namecard' · 'compare'
+-- `muc` khớp đúng các mục trên cây thư mục của Tool:
+--   'proposal' · 'brochure' · 'namecard' · 'compare' · 'sms' (thêm 10/08/2026)
 -- ----------------------------------------------------------------------------
 create table if not exists public.khoa_muc (
   muc          text primary key,
@@ -359,10 +359,13 @@ create table if not exists public.khoa_muc (
   cap_nhat_boi uuid references public.profiles(id) on delete set null
 );
 
--- 4 dòng mặc định, TẤT CẢ đang mở. Có sẵn dòng thì client chỉ cần UPDATE —
+-- 5 dòng mặc định, TẤT CẢ đang mở. Có sẵn dòng thì client chỉ cần UPDATE —
 -- KHÔNG phải upsert. (Bài học 31/07: upsert = INSERT ... ON CONFLICT DO UPDATE,
 -- lệnh này phải ĐỌC hàng để dò trùng khoá nên rất dễ vướng RLS.)
-insert into public.khoa_muc (muc) values ('proposal'), ('brochure'), ('namecard'), ('compare')
+-- ⚠️ Thêm mục mới ở đây thì PHẢI chạy lại file này (hoặc riêng câu insert dưới),
+-- không thì nút "Khoá mục này" của mục đó bấm vào không ăn — UPDATE không có
+-- dòng nào để sửa, và PostgREST trả 204 KHÔNG BÁO LỖI (bài học 31/07).
+insert into public.khoa_muc (muc) values ('proposal'), ('brochure'), ('namecard'), ('compare'), ('sms')
 on conflict (muc) do nothing;
 
 alter table public.khoa_muc enable row level security;

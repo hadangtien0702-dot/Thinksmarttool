@@ -1362,6 +1362,12 @@ select.text-input-field option, .select-field option { background-color: var(--s
 }
 .tree-folder.nav-section > .tree-folder-header:hover { background: var(--surface-3); color: var(--text); }
 
+/* Tiêu đề KHÔNG GẬP ĐƯỢC — mục SMS (chủ tool 10/08/2026 xin bỏ mũi tên xổ).
+   Không có mũi tên thì cũng đừng để nó trông bấm được: bỏ cả con trỏ bàn tay và
+   nền sáng khi rê chuột, không thì người ta bấm hoài mà chẳng thấy gì xảy ra. */
+.tree-folder > .tree-folder-header.khong-gap { cursor: default; }
+.tree-folder.nav-section > .tree-folder-header.khong-gap:hover { background: transparent; }
+
 /* Mục công cụ PHẲNG — không có mũi tên xổ vì bên trong không có mẫu con để chọn
    (bảng So sánh là một bảng duy nhất). Bấm thẳng vào tiêu đề là mở luôn, nên nó
    cần trạng thái "đang mở" giống một file đang chọn — mục xổ được thì không cần. */
@@ -1552,6 +1558,43 @@ body.no-editor .sidebar-right { display: none; }
   justify-content: center;
   align-content: flex-start;
 }
+
+/* --------------------------------------------------------------------------
+   ẢNH DỌC RẤT CAO — "SMS / Tin nhắn mẫu" (10/08/2026)
+   ☠️ Ảnh tin nhắn đo được 1080 x 7082 (cao gấp 6,6 lần bề ngang). Khung ảnh
+   thường (.library-thumb img) ghim `max-height: 60vh` → ảnh này co lại còn ~9vh
+   bề ngang, thành một sợi chỉ, chữ không đọc nổi. Nên ở đây KHÔNG ghim chiều
+   cao: ghim BỀ NGANG cỡ một cái điện thoại rồi cho cuộn dọc.
+   -------------------------------------------------------------------------- */
+.library-view.is-tall {
+  display: block !important;
+  overflow-y: auto;
+  padding: 24px 0 48px;
+  align-items: stretch;
+  justify-content: stretch;
+}
+.tall-doc { width: 100%; display: flex; flex-direction: column; align-items: center; margin-bottom: 32px; }
+/* Thanh tên + nút Tải về DÍNH TRÊN ĐỈNH: cuộn tới đâu nút vẫn trong tầm mắt.
+   Để nút ở đáy thì với ảnh cao 7000px nó cách nội dung cả một quãng cuộn —
+   đúng lỗi chủ tool đã bắt hôm 31/07 ("nút download bị tọt xuống dưới luôn"). */
+.tall-doc-bar {
+  position: sticky; top: 0; z-index: 2;
+  width: min(92%, 480px);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 14px; margin-bottom: 12px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); box-shadow: var(--shadow-md);
+}
+.tall-doc-title {
+  font-weight: 700; font-size: var(--fs-sm); color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.tall-doc-dl { flex-shrink: 0; text-decoration: none; }
+.tall-doc-img {
+  width: min(92%, 480px); height: auto; display: block;
+  background: #fff; border-radius: var(--r-md); box-shadow: var(--shadow-lg);
+}
+.tall-doc-img + .tall-doc-img { margin-top: 16px; }
 
 /* Ensure parent library-view is scrollable and styled correctly when group is active */
 .library-view.has-group {

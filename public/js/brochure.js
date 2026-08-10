@@ -10,15 +10,15 @@
 // --- LIBRARY DATA ---
 async function fetchLibrary() {
   if (appState.mode !== 'server') {
-    appState.library = { brochure: {}, namecard: {} };
+    appState.library = { brochure: {}, namecard: {}, sms: {} };
     return;
   }
   try {
     const resp = await fetch('/api/library');
     const data = await resp.json();
-    appState.library = (data && data.success && data.library) ? data.library : { brochure: {}, namecard: {} };
+    appState.library = (data && data.success && data.library) ? data.library : { brochure: {}, namecard: {}, sms: {} };
   } catch (e) {
-    appState.library = { brochure: {}, namecard: {} };
+    appState.library = { brochure: {}, namecard: {}, sms: {} };
   }
 }
 
@@ -106,9 +106,13 @@ function preprocessLibraryItems(items) {
 }
 
 // --- NAV SECTION: "Brochure" (gọi từ renderFileTree trong js/main.js) ---
-function renderLibrarySection(container, label, iconHTML, groupsObj, q) {
+// opts.dai = true → mọi item của mục này xem bằng showTallPreview (ảnh dọc rất
+// cao: tin nhắn mẫu SMS). Đánh dấu ngay từ chỗ RENDER thay vì đoán theo đường dẫn
+// lúc mở — mục nào dùng khung nào là do người gọi quyết, đọc một chỗ là biết.
+function renderLibrarySection(container, label, iconHTML, groupsObj, q, opts) {
+  opts = opts || {};
   groupsObj = groupsObj || {};
-  const section = makeCollapsibleFolder(label, { extraClass: 'nav-section', iconHTML });
+  const section = makeCollapsibleFolder(label, { extraClass: 'nav-section', iconHTML, gapDuoc: opts.gapDuoc !== false });
   let count = 0;
   Object.keys(groupsObj).sort(carrierSort).forEach(carrier => {
     let items = (groupsObj[carrier] || []).filter(it => !q || it.name.toLowerCase().includes(q));
@@ -116,6 +120,7 @@ function renderLibrarySection(container, label, iconHTML, groupsObj, q) {
 
     // Group multi-page brochures (PDF + JPEGs)
     items = preprocessLibraryItems(items);
+    if (opts.dai) items.forEach(it => { it.dai = true; });
 
     if (carrier === 'Chung') {
       // Append items directly to section content, bypassing folder grouping
@@ -140,7 +145,9 @@ function renderLibrarySection(container, label, iconHTML, groupsObj, q) {
   if (count === 0) {
     // The hint must show the REAL folder name (before the " / vietnamese" display suffix)
     const folderName = String(label).split(' / ')[0];
-    section.content.appendChild(makeEmptyHint(q ? 'Không có kết quả.' : `Chưa có file. Thả file vào folder "${folderName}/<Hãng>/".`));
+    // Mục không chia theo hãng (SMS) thì đừng bảo người ta tạo folder hãng con
+    const goiY = opts.goiY || `Chưa có file. Thả file vào folder "${folderName}/<Hãng>/".`;
+    section.content.appendChild(makeEmptyHint(q ? 'Không có kết quả.' : goiY));
   }
   container.appendChild(section.folder);
   return count;
@@ -164,8 +171,59 @@ function openLibraryGroup(items, groupName) {
   dom.btnSaveTop.disabled = true;
 
   dom.canvasWrapper.innerHTML = '';
-  showLibraryGroupPreview(items);
+  // Nhóm toàn ảnh dọc (SMS) → khung cuộn dọc, KHÔNG phải lưới thẻ 580px
+  if (items.length && items.every(it => it.dai)) showTallPreview(items);
+  else showLibraryGroupPreview(items);
   updateStatus(`Đang xem nhóm: ${groupName}`);
+}
+
+// ---------------------------------------------------------------------------
+// KHUNG XEM ẢNH DỌC RẤT CAO — "SMS / Tin nhắn mẫu" (10/08/2026)
+//
+// ☠️ Vì sao phải có khung riêng, đừng gộp lại: khung brochure thường ghim
+// `max-height: 60vh` lên ảnh (style.css .library-thumb img). Ảnh SMS đầu tiên đo
+// được 1080 x 7082 — cao gấp 6,6 lần bề ngang. Ghim chiều cao xong nó chỉ còn
+// ~9vh bề ngang: một SỢI CHỈ trên màn hình, chữ không đọc nổi.
+// Ở đây làm ngược lại: ghim BỀ NGANG cỡ một cái điện thoại (~480px) rồi cho
+// CUỘN DỌC. Nhận cả một mảng item nên dùng được cho 1 ảnh lẫn cả nhóm.
+//
+// Nút "Tải về" nằm trong thanh DÍNH TRÊN ĐỈNH (position: sticky), không để dưới
+// đáy — với ảnh cao 7000px thì nút ở đáy cách nội dung cả một quãng cuộn, đúng
+// lỗi chủ tool đã bắt hôm 31/07 ("nút download bị tọt xuống dưới luôn").
+// ---------------------------------------------------------------------------
+function showTallPreview(items) {
+  if (dom.noSelection) dom.noSelection.style.display = 'none';
+
+  let view = document.getElementById('library-view');
+  if (!view) {
+    view = document.createElement('div');
+    view.id = 'library-view';
+    view.className = 'library-view';
+    dom.canvasContainer.appendChild(view);
+  }
+  view.classList.remove('has-group');
+  view.classList.add('is-tall');
+
+  view.innerHTML = items.map(item => {
+    const pages = item.isMultiPage ? item.pages : [item.path];
+    const dl = `/api/download?path=${encodeURIComponent(item.path)}`;
+    const ten = String(item.name).replace(/\.(jpe?g|png|pdf|svg|webp)$/i, '');
+    const anh = pages.map((p, i) => `
+      <img class="tall-doc-img" loading="${i === 0 ? 'eager' : 'lazy'}"
+           src="/api/download?path=${encodeURIComponent(p)}&inline=1"
+           alt="${escapeHtml(ten)}${pages.length > 1 ? ' — trang ' + (i + 1) : ''}">`).join('');
+    return `
+      <div class="tall-doc">
+        <div class="tall-doc-bar">
+          <span class="tall-doc-title" title="${escapeHtml(item.name)}">${escapeHtml(ten)}</span>
+          <a class="btn btn-primary btn-sm tall-doc-dl" href="${dl}" download>${NAV_ICONS.download} Tải về</a>
+        </div>
+        ${anh}
+      </div>`;
+  }).join('');
+
+  view.style.display = 'block';
+  view.scrollTop = 0;
 }
 
 function showLibraryGroupPreview(items) {
@@ -179,6 +237,7 @@ function showLibraryGroupPreview(items) {
     dom.canvasContainer.appendChild(view);
   }
 
+  view.classList.remove('is-tall');
   view.classList.add('has-group');
 
   let html = '<div class="library-view-group">';
@@ -267,9 +326,11 @@ function openLibraryItem(item) {
   dom.canvasWrapper.innerHTML = '';
 
   let view = document.getElementById('library-view');
-  if (view) view.classList.remove('has-group');
+  if (view) view.classList.remove('has-group', 'is-tall');
 
-  if (item.isMultiPage) {
+  if (item.dai) {
+    showTallPreview([item]);          // ảnh dọc rất cao (SMS) — xem chú thích ở showTallPreview
+  } else if (item.isMultiPage) {
     showLibraryMultiPagePreview(item);
   } else {
     showLibraryPreview(item);
@@ -383,7 +444,7 @@ function hideLibraryPreview() {
   const view = document.getElementById('library-view');
   if (view) {
     view.style.display = 'none';
-    view.classList.remove('has-group');
+    view.classList.remove('has-group', 'is-tall');
   }
   // Đây là chỗ DUY NHẤT mọi luồng "mở thứ khác" đều đi qua (loadSvgContent,
   // resetCanvasToWelcome, mở brochure/name card) → tắt luôn khung tài liệu của

@@ -3,6 +3,72 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
+### 2026-08-10 — MỤC THỨ 5 TRÊN MENU: "SMS / Tin nhắn mẫu" (v1.40). ⏳ CHƯA PUSH.
+
+Chủ tool: *"anh cần tạo một mục mới ở thanh menu — đây là một hình tab mới,
+`2-Templates\SMS`, vẫn có nút download"*.
+
+**① Ảnh phải ĐỔI CHỖ — `2-Templates/` bị gitignore**
+Chủ tool bỏ ảnh vào `2-Templates/SMS/`. Thư mục đó nằm trong `.gitignore` từ đầu
+(masters nặng) → chạy được ở máy nhưng **mất trắng trên bản live, không báo lỗi gì**
+— đúng cái bẫy đã ghi sẵn trong chính file `.gitignore` (mục `Brochure/`).
+→ Đã chuyển sang **`SMS/` NGAY GỐC dự án** (giống `Bang so sanh quyen loi cac hang/`
+đang chạy được trên Vercel). Kiểm: `git check-ignore -v "SMS/SMS - nail.jpg"` → không khớp luật nào.
+→ **Từ nay bỏ ảnh tin nhắn mới vào `SMS/`, đừng bỏ vào `2-Templates/`.**
+
+**② ☠️ ẢNH DỌC RẤT CAO — KHUNG XEM CŨ BÓP NÓ THÀNH SỢI CHỈ**
+Ảnh đầu tiên đo được **1080 × 7082** (cao gấp 6,6 lần bề ngang). Khung brochure
+thường ghim `max-height: 60vh` lên ảnh → đo trên trang thật: bề ngang còn **66px**,
+chữ tin nhắn không đọc nổi. Nếu chỉ "thêm mục" rồi báo xong thì đây là lỗi giao
+đến tay sale.
+→ Làm khung riêng `showTallPreview()` (js/brochure.js): **ghim BỀ NGANG ~480px
+(cỡ điện thoại), cho CUỘN DỌC**. Đo lại: **458px** bề ngang, ảnh cao 3006px,
+`scrollHeight 3317 > clientHeight 591` → cuộn được.
+→ Nút **Tải về nằm trong thanh dính đỉnh** (`position: sticky`), không để đáy:
+ảnh cao 7000px thì nút ở đáy cách nội dung cả quãng cuộn — đúng lỗi chủ tool bắt
+31/07 (*"nút download bị tọt xuống dưới luôn"*). Đo: cuộn 0 / 2500 / hết trang,
+thanh đứng yên ở y=105 cả ba lần.
+→ Đánh dấu bằng cờ `dai: true` truyền từ `renderFileTree` **lúc render**, KHÔNG
+đoán theo đường dẫn lúc mở — mục nào dùng khung nào đọc một chỗ là biết.
+
+**③ Đã sửa những file nào**
+`server.js` (LIBRARY_SECTIONS += `sms: 'SMS'`) · `core.js` (icon + `khoaMuc.sms`) ·
+`brochure.js` (`showTallPreview` + tham số `opts` cho `renderLibrarySection`) ·
+`main.js` (mục thứ 5) · `style.css` (`.library-view.is-tall`, `.tall-doc-*`) ·
+`members.js` + `schema.sql` (khoá được mục SMS như 4 mục kia).
+
+**④ ⚠️ CÒN MỘT VIỆC CHỦ TOOL PHẢI TỰ LÀM**
+Nút "Khoá mục này" của SMS chỉ ăn khi bảng `khoa_muc` có dòng `sms`. Chạy trong
+Supabase SQL Editor:
+`insert into public.khoa_muc (muc) values ('sms') on conflict (muc) do nothing;`
+Chưa chạy thì SMS **luôn mở** (không ai bị chặn nhầm) nhưng bấm khoá sẽ không ăn —
+và PostgREST trả **204 không báo lỗi** (đúng bài học 31/07: UPDATE 0 dòng ≠ lỗi).
+
+**④b. Bỏ mũi tên gập/mở của mục SMS** (chủ tool: *"remove dropdown này đi em"*).
+Thêm tuỳ chọn `gapDuoc: false` cho `makeCollapsibleFolder` (core.js) — bỏ **cả ba**
+thứ cùng lúc: mũi tên · chỗ bấm gập · con trỏ bàn tay + nền hover.
+→ Bỏ mũi tên mà giữ chỗ bấm gập là tệ hơn cả không sửa: lỡ bấm là mục biến mất,
+mà không còn dấu hiệu nào cho biết bấm đâu để mở lại.
+Đo: bấm tiêu đề SMS **3 lần liên tiếp** → vẫn mở, vẫn đủ 1 mục con. 4 mục kia
+giữ nguyên mũi tên + con trỏ bàn tay.
+
+**⑤ Đã kiểm bằng số đo, KHÔNG chỉ đếm**
+Bàn đo: bản sao `tool.html` bỏ 3 script đăng nhập, chạy trên server thật (cổng tạm),
+gọi đúng hàm thật. Xoá sau khi đo xong.
+- `/api/library` trả 3 mục, `sms/Chung` đúng **1 file** `SMS/SMS - nail.jpg`.
+- Cây menu: **5 mục** đúng thứ tự, mục SMS hiện nhãn "SMS - nail".
+- `/api/download` bản tải về: **200, đủ 886.066 byte**; bản xem tại chỗ: **200 inline**;
+  thử `?path=.env` → **403** (chốt chặn đường dẫn vẫn nguyên).
+- **Không phá 3 mục cũ:** mở Brochure nhiều trang → `has-group`, 2 thẻ · Brochure 1 file
+  → `.library-thumb` · Compare → `doc-mode`, 16 hàng. Mở SMS xen giữa rồi mở lại
+  Brochure vẫn đúng khung (class không dính lại).
+- Nút Tải về sáng/tối: chữ trắng trên **nền gradient tím** (`linear-gradient(140deg,
+  #7c3aed, #5b21b6)`). *Đo hụt một nhịp ở đây:* `backgroundColor` trả `rgba(0,0,0,0)`
+  làm tưởng nút trong suốt — nền nằm ở `background-image`, phải đọc thuộc tính đó.
+- 0 lỗi console.
+
+---
+
 ### 2026-08-10 — TAB "KHOÁ MỤC" + nới quyền cho Admin. ✅ ĐÃ PUSH (v1.39).
 
 > ⚠️ Mục này ban đầu tôi ghi nhầm ngày 31/07 (phiên làm việc bị ngắt quãng rồi tiếp

@@ -1103,7 +1103,8 @@
     { ma: 'proposal', ten: 'Proposal / Báo giá',        mo: 'Mẫu báo giá 4 hãng — phần sale dùng nhiều nhất' },
     { ma: 'brochure', ten: 'Brochure / Tài liệu',       mo: 'Thư viện tài liệu tải về' },
     { ma: 'namecard', ten: 'Name Card / Danh thiếp',    mo: 'Mẫu danh thiếp cá nhân' },
-    { ma: 'compare',  ten: 'Compare / So sánh quyền lợi', mo: 'Bảng so sánh 16 hãng' }
+    { ma: 'compare',  ten: 'Compare / So sánh quyền lợi', mo: 'Bảng so sánh 16 hãng' },
+    { ma: 'sms',      ten: 'SMS / Tin nhắn mẫu',         mo: 'Ảnh tin nhắn mẫu sale gửi khách' }
   ];
   let khoaRows = {};
 

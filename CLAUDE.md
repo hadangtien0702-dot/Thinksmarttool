@@ -77,6 +77,25 @@ Trước đây muốn khoá phải sửa code + push. Nay bật/tắt ngay trên
 - **Lỗi mạng khi đọc bảng → coi như không khoá gì.** Thà mở nhầm một lúc còn hơn cả đội
   đứng hình vì một cú timeout.
 
+## 2c-bis. MỤC "SMS / Tin nhắn mẫu" (10/08/2026) — ảnh để ở đâu, xem bằng khung nào
+
+- **Ảnh nằm ở `SMS/` NGAY GỐC dự án.** ☠️ ĐỪNG để trong `2-Templates/SMS/` — thư mục đó
+  bị `.gitignore` chặn: chạy ngon ở máy nhưng **mất trắng trên live, không báo lỗi gì**
+  (đúng cái bẫy `Brochure/` đã ghi trong chính file `.gitignore`).
+  Thêm ảnh mới xong: `git check-ignore -v "SMS/<tên file>"` — không ra dòng nào là an toàn.
+- **Cơ chế:** dùng chung thư viện tải về với Brochure (`LIBRARY_SECTIONS.sms` trong
+  `server.js` → `/api/library` → `renderLibrarySection`). Ảnh loose ở gốc folder rơi vào
+  nhóm `Chung` nên hiện thẳng, không cần thư mục hãng con.
+- ☠️ **Xem bằng `showTallPreview()`, KHÔNG dùng khung ảnh brochure.** Ảnh tin nhắn rất cao
+  (bản đầu 1080 × 7082). Khung brochure ghim `max-height: 60vh` → đo thật: bề ngang còn
+  **66px**, thành sợi chỉ. Khung mới ghim **bề ngang ~480px** rồi cho cuộn dọc (đo được
+  458px), nút Tải về nằm trong **thanh dính đỉnh**.
+- Mục nào dùng khung dọc là do `renderFileTree` truyền cờ `{ dai: true }` **lúc render** —
+  đừng đoán theo đường dẫn lúc mở.
+- Khoá mục được như 4 mục kia, nhưng bảng `khoa_muc` phải có dòng `sms`:
+  `insert into public.khoa_muc (muc) values ('sms') on conflict (muc) do nothing;`
+  Thiếu dòng đó thì bấm khoá **không ăn mà cũng không báo lỗi** (UPDATE 0 dòng → 204).
+
 ## 2d. ⚠️ AI ĐƯỢC XEM DỮ LIỆU KHÁCH HÀNG (nới 10/08/2026 — ĐẢO NGƯỢC quyết định 27/07)
 
 Chủ tool chốt cho **11 Admin** xem tab Đo lường. Hệ quả đã được báo và chấp nhận:

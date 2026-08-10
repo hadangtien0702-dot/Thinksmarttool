@@ -279,7 +279,14 @@ const LIBRARY_SECTIONS = {
   // Bảng so sánh quyền lợi các hãng (chủ tool yêu cầu 21/07/2026) — 16 PNG nằm
   // NGAY GỐC folder (không chia hãng con) nên rơi vào nhóm 'Chung'. Folder này
   // ĐÃ commit vào repo (khác Brochure/ bị gitignore) → mục này chạy CẢ trên Vercel.
-  soSanh: 'Bang so sanh quyen loi cac hang'
+  soSanh: 'Bang so sanh quyen loi cac hang',
+  // Tin nhắn mẫu cho sale (chủ tool đưa 10/08/2026). Ảnh dọc rất cao (bản đầu
+  // 1080x7082) nên KHÔNG xem bằng khung brochure thường — xem showTallPreview
+  // trong js/brochure.js.
+  // ☠️ Folder phải ở GỐC repo, KHÔNG để trong 2-Templates/: thư mục đó bị
+  // .gitignore chặn → chạy được ở máy nhưng MẤT TRẮNG trên bản live, mà không có
+  // thông báo lỗi nào (đúng cái bẫy đã ghi trong .gitignore).
+  sms: 'SMS'
 };
 
 const DOWNLOADABLE_EXT = ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ai', '.eps', '.zip'];
