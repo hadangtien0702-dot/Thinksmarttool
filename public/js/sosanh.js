@@ -182,9 +182,11 @@ function renderCompareNavSection(container, q) {
   el.addEventListener('click', async () => {
     if (!(await confirmLeaveUnsaved())) return;
     document.querySelectorAll('.tree-file-item').forEach(x => x.classList.remove('active'));
-    document.querySelectorAll('.nav-section-flat > .tree-folder-header').forEach(x => x.classList.remove('is-open'));
-    el.classList.add('is-open');
+    // ⚠️ Bật dấu "đang mở" SAU khi mở: openCompareTable gọi hideLibraryPreview,
+    // mà hàm đó nay xoá dấu này (để mở thứ khác thì dòng Compare hết sáng).
+    // Bật trước là bị chính nó xoá đi. (sửa 10/08/2026)
     openCompareTable();
+    el.classList.add('is-open');
   });
   makeKeyboardActivatable(el);
 

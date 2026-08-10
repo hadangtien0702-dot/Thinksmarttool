@@ -106,13 +106,9 @@ function preprocessLibraryItems(items) {
 }
 
 // --- NAV SECTION: "Brochure" (gọi từ renderFileTree trong js/main.js) ---
-// opts.dai = true → mọi item của mục này xem bằng showTallPreview (ảnh dọc rất
-// cao: tin nhắn mẫu SMS). Đánh dấu ngay từ chỗ RENDER thay vì đoán theo đường dẫn
-// lúc mở — mục nào dùng khung nào là do người gọi quyết, đọc một chỗ là biết.
-function renderLibrarySection(container, label, iconHTML, groupsObj, q, opts) {
-  opts = opts || {};
+function renderLibrarySection(container, label, iconHTML, groupsObj, q) {
   groupsObj = groupsObj || {};
-  const section = makeCollapsibleFolder(label, { extraClass: 'nav-section', iconHTML, gapDuoc: opts.gapDuoc !== false });
+  const section = makeCollapsibleFolder(label, { extraClass: 'nav-section', iconHTML });
   let count = 0;
   Object.keys(groupsObj).sort(carrierSort).forEach(carrier => {
     let items = (groupsObj[carrier] || []).filter(it => !q || it.name.toLowerCase().includes(q));
@@ -120,7 +116,6 @@ function renderLibrarySection(container, label, iconHTML, groupsObj, q, opts) {
 
     // Group multi-page brochures (PDF + JPEGs)
     items = preprocessLibraryItems(items);
-    if (opts.dai) items.forEach(it => { it.dai = true; });
 
     if (carrier === 'Chung') {
       // Append items directly to section content, bypassing folder grouping
@@ -145,9 +140,7 @@ function renderLibrarySection(container, label, iconHTML, groupsObj, q, opts) {
   if (count === 0) {
     // The hint must show the REAL folder name (before the " / vietnamese" display suffix)
     const folderName = String(label).split(' / ')[0];
-    // Mục không chia theo hãng (SMS) thì đừng bảo người ta tạo folder hãng con
-    const goiY = opts.goiY || `Chưa có file. Thả file vào folder "${folderName}/<Hãng>/".`;
-    section.content.appendChild(makeEmptyHint(q ? 'Không có kết quả.' : goiY));
+    section.content.appendChild(makeEmptyHint(q ? 'Không có kết quả.' : `Chưa có file. Thả file vào folder "${folderName}/<Hãng>/".`));
   }
   container.appendChild(section.folder);
   return count;
@@ -158,6 +151,12 @@ function renderLibrarySection(container, label, iconHTML, groupsObj, q, opts) {
 
 // --- PREVIEWS ---
 function openLibraryGroup(items, groupName) {
+  // ☠️ LỖI CÓ SẴN, SỬA 10/08/2026: hai hàm mở thư viện này KHÔNG gọi
+  // hideLibraryPreview → mở bảng So sánh (bật `doc-mode`) rồi bấm sang một
+  // brochure thì thân trang vẫn ở doc-mode: canvas bị ẩn, người dùng vẫn nhìn
+  // thấy BẢNG SO SÁNH trong khi tool tưởng đang mở brochure. Gọi TRƯỚC khi đặt
+  // activeLibraryPath, vì hàm này xoá giá trị đó (bẫy đã ghi ở openCompareTable).
+  hideLibraryPreview();
   appState.activeLibraryPath = 'group:' + groupName;
   appState.activeFile = null;
   clearDirty();
@@ -171,10 +170,84 @@ function openLibraryGroup(items, groupName) {
   dom.btnSaveTop.disabled = true;
 
   dom.canvasWrapper.innerHTML = '';
-  // Nhóm toàn ảnh dọc (SMS) → khung cuộn dọc, KHÔNG phải lưới thẻ 580px
-  if (items.length && items.every(it => it.dai)) showTallPreview(items);
-  else showLibraryGroupPreview(items);
+  showLibraryGroupPreview(items);
   updateStatus(`Đang xem nhóm: ${groupName}`);
+}
+
+// ---------------------------------------------------------------------------
+// MỤC "SMS / Tin nhắn mẫu" — MỘT DÒNG PHẲNG, KHÔNG menu phụ (10/08/2026)
+//
+// Chủ tool: *"phần này em hãy để giống phần ở trên, nó không sinh ra menu phụ"*
+// (phần ở trên = Compare). Bản đầu em dựng nó thành nhóm xổ được như Brochure →
+// thanh bên dài thêm một tầng cho đúng MỘT dòng con. Cùng lý do đã ghi ở
+// renderCompareNavSection: dựng dropdown chứa một dòng là bắt bấm hai lần cho
+// một việc.
+// Nhiều ảnh thì sao? Bấm một lần mở HẾT, xếp dọc trong cùng khung cuộn — đọc
+// liền mạch, vẫn không đẻ thêm tầng menu nào.
+// ---------------------------------------------------------------------------
+function danhSachSms() {
+  const groups = appState.library.sms || {};
+  return Object.keys(groups).sort(carrierSort)
+    .flatMap(g => preprocessLibraryItems(groups[g] || []))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function renderSmsNavSection(container, q) {
+  const items = danhSachSms();
+  if (q && !'sms tin nhắn mẫu'.includes(q) && !items.some(it => it.name.toLowerCase().includes(q))) return 0;
+
+  const folder = document.createElement('div');
+  folder.className = 'tree-folder nav-section nav-section-flat';
+
+  const el = document.createElement('div');
+  el.className = 'tree-folder-header' + (appState.activeLibraryPath === 'sms:all' ? ' is-open' : '');
+  el.setAttribute('title', items.length ? `${items.length} tin nhắn mẫu` : 'Chưa có tin nhắn mẫu');
+  el.innerHTML = `
+    <span class="tree-folder-icon">${NAV_ICONS.sms}</span>
+    <span class="tree-folder-label">SMS / Tin nhắn mẫu</span>
+  `;
+  el.addEventListener('click', async () => {
+    if (!(await confirmLeaveUnsaved())) return;
+    document.querySelectorAll('.tree-file-item').forEach(x => x.classList.remove('active'));
+    openSmsAll();               // gọi TRƯỚC: bên trong nó gọi hideLibraryPreview, hàm này xoá dấu is-open
+    el.classList.add('is-open');
+  });
+  makeKeyboardActivatable(el);
+
+  folder.appendChild(el);
+  container.appendChild(folder);
+  return 1;
+}
+
+function openSmsAll() {
+  const items = danhSachSms();
+
+  // Dọn khung cũ TRƯỚC rồi mới đặt trạng thái mới — hideLibraryPreview xoá
+  // activeLibraryPath, gọi sau là mất luôn dấu chọn ở thanh bên (đúng bẫy đã
+  // ghi trong openCompareTable).
+  hideLibraryPreview();
+  dom.canvasWrapper.innerHTML = '';
+
+  appState.activeLibraryPath = 'sms:all';
+  appState.activeFile = null;
+  clearDirty();
+  setEditorVisible(false);
+  updateHeaderActions();
+
+  const ten = items.length === 1
+    ? String(items[0].name).replace(/\.(jpe?g|png|pdf|svg|webp)$/i, '')
+    : `Tin nhắn mẫu (${items.length})`;
+  if (dom.activeFileTitle) {
+    dom.activeFileTitle.textContent = items.length ? ten : 'Tin nhắn mẫu';
+    dom.activeFileTitle.classList.add('is-active');
+  }
+  dom.btnSaveTop.disabled = true;
+
+  // Đo lường: 1 lượt XEM, gộp nhóm giống brochure. Best-effort.
+  if (items.length && window.TSTAuth && TSTAuth.logUsage) TSTAuth.logUsage('view', 'Tin nhắn mẫu: ' + ten);
+
+  showTallPreview(items);
+  updateStatus(items.length ? `Đang xem: ${ten}` : 'Chưa có tin nhắn mẫu nào');
 }
 
 // ---------------------------------------------------------------------------
@@ -203,6 +276,14 @@ function showTallPreview(items) {
   }
   view.classList.remove('has-group');
   view.classList.add('is-tall');
+
+  if (!items.length) {
+    view.innerHTML = `<div class="tall-doc"><div class="tall-doc-bar">
+        <span class="tall-doc-title">Chưa có tin nhắn mẫu — thả ảnh vào folder "SMS/" ở gốc dự án.</span>
+      </div></div>`;
+    view.style.display = 'block';
+    return;
+  }
 
   view.innerHTML = items.map(item => {
     const pages = item.isMultiPage ? item.pages : [item.path];
@@ -303,6 +384,7 @@ function showLibraryGroupPreview(items) {
 
 // Open a brochure / name card asset → preview in canvas + download button (no editor panel)
 function openLibraryItem(item) {
+  hideLibraryPreview();   // xem chú thích ở openLibraryGroup — thoát doc-mode của bảng So sánh
   appState.activeLibraryPath = item.path;
   appState.activeFile = null;
   clearDirty();
@@ -328,9 +410,7 @@ function openLibraryItem(item) {
   let view = document.getElementById('library-view');
   if (view) view.classList.remove('has-group', 'is-tall');
 
-  if (item.dai) {
-    showTallPreview([item]);          // ảnh dọc rất cao (SMS) — xem chú thích ở showTallPreview
-  } else if (item.isMultiPage) {
+  if (item.isMultiPage) {
     showLibraryMultiPagePreview(item);
   } else {
     showLibraryPreview(item);
@@ -450,5 +530,12 @@ function hideLibraryPreview() {
   // resetCanvasToWelcome, mở brochure/name card) → tắt luôn khung tài liệu của
   // công cụ So sánh ở đây, khỏi phải nhớ gọi tay ở từng chỗ. (js/sosanh.js)
   if (typeof exitDocMode === 'function') exitDocMode();
+  // Bỏ luôn dấu "đang mở" của các mục PHẲNG (Compare, SMS). Cùng lý do: đây là
+  // chỗ duy nhất mọi luồng "mở thứ khác" đi qua. Trước đây mở Compare rồi bấm
+  // sang một mẫu Proposal thì dòng Compare vẫn sáng như đang mở.
+  // ⚠️ Hàm nào tự bật lại dấu đó thì phải bật SAU khi gọi hàm mở của nó
+  // (openCompareTable / openSmsAll), không thì bị chính chỗ này xoá đi.
+  document.querySelectorAll('.nav-section-flat > .tree-folder-header.is-open')
+    .forEach(x => x.classList.remove('is-open'));
   appState.activeLibraryPath = null;
 }

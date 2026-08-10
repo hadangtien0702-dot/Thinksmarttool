@@ -45,18 +45,16 @@ function renderFileTree() {
     total += renderCompareNavSection(dom.treeContainer, q);
   }
 
-  // ---------- SMS / TIN NHẮN MẪU (10/08/2026) ----------
-  // Cùng cơ chế thư viện tải về như Brochure, chỉ khác `dai: true` — ảnh tin nhắn
-  // rất cao (1080x7082) nên phải xem bằng khung cuộn dọc, không phải khung ảnh
-  // ghim 60vh. Chi tiết ở showTallPreview trong js/brochure.js.
+  // ---------- SMS / TIN NHẮN MẪU (js/brochure.js — 10/08/2026) ----------
+  // MỘT DÒNG PHẲNG như Compare, KHÔNG menu phụ (chủ tool yêu cầu). Bấm là mở hết
+  // ảnh tin nhắn trong một khung cuộn dọc — ảnh rất cao (1080x7082) nên không
+  // dùng được khung ảnh brochure. Chi tiết ở showTallPreview.
   // File nằm ở thư mục `SMS/` NGAY GỐC dự án (không phải 2-Templates/ — chỗ đó
   // bị gitignore, bỏ vào là mất trên bản live).
   if (appState.khoaMuc.sms) {
     dom.treeContainer.appendChild(makeKhoiKhoa('SMS / Tin nhắn mẫu', NAV_ICONS.sms, 'sms'));
   } else {
-    // gapDuoc: false — chủ tool 10/08/2026 xin bỏ mũi tên gập/mở của mục này.
-    total += renderLibrarySection(dom.treeContainer, 'SMS / Tin nhắn mẫu', NAV_ICONS.sms, appState.library.sms, q,
-      { dai: true, gapDuoc: false, goiY: 'Chưa có tin nhắn mẫu. Thả ảnh vào folder "SMS/" ở gốc dự án.' });
+    total += renderSmsNavSection(dom.treeContainer, q);
   }
 
   dom.fileCount.textContent = total;

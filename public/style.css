@@ -1362,12 +1362,6 @@ select.text-input-field option, .select-field option { background-color: var(--s
 }
 .tree-folder.nav-section > .tree-folder-header:hover { background: var(--surface-3); color: var(--text); }
 
-/* Tiêu đề KHÔNG GẬP ĐƯỢC — mục SMS (chủ tool 10/08/2026 xin bỏ mũi tên xổ).
-   Không có mũi tên thì cũng đừng để nó trông bấm được: bỏ cả con trỏ bàn tay và
-   nền sáng khi rê chuột, không thì người ta bấm hoài mà chẳng thấy gì xảy ra. */
-.tree-folder > .tree-folder-header.khong-gap { cursor: default; }
-.tree-folder.nav-section > .tree-folder-header.khong-gap:hover { background: transparent; }
-
 /* Mục công cụ PHẲNG — không có mũi tên xổ vì bên trong không có mẫu con để chọn
    (bảng So sánh là một bảng duy nhất). Bấm thẳng vào tiêu đề là mở luôn, nên nó
    cần trạng thái "đang mở" giống một file đang chọn — mục xổ được thì không cần. */

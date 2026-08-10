@@ -83,9 +83,12 @@ Trước đây muốn khoá phải sửa code + push. Nay bật/tắt ngay trên
   bị `.gitignore` chặn: chạy ngon ở máy nhưng **mất trắng trên live, không báo lỗi gì**
   (đúng cái bẫy `Brochure/` đã ghi trong chính file `.gitignore`).
   Thêm ảnh mới xong: `git check-ignore -v "SMS/<tên file>"` — không ra dòng nào là an toàn.
-- **Cơ chế:** dùng chung thư viện tải về với Brochure (`LIBRARY_SECTIONS.sms` trong
-  `server.js` → `/api/library` → `renderLibrarySection`). Ảnh loose ở gốc folder rơi vào
-  nhóm `Chung` nên hiện thẳng, không cần thư mục hãng con.
+- **Cơ chế:** `LIBRARY_SECTIONS.sms` trong `server.js` → `/api/library` →
+  `renderSmsNavSection()` trong `js/brochure.js`.
+- ☠️ **MỘT DÒNG PHẲNG, KHÔNG menu phụ** (giống Compare — chủ tool yêu cầu 10/08). Bấm
+  một lần là mở HẾT ảnh, xếp dọc trong cùng khung cuộn. Đừng dựng lại thành nhóm xổ
+  được: dropdown chứa một dòng là bắt bấm hai lần cho một việc (luật này đã ghi ở
+  `renderCompareNavSection` từ 22/07).
 - ☠️ **Xem bằng `showTallPreview()`, KHÔNG dùng khung ảnh brochure.** Ảnh tin nhắn rất cao
   (bản đầu 1080 × 7082). Khung brochure ghim `max-height: 60vh` → đo thật: bề ngang còn
   **66px**, thành sợi chỉ. Khung mới ghim **bề ngang ~480px** rồi cho cuộn dọc (đo được

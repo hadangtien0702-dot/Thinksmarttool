@@ -44,13 +44,31 @@ Supabase SQL Editor:
 Chưa chạy thì SMS **luôn mở** (không ai bị chặn nhầm) nhưng bấm khoá sẽ không ăn —
 và PostgREST trả **204 không báo lỗi** (đúng bài học 31/07: UPDATE 0 dòng ≠ lỗi).
 
-**④b. Bỏ mũi tên gập/mở của mục SMS** (chủ tool: *"remove dropdown này đi em"*).
-Thêm tuỳ chọn `gapDuoc: false` cho `makeCollapsibleFolder` (core.js) — bỏ **cả ba**
-thứ cùng lúc: mũi tên · chỗ bấm gập · con trỏ bàn tay + nền hover.
-→ Bỏ mũi tên mà giữ chỗ bấm gập là tệ hơn cả không sửa: lỡ bấm là mục biến mất,
-mà không còn dấu hiệu nào cho biết bấm đâu để mở lại.
-Đo: bấm tiêu đề SMS **3 lần liên tiếp** → vẫn mở, vẫn đủ 1 mục con. 4 mục kia
-giữ nguyên mũi tên + con trỏ bàn tay.
+**④b. SMS thành MỘT DÒNG PHẲNG như Compare — không đẻ menu phụ**
+Đi qua 2 nhịp sửa trong cùng phiên, ghi lại cả nhịp hụt:
+1. Bản đầu: nhóm xổ được như Brochure → chủ tool: *"remove dropdown này đi em"*.
+2. Em bỏ **mũi tên** (thêm `gapDuoc: false` cho `makeCollapsibleFolder`) — vẫn
+   chưa đúng ý: dòng con "SMS - nail" **vẫn nằm dưới** làm thanh bên dài thêm
+   một tầng. Chủ tool chỉ thẳng: *"để giống phần ở trên, nó không sinh ra menu phụ"*.
+3. Bản chốt: `renderSmsNavSection()` trong brochure.js — **một dòng duy nhất**,
+   bấm là mở HẾT ảnh xếp dọc trong cùng khung cuộn. Đã **gỡ sạch** `gapDuoc` +
+   cờ `dai` + `opts` của `renderLibrarySection` (không để lại code chết).
+→ Bài học: cùng lý do đã ghi ở `renderCompareNavSection` từ 22/07 — *dựng dropdown
+chứa đúng một dòng là bắt bấm hai lần cho một việc*. Luật đó có sẵn trong repo mà
+em không tra trước khi dựng mục mới.
+
+**④c. ☠️ LỖI CÓ SẴN TỪ 22/07, đo ra lúc kiểm SMS — đã sửa**
+Mở bảng **So sánh** (bật `doc-mode`) rồi bấm sang một **brochure**: brochure được
+vẽ vào `#library-view` nhưng `doc-mode` vẫn bật → canvas bị ẩn → **người dùng vẫn
+nhìn thấy bảng So sánh** trong khi tool tưởng đang mở brochure. Kèm theo: dòng
+Compare **vẫn sáng như đang mở** sau khi đã bấm sang mẫu khác.
+Gốc: `openLibraryItem` / `openLibraryGroup` **không gọi `hideLibraryPreview()`** —
+đúng chỗ duy nhất lo việc thoát doc-mode.
+Sửa: gọi `hideLibraryPreview()` ở đầu cả hai hàm + để chính nó xoá dấu `is-open`
+của các mục phẳng. ⚠️ Hệ quả bắt buộc: hàm nào tự bật lại `is-open` thì phải bật
+**SAU** khi gọi hàm mở (đã sửa `sosanh.js`, và `openSmsAll` làm đúng từ đầu).
+Đo 5 bước liên tiếp: Compare → Brochure → SMS → Proposal → Compare, mỗi bước ghi
+lại *người dùng đang thực sự nhìn thấy gì* — cả 5 đều đúng, không còn dấu sáng thừa.
 
 **⑤ Đã kiểm bằng số đo, KHÔNG chỉ đếm**
 Bàn đo: bản sao `tool.html` bỏ 3 script đăng nhập, chạy trên server thật (cổng tạm),

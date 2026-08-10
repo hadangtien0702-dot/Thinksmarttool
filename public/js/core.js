@@ -811,25 +811,19 @@ function carrierSort(a, b) {
 }
 
 // Build a collapsible folder shell → { folder, content }
-// gapDuoc = false → KHÔNG có mũi tên, KHÔNG bấm gập được, luôn mở (mục SMS,
-// chủ tool 10/08/2026: "remove dropdown này đi em"). Bỏ mũi tên mà giữ chỗ bấm
-// gập là tệ nhất: người dùng lỡ bấm là mục biến mất, mà không có gì cho biết
-// bấm lại chỗ nào để mở ra.
-function makeCollapsibleFolder(labelHTML, { extraClass = '', open = true, iconHTML = '', gapDuoc = true } = {}) {
+function makeCollapsibleFolder(labelHTML, { extraClass = '', open = true, iconHTML = '' } = {}) {
   const folderEl = document.createElement('div');
-  folderEl.className = `tree-folder ${extraClass} ${gapDuoc ? (open ? 'open' : '') : 'open'}`.replace(/\s+/g, ' ').trim();
+  folderEl.className = `tree-folder ${extraClass} ${open ? 'open' : ''}`.replace(/\s+/g, ' ').trim();
 
   const headerEl = document.createElement('div');
-  headerEl.className = 'tree-folder-header' + (gapDuoc ? '' : ' khong-gap');
+  headerEl.className = 'tree-folder-header';
   headerEl.innerHTML = `
     ${iconHTML ? `<span class="tree-folder-icon">${iconHTML}</span>` : ''}
     <span class="tree-folder-label">${labelHTML}</span>
-    ${gapDuoc ? `<span class="tree-folder-arrow">${NAV_ICONS.arrow}</span>` : ''}
+    <span class="tree-folder-arrow">${NAV_ICONS.arrow}</span>
   `;
-  if (gapDuoc) {
-    headerEl.addEventListener('click', () => folderEl.classList.toggle('open'));
-    makeKeyboardActivatable(headerEl);
-  }
+  headerEl.addEventListener('click', () => folderEl.classList.toggle('open'));
+  makeKeyboardActivatable(headerEl);
 
   const contentEl = document.createElement('div');
   contentEl.className = 'tree-folder-content';
