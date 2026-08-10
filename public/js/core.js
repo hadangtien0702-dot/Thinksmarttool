@@ -14,10 +14,13 @@
 
 // --- STATE MANAGEMENT ---
 let appState = {
-  // KHOÁ MỤC BÁO GIÁ VỚI NHÂN VIÊN (chủ tool 31/07/2026): nội dung mẫu báo giá đang
-  // được sửa, sale mà lấy bản dở gửi khách là sai số liệu với khách hàng thật.
-  // Bật ở tool.html sau khi biết role (chỉ role 'user' bị khoá; admin/super_admin
-  // vẫn vào để sửa nội dung). Mở lại: đặt về false trong tool.html.
+  // KHOÁ MỤC (31/07/2026) — Super Admin tự bật/tắt ở tab "Khoá mục" trong Quản lý
+  // thành viên; trạng thái nằm ở bảng `khoa_muc` trên Supabase, KHÔNG hardcode nữa.
+  // Chỉ role 'user' bị khoá — admin/super_admin luôn vào được để còn cập nhật nội dung.
+  // Mã mục khớp với bảng: proposal · brochure · namecard · compare.
+  khoaMuc: { proposal: false, brochure: false, namecard: false, compare: false },
+  loiNhanKhoa: {},   // mã mục → lời nhắn riêng (nếu Super Admin có gõ)
+  // GIỮ cho tương thích: proposal.js đọc cờ này. Luôn đồng bộ với khoaMuc.proposal.
   khoaProposal: false,
   mode: 'server', // 'server' = local Express backend | 'static' = deployed (Vercel), browser-only
   svgsList: [],
@@ -1687,4 +1690,30 @@ function updateStatus(message) {
   statusHideTimer = setTimeout(function () {
     el.classList.remove('is-visible');
   }, STATUS_HIDE_MS);
+}
+
+
+// ---- NẠP TRẠNG THÁI KHOÁ MỤC (31/07/2026) ----------------------------------
+// Đọc bảng `khoa_muc` rồi áp cho role 'user'. Admin/Super Admin không bao giờ bị khoá
+// — họ là người đang cập nhật nội dung, khoá họ là tự khoá đường sửa.
+// Best-effort: chưa tạo bảng / lỗi mạng đều NUỐT IM và coi như không khoá gì. Thà mở
+// nhầm một lúc còn hơn cả đội đứng hình vì một lỗi mạng.
+async function napKhoaMuc(profile) {
+  try {
+    if (!profile || profile.role !== 'user') return false;   // admin không bị khoá
+    if (!window.TSTAuth || !TSTAuth.getClient) return false;
+    const sb = TSTAuth.getClient();
+    if (!sb) return false;
+    const { data, error } = await sb.from('khoa_muc').select('muc, khoa, loi_nhan');
+    if (error || !data) return false;
+    let coKhoa = false;
+    data.forEach(function (r) {
+      if (!(r.muc in appState.khoaMuc)) return;
+      appState.khoaMuc[r.muc] = !!r.khoa;
+      appState.loiNhanKhoa[r.muc] = r.loi_nhan || '';
+      if (r.khoa) coKhoa = true;
+    });
+    appState.khoaProposal = appState.khoaMuc.proposal;   // giữ tương thích proposal.js
+    return coKhoa;
+  } catch (e) { return false; }
 }

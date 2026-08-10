@@ -85,6 +85,28 @@ const US_STATES = [
 ];
 
 // --- NAV SECTION: "Proposal / Báo giá" (gọi từ renderFileTree trong js/main.js) ---
+// ---- KHỐI "MỤC ĐANG KHOÁ" — dùng chung cho cả 4 mục (31/07/2026) -------------
+// Super Admin bật/tắt ở tab "Khoá mục". Cố ý VẪN hiện tiêu đề mục kèm lời giải thích:
+// ẩn sạch thì sale tưởng tool hỏng hoặc mình bị mất quyền, lại nhắn hỏi admin.
+// Lời nhắn lấy từ bảng `khoa_muc` nếu Super Admin có gõ; không gõ thì dùng câu mặc định.
+function makeKhoiKhoa(tenMuc, icon, maMuc) {
+  const sec = makeCollapsibleFolder(
+    escapeHtml(tenMuc) + ' <span class="nav-badge-lock">Đang cập nhật</span>',
+    { extraClass: 'nav-section is-locked', iconHTML: icon || '' }
+  );
+  const rieng = (appState.loiNhanKhoa && appState.loiNhanKhoa[maMuc] || '').trim();
+  const hop = document.createElement('div');
+  hop.className = 'nav-locked-note';
+  hop.innerHTML =
+    '<b>Đang chỉnh sửa nội dung</b>' +
+    '<span>' + (rieng
+      ? escapeHtml(rieng)
+      : 'Mục này tạm khoá để cập nhật. Anh chị dùng các mục còn lại — sẽ mở lại ngay khi xong.') +
+    '</span>';
+  sec.content.appendChild(hop);
+  return sec.folder;
+}
+
 // ---- THÔNG BÁO "ĐÃ CẬP NHẬT MẪU" (chủ tool 31/07/2026) ---------------------
 // Sale vừa bị khoá mục Báo giá cả buổi sáng; mở lại mà im lặng thì họ không biết
 // mẫu đã đổi nội dung, vẫn tưởng là bản cũ. Báo đúng MỘT lần, đúng chỗ (đầu mục
@@ -119,19 +141,8 @@ function renderProposalNavSection(container, proposals, q) {
   // ĐANG KHOÁ (nhân viên): KHÔNG dựng danh sách mẫu nào cả — không có mục để bấm thì
   // không có đường mở nhầm. Cố ý vẫn hiện tiêu đề "Proposal / Báo giá" kèm lời giải
   // thích: ẩn sạch thì sale tưởng tool hỏng hoặc mình bị mất quyền, lại nhắn hỏi.
-  if (appState.khoaProposal) {
-    const sec = makeCollapsibleFolder(
-      'Proposal / Báo giá <span class="nav-badge-lock">Đang cập nhật</span>',
-      { extraClass: 'nav-section is-locked', iconHTML: NAV_ICONS.proposal }
-    );
-    const hop = document.createElement('div');
-    hop.className = 'nav-locked-note';
-    hop.innerHTML =
-      '<b>Đang chỉnh sửa nội dung</b>' +
-      '<span>Mẫu báo giá tạm khoá để cập nhật số liệu. Anh chị dùng tạm ' +
-      '<b>Brochure</b> và <b>Name Card</b> — mục này sẽ mở lại ngay khi xong.</span>';
-    sec.content.appendChild(hop);
-    container.appendChild(sec.folder);
+  if (appState.khoaMuc.proposal) {
+    container.appendChild(makeKhoiKhoa('Proposal / Báo giá', NAV_ICONS.proposal, 'proposal'));
     return 0;
   }
 

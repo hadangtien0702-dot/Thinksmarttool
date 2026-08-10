@@ -14,7 +14,14 @@ Thumbs.db
 # Danh sách nhân sự + SQL tạo tài khoản: có HỌ TÊN, EMAIL, MẬT KHẨU của đội sale.
 # TUYỆT ĐỐI không đẩy lên repo public. (thêm 22/07/2026)
 Account/
-*.sql
+
+# ☠️ SỬA 31/07/2026 — luật cũ ở đây là `*.sql` (chặn MỌI file .sql, ở mọi thư mục).
+# Nó thừa: thứ nguy hiểm nằm trong `Account/` đã bị chặn bởi dòng trên rồi.
+# Và nó là CÁI BẪY đúng như cảnh báo về `Brochure/` phía dưới: `supabase/schema.sql`
+# thoát được vì đã commit TRƯỚC khi có luật, nên không ai thấy luật này sai — cho tới
+# khi thêm `supabase/quyen.sql` thì git lặng lẽ bỏ qua, không báo gì.
+# Nay chỉ chặn file .sql nằm Ở GỐC repo (chỗ hay quăng file tạm), thư mục con thì cho qua.
+/*.sql
 
 # Cùng dữ liệu đó nhưng để ở GỐC repo, ngoài thư mục Account/ → luật trên không
 # bắt được. Phát hiện 22/07: "Accout Tool.xlsx" nằm ngay gốc (chưa từng bị commit,

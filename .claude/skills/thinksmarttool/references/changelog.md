@@ -3,6 +3,54 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
+### 2026-07-31 (đêm — TAB "KHOÁ MỤC" + nới quyền cho Admin). ✅ ĐÃ PUSH (v1.39).
+
+Chủ tool: *"thêm cho anh một tab trong quản lí thành viên để chủ động khoá những phần
+anh đang cần cập nhật"*. Trước đó muốn khoá phải sửa code + push mỗi lần.
+
+**① Bảng `khoa_muc` + tab thứ 3 "Khoá mục"**
+- 4 mục khớp cây thư mục Tool: `proposal` · `brochure` · `namecard` · `compare`.
+- ⚠️ Phải để trên SERVER, KHÔNG localStorage — khoá phải áp cho cả đội.
+- ⚠️ Dùng **UPDATE, không upsert**: 4 dòng đã tạo sẵn bằng SQL. Upsert =
+  `INSERT ... ON CONFLICT DO UPDATE` phải ĐỌC hàng để dò trùng khoá → chính lỗi đã làm
+  "đang online" chết câm 8 ngày.
+- Có ô gõ **lời nhắn riêng** cho từng mục (chỉ hiện khi đang khoá; để trống = câu mặc định).
+- `makeKhoiKhoa()` trong proposal.js dùng chung cho cả 4 mục — KHÔNG ẩn sạch mục, vẫn hiện
+  tiêu đề + nhãn cam + giải thích.
+- Lỗi mạng khi đọc bảng → coi như **không khoá gì**. Thà mở nhầm một lúc còn hơn cả đội
+  đứng hình vì một lỗi mạng.
+- Đo 4 trường hợp: không khoá → 4 mục bấm được · khoá 1 → đúng 1 mục chặn, 3 mục kia mở ·
+  khoá cả 4 → 0 mục bấm được · có lời nhắn riêng → hiện đúng chữ đã gõ.
+
+**② ⚠️ NỚI QUYỀN CHO ADMIN — ĐẢO NGƯỢC quyết định 27/07**
+Chủ tool: *"anh muốn admin thấy được 2 mục này luôn, vì anh sử dụng thấy cũng khá ổn"*.
+4 policy đổi từ `is_super_admin()` → `is_admin()`: `usage_events` · `presence` ·
+storage `proposal-snapshots` · `khoa_muc` (update).
+**HỆ QUẢ ĐÃ BÁO VÀ ĐƯỢC CHẤP NHẬN:** 11 Admin xem được cột `detail` (tên/tuổi/tiểu bang/
+số tiền khách sale đã điền) VÀ mở được ảnh bản báo giá đã gửi khách. 27/07 chủ tool từng
+chốt ngược lại ("ảnh chứa dữ liệu khách hàng thật — CHỈ Super Admin đọc").
+→ Siết lại: đổi `is_admin()` về `is_super_admin()` trong `supabase/quyen.sql`.
+Đo bằng 2 tài khoản nháp thật: Admin đọc được cả 4 nguồn + ghi được khoa_muc (đọc lại giá
+trị thật để xác nhận); Nhân viên vẫn **0 dòng** usage_events/presence, ghi khoa_muc bị chặn.
+
+**③ Tách `supabase/quyen.sql`** (145 dòng, 10 policy, không tạo bảng)
+Lý do THẬT: Supabase chạy cả file trong MỘT giao dịch — lỗi một chỗ huỷ sạch phần sau
+(đã dính 27/07). Đổi quyền không cần đụng bảng → chạy file ngắn, ít chỗ hỏng.
+`schema.sql` vẫn là nguồn đầy đủ để dựng lại từ đầu. Đối chiếu với DB thật: 5 bảng +
+bucket + 6 policy đều khớp → 13 "Untitled query" trong SQL Editor xoá được hết.
+
+**④ ☠️ `.gitignore` có luật `*.sql` CHẶN NHẦM FILE MỚI**
+Luật này thêm 22/07 để chặn `Account/*.sql` (chứa mật khẩu 69 sale) — nhưng nó chặn MỌI
+file .sql ở MỌI thư mục. `schema.sql` thoát vì đã commit TRƯỚC khi có luật, nên **không ai
+thấy luật sai** cho tới khi thêm `quyen.sql` thì git lặng lẽ bỏ qua, không báo gì.
+→ Đúng cái bẫy đã cảnh báo trong chính file đó về `Brochure/`. Sửa: `*.sql` → `/*.sql`
+(chỉ chặn ở gốc repo). Kiểm lại: 3 file mật khẩu vẫn bị chặn, 2 file schema được theo dõi.
+→ **Luật ignore quá rộng không lộ ra ngay — nó chỉ cắn khi thêm FILE MỚI.** Thêm file vào
+thư mục đã có file cùng loại: `git status` không thấy thì chạy `git check-ignore -v <file>`.
+
+Versions: `core.js?v=35` · `proposal.js?v=39` · `main.js?v=11` · `style.css?v=85` ·
+`members.js?v=50` · `portal.css?v=76` · badge **v1.39**.
+
 ### 2026-07-31 (chốt — MỞ KHOÁ mục Báo giá + bảng tin cập nhật). ✅ ĐÃ PUSH (v1.38).
 
 Chủ tool nghiệm thu 4 mẫu mới trên live xong → **mở khoá cho 77 nhân viên**.

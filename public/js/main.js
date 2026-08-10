@@ -22,13 +22,28 @@ function renderFileTree() {
   total += renderProposalNavSection(dom.treeContainer, proposals, q);
 
   // ---------- BROCHURE (js/brochure.js) ----------
-  total += renderLibrarySection(dom.treeContainer, 'Brochure / Tài liệu', NAV_ICONS.brochure, appState.library.brochure, q);
+  // 3 mục dưới đây khoá theo cùng một kiểu: đang khoá thì thay danh sách bằng một
+  // khối giải thích (makeKhoiKhoa trong proposal.js) — KHÔNG ẩn sạch, vì ẩn thì sale
+  // tưởng tool hỏng hoặc mình bị mất quyền, lại nhắn hỏi admin.
+  if (appState.khoaMuc.brochure) {
+    dom.treeContainer.appendChild(makeKhoiKhoa('Brochure / Tài liệu', NAV_ICONS.brochure, 'brochure'));
+  } else {
+    total += renderLibrarySection(dom.treeContainer, 'Brochure / Tài liệu', NAV_ICONS.brochure, appState.library.brochure, q);
+  }
 
   // ---------- NAME CARD (js/namecard.js) ----------
-  total += renderNameCardNavSection(dom.treeContainer, nameCards, q);
+  if (appState.khoaMuc.namecard) {
+    dom.treeContainer.appendChild(makeKhoiKhoa('Name Card / Danh thiếp', NAV_ICONS.namecard, 'namecard'));
+  } else {
+    total += renderNameCardNavSection(dom.treeContainer, nameCards, q);
+  }
 
   // ---------- SO SÁNH QUYỀN LỢI CÁC HÃNG (js/brochure.js) ----------
-  total += renderCompareNavSection(dom.treeContainer, q);
+  if (appState.khoaMuc.compare) {
+    dom.treeContainer.appendChild(makeKhoiKhoa('Compare / So sánh quyền lợi', NAV_ICONS.compare, 'compare'));
+  } else {
+    total += renderCompareNavSection(dom.treeContainer, q);
+  }
 
   dom.fileCount.textContent = total;
 }

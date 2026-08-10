@@ -990,10 +990,32 @@
   }
 
   function initTracking() {
-    if (!me || me.role !== 'super_admin') return;   // tab chỉ dành cho super_admin
+    // NỚI 31/07/2026 (chủ tool): trước đây 2 tab "Đo lường" + "Khoá mục" chỉ super_admin.
+    // Nay Admin (leader/manager) cũng vào được — chủ tool dùng thấy ổn, muốn leader theo
+    // dõi đội mình và tự khoá mục khi đang cập nhật nội dung.
+    // ⚠️ Mở tab ở đây KHÔNG đủ: 4 policy trong schema.sql cũng phải là is_admin(), không
+    // thì admin bấm vào chỉ thấy trống trơn (usage_events · presence · storage · khoa_muc).
+    if (!me || !['admin', 'super_admin'].includes(me.role)) return;
     $('ms-tabs').style.display = '';   // bỏ inline none → về CSS inline-flex (hug nội dung)
     $('tab-members').addEventListener('click', function () { doiTab('members'); });
     $('tab-usage').addEventListener('click', function () { doiTab('usage'); });
+    $('tab-khoa').addEventListener('click', function () { doiTab('khoa'); });
+    $('khoa-list').addEventListener('click', function (e) {
+      const b = e.target.closest('[data-bat]');
+      if (!b) return;
+      const ma = b.getAttribute('data-bat');
+      batKhoa(ma, !(khoaRows[ma] && khoaRows[ma].khoa));
+    });
+    // blur không nổi bọt → dùng capture để bắt được từ container
+    $('khoa-list').addEventListener('blur', function (e) {
+      const o = e.target.closest && e.target.closest('[data-nhan]');
+      if (o) luuLoiNhan(o.getAttribute('data-nhan'), o.value.trim());
+    }, true);
+    $('khoa-list').addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      const o = e.target.closest && e.target.closest('[data-nhan]');
+      if (o) o.blur();
+    });
     // Mốc nhanh 14/30/60 → lọc biểu đồ + bảng (không đụng 3 thẻ trên).
     // Hai ô nhập ngày đã GỠ 31/07 theo yêu cầu chủ tool ("không cần").
     $('usage-presets').addEventListener('click', function (e) {
@@ -1052,16 +1074,113 @@
     });
   }
 
+  // 3 tab (31/07: thêm "Khoá mục"). Viết theo BẢNG thay vì chuỗi if — thêm tab thứ 4
+  // chỉ cần thêm một dòng, không phải sửa 6 chỗ như bản cũ.
+  const TABS = [
+    { khoa: 'members', nut: 'tab-members', panel: 'page-content' },
+    { khoa: 'usage',   nut: 'tab-usage',   panel: 'tracking-content' },
+    { khoa: 'khoa',    nut: 'tab-khoa',    panel: 'khoa-content' }
+  ];
   function doiTab(which) {
-    const usage = which === 'usage';
-    $('tab-members').classList.toggle('is-on', !usage);
-    $('tab-members').setAttribute('aria-selected', String(!usage));
-    $('tab-usage').classList.toggle('is-on', usage);
-    $('tab-usage').setAttribute('aria-selected', String(usage));
-    $('page-content').style.display = usage ? 'none' : 'block';
-    $('tracking-content').style.display = usage ? 'block' : 'none';
-    if (usage) batDauOnline(); else dungOnline();   // "đang online" chỉ chạy khi xem tab
-    if (usage && !usageLoaded) { usageLoaded = true; taiDoLuong(); }
+    TABS.forEach(function (t) {
+      const dang = t.khoa === which;
+      const nut = $(t.nut); const panel = $(t.panel);
+      if (nut) { nut.classList.toggle('is-on', dang); nut.setAttribute('aria-selected', String(dang)); }
+      if (panel) panel.style.display = dang ? 'block' : 'none';
+    });
+    // "đang online" chỉ chạy khi đang xem tab Đo lường — đừng ping khi không ai nhìn
+    if (which === 'usage') batDauOnline(); else dungOnline();
+    if (which === 'usage' && !usageLoaded) { usageLoaded = true; taiDoLuong(); }
+    if (which === 'khoa') taiKhoaMuc();
+  }
+
+  // ---- KHOÁ MỤC (31/07/2026) — chỉ Super Admin --------------------------------
+  // Chủ tool tự khoá từng phần của Tool khi đang cập nhật, không phải sửa code + push.
+  // ⚠️ Dùng UPDATE chứ KHÔNG upsert: 4 dòng đã được SQL tạo sẵn, và upsert =
+  // `INSERT ... ON CONFLICT DO UPDATE` phải ĐỌC hàng để dò trùng khoá → rất dễ vướng
+  // RLS (đúng lỗi đã làm tính năng "đang online" chết câm suốt 8 ngày).
+  const MUC_KHOA = [
+    { ma: 'proposal', ten: 'Proposal / Báo giá',        mo: 'Mẫu báo giá 4 hãng — phần sale dùng nhiều nhất' },
+    { ma: 'brochure', ten: 'Brochure / Tài liệu',       mo: 'Thư viện tài liệu tải về' },
+    { ma: 'namecard', ten: 'Name Card / Danh thiếp',    mo: 'Mẫu danh thiếp cá nhân' },
+    { ma: 'compare',  ten: 'Compare / So sánh quyền lợi', mo: 'Bảng so sánh 16 hãng' }
+  ];
+  let khoaRows = {};
+
+  async function taiKhoaMuc() {
+    const bao = $('khoa-msg');
+    const { data, error } = await sb.from('khoa_muc').select('muc, khoa, loi_nhan, cap_nhat_luc');
+    if (error) {
+      bao.style.display = ''; 
+      bao.textContent = /khoa_muc/.test(error.message || '') && /does not exist|schema cache/i.test(error.message || '')
+        ? "Chưa có bảng 'khoa_muc' — chạy phần KHOÁ MỤC trong supabase/schema.sql."
+        : error.message;
+      return;
+    }
+    bao.style.display = 'none';
+    khoaRows = {};
+    (data || []).forEach(function (r) { khoaRows[r.muc] = r; });
+    veKhoaMuc();
+  }
+
+  function veKhoaMuc() {
+    $('khoa-list').innerHTML = MUC_KHOA.map(function (m) {
+      const r = khoaRows[m.ma] || { khoa: false, loi_nhan: '' };
+      // Ô lời nhắn CHỈ hiện khi mục đang khoá — lúc mở thì nó vô nghĩa, bày ra chỉ tổ rối.
+      const oNhan = r.khoa
+        ? '<div class="khoa-nhan">' +
+            '<label for="nhan-' + m.ma + '">Lời nhắn hiện cho nhân viên</label>' +
+            '<input id="nhan-' + m.ma + '" type="text" data-nhan="' + m.ma + '" maxlength="140" ' +
+              'value="' + esc(r.loi_nhan || '') + '" ' +
+              'placeholder="Để trống = dùng câu mặc định">' +
+          '</div>'
+        : '';
+      return '<div class="khoa-row' + (r.khoa ? ' is-locked' : '') + '" data-muc="' + m.ma + '">' +
+        '<div class="khoa-info">' +
+          '<b>' + esc(m.ten) + '</b>' +
+          '<span>' + esc(m.mo) + '</span>' +
+        '</div>' +
+        '<span class="khoa-trangthai">' + (r.khoa ? 'Đang khoá' : 'Đang mở') + '</span>' +
+        '<button type="button" class="btn btn-sm ' + (r.khoa ? 'btn-primary' : 'btn-secondary') +
+          '" data-bat="' + m.ma + '">' + (r.khoa ? 'Mở lại' : 'Khoá mục này') + '</button>' +
+        oNhan +
+      '</div>';
+    }).join('');
+  }
+
+  // Lưu lời nhắn khi rời ô (blur) — không lưu theo từng phím gõ, đỡ gọi máy chủ liên tục.
+  async function luuLoiNhan(ma, chu) {
+    const cu = (khoaRows[ma] && khoaRows[ma].loi_nhan) || '';
+    if (chu === cu) return;                        // không đổi thì đừng gọi máy chủ
+    const { error } = await sb.from('khoa_muc')
+      .update({ loi_nhan: chu, cap_nhat_luc: new Date().toISOString(), cap_nhat_boi: me.id })
+      .eq('muc', ma);
+    if (error) { await showAppAlert(error.message, { title: 'Không lưu được lời nhắn', tone: 'danger' }); return; }
+    if (khoaRows[ma]) khoaRows[ma].loi_nhan = chu;   // giữ trong bộ nhớ, khỏi vẽ lại cả bảng
+  }
+
+  async function batKhoa(ma, khoa) {
+    const m = MUC_KHOA.find(function (x) { return x.ma === ma; });
+    if (khoa && !(await showAppConfirm(
+      'Khoá "' + m.ten + '"?' + '\n\n' +
+      '77 Nhân viên sẽ KHÔNG mở được mục này cho tới khi anh mở lại.\n' +
+      'Anh và các Admin vẫn dùng bình thường.',
+      { title: 'Khoá mục', tone: 'warning', confirmText: 'Khoá' }))) return;
+
+    setLoading(true);
+    const { error } = await sb.from('khoa_muc')
+      .update({ khoa: khoa, cap_nhat_luc: new Date().toISOString(), cap_nhat_boi: me.id })
+      .eq('muc', ma);
+    // ⚠️ "không lỗi" KHÔNG có nghĩa là đã ghi (bài học 31/07: RLS lọc hết mà vẫn trả 204).
+    // Đọc lại giá trị thật rồi mới vẽ lại.
+    await taiKhoaMuc();
+    setLoading(false);
+    if (error) { await showAppAlert(error.message, { title: 'Không đổi được', tone: 'danger' }); return; }
+    const thuc = khoaRows[ma] && khoaRows[ma].khoa;
+    if (thuc !== khoa) {
+      await showAppAlert('Máy chủ không nhận thay đổi này — kiểm tra lại quyền Super Admin.',
+        { title: 'Chưa đổi được', tone: 'danger' });
+    }
   }
 
   // ---- Đang online (presence, N3, 23/07/2026) ---------------------------

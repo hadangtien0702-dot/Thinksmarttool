@@ -279,10 +279,16 @@ create policy "usage: tự ghi sự kiện của mình"
   on public.usage_events for insert
   with check (user_id = auth.uid());
 
+-- ⚠️ NỚI 31/07/2026 (chủ tool chốt) — ĐẢO NGƯỢC quyết định 27/07 "chỉ super_admin đọc".
+-- Lý do: chủ tool dùng tab Đo lường thấy ổn, muốn 11 Admin (leader/manager) cũng theo dõi
+-- được đội của họ. HỆ QUẢ ĐÃ ĐƯỢC BÁO VÀ CHẤP NHẬN: Admin xem được cột `detail`
+-- (tên/tuổi/tiểu bang/số tiền khách sale đã điền) và mở được ảnh bản đã gửi khách.
+-- Muốn siết lại: đổi `is_admin()` về `is_super_admin()` ở ĐÂY và ở policy storage cuối file.
 drop policy if exists "usage: chỉ super admin đọc" on public.usage_events;
-create policy "usage: chỉ super admin đọc"
+drop policy if exists "usage: admin doc" on public.usage_events;
+create policy "usage: admin doc"
   on public.usage_events for select
-  using (public.is_super_admin());
+  using (public.is_admin());
 
 create index if not exists usage_events_at_idx      on public.usage_events (at desc);
 create index if not exists usage_events_user_at_idx on public.usage_events (user_id, at desc);
@@ -313,11 +319,12 @@ create policy "presence: tự cập nhật của mình"
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
 
--- Chỉ super_admin đọc "ai đang online".
+-- Admin + Super Admin đọc "ai đang online" (nới 31/07/2026 cùng đợt với usage_events).
 drop policy if exists "presence: chỉ super admin đọc" on public.presence;
-create policy "presence: chỉ super admin đọc"
+drop policy if exists "presence: admin doc" on public.presence;
+create policy "presence: admin doc"
   on public.presence for select
-  using (public.is_super_admin());
+  using (public.is_admin());
 
 -- ☠️ BẮT BUỘC (thêm 31/07/2026) — THIẾU CÂU NÀY LÀ TÍNH NĂNG "ĐANG ONLINE" CHẾT CÂM.
 -- Mỗi người phải đọc được ĐÚNG DÒNG CỦA MÌNH. Không phải để xem, mà vì client ghi
@@ -333,6 +340,49 @@ create policy "presence: tự đọc dòng của mình"
   using (user_id = auth.uid());
 
 create index if not exists presence_last_seen_idx on public.presence (last_seen desc);
+
+-- ----------------------------------------------------------------------------
+-- KHOÁ MỤC — Super Admin chủ động khoá từng phần của Tool khi đang cập nhật
+-- (31/07/2026). Trước đó phải sửa code + push mỗi lần muốn khoá/mở.
+--
+-- Vì sao phải để trên SERVER, không dùng localStorage: khoá phải áp cho CẢ ĐỘI.
+-- Lưu ở máy chủ tool thì chỉ mình chủ tool thấy, 77 sale vẫn vào bình thường.
+--
+-- `muc` khớp đúng 4 mục trên cây thư mục của Tool:
+--   'proposal' · 'brochure' · 'namecard' · 'compare'
+-- ----------------------------------------------------------------------------
+create table if not exists public.khoa_muc (
+  muc          text primary key,
+  khoa         boolean not null default false,
+  loi_nhan     text not null default '',
+  cap_nhat_luc timestamptz not null default now(),
+  cap_nhat_boi uuid references public.profiles(id) on delete set null
+);
+
+-- 4 dòng mặc định, TẤT CẢ đang mở. Có sẵn dòng thì client chỉ cần UPDATE —
+-- KHÔNG phải upsert. (Bài học 31/07: upsert = INSERT ... ON CONFLICT DO UPDATE,
+-- lệnh này phải ĐỌC hàng để dò trùng khoá nên rất dễ vướng RLS.)
+insert into public.khoa_muc (muc) values ('proposal'), ('brochure'), ('namecard'), ('compare')
+on conflict (muc) do nothing;
+
+alter table public.khoa_muc enable row level security;
+
+-- AI ĐĂNG NHẬP CŨNG ĐỌC ĐƯỢC — bắt buộc: Tool phải biết mục nào đang khoá thì
+-- mới ẩn được. Ở đây không có gì bí mật, chỉ là trạng thái bật/tắt.
+drop policy if exists "khoa_muc: ai dang nhap cung doc" on public.khoa_muc;
+create policy "khoa_muc: ai dang nhap cung doc"
+  on public.khoa_muc for select
+  using (auth.uid() is not null);
+
+-- Admin + Super Admin đổi được (chủ tool chốt 31/07: leader tự khoá khi đang cập nhật
+-- nội dung của mình). Khoá nhầm thì 77 sale đứng hình — nhưng mở lại cũng chỉ một cú bấm,
+-- và bảng luôn hiện rõ mục nào đang khoá nên không ai khoá mà quên.
+drop policy if exists "khoa_muc: chi super admin sua" on public.khoa_muc;
+drop policy if exists "khoa_muc: admin sua" on public.khoa_muc;
+create policy "khoa_muc: admin sua"
+  on public.khoa_muc for update
+  using (public.is_admin())
+  with check (public.is_admin());
 
 -- ============================================================================
 -- STORAGE — ẢNH XEM NHANH BẢN ĐÃ XUẤT (27/07/2026)
@@ -357,11 +407,14 @@ create policy "snapshot: tự tải lên thư mục của mình"
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
--- Chỉ Super Admin đọc (kể cả chính chủ cũng không cần đọc lại → không mở thêm cửa)
+-- ⚠️ NỚI 31/07/2026: Admin + Super Admin đọc. Đây là ẢNH BẢN BÁO GIÁ ĐÃ GỬI KHÁCH —
+-- có tên, tuổi, tiểu bang, số tiền của khách hàng thật. Chủ tool đã được báo hệ quả này
+-- và chấp nhận, để leader theo dõi được đội mình. KHÔNG nới thêm cho role 'user'.
 drop policy if exists "snapshot: chỉ super admin đọc" on storage.objects;
-create policy "snapshot: chỉ super admin đọc"
+drop policy if exists "snapshot: admin doc" on storage.objects;
+create policy "snapshot: admin doc"
   on storage.objects for select to authenticated
-  using (bucket_id = 'proposal-snapshots' and public.is_super_admin());
+  using (bucket_id = 'proposal-snapshots' and public.is_admin());
 
 -- Dọn ảnh cũ hơn 90 ngày (chạy tay khi cần, hoặc đặt lịch bằng pg_cron nếu đã bật):
 --   delete from storage.objects
