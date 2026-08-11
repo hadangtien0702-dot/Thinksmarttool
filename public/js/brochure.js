@@ -23,13 +23,19 @@ async function fetchLibrary() {
 }
 
 // A clickable, downloadable library item (brochure / name card)
-function makeDownloadItem(item) {
+// `giuTenHang` = true → KHÔNG cắt tên hãng khỏi nhãn.
+// ☠️ Bắt được 11/08/2026 ở mục Application Form: file rơi vào nhóm "Chung" (folder
+// không chia hãng con) nên KHÔNG có tiêu đề hãng ở trên — mà nhãn vẫn bị cắt tên
+// hãng, thành ra "AIG Application Form" và "Allianz Application Form" hiện ra
+// GIỐNG HỆT NHAU: hai dòng "Application Form". Sale bấm nhầm hãng mà không biết.
+// Cắt tên hãng chỉ đúng khi mục nằm DƯỚI tiêu đề hãng; nhóm "Chung" thì không.
+function makeDownloadItem(item, giuTenHang) {
   const el = document.createElement('div');
   const isActive = appState.activeLibraryPath === item.path || (appState.activeFile && appState.activeFile.path === item.path);
   el.className = `tree-file-item lib-item ${isActive ? 'active' : ''}`.trim();
-  // Cùng quy tắc với cây Proposal: mục nằm dưới tiêu đề hãng rồi nên bỏ tên hãng
-  // khỏi nhãn (xem tachTenMau trong core.js) — trước đây "AIG IUL", "NLG Termlife".
-  const display = tachTenMau(item).chuongTrinh;
+  const t = tachTenMau(item);
+  const display = giuTenHang ? (t.hang ? `${t.hang} — ${t.chuongTrinh}` : t.chuongTrinh)
+                             : t.chuongTrinh;
   el.innerHTML = `
     <span class="tree-file-icon">${NAV_ICONS.fileDl}</span>
     <span class="tree-file-name" title="${escapeHtml(item.name)}">${escapeHtml(display)}</span>
@@ -106,9 +112,16 @@ function preprocessLibraryItems(items) {
 }
 
 // --- NAV SECTION: "Brochure" (gọi từ renderFileTree trong js/main.js) ---
-function renderLibrarySection(container, label, iconHTML, groupsObj, q) {
+// `moi` = true → gắn huy hiệu "new" cạnh tên mục.
+// ☠️ Có tham số riêng vì bản đầu (11/08/2026) nhét thẳng chuỗi
+// `Application Form / Biểu mẫu</span><span class="nav-new">NEW` vào chỗ `label`.
+// Nó CHẠY ĐƯỢC — nhưng chỉ vì `label` tình cờ đi thẳng vào innerHTML. Ngày nào
+// có người bọc `escapeHtml(label)` cho an toàn thì tên mục hiện ra nguyên đoạn
+// thẻ HTML, và lỗi đó không liên quan gì tới người vừa sửa.
+function renderLibrarySection(container, label, iconHTML, groupsObj, q, moi) {
   groupsObj = groupsObj || {};
-  const section = makeCollapsibleFolder(label, { extraClass: 'nav-section', iconHTML });
+  const nhan = escapeHtml(label) + (moi ? '<span class="nav-new">new</span>' : '');
+  const section = makeCollapsibleFolder(nhan, { extraClass: 'nav-section', iconHTML });
   let count = 0;
   Object.keys(groupsObj).sort(carrierSort).forEach(carrier => {
     let items = (groupsObj[carrier] || []).filter(it => !q || it.name.toLowerCase().includes(q));
@@ -118,8 +131,9 @@ function renderLibrarySection(container, label, iconHTML, groupsObj, q) {
     items = preprocessLibraryItems(items);
 
     if (carrier === 'Chung') {
-      // Append items directly to section content, bypassing folder grouping
-      items.sort((a, b) => a.name.localeCompare(b.name)).forEach(it => section.content.appendChild(makeDownloadItem(it)));
+      // Append items directly to section content, bypassing folder grouping.
+      // GIỮ tên hãng trong nhãn: ở đây không có tiêu đề hãng phía trên để bù lại.
+      items.sort((a, b) => a.name.localeCompare(b.name)).forEach(it => section.content.appendChild(makeDownloadItem(it, true)));
     } else {
       const grp = makeCollapsibleFolder(`${escapeHtml(carrier)} <span class="nav-count">${items.length}</span>`, { extraClass: 'nav-carrier', iconHTML: NAV_ICONS.carrier });
 
@@ -204,7 +218,7 @@ function renderSmsNavSection(container, q) {
   el.setAttribute('title', items.length ? `${items.length} tin nhắn mẫu` : 'Chưa có tin nhắn mẫu');
   el.innerHTML = `
     <span class="tree-folder-icon">${NAV_ICONS.sms}</span>
-    <span class="tree-folder-label">SMS / Tin nhắn mẫu</span>
+    <span class="tree-folder-label">SMS / Tin nhắn mẫu</span><span class="nav-new">new</span>
   `;
   el.addEventListener('click', async () => {
     if (!(await confirmLeaveUnsaved())) return;
@@ -335,13 +349,13 @@ function showLibraryGroupPreview(items) {
       const coverUrl = `/api/download?path=${encodeURIComponent(item.pages[0])}&inline=1`;
       previewHTML = `
         <div class="library-card-preview">
-          <img src="${coverUrl}" alt="${escapeHtml(item.name)}">
+          <img src="${coverUrl}" alt="${escapeHtml(item.name)}" loading="lazy">
           <div style="position: absolute; top: 12px; right: 12px; background: var(--brand); color: white; padding: 4px 10px; border-radius: var(--r-xs); font-size: 10px; font-weight: 800; letter-spacing: 0.5px; box-shadow: var(--shadow-sm);">${item.pages.length} TRANG</div>
         </div>`;
     } else if (isImg) {
       previewHTML = `
         <div class="library-card-preview">
-          <img src="${inlineUrl}" alt="${escapeHtml(item.name)}">
+          <img src="${inlineUrl}" alt="${escapeHtml(item.name)}" loading="lazy">
         </div>`;
     } else if (isPdf) {
       previewHTML = `
@@ -442,11 +456,10 @@ function showLibraryMultiPagePreview(item) {
     html += `
       <div class="library-item-card">
         <div class="library-card-preview">
-          <img src="${inlineUrl}" alt="Page ${index + 1}">
+          <img src="${inlineUrl}" alt="Page ${index + 1}" loading="lazy" onload="if(this.naturalWidth > this.naturalHeight) this.closest('.library-item-card').classList.add('is-landscape')">
         </div>
-        <div class="library-card-info" style="padding: 12px 20px; align-items: center; justify-content: center; gap: 8px;">
-          <div style="font-size: var(--fs-xs); color: var(--text-3); font-weight: 700; letter-spacing: 0.5px;">TRANG ${index + 1}</div>
-          ${isPdf ? '' : `<a class="btn btn-secondary btn-sm" href="${pageDl}" download>${NAV_ICONS.download} Tải trang ${index + 1}</a>`}
+        <div class="library-card-info">
+          ${isPdf ? '' : `<a class="btn btn-primary library-card-btn" href="${pageDl}" download>${NAV_ICONS.download} Tải về</a>`}
         </div>
       </div>
     `;

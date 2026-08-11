@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/vendor/animate.min.css">
-  <link rel="stylesheet" href="/portal.css?v=76">
+  <link rel="stylesheet" href="/portal.css?v=80">
   <link rel="stylesheet" href="/dialog.css?v=4">
 </head>
 <body>
@@ -315,46 +315,16 @@
             </div>
           </div>
 
-          <!-- Chủ tool 31/07: "cái này đem xuống dưới đây cho gọn". Thanh ĐANG ONLINE
-               dời từ đầu trang xuống nằm CẠNH bảng — vừa lấp đúng mảng trắng bên phải
-               bảng, vừa gom "ai đang online" với "ai đã làm gì" về cùng một chỗ (cùng
-               nói về CON NGƯỜI). -->
-          <div class="usage-grid-nguoi">
-          <div class="usage-block">
-            <div class="usage-block-head">
-              <h2>Theo từng người</h2>
-              <span class="usage-hint" id="usage-nguoi-hint">Trong khoảng đang chọn · sắp theo hoạt động gần nhất</span>
-            </div>
-            <div class="usage-table">
-              <div class="usage-thead">
-                <!-- Nhãn 1 DÒNG hết. Cũ: "Đăng nhập gần nhất" / "Mở tool gần nhất" xuống 2 dòng
-                     nên lệch baseline với các cột khác; và "Mở tool gần nhất" (thời điểm) đứng
-                     ngay cạnh "Mở tool" (số lần) — hai cột khác hẳn nhau mà cùng tên. -->
-                <span>Thành viên</span><span>Tên tiếng Anh</span><span>Phòng ban</span>
-                <span>Đăng nhập cuối</span><span>Mở tool cuối</span>
-                <span class="ta-right">Lần mở</span><span class="ta-right">Lần tải</span>
-              </div>
-              <div id="usage-rows"></div>
-            </div>
-            <div class="empty-state" id="usage-empty" style="display:none">
-              <b>Chưa có dữ liệu trong khoảng này.</b>
-              <span>Đổi khoảng ngày ở thanh trên đầu, hoặc chờ mọi người đăng nhập và mở công cụ.</span>
-            </div>
-          </div><!-- /.usage-block — Theo từng người -->
+          <!-- ☠️ GỠ 10/08/2026 — hai khối "Theo từng người" và "ĐANG ONLINE".
+               Chủ tool: "tracking online và từng người đến ngày hôm nay thì nó đã
+               HOÀN THÀNH NHIỆM VỤ rồi, anh không cần nó nữa".
+               Đây là gỡ có chủ đích, KHÔNG phải thiếu sót — đừng dựng lại khi thấy
+               `usage-rows` / `online-bar` không còn trong HTML.
+               Giữ lại: biểu đồ "Người hoạt động mỗi ngày" + "Top Proposal/Brochure".
+               Bảng `presence` trên Supabase vẫn còn nguyên (xoá bảng là việc khó
+               đảo ngược, và không xoá thì bật lại chỉ mất vài phút). Phần ĐỌC
+               bảng đó đã tắt trong js/portal/members.js. -->
 
-            <aside class="usage-side-online">
-              <div class="usage-bar">
-                <button type="button" class="online-bar" id="online-bar" title="Xem chi tiết ai đang online">
-                  <span class="online-dot"></span>
-                  <span class="online-count" id="online-count">0</span>
-                  <span class="online-bar-label">đang online</span>
-                  <span class="online-breakdown" id="online-breakdown"></span>
-                  <span class="online-bar-more">Chi tiết ›</span>
-                </button>
-              </div>
-              <span class="online-hint" id="online-hint"></span>
-            </aside>
-          </div><!-- /.usage-grid-nguoi -->
         </div>
 
         <!-- KHOÁ MỤC (10/08/2026) — CHỈ Super Admin. Chủ tool tự khoá từng phần của Tool
@@ -516,37 +486,21 @@
     </div>
   </div>
 
-  <!-- Chi tiết ĐANG ONLINE (bấm thanh "đang online") — ai · đang ở đâu · hoạt động lúc nào -->
-  <div class="modal-backdrop" id="online-backdrop" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="online-modal-title">
-      <div class="modal-head">
-        <h2 id="online-modal-title">Ai đang online</h2>
-        <button class="icon-btn" id="online-close" aria-label="Đóng">✕</button>
-      </div>
-      <div class="modal-body">
-        <p id="online-modal-sub" style="color:var(--text-2);font-size:var(--fs-sm);margin-bottom:12px">Tính trong 2 phút gần nhất · tự làm mới mỗi 30 giây</p>
-        <div class="online-list" id="online-detail-rows"></div>
-        <div class="empty-state" id="online-detail-empty" style="display:none">
-          <b>Chưa có ai đang online.</b>
-          <span>Danh sách hiện khi có người đang mở web trong 2 phút gần nhất.</span>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- ☠️ Hộp thoại "Ai đang online" GỠ 10/08/2026 cùng thanh ĐANG ONLINE. -->
       </main>
 
       <footer class="portal-footer">
-        <span class="version-badge">v1.39</span>
-        <span>31/07/2026 · Thinksmart Insurance — lưu hành nội bộ</span>
+        <span class="version-badge">v1.43</span>
+        <span>11/08/2026 · Thinksmart Insurance — lưu hành nội bộ</span>
       </footer>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/portal/config.js?v=8"></script>
-  <script src="/js/portal/auth.js?v=10"></script>
+  <script src="/js/portal/auth.js?v=11"></script>
   <script src="/js/ui-dialog.js?v=3"></script>
-  <script src="/js/portal/members.js?v=51"></script>
+  <script src="/js/portal/members.js?v=57"></script>
   <script src="/vendor/gsap.min.js"></script>
   <script src="/js/animations.js?v=4"></script>
 </body>

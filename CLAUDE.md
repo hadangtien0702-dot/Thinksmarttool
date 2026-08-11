@@ -61,6 +61,97 @@ khi chủ tool xuất lại mẫu với bố cục dịch xuống. Đừng quay 
 **④ Số La Mã trong huy hiệu mục có thể là `<text>` HOẶC `<path>`** (chủ tool create outlines).
 Đừng grep `<text>` rồi kết luận "mất chữ" — phải render và **đếm phần tử nằm trong ô huy hiệu**.
 
+## 2b-bis. ☠️ LUẬT PHÁT HÀNH TÍNH NĂNG MỚI — chủ tool chốt 10/08/2026
+
+> Nguyên văn: *"các tính năng mới sẽ được build dưới quyền super admin — sau khi hoàn
+> chỉnh và test xong mới được cho admin và user thấy"*.
+
+**Áp cho MỌI tính năng mới, không có ngoại lệ.** Ba nấc, đi đúng thứ tự:
+
+| Nấc | Ai thấy | Khi nào được lên nấc sau |
+|---|---|---|
+| **1. Đang xây** | **CHỈ `super_admin`** | Chủ tool bấm thử trên bản live và **duyệt** |
+| **2. Đang thử** | + `admin` (11 người) | Admin dùng thật vài ngày, không báo lỗi |
+| **3. Phát hành** | + `user` (77 sale) | — |
+
+**Vì sao:** 77 sale đang dùng tool để làm việc với khách hàng thật. Một tính năng
+nửa vời lọt xuống họ là bản vẽ sai gửi tới khách, chứ không phải "lỗi nhỏ sửa sau".
+Nấc 1 cho phép **đẩy code lên live để thử trên máy thật** mà không ai khác nhìn thấy.
+
+**CƠ CHẾ (đã xây 10/08/2026):** cột `khoa_muc.hien_cho` = `super` | `admin` | `all`.
+Đổi nấc bằng dải 3 nút trong tab **"Khoá mục"** — một cú bấm, không cần push.
+Đọc ở `duocThayMuc(ma)` trong `core.js`; `renderFileTree` không vẽ mục chưa tới nấc.
+
+**⚠️ Bốn chỗ dễ làm sai:**
+1. **`hien_cho` KHÁC `khoa`, đừng gộp.** `khoa` = mục vẫn hiện nhưng thay bằng khối
+   "Đang cập nhật", và **chỉ áp cho role `user`**. `hien_cho` = mục **không hiện chút
+   nào**, áp cho **mọi role** — đó là thứ duy nhất giấu được với admin.
+2. **Tính năng mới phải khai mặc định `'super'` NGAY TRONG `appState.hienCho`** ở
+   `core.js`, đừng chỉ dựa vào dòng trên Supabase. Bảng chưa có dòng / chưa chạy
+   migration / mạng lỗi — mọi đường hỏng đều phải hỏng về phía GIẤU, không phải phía lộ.
+3. **Ẩn ở giao diện KHÔNG PHẢI là chặn.** Nếu tính năng đọc/ghi dữ liệu thì phải
+   chặn cả ở **RLS trên Supabase** — ẩn nút mà API vẫn mở thì ai gọi thẳng cũng vào được.
+4. **Chế độ mở** (chạy `node server.js` chưa cấu hình Supabase) coi như Super Admin —
+   để máy dev thử được. Bản live luôn có đăng nhập nên nhánh này không chạy ở đó.
+
+**Ghi lại nấc hiện tại của từng tính năng đang xây ở mục "CÒN TREO" trong changelog** —
+để phiên sau không tự ý mở cho cả đội thấy.
+
+## 2b-ter. ☠️ TUỔI BẢO HIỂM — hai luật chủ tool chốt 10/08/2026, ĐỪNG SỬA
+
+Sai một tuổi = sale báo **sai bậc phí** cho khách thật. Hai điều dưới đây là **chủ tool
+trả lời trực tiếp**, không suy ra từ code hay từ bản forum:
+
+1. **Cả 3 hãng (AIG · NLG · Allianz) đều dùng `age nearest birthday`.** Nên chỉ có MỘT
+   quy tắc, KHÔNG cần chọn hãng trước khi tính. Nếu sau này có hãng dùng
+   `age last birthday` thì phải thêm bước chọn hãng — hai kiểu lệch nhau 1 tuổi ở
+   **quá nửa số ngày trong năm**.
+2. **Sinh 29/02, năm không nhuận thì sinh nhật tính là 28/02** (không phải 01/03).
+
+**Cách tính đang chạy** (`public/js/tinhtuoi.js`): qua sinh nhật **HƠN 6 tháng lịch**
+thì +1; đúng 6 tháng chẵn thì giữ nguyên. **Đo bằng THÁNG, không phải bằng NGÀY** —
+đã vấp một lần: nửa năm theo ngày là 182,5 nhưng 6 tháng lịch có thể chỉ 181 ngày.
+
+**Trước khi sửa bất cứ dòng nào trong `tinhtuoi.js`, chạy:**
+
+```
+node scripts/kiem-tinh-tuoi.js
+```
+
+Nó cho **hai bản cài đặt độc lập cãi nhau** trên 102.347 phép tính. ☠️ **Đừng lấy bản
+forum làm chuẩn** — đo 10/08/2026 thấy nó có 3 lỗi (tuổi thực −1 vào đúng ngày sinh
+nhật; "ngày tăng tuổi" sớm 1 ngày; sinh 29/02 bị cộng 7 tháng thay vì 6).
+
+## 2b-quater. ☠️ BẢNG PHÍ BẢO HIỂM — luật bất di bất dịch (10/08/2026)
+
+Hai bảng phí nằm ở `public/data/*.json`, **SINH RA** từ `scripts/*.txt` bằng
+`node scripts/doi-bang-phi.js` và `node scripts/doi-bang-phi-iul.js`.
+**ĐỪNG SỬA FILE .json BẰNG TAY** — chạy lại script là mất.
+
+**Nguồn gốc:** Google Sheet trong Drive do **sếp của chủ tool** làm và kiểm tra.
+Chủ tool chốt: *"số Drive là chuẩn, em có thể làm theo số Drive"*.
+
+☠️ **SÁU Ô TRONG BẢNG IUL 20 NĂM (2 sheet NTBC) PHÁ VỠ QUY LUẬT — GIỮ NGUYÊN.**
+Danh sách + số "theo quy luật" ghi ở đầu `scripts/bang-phi-iul-nlg-20nam-ntbc.txt`.
+Nặng nhất: Nam NTBC 59 tuổi / 225k lệch **$100/tháng**. Forum cũng trả về đúng những
+số đó. **Đừng "sửa cho đẹp"** — sếp phải sửa trong Drive, rồi chạy lại script.
+
+☠️ **HAI CHƯƠNG TRÌNH DÙNG HAI BỘ MÃ SỨC KHOẺ:** Term Life `SNTBC/STBC/ENTBC1` ·
+IUL `NTBC/TBC/EX1`. Dùng nhầm bộ là tra không ra dòng nào.
+
+☠️ **CƠ CẤU KHÁC NHAU:** Term Life không chọn kỳ hạn, trả về **4 số**. IUL **chọn**
+15 hoặc 20 năm, trả về **1 số**. Mỗi tổ hợp có bộ mệnh giá + khoảng tuổi RIÊNG —
+15 năm chỉ có NTBC (nam & nữ), tuổi 45–60, 5 mệnh giá. Tổ hợp không có số thì
+**làm mờ nút**, tuyệt đối không nội suy.
+
+**Trước khi tin bảng phí mới, chạy hai bộ soi:**
+```
+node scripts/soi-bang-phi.js      # thu tu ky han / tuoi / menh gia
+node scripts/kiem-tinh-tuoi.js    # cong thuc tuoi — 102.347 phep tinh
+```
+⚠️ Đọc kỹ phần lọc trong `soi-bang-phi.js`: phí term life có **hai hiện tượng THẬT**
+làm thước báo sai — tuổi 20–26 phí giảm dần, và "banding" khiến 250k rẻ hơn 200k.
+
 ## 2c. KHOÁ MỤC — chủ tool tự khoá từng phần khi đang cập nhật (10/08/2026)
 
 Trước đây muốn khoá phải sửa code + push. Nay bật/tắt ngay trên web.

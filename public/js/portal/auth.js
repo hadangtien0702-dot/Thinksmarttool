@@ -249,9 +249,17 @@
     } catch (e) { /* nuốt lỗi */ }
   }
 
+  // ☠️ TẮT 10/08/2026 — chủ tool bỏ tính năng "đang online" (xem members.js).
+  // Không ai ĐỌC bảng `presence` nữa, nên giữ heartbeat là bắt 77 máy gửi một
+  // request vô ích mỗi 45 giây. Tắt bằng MỘT cờ, không xoá code: bật lại chỉ cần
+  // đổi cờ này về false rồi dựng lại phần đọc ở members.js.
+  // Bảng `presence` trên Supabase vẫn còn nguyên — dữ liệu cũ không mất.
+  const TAT_PRESENCE = true;
+
   // Bật heartbeat cho trang hiện tại. Idempotent (gọi nhiều lần chỉ chạy 1 timer).
   //   page: 'tool' | 'portal' | 'members' | 'videos' — để super_admin biết ai đang ở đâu.
   function startPresence(page) {
+    if (TAT_PRESENCE) return;
     if (!configured) return;
     if (page) presencePage = String(page);
     if (presenceTimer) { pingPresence(); return; }  // đã chạy → chỉ ping tươi lại

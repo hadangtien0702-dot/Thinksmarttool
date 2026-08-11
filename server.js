@@ -286,7 +286,8 @@ const LIBRARY_SECTIONS = {
   // ☠️ Folder phải ở GỐC repo, KHÔNG để trong 2-Templates/: thư mục đó bị
   // .gitignore chặn → chạy được ở máy nhưng MẤT TRẮNG trên bản live, mà không có
   // thông báo lỗi nào (đúng cái bẫy đã ghi trong .gitignore).
-  sms: 'SMS'
+  sms: 'SMS',
+  appform: 'Application Form'
 };
 
 const DOWNLOADABLE_EXT = ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ai', '.eps', '.zip'];

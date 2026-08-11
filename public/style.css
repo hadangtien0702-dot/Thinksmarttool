@@ -1383,12 +1383,21 @@ select.text-input-field option, .select-field option { background-color: var(--s
   margin-right: 10px;
   flex-shrink: 0;
 }
-/* Per-section accent (children order: 1 Proposal · 2 Brochure · 3 Name Card) */
-.tree-container > .tree-folder:nth-of-type(2) > .tree-folder-header .tree-folder-icon {
-  background: rgba(14, 148, 136, 0.13); color: var(--cat-plan);
-}
-.tree-container > .tree-folder:nth-of-type(3) > .tree-folder-header .tree-folder-icon {
-  background: rgba(194, 116, 11, 0.15); color: var(--cat-agent);
+/* ☠️ ĐÃ XOÁ 10/08/2026 — "per-section accent" tô Brochure xanh lá, Name Card cam.
+   Chủ tool: "sao tự nhiên có 2 cái này lạc màu với 4 cái còn lại". Cả 7 mục nay
+   dùng chung màu thương hiệu ở luật `.nav-section … .tree-folder-icon` bên trên.
+   Đừng thêm lại kiểu này: nó neo theo `nth-of-type` tức theo VỊ TRÍ, nên chỉ cần
+   thêm/bớt một mục là màu nhảy sang mục khác trong im lặng. */
+/* Huy hiệu "new" cho mục vừa thêm (10/08/2026: SMS · Age · Quote).
+   ☠️ NÓ PHẢI ĐƯỢC GỠ khi hết mới — không có ngày hết hạn tự động, ai thêm mục
+   thứ tư thì nhớ bỏ `nav-new` khỏi ba mục cũ. Nhãn "new" dán mãi thì thành trang
+   trí, và người dùng thôi tin nó. Ba chỗ đặt: brochure.js (SMS) · tinhtuoi.js ·
+   tinhphi.js — grep `nav-new`. */
+.nav-new {
+  margin-left: 7px; padding: 1px 6px; border-radius: 999px;
+  font-size: 9.5px; font-weight: 800; letter-spacing: 0.4px; text-transform: uppercase;
+  line-height: 1.6; color: #fff; background: var(--brand);
+  flex-shrink: 0; align-self: center;
 }
 .nav-section > .tree-folder-content { margin-left: 8px; padding-left: 4px; border-left: none; margin-top: 2px; }
 
@@ -1604,11 +1613,21 @@ body.no-editor .sidebar-right { display: none; }
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
   box-shadow: var(--shadow-sm);
-  width: 440px;
+  width: calc((100% - 64px) / 3);
+  min-width: 250px;
+  max-width: 440px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.library-item-card.is-landscape {
+  width: 100%;
+  max-width: 100%;
+}
+.library-item-card.is-landscape .library-card-preview {
+  height: auto;
 }
 
 .library-item-card:hover {
@@ -2172,6 +2191,259 @@ body.doc-mode .doc-viewport { display: block; }
    người dùng bấm vào sẽ không thấy gì xảy ra (nút chết) — tệ hơn là không có nút. */
 body.doc-mode .canvas-container,
 body.doc-mode .canvas-status-bar { display: none; }
+
+/* --------------------------------------------------------------------------
+   TÍNH PHÍ BẢO HIỂM (js/tinhphi.js — 10/08/2026)
+   -------------------------------------------------------------------------- */
+/* Cùng kiểu "một khung, hai cột liền nhau" với màn Tính tuổi — hai công cụ anh em
+   thì phải nhìn ra là một hệ, đừng mỗi màn một kiểu. */
+.tp-wrap {
+  /* 1.5fr chứ không phải 1.25fr gốc: hàng đầu nay có BA nhóm nút nằm chung hàng
+     (Chương trình · Giới tính · Hạng sức khoẻ) + đường kẻ ngăn.
+     Lịch sử số đo ở màn 1440px, để khỏi dò lại từ đầu:
+       1.25fr → cột nhập 657px  · 1.45fr → 700px · 1.6fr → 763px · 1.75fr → 789px
+     Từng phải lên 1.75fr khi IUL có BỐN nhóm (thêm "Kỳ hạn"); nay Kỳ hạn đã dời
+     xuống cạnh ô Tuổi nên ba nhóm là đủ, hạ lại để cột kết quả rộng ra.
+     Đổi số này thì PHẢI mở CẢ HAI màn đo lại — chúng có số nhóm khác nhau. */
+  display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 0; max-width: 1240px; margin: 28px auto; align-items: stretch;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-xl); box-shadow: var(--shadow-sm); overflow: hidden;
+}
+.tp-card { padding: 26px 28px; min-width: 0; }
+.tp-card-kq { border-left: 1px solid var(--divider); }
+.tp-title { font-size: var(--fs-2xl); font-weight: 800; letter-spacing: -0.4px; margin: 0 0 6px; color: var(--text); }
+.tp-dangnap { font-size: var(--fs-sm); color: var(--text-3); margin: 0; }
+.tp-loi { font-size: var(--fs-sm); color: #96590A; background: var(--warning-soft); padding: 12px 14px; border-radius: var(--r-md); margin: 0; }
+body.dark-theme .tp-loi { color: #E9A23B; }
+.tp-chua-co { margin-top: 16px; }
+
+.tp-title { margin-bottom: 18px; }
+.tp-nhom { margin-bottom: 18px; }
+/* Chương trình · (Kỳ hạn) · Giới tính · Hạng sức khoẻ nằm CÙNG MỘT HÀNG
+   (chủ tool 10/08/2026). Bốn nhóm này đều ít nút (2–3 nút) nên xếp dọc là phí
+   ba tầng chiều cao, đẩy Mệnh giá và nút Tính phí xuống dưới màn hình.
+   `align-items: flex-start` để nhóm nào nhiều nút hơn không kéo giãn nhóm kia. */
+.tp-hang { display: flex; flex-wrap: wrap; align-items: stretch; gap: 0 14px; }
+.tp-hang .tp-nhom { margin-bottom: 18px; }
+/* ☠️ Xếp cùng hàng KHÔNG đủ để người ta thấy đây là BA CÂU HỎI RIÊNG (chủ tool
+   10/08/2026: "phải thể hiện làm sao cho người ta nhận diện nó là 3 phần riêng
+   biệt"). Chỉ có khoảng trắng thì mắt đọc thành MỘT dãy nút dài — nhất là khi nút
+   đang chọn của nhóm này nằm sát nút chưa chọn của nhóm kia.
+   Một đường kẻ dọc là đủ, và nó dùng lại đúng cách hai cột của màn này đang ngăn
+   nhau — thêm nền/khung riêng cho mỗi nhóm là dựng thêm một ngôn ngữ thứ hai. */
+.tp-hang > .tp-nhom + .tp-nhom {
+  border-left: 1px solid var(--divider);
+  padding-left: 14px;
+}
+.tp-nhan { display: block; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--text-3); margin-bottom: 8px; }
+.tp-khoang { text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--text-2); }
+.tp-nut-hang { display: flex; flex-wrap: wrap; gap: 8px; }
+.tp-nut {
+  padding: 9px 15px; font: inherit; font-size: var(--fs-sm); font-weight: 600;
+  color: var(--text-2); background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: var(--r-md); cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.tp-nut:hover:not(:disabled) { border-color: var(--border-strong); color: var(--text); }
+.tp-nut.dang-chon { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 700; }
+/* ☠️ Tổ hợp hãng KHÔNG BÁN: làm mờ + không bấm được (chủ tool chốt 10/08/2026).
+   Không ẩn hẳn — ẩn thì sale tưởng tool thiếu, làm mờ thì hiểu là hãng không bán. */
+.tp-nut:disabled, .tp-nut.tat { opacity: .38; cursor: not-allowed; }
+
+.tp-tuoi-hang { display: flex; align-items: center; gap: 8px; }
+.tp-tuoi-nut {
+  width: 36px; height: 40px; font-size: 18px; font-weight: 700; line-height: 1;
+  color: var(--text-2); background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: var(--r-md); cursor: pointer;
+}
+.tp-tuoi-nut:hover { background: var(--surface-3); color: var(--text); }
+.tp-tuoi-o {
+  width: 90px; height: 40px; padding: 0 12px; text-align: center;
+  font: inherit; font-size: var(--fs-lg); font-weight: 800; font-variant-numeric: tabular-nums;
+  color: var(--text); background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: var(--r-md);
+}
+.tp-tuoi-o:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.tp-tuoi-chu { font-size: var(--fs-sm); color: var(--text-3); }
+.tp-btn-tinh { width: 100%; padding: 13px; margin-top: 4px; }
+
+.tp-card-kq { position: sticky; top: 20px; }
+.tp-cho { text-align: center; padding: 26px 8px; }
+.tp-cho-icon { width: 56px; height: 56px; margin: 0 auto 14px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); display: flex; align-items: center; justify-content: center; }
+.tp-cho-icon svg { width: 26px; height: 26px; }
+.tp-cho-icon.tp-cho-trong { background: var(--warning-soft); color: #96590A; }
+.tp-cho-chu { margin: 0; font-size: var(--fs-base); font-weight: 700; color: var(--text); }
+.tp-cho-vi { margin: 6px 0 0; font-size: var(--fs-sm); color: var(--text-2); }
+
+.tp-kq-dau { padding-bottom: 14px; border-bottom: 1px solid var(--divider); margin-bottom: 14px; }
+.tp-kq-tomtat { display: block; font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); }
+.tp-kq-danh { display: flex; flex-direction: column; gap: 8px; }
+.tp-o-phi {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding: 13px 16px; border-radius: var(--r-md);
+  background: var(--surface-2); border: 1px solid var(--border);
+}
+.tp-o-ky { font-size: var(--fs-sm); font-weight: 700; color: var(--text-2); }
+.tp-o-tien { font-size: var(--fs-xl); font-weight: 800; color: var(--brand); font-variant-numeric: tabular-nums; }
+/* Kỳ hạn hãng không bán ở tuổi này — để MỜ, vẫn hiện ra để sale biết là có tồn tại */
+.tp-o-phi.khong-ban { background: transparent; border-style: dashed; }
+.tp-o-phi.khong-ban .tp-o-tien { font-size: var(--fs-sm); font-weight: 600; color: var(--text-3); }
+/* IUL chi co MOT o phi -> cho no to hon, dung de trong troi giua khung ket qua */
+.tp-o-phi-don { padding: 22px 20px; }
+.tp-o-phi-don .tp-o-tien { font-size: 30px; }
+/* Hai nút tải — PDF minh hoạ (link Drive chủ tool, xem TP_PDF trong
+   js/tinhphi.js) và CSV bảng phí (sinh tại chỗ). Đặt ngay dưới bảng phí vì sale
+   tra phí xong là gửi tài liệu cho khách luôn. */
+.tp-tai { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.tp-nut-tai {
+  display: inline-flex; align-items: center; gap: 8px; flex: 1 1 auto;
+  justify-content: center;
+  padding: 10px 14px; font: inherit; font-size: var(--fs-sm); font-weight: 700;
+  color: var(--brand); background: var(--brand-soft);
+  border: 1px solid transparent; border-radius: var(--r-md);
+  text-decoration: none; cursor: pointer;
+}
+.tp-nut-tai:hover { border-color: var(--brand); }
+/* Tổ hợp chưa có PDF: mờ + không bấm được. Cùng cách xử với nút hạng sức khoẻ
+   hãng không bán — một màn hình chỉ nên có MỘT cách nói "cái này không có". */
+.tp-nut-tai.tat {
+  opacity: .45; cursor: not-allowed;
+  background: var(--surface-2); color: var(--text-3);
+}
+.tp-nut-tai.tat:hover { border-color: transparent; }
+/* Tên file cần tìm trên Drive — chỉ hiện khi phải mở thư mục (không tải thẳng được).
+   Cho chọn được bằng chuột để sale dán thẳng vào ô tìm của Drive. */
+.tp-ten-file {
+  margin: 10px 0 0; font-size: var(--fs-xs); color: var(--text-3);
+  word-break: break-word; user-select: all;
+}
+.tp-ten-file b { color: var(--text-2); font-weight: 700; }
+
+@media (max-width: 980px) {
+  .tp-wrap { grid-template-columns: 1fr; padding: 16px; gap: 16px; }
+  .tp-card { padding: 20px; }
+  .tp-card-kq { position: static; }
+}
+
+/* --------------------------------------------------------------------------
+   TÍNH TUỔI BẢO HIỂM (js/tinhtuoi.js — 10/08/2026). Cùng khung .doc-viewport
+   với bảng So sánh: công cụ này CÓ Ô GÕ CHỮ nên không được nằm trong canvas.
+   -------------------------------------------------------------------------- */
+/* MỘT KHUNG DUY NHẤT, hai cột ngăn bằng một đường kẻ (chủ tool 10/08/2026:
+   "khoảng giữa 2 cột anh muốn nó liền luôn"). Trước đó là hai thẻ rời cách nhau
+   20px — đo thật, không phải cảm giác. */
+.tt-wrap {
+  display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 0; max-width: 1180px; margin: 28px auto; align-items: stretch;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-xl); box-shadow: var(--shadow-sm); overflow: hidden;
+}
+.tt-card { padding: 26px 28px; min-width: 0; }
+/* Đường kẻ ngăn = viền trái của cột phải, không dùng thẻ riêng */
+.tt-card-ls { border-left: 1px solid var(--divider); }
+.tt-title { font-size: var(--fs-2xl); font-weight: 800; letter-spacing: -0.4px; margin: 0 0 6px; color: var(--text); }
+.tt-sub { font-size: var(--fs-sm); color: var(--text-2); margin: 0 0 22px; }
+.tt-label { display: block; font-size: var(--fs-sm); font-weight: 700; color: var(--text); }
+.tt-label-hang { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+/* ☠️ Chọn KIỂU GÕ NGÀY — để ngay cạnh ô nhập, không giấu trong cài đặt.
+   Gõ 05/06/1979 thì hai kiểu ra hai ngày khác nhau, lệch tuổi, lệch bậc phí. */
+.tt-thutu { display: inline-flex; border: 1px solid var(--border); border-radius: var(--r-sm); overflow: hidden; }
+.tt-thutu-o {
+  padding: 5px 11px; font: inherit; font-size: var(--fs-xs); font-weight: 600;
+  color: var(--text-2); background: var(--surface); border: 0; cursor: pointer;
+  border-right: 1px solid var(--border); white-space: nowrap;
+}
+.tt-thutu-o:last-child { border-right: 0; }
+.tt-thutu-o:hover { background: var(--surface-3); color: var(--text); }
+.tt-thutu-o.dang-chon { background: var(--brand); color: #fff; font-weight: 700; }
+.tt-row { display: flex; gap: 10px; align-items: stretch; }
+.tt-input-wrap { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; }
+.tt-input-wrap svg { position: absolute; left: 14px; color: var(--text-3); pointer-events: none; }
+.tt-input {
+  width: 100%; padding: 13px 14px 13px 44px;
+  font-size: var(--fs-base); font-family: inherit; font-variant-numeric: tabular-nums;
+  color: var(--text); background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: var(--r-md);
+}
+.tt-input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.tt-btn { padding: 13px 30px; flex-shrink: 0; }
+/* Đọc ngược ngày ra chữ — chốt chặn cho lỗi lẫn MM/DD với DD/MM */
+/* Hàng phụ: đọc-ngược-ngày bên trái · giải thích tuổi bên phải (chủ tool 10/08/2026 —
+   trước đó câu giải thích nằm dưới bảng kết quả, đẻ thêm một dòng mà bên phải trống trơn) */
+.tt-dong-phu { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-top: 8px; flex-wrap: wrap; }
+.tt-doclai { min-height: 20px; font-size: var(--fs-sm); color: var(--text-3); }
+.tt-doclai.ok { color: var(--brand); font-weight: 600; }
+/* Tool tự đổi kiểu đọc → phải NÓI RA bằng màu cảnh báo, không im lặng đổi */
+.tt-doclai.canh-bao { color: #96590A; font-weight: 700; }
+body.dark-theme .tt-doclai.canh-bao { color: #E9A23B; }
+
+/* MỘT HÀNG BA Ô ĐỀU NHAU (chủ tool 10/08/2026): Tuổi thật · Tuổi BH · Ngày tăng tuổi.
+   Trước đó là 2 ô trên + 1 ô trải ngang dưới, nhìn lệch nhịp. */
+/* ⚠️ minmax(0, 1fr) chứ KHÔNG phải 1fr: `1fr` = minmax(auto, 1fr) nên ô nào có nội
+   dung dài (ngày 01/23/2027) sẽ tự nở rộng hơn hai ô kia — đo được 96/96/159px. */
+.tt-ketqua { margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--divider); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.tt-o {
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-lg);
+  padding: 16px 18px; display: flex; flex-direction: column; gap: 4px;
+}
+/* Tuổi BẢO HIỂM là con số sale mang đi báo giá — phải trội hơn tuổi thật rõ rệt,
+   không để hai ô giống nhau rồi chép nhầm ô. */
+.tt-o-chinh { background: var(--brand-soft); border-color: var(--brand); }
+.tt-o-nhan { font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--text-3); }
+.tt-o-chinh .tt-o-nhan { color: var(--brand); }
+.tt-o-so { font-size: 34px; font-weight: 800; line-height: 1.1; color: var(--text); font-variant-numeric: tabular-nums; }
+.tt-o-chinh .tt-o-so { color: var(--brand); }
+/* Ô thứ ba: ngày đổi bậc phí. Cùng khuôn với hai ô tuổi để hàng đều nhau, nhưng con
+   số nhỏ hơn — nó là thông tin phụ trợ, không phải số sale chép đi báo giá. */
+.tt-o-ngay-so { font-size: 22px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.tt-o-conlai { font-size: var(--fs-xs); color: var(--text-2); }
+/* Sắp tới ngày đổi bậc phí → đổi màu để sale thấy ngay, khỏi phải đọc số */
+.tt-o-ngay.gan-ke { background: var(--warning-soft); border-color: transparent; }
+.tt-o-ngay.gan-ke .tt-o-nhan, .tt-o-ngay.gan-ke .tt-o-conlai { color: #96590A; }
+body.dark-theme .tt-o-ngay.gan-ke .tt-o-nhan,
+body.dark-theme .tt-o-ngay.gan-ke .tt-o-conlai { color: #E9A23B; }
+.tt-giaithich { margin: 0; font-size: var(--fs-sm); color: var(--text-2); text-align: right; flex: 1; min-width: 220px; }
+
+.tt-ls-dau { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.tt-ls-tieude { display: flex; align-items: center; gap: 8px; margin: 0; font-size: var(--fs-base); font-weight: 800; color: var(--text); }
+.tt-ls-ghichu { margin: 6px 0 14px; font-size: var(--fs-xs); color: var(--text-3); }
+.tt-ls-hang {
+  display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: center;
+  padding: 10px 0; border-top: 1px solid var(--divider);
+  font-size: var(--fs-sm); color: var(--text-2); font-variant-numeric: tabular-nums;
+}
+.tt-ls-dau-cot { border-top: none; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--text-3); }
+.tt-ls-tuoi { font-weight: 800; color: var(--text); font-size: var(--fs-base); }
+.tt-ls-trong { font-size: var(--fs-sm); color: var(--text-3); margin: 0; }
+/* Chủ tool 10/08/2026: cột lịch sử KHÔNG được cao hơn cột bên trái. Tính 20 lần
+   gần đây thì danh sách dài gấp 3 khung tính, kéo cả trang dài ra vô ích.
+   `max-height` thật do capChieuCaoLichSu() trong tinhtuoi.js đặt (đo đúng chiều cao
+   cột trái); con số dưới đây chỉ là mức chặn dự phòng khi JS chưa kịp chạy. */
+/* ☠️ `padding-right` + `scrollbar-gutter` là BẮT BUỘC, không phải trang trí:
+   thanh cuộn của Windows vẽ ĐÈ lên nội dung, và cột bên phải là CON SỐ TUỔI —
+   chủ tool báo 10/08/2026 "thanh dropdown bị đè lên nội dung". Che mất một chữ
+   số là đọc nhầm tuổi. `stable` giữ chỗ sẵn nên danh sách không nhảy ngang khi
+   số dòng vượt ngưỡng cuộn. */
+.tt-ls-bang {
+  max-height: 300px; overflow-y: auto; overscroll-behavior: contain;
+  padding-right: 12px; scrollbar-gutter: stable;
+}
+
+@media (max-width: 1100px) {
+  .tt-ketqua { grid-template-columns: 1fr 1fr; }
+  .tt-o-ngay { grid-column: 1 / -1; }
+}
+@media (max-width: 900px) {
+  .tt-wrap { grid-template-columns: 1fr; margin: 16px; }
+  /* Hết chỗ xếp ngang → đường kẻ chuyển từ TRÁI sang TRÊN, vẫn liền một khung */
+  .tt-card-ls { border-left: 0; border-top: 1px solid var(--divider); }
+  .tt-card { padding: 20px; }
+  .tt-row { flex-direction: column; }
+  .tt-btn { padding: 13px; }
+  .tt-ketqua { grid-template-columns: 1fr; }
+  .tt-o-ngay { grid-column: auto; }
+}
 
 .ss-wrap {
   /* Khai báo MỘT chỗ duy nhất: hàng tiêu đề và mọi hàng dữ liệu cùng đọc biến này

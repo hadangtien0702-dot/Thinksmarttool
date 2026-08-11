@@ -36,6 +36,16 @@ brand violet `#4F00CA` family, font **Plus Jakarta Sans** (UI) + **Fira Code** (
 push per change. At **end of day** (or when the user says "push đi em" / wraps up): ONE `git add -A` + commit
 + `git push origin main` → Vercel auto-deploys. Then confirm the deploy (poll the live URL for the new `?v=`).
 
+### ☠️ Tính năng MỚI phát hành theo 3 nấc quyền (owner mandate 2026-08-10)
+*"Các tính năng mới sẽ được build dưới quyền super admin — sau khi hoàn chỉnh và test
+xong mới được cho admin và user thấy."*
+**Nấc 1** chỉ `super_admin` → (chủ tool duyệt) → **nấc 2** thêm `admin` → (dùng thật vài
+ngày) → **nấc 3** thêm `user`. Áp cho MỌI tính năng mới, không ngoại lệ.
+⚠️ `khoa_muc` KHÔNG dùng được cho việc này (nó chỉ chặn role `user`). Ẩn ở giao diện
+không phải là chặn — có đọc/ghi dữ liệu thì phải chặn cả ở RLS. Lên nấc phải là một cú
+BẤM, không phải sửa code + push.
+**Luật đầy đủ + lý do: mục "2b-bis" trong `CLAUDE.md` của repo** (file đó tự nạp mỗi phiên).
+
 ### Branch theo từng phần (owner mandate 2026-07-19 — áp dụng từ Portal Đợt 1)
 Mỗi PHẦN chức năng làm trên **branch `feat/<phần>` riêng**, xong verify trên local rồi
 `git merge --no-ff` vào `main` LẦN LƯỢT — để lỗi phần nào khoanh vùng phần đó. Quy tắc:

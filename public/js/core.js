@@ -18,13 +18,23 @@ let appState = {
   // thành viên; trạng thái nằm ở bảng `khoa_muc` trên Supabase, KHÔNG hardcode nữa.
   // Chỉ role 'user' bị khoá — admin/super_admin luôn vào được để còn cập nhật nội dung.
   // Mã mục khớp với bảng: proposal · brochure · namecard · compare.
-  khoaMuc: { proposal: false, brochure: false, namecard: false, compare: false, sms: false },
+  khoaMuc: { proposal: false, brochure: false, namecard: false, compare: false, sms: false, tinhtuoi: false, tinhphi: false, appform: false },
   loiNhanKhoa: {},   // mã mục → lời nhắn riêng (nếu Super Admin có gõ)
+  // NẤC PHÁT HÀNH (10/08/2026) — luật "tính năng mới build dưới quyền super admin"
+  // (xem CLAUDE.md mục 2b-bis). Mã mục → 'super' | 'admin' | 'all'.
+  // Mặc định 'all' để 5 mục cũ giữ nguyên hành vi nếu bảng chưa có cột `hien_cho`.
+  // ⚠️ KHÁC với `khoaMuc`: khoá = "tạm đóng, ai cũng biết là có mục này";
+  //    nấc = "chưa tới lượt anh thấy", mục KHÔNG hiện ra chút nào.
+  // ☠️ Mặc định phải nằm ở phía AN TOÀN: tính năng mới ghi 'super' ngay tại đây, để
+  // dù bảng trên Supabase chưa có dòng / chưa có cột thì nó vẫn KHÔNG lọt xuống sale.
+  // 5 mục cũ không ghi ở đây → mặc định 'all', giữ nguyên hành vi.
+  hienCho: { tinhtuoi: 'super', tinhphi: 'super', appform: 'super' },
+  vaiTro: null,      // 'user' | 'admin' | 'super_admin' — điền sau khi đăng nhập xong
   // GIỮ cho tương thích: proposal.js đọc cờ này. Luôn đồng bộ với khoaMuc.proposal.
   khoaProposal: false,
   mode: 'server', // 'server' = local Express backend | 'static' = deployed (Vercel), browser-only
   svgsList: [],
-  library: { brochure: {}, namecard: {} }, // downloadable assets grouped by carrier
+  library: { brochure: {}, namecard: {}, appform: {} }, // downloadable assets grouped by carrier
   activeLibraryPath: null,
   activeFile: null,
   activeSvgDoc: null, // Parsed DOM of active SVG
@@ -736,8 +746,16 @@ const NAV_ICONS = {
   proposal:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>',
   brochure: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
   namecard: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2.2"/><line x1="13" y1="10" x2="18" y2="10"/><line x1="13" y1="14" x2="17" y2="14"/></svg>',
+  // Máy tính — mục "Tính phí bảo hiểm" (10/08/2026)
+  tinhphi: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="12" x2="8" y2="12"/><line x1="12" y1="12" x2="12" y2="12"/><line x1="16" y1="12" x2="16" y2="16"/><line x1="8" y1="16" x2="12" y2="16"/></svg>',
+  // Lịch TRƠN — mục "Tính tuổi bảo hiểm" (10/08/2026).
+  // Bản đầu chồng thêm cái đồng hồ vào góc, chủ tool gạch: ở cỡ 18px hai hình đè
+  // lên nhau thành một cục rối, lại lệch hẳn với 5 icon còn lại (icon nào cũng chỉ
+  // 3–4 nét). Một ý một hình.
+  tinhtuoi: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
   // bong bóng chat — mục "SMS / Tin nhắn mẫu" (10/08/2026)
   sms: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/><line x1="8.5" y1="10" x2="15.5" y2="10"/><line x1="8.5" y1="13.5" x2="13" y2="13.5"/></svg>',
+  appform: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>',
   carrier: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
   file: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>',
   fileDl: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
@@ -811,7 +829,13 @@ function carrierSort(a, b) {
 }
 
 // Build a collapsible folder shell → { folder, content }
-function makeCollapsibleFolder(labelHTML, { extraClass = '', open = true, iconHTML = '' } = {}) {
+// ☠️ MẶC ĐỊNH `open = false` từ 10/08/2026. Trước đó là `true` nên MỌI nhóm đều xổ
+// sẵn ngay khi vẽ cây — chủ tool: "dropdown vẫn tự mở nè em". Cây 7 mục × các nhóm
+// hãng bên trong xổ hết là một danh sách dài ngoằng, phải cuộn mới thấy mục cuối.
+// Hai chỗ VẪN phải mở, xử lý ở cuối renderFileTree() chứ không ở đây:
+//   (1) đang gõ ô tìm  → mở hết, không thì tìm ra mà không thấy;
+//   (2) đang mở một file → bung đúng nhánh chứa nó.
+function makeCollapsibleFolder(labelHTML, { extraClass = '', open = false, iconHTML = '' } = {}) {
   const folderEl = document.createElement('div');
   folderEl.className = `tree-folder ${extraClass} ${open ? 'open' : ''}`.replace(/\s+/g, ' ').trim();
 
@@ -1700,22 +1724,81 @@ function updateStatus(message) {
 // — họ là người đang cập nhật nội dung, khoá họ là tự khoá đường sửa.
 // Best-effort: chưa tạo bảng / lỗi mạng đều NUỐT IM và coi như không khoá gì. Thà mở
 // nhầm một lúc còn hơn cả đội đứng hình vì một lỗi mạng.
-async function napKhoaMuc(profile) {
+// ⚠️ ĐỔI 10/08/2026: trước đây hàm này return ngay nếu role !== 'user' (admin không
+// bị khoá nên khỏi đọc bảng). Nay PHẢI đọc cho MỌI role, vì cột `hien_cho` quyết định
+// mục có hiện ra hay không — và nấc 'super' phải giấu được cả với admin.
+// Hai cột làm hai việc khác nhau, đừng gộp:
+//   `khoa`     → mục vẫn hiện, nhưng thay bằng khối "Đang cập nhật". CHỈ áp cho 'user'.
+//   `hien_cho` → mục KHÔNG hiện chút nào với người chưa tới nấc. Áp cho MỌI role.
+// ☠️ TÁCH LÀM HAI (10/08/2026) vì lý do TỐC ĐỘ, không phải cho đẹp.
+// Chủ tool: "2 phần Age và Quote tốn một khoảng thời gian nhất định mới chạy ra".
+// Nguyên nhân: luồng cũ là HAI VÒNG MẠNG NỐI TIẾP —
+//     getSession (đọc localStorage, ~0ms)
+//       → getProfile  (vòng 1: hỏi Supabase "tôi là ai")
+//         → khoa_muc  (vòng 2: hỏi "mục nào hiện cho ai")
+//           → mới vẽ lại cây
+// Suốt hai vòng đó cây đã vẽ xong ở trạng thái "chưa biết vai trò" = GIẤU hai mục
+// nấc 'super' → chúng hiện ra muộn, nhìn như tool giật.
+// Truy vấn `khoa_muc` KHÔNG cần biết profile (RLS chỉ đòi `auth.uid() is not null`),
+// nên nó chạy được SONG SONG với getProfile → bỏ hẳn một vòng.
+// ⚠️ Vẫn phải chờ CÓ SESSION mới gọi: gọi sớm hơn thì token chưa gắn, RLS trả rỗng,
+// mà rỗng bị hiểu là "không khoá gì" — tức hỏng về phía LỘ. Đúng hướng phải giấu.
+function docKhoaMuc() {
   try {
-    if (!profile || profile.role !== 'user') return false;   // admin không bị khoá
-    if (!window.TSTAuth || !TSTAuth.getClient) return false;
+    if (!window.TSTAuth || !TSTAuth.getClient) return Promise.resolve(null);
     const sb = TSTAuth.getClient();
-    if (!sb) return false;
-    const { data, error } = await sb.from('khoa_muc').select('muc, khoa, loi_nhan');
-    if (error || !data) return false;
-    let coKhoa = false;
+    if (!sb) return Promise.resolve(null);
+    // `hien_cho` có thể CHƯA tồn tại (chưa chạy migration) → thử cột đầy đủ trước,
+    // lỗi thì lùi về bộ cột cũ. Không có bước lùi này là cả tool trắng menu.
+    return sb.from('khoa_muc').select('muc, khoa, loi_nhan, hien_cho')
+      .then(function (r) {
+        if (!r.error) return r;
+        return sb.from('khoa_muc').select('muc, khoa, loi_nhan');
+      })
+      .then(function (r) { return (r.error || !r.data) ? null : r.data; })
+      .catch(function () { return null; });
+  } catch (e) { return Promise.resolve(null); }
+}
+
+// `rows` = kết quả docKhoaMuc() (có thể đã chạy sẵn từ trước). Không truyền thì tự đọc.
+async function napKhoaMuc(profile, rows) {
+  try {
+    if (!profile) return false;
+    appState.vaiTro = profile.role || null;
+    const data = rows !== undefined ? rows : await docKhoaMuc();
+    if (!data) return false;
     data.forEach(function (r) {
       if (!(r.muc in appState.khoaMuc)) return;
-      appState.khoaMuc[r.muc] = !!r.khoa;
-      appState.loiNhanKhoa[r.muc] = r.loi_nhan || '';
-      if (r.khoa) coKhoa = true;
+      appState.hienCho[r.muc] = r.hien_cho || 'all';
+      // Khoá chỉ áp cho nhân viên; admin/super admin là người đang cập nhật nội dung.
+      if (profile.role === 'user') {
+        appState.khoaMuc[r.muc] = !!r.khoa;
+        appState.loiNhanKhoa[r.muc] = r.loi_nhan || '';
+      }
     });
     appState.khoaProposal = appState.khoaMuc.proposal;   // giữ tương thích proposal.js
-    return coKhoa;
+
+    // ☠️ LUÔN trả true = LUÔN vẽ lại cây. Bản đầu tôi chỉ trả true khi "có gì đó
+    // thay đổi so với mặc định", và nó HỎNG đúng ca hay gặp nhất: bảng chưa có
+    // dòng cho mục mới → vòng lặp trên không chạm tới nó → không có gì "thay đổi"
+    // → không vẽ lại → mục vẫn bị giấu theo lần vẽ ĐẦU (lúc đó chưa biết vai trò),
+    // và Super Admin không bao giờ thấy tính năng mình đang xây.
+    // Cây điều hướng vẽ lại rất rẻ; đánh đổi lấy việc bỏ hẳn một loại lỗi "quên vẽ lại".
+    return true;
   } catch (e) { return false; }
+}
+
+// Người đang đăng nhập có được thấy mục này không? Dùng ở renderFileTree.
+// Chưa biết vai trò (chưa đăng nhập xong / chạy chế độ mở) → CHỈ hiện mục nấc 'all'.
+// Thà giấu nhầm một nhịp rồi vẽ lại còn hơn để nhân viên thoáng thấy đồ đang xây.
+function duocThayMuc(ma) {
+  const nac = appState.hienCho[ma] || 'all';
+  if (nac === 'all') return true;
+  // CHẾ ĐỘ MỞ: chưa cấu hình Supabase (chạy `node server.js` trên máy dev, không có
+  // đăng nhập) → không có vai trò nào để xét, coi như chủ tool. Bản live LUÔN có
+  // cấu hình đăng nhập nên nhánh này không bao giờ chạy ở đó.
+  if (!window.TSTAuth || !TSTAuth.configured) return true;
+  const vt = appState.vaiTro;
+  if (nac === 'admin') return vt === 'admin' || vt === 'super_admin';
+  return vt === 'super_admin';    // nac === 'super'
 }

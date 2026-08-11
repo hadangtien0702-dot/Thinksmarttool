@@ -3,6 +3,656 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
+### 2026-08-11 16:10 — MỤC "APPLICATION FORM" vào Khoá mục · sửa 2 lỗi nhãn (v1.43). ✅ ĐÃ PUSH.
+
+Chủ tool tự thêm mục **Application Form / Biểu mẫu** (8 ảnh A4 300dpi của AIG ·
+Allianz · Thông tin khách hàng), nhờ kiểm và nối vào tab Khoá mục.
+
+**① Nối đủ 7 chỗ** — mục mới phải có mặt ở cả 7, thiếu một là hỏng lặng lẽ:
+`appState.khoaMuc` · `appState.hienCho` (='super') · `appState.library` ·
+`NAV_ICONS` · `renderFileTree` (main.js) · **`MUC_KHOA` (members.js)** ·
+**`insert into khoa_muc` (schema.sql)**. Hai chỗ in đậm là phần tôi thêm.
+☠️ Thiếu dòng SQL thì bấm đổi nấc **không ăn mà cũng không báo lỗi** (UPDATE 0
+dòng vẫn trả 204) — đã ghi cảnh báo ngay cạnh câu insert trong schema.sql.
+
+**② ☠️ HAI DÒNG TRÙNG TÊN: "Application Form" và "Application Form"**
+Ảnh chủ tool gửi cho thấy hai dòng giống hệt — sale không biết đâu AIG đâu Allianz.
+Nguyên nhân: `makeDownloadItem` luôn cắt tên hãng khỏi nhãn (`tachTenMau().chuongTrinh`),
+vì bình thường mục nằm DƯỚI tiêu đề hãng. Nhưng thư mục này không chia hãng con →
+mọi file rơi vào nhóm **"Chung"**, tức **không có tiêu đề hãng nào ở trên để bù lại**.
+→ Sửa: thêm cờ `giuTenHang`, nhóm "Chung" thì giữ nguyên tên hãng.
+→ Đo: trước 2 dòng trùng nhau · sau `AIG — Application Form` / `Allianz — Application
+  Form` / `Thông tin khách hàng`, không còn trùng.
+
+**③ ☠️ THẺ HTML NHÉT VÀO GIỮA CHUỖI TÊN** — bản đầu gắn huy hiệu "new" bằng cách
+truyền `'Application Form / Biểu mẫu</span><span class="nav-new">NEW'` vào chỗ
+`label`. Nó **chạy được**, nhưng chỉ vì `label` tình cờ đi thẳng vào `innerHTML`.
+Ngày nào có người bọc `escapeHtml(label)` cho an toàn thì tên mục hiện ra nguyên
+đoạn thẻ — và lỗi đó chẳng liên quan gì tới người vừa sửa.
+→ Sửa: thêm tham số `moi` cho `renderLibrarySection`, escape đàng hoàng.
+
+**④ Kiểm trước khi push** — cú pháp 100% file JS + JSON · `/api/library` trả đủ 4
+mục (brochure · soSanh · sms · appform, 8 file) · `/tool` trả 200 · đo cây điều
+hướng bằng chính `renderLibrarySection`.
+⚠️ **Báo động nhầm một lần**: tôi đọc `git check-ignore -v "Application Form/"` ra
+một dòng trống và kết luận thư mục **bị gitignore chặn** (đúng cái bẫy `Brochure/`
+và `SMS/` đã có tiền lệ). Kiểm lại bằng `git add -n` và check-ignore **từng file**:
+8/8 file **không hề bị chặn**. → Truyền đường dẫn có `/` cuối cho `git check-ignore`
+cho ra output đánh lừa; luôn kiểm bằng **file cụ thể**.
+
+**⑤ Dung lượng** — `Application Form/` **16 MB** (8 ảnh, A4 2480×3508 ở 300dpi;
+riêng AIG (4) là 7440×3508). **Cố ý không nén**: đây là biểu mẫu sale IN RA cho
+khách ký, hạ dpi là in ra mờ. Khác hẳn ảnh nền proposal (đã nén 8,18 → 2,60 MB) —
+thứ đó chỉ để xem trên màn.
+
+Cache-version: `brochure.js` 22→23 · `tinhphi.js` 12→13 · `main.js` 20→21 ·
+`members.js` 56→57. Số hiệu bản: **3 trang cùng v1.43** (trước đó lệch nhau:
+tool v1.43 · index v1.40 · members v1.39).
+
+---
+
+### 2026-08-10 14:46 — SQL đã chạy · dọn chữ thừa · nút tải PDF · đồng bộ màu menu.
+
+**① SQL ĐÃ CHẠY XONG** — chủ tool tự chạy trên Supabase. Đọc lại bảng để XÁC NHẬN
+(không tin "chạy không lỗi"): 7 dòng, `tinhtuoi` và `tinhphi` = `hien_cho: 'super'`,
+5 mục cũ = `'all'`. Nút đổi nấc ở tab "Khoá mục" nay bấm là ăn.
+
+**② Cắt chữ thừa trong màn Tính phí** (chủ tool khoanh đỏ 6 chỗ, 2 đợt):
+`tp-sub` ("Tra nhanh phí hàng tháng…") · ghi chú "Hạng bị mờ là hãng không bán…" ·
+ghi chú "Tổ hợp này có N mức mệnh giá." · nhãn "PHÍ HÀNG THÁNG" · dòng chân
+"Số lấy nguyên văn từ bảng phí của hãng…".
+→ Bỏ luôn **tham số `ghiChu` của `tpNhomNut`** chứ không chỉ truyền chuỗi rỗng —
+để lại tham số là mời phiên sau thêm chữ vào. CSS `.tp-sub`/`.tp-ghichu`/
+`.tp-kq-nhan`/`.tp-kq-chan` xoá theo (grep còn 0 chỗ dùng).
+
+**③ HAI NÚT TẢI: "PDF minh hoạ" + "CSV bảng phí"** — chỗ trống chủ tool khoanh
+dưới bảng phí. Chủ tool chốt: *"lấy đúng file pdf và csv là được em"*.
+
+☠️ **CSV KHÔNG có sẵn ở đâu cả** — đã tìm khắp Drive: thư mục "File Thành phẩm"
+(cha là `1YJbyrDmIv1kREs1dpcY0uDKqBiwnTOgy`) chỉ có **4 file PDF**, và toàn Drive
+chỉ có 3 file `.csv` đều là danh sách khách hàng cũ 2019–2023, không liên quan.
+→ Nên CSV được **SINH TẠI CHỖ** từ chính `public/data/*.json` mà tool đang tra
+(`tpXuatCsv()`), không tải file dựng sẵn. Lý do: file rời sẽ lệch khỏi bảng phí
+ngay lần đầu bảng được cập nhật **mà không có gì báo** — sale gửi khách một đằng,
+tool tra một nẻo. Sinh tại chỗ thì hai thứ không thể lệch.
+→ Xuất TRỌN tổ hợp đang chọn, tên file tự đặt theo tổ hợp.
+  Đo thật: Term Life Nam SNTBC = **386 dòng** (1 + 35 tuổi × 11 mệnh giá) ·
+  IUL 20 năm Nam NTBC = **66 dòng × 32 cột** (1 + 65 tuổi · 1 + 31 mệnh giá),
+  **số cột header = số cột dữ liệu** (phép kiểm chống bài học 5ad).
+→ Kiểm chéo 3 ô, cả ba khớp: 35t/250k = 255.25 (đúng số màn vừa tra) ·
+  45t/275k = 462.27 (đúng ảnh chủ tool chụp) · **59t/225k = 730.25** — tức một
+  trong 6 ô nghi gõ nhầm **vẫn giữ nguyên**, CSV không "sửa cho đẹp".
+→ BOM kiểm bằng **byte thật** (`EF BB BF`) chứ không bằng `Blob.text()` —
+  `.text()` tự nuốt BOM khi decode nên luôn báo "không có BOM": thước sai.
+→ Nút CSV gắn bộ nghe **uỷ quyền lên khối `#tp-kq`**, không lên nút: khối này bị
+  vẽ lại mỗi lần bấm Tính phí, gắn lên nút là lần sau bấm không ăn mà không báo gì.
+
+**③-bis PDF minh hoạ**
+Không có bảng mapping nên **tự tìm trong Drive chủ tool**: thư mục
+`1U9S7Ttze4yubN2ztjQnWXpz3Wcl8RHaQ` có đúng 4 file (AIG/NLG × Termlife/IUL).
+Tool chỉ có bảng phí NLG → gắn 2 file NLG, đổi theo chương trình đang chọn
+(`TP_PDF` + `tpNutPdf()` trong `js/tinhphi.js`).
+☠️ **Đã kiểm QUYỀN CHIA SẺ trước khi gắn**: cả hai `anyone: reader` — nếu chỉ chia
+sẻ nội bộ thì 77 sale bấm ra màn "Request access" mà tool không hề báo lỗi.
+⚠️ **CHƯA đo được cú bấm thật**: trình duyệt trong phiên bị chặn miền
+`drive.google.com`. Chủ tool bấm thử một cái là biết.
+
+**④ Bố cục: Chương trình · (Kỳ hạn) · Giới tính · Hạng sức khoẻ CÙNG MỘT HÀNG,
+CÓ ĐƯỜNG KẺ NGĂN**
+☠️ Xếp cùng hàng **chưa đủ** — chủ tool: *"phải thể hiện làm sao cho người ta nhận
+diện nó là 3 phần riêng biệt"*. Chỉ có khoảng trắng thì mắt đọc thành MỘT dãy nút
+dài, nhất là khi nút đang chọn của nhóm này nằm sát nút chưa chọn của nhóm kia.
+Thêm `border-left` 1px + đệm 14px — dùng lại đúng cách hai cột màn này đang ngăn
+nhau, không dựng thêm nền/khung riêng cho mỗi nhóm.
+☠️ Bẫy đã vấp: đo lần đầu thấy 3 nhóm vẫn xếp dọc → suýt đi sửa CSS. Đo kỹ thì
+`viewport = 0` — **khung xem chưa được mở rộng, tôi đang đo một màn hình rộng 0px**.
+Phải `resize_window(1440)` trước. (Họ hàng 5u: thước sai chứ sản phẩm không sai.)
+Sau khi đo đúng: 1.25fr → cột nhập 657px, 4 nhóm IUL cần 813px → rớt dòng.
+1.45fr → 700px, **vẫn thiếu 12px**. **1.6fr → 763px, dư 49px** → cả 4 cùng `top`.
+→ Đổi `grid-template-columns` của `.tp-wrap` thì PHẢI mở màn **IUL** đo lại,
+màn Term Life chỉ có 3 nhóm nên luôn vừa, nhìn nó là không thấy lỗi.
+
+**⑤ Thanh cuộn đè con số tuổi** (màn Tính tuổi). Đo đối chứng:
+**trước hở 0px** (số dính sát mép trong, thanh cuộn Windows 10px vẽ đè lên chữ số)
+→ **sau hở 11px**. Sửa: `padding-right: 12px` + `scrollbar-gutter: stable`.
+Che một chữ số là sale đọc nhầm tuổi khách.
+
+**⑥ Đồng bộ menu**
+- Xoá 2 luật "per-section accent" tô Brochure xanh lá + Name Card cam. Chúng neo
+  theo `nth-of-type` tức theo **VỊ TRÍ** — thêm/bớt một mục là màu nhảy sang mục
+  khác trong im lặng. Nay cả 7 mục dùng chung màu thương hiệu.
+- Đặt tên hai mục mới theo đúng công thức "Anh / Việt" của 5 mục kia:
+  **Age / Tính tuổi bảo hiểm** · **Quote / Tính phí bảo hiểm**.
+- "Lần tính gần đây" → **"Gần đây"**.
+
+**⑦ NÚT "CÔNG CỤ" Ở THANH TRÁI → VỀ MÀN TRỐNG, ĐÓNG HẾT DROPDOWN**
+Chủ tool chốt: bấm cờ lê là quay về trạng thái sạch (cây thu về 7 dòng, bên phải
+trống chờ chọn). Nó là `<a href="/tool">` mà mình **đang ở** `/tool` → tải lại
+nguyên trang: chớp trắng, nạp lại cả bảng phí, và nháp chưa lưu thì bị chặn bằng
+hộp thoại `beforeunload` xấu xí. Nay chặn `click` khi đã ở `/tool` và xử lý tại
+chỗ (`ganNutCongCu()` trong `js/main.js`) — hỏi bằng hộp thoại của tool, tức thì.
+⚠️ Chưa đo được trên bản có đăng nhập; các selector đã đối chiếu với HTML thật.
+
+**⑦-bis ☠️ CÂY ĐIỀU HƯỚNG TỰ XỔ SẴN — nguyên nhân gốc nằm ở MỘT GIÁ TRỊ MẶC ĐỊNH**
+Sửa xong ⑦ chủ tool vẫn báo *"dropdown vẫn tự mở nè em"*. Đóng cây lúc bấm nút là
+**vá bề mặt**: `makeCollapsibleFolder()` trong `core.js` mặc định `open = true`, và
+**không một lời gọi nào** (proposal · brochure · namecard × section + nhóm hãng)
+truyền `false` → cứ vẽ lại cây là mọi nhóm xổ hết.
+→ Sửa gốc: mặc định `open = false`. Hai ngoại lệ xử lý ở **cuối `renderFileTree()`**,
+không rải vào từng lời gọi:
+  (1) đang gõ ô tìm → mở hết (không thì tìm ra kết quả nằm trong nhóm đóng);
+  (2) đang mở một file → bung **đúng nhánh** chứa nó, leo lên bằng `closest`.
+→ ☠️ Ngoại lệ (2) dò theo **dấu `.active` trên cây**, KHÔNG theo `appState.activeFile`:
+  mục thư viện (brochure/name card) đánh dấu bằng `activeLibraryPath` — hỏi sai biến
+  thì nhánh đó không bung mà **không có lỗi nào báo**.
+  Đây cũng là thứ giữ cho "Tạo bản cho khách" không hỏng: tạo xong cây vẽ lại, không
+  bung nhánh thì bản vừa tạo biến mất trước mắt người dùng.
+→ Đo trên bàn đo gọi chính `makeCollapsibleFolder`, 4 ca + đối chứng:
+  **trước 3 nhóm mở / sau 0** · đang mở NLG-2 → bung đúng 2 nhánh (Proposal + NLG,
+  **không** bung AIG) · đang tìm → mở cả 3 · bấm header vẫn mở/đóng được.
+
+**⑧ ☠️ GỠ HẲN "THEO TỪNG NGƯỜI" + "ĐANG ONLINE"** (tab Đo lường ở `/members`)
+Chủ tool: *"tracking online và từng người đến ngày hôm nay thì nó đã **hoàn thành
+nhiệm vụ** rồi, anh không cần nó nữa"*. **Gỡ có chủ đích — đừng dựng lại** khi
+thấy `usage-rows` / `online-bar` không còn.
+- `members.html`: bỏ khối bảng "Theo từng người", thanh ĐANG ONLINE, hộp thoại
+  "Ai đang online". Giữ: biểu đồ "Người hoạt động mỗi ngày" · "Top Proposal /
+  Brochure" · tab "Khoá mục".
+- `members.js`: gỡ ~120 dòng khối online (`taiOnline`/`veOnlineBar`/
+  `veOnlineChiTiet`/modal + poll 30 giây) và `veBangNguoi()` (~90 dòng).
+  ☠️ Phải gỡ **cả bộ nghe** `$('usage-rows').addEventListener` — để lại là
+  `$()` trả `null` và **chết cả script khởi tạo**, tab Đo lường trắng trơn.
+  Giữ `tenTiengAnh()` vì popup "đã tải gì" vẫn dùng.
+- `auth.js`: heartbeat ghi `presence` tắt bằng **một cờ** `TAT_PRESENCE`, không
+  xoá code. Không ai đọc bảng đó nữa mà vẫn ping là bắt 77 máy gửi một request
+  vô ích mỗi 45 giây. Bật lại = đổi cờ + dựng lại phần đọc.
+- **KHÔNG đụng bảng `presence` trên Supabase** — xoá bảng là việc khó đảo ngược,
+  giữ lại thì dữ liệu cũ còn nguyên mà chẳng tốn gì.
+- Kiểm: `node --check` sạch 3 file · grep 0 tham chiếu tới id đã xoá (chỉ còn
+  trong chú thích) · 3 khối giữ lại vẫn có mặt trong HTML.
+  ⚠️ Chưa bấm thử được trên bản đăng nhập — chủ tool mở `/members` xem giúp.
+- Cache-version portal: `auth.js` 10→11 (cả 3 trang) · `members.js` 54→55 ·
+  `portal.css` 78→79.
+
+**⑨ ☠️ AGE / QUOTE HIỆN CHẬM SAU KHI REFRESH — hai vòng mạng NỐI TIẾP**
+Chủ tool: *"2 phần Age và Quote tốn một khoảng thời gian nhất định mới chạy ra"*.
+Luồng cũ: `getSession` (localStorage, **0 ms**) → `getProfile` (vòng 1) →
+`khoa_muc` (vòng 2) → mới vẽ lại cây. Suốt hai vòng đó cây đã vẽ ở trạng thái
+"chưa biết vai trò" = **giấu** hai mục nấc `super` → chúng hiện ra muộn.
+→ Truy vấn `khoa_muc` **không cần profile** (RLS chỉ đòi `auth.uid() is not null`)
+  nên chạy được **song song** với `getProfile`. Tách `napKhoaMuc` thành
+  `docKhoaMuc()` (đọc) + `napKhoaMuc(profile, rows)` (áp).
+→ ⚠️ Vẫn phải chờ **có session** mới gọi: gọi sớm hơn thì token chưa gắn, RLS trả
+  rỗng, mà rỗng bị hiểu là "không khoá gì" — **hỏng về phía LỘ**, sai hướng.
+→ ⚠️ Cú đọc sớm trượt (`rows === null`) thì truyền `undefined` để `napKhoaMuc`
+  **tự đọc lại** — thà chậm một vòng còn hơn Super Admin không thấy đồ đang xây.
+→ **Đo thật, 7 lần mỗi kiểu, lấy trung vị** (đo 1 lần là đo nhiễu):
+
+| | trung vị | nhanh nhất | chậm nhất |
+|---|---|---|---|
+| Nối tiếp (cũ) | **429 ms** | 258 | **1.399** |
+| Song song (mới) | **140 ms** | 135 | 342 |
+
+  Tiết kiệm **289 ms (67%)**, và ca xấu nhất từ **1,4 giây xuống 0,34 giây** —
+  chính ca đó mới là thứ chủ tool cảm nhận được.
+
+**⑩ TAB "KHOÁ MỤC": MỖI MỤC MỘT HÀNG**
+Chủ tool: *"làm gọn gàng lại, mỗi 1 phần là 1 hàng là ổn"*. Trước đó mỗi mục chiếm
+**hai tầng** (tên + công tắc Khoá ở trên, dải "Ai được thấy" ở dưới) → 7 mục thành
+14 tầng, phải cuộn. Nay 4 cột trên một dòng: tên | dải 3 nấc | trạng thái | nút.
+- Bỏ nhãn "AI ĐƯỢC THẤY" và câu mô tả nấc — cả hai **nói lại đúng thứ ba cái nút
+  đã nói**. Mô tả chuyển vào `title`. Nút "Khoá mục này" → **"Khoá"**.
+- Mô tả mục cắt bằng `ellipsis` để không đẩy dải nút lệch giữa các hàng.
+- Đo: hàng thường **cao 68px**, 7 mục tổng **600px**; cột trạng thái và cột nút
+  **dóng thẳng một mép ở cả 7 hàng** (đó là thứ khiến liếc dọc là đọc được).
+  Hàng đang khoá cao 145px vì có ô lời nhắn — đúng thiết kế, và chỉ hiện khi khoá.
+- Bàn đo **trích nguyên văn `veKhoaMuc()`** từ `members.js` bằng script, không chép
+  tay sang trang đo — chép tay là thước cùng vật liệu, sửa một bên quên bên kia.
+
+**⑪ TÊN TOOL ĐỒNG BỘ TOÀN HỆ THỐNG + nhãn loại trong bảng Top**
+Chủ tool: *"nhớ cập nhật tên tool cho toàn bộ hệ thống"*. `Age / Tính tuổi bảo hiểm`
+và `Quote / Tính phí bảo hiểm` nay giống nhau ở **cây điều hướng · tiêu đề màn ·
+nhãn ghi vào `usage_events` · tab Khoá mục**.
+☠️ Và sửa `phanLoai()`: hai công cụ này đang bị dán nhãn **"Proposal"** trong bảng
+"Top chạy nhiều nhất" — sai loại, vì chúng **không sinh ra bản vẽ nào để gửi khách**.
+Đọc "97 lượt NLG—IUL" cạnh "8 lượt Tính tuổi" như cùng một loại việc là hiểu sai
+bảng. Nay có nhãn riêng **"Công cụ"** (`.top-tag-cc`).
+⚠️ Dữ liệu cũ trong `usage_events` vẫn mang tên cũ → bảng Top sẽ có thêm dòng
+trùng ý trong vài ngày rồi trôi khỏi khoảng đang xem. Không sửa dữ liệu cũ.
+
+**⑬ HÀNG ĐẦU GIỐNG NHAU Ở CẢ HAI CHƯƠNG TRÌNH; "Kỳ hạn" dời xuống cạnh Tuổi**
+Chủ tool: *"hàng chương trình | giới tính | hạng sức khoẻ của Term Life và IUL
+giống nhau… IUL thì cho Kỳ hạn xuất hiện kế bên Tuổi"*.
+Trước đó IUL chèn "Kỳ hạn" vào **giữa** hàng đầu → bấm Term Life ↔ IUL là Giới tính
+và Hạng sức khoẻ **nhảy chỗ**. Nay hàng đầu dựng bằng MỘT hàm dùng chung
+`tpHangDau()`, ô tuổi bằng `tpNhomTuoi()` — một chỗ duy nhất, không còn hai bản
+lệch nhau (đó đúng là cách lỗi này sinh ra).
+→ Hàng đầu còn 3 nhóm ở cả hai màn nên hạ cột nhập **1.75fr → 1.5fr**, cột kết quả
+  rộng ra (430 → 473px). Lịch sử số đo ghi ngay trong CSS để khỏi dò lại.
+→ Đo: hàng đầu hai màn **trùng nhau từng nhãn**; IUL có hàng hai *Tuổi khách +
+  Kỳ hạn* cùng `top`; chọn 15 năm vẫn khoá đúng TBC/EX1; quay lại Term Life không
+  còn nút Kỳ hạn; IUL 20n Nam NTBC 35t/250k vẫn ra **$255.25**.
+→ ⚠️ Còn lệch **2px** vị trí nhóm giữa hai màn — do nút đang chọn dùng
+  `font-weight: 700`, nút thường 600, nên nhóm "Chương trình" rộng khác nhau 2px.
+  Không sửa: bù 2px đó phải dựng thêm cơ chế giữ chỗ, không đáng.
+
+**⑭ ☠️☠️ GẮN NHẦM FILE PDF — TÔI KHỚP TÊN RỒI SUY RA NỘI DUNG**
+Chủ tool bấm nút "Tải PDF minh hoạ" → ra **một bản báo giá mẫu đã điền tên khách**
+("Đinh Thị Thảo Nguyên", 43 tuổi, $100,000), không phải tài liệu hãng.
+**Cách tôi nhầm:** Drive có thư mục *"File Thành phẩm"* chứa đúng 4 file
+`NLG IUL.pdf` · `NLG Termlife.pdf` · `AIG IUL.pdf` · `AIG Termlife.pdf`. Tên khớp
+hoàn hảo với hai chương trình của màn này. Tôi kiểm **quyền chia sẻ**, kiểm **tên**,
+kiểm **kích thước** — và gắn. **Chưa một lần mở file ra xem.**
+→ Tên thư mục đã nói thẳng: *Thành phẩm* = sản phẩm xuất ra, không phải tài liệu.
+→ Lặp lại đúng **bài học 5k**: khớp tên / đếm / kiểm quyền đều KHÔNG phải là kiểm.
+  Thứ sắp giao tới tay 77 sale thì phải **mở ra nhìn bằng mắt**, không có ngoại lệ.
+→ Nguy hiểm hơn cả sai nội dung: file đó đang để **"anyone with the link"** và mang
+  tên người thật. **Đã báo chủ tool xem lại quyền chia sẻ của cả 4 file.**
+→ Đã gỡ: `TP_PDF = null`, đo lại DOM khối kết quả — **0 chuỗi `drive.google`**, chỉ
+  còn nút "Tải CSV bảng phí". Không gắn lại cho tới khi chủ tool đưa đúng đường dẫn.
+
+**⑭-bis GẮN LẠI PDF — ĐÚNG BỘ, và lần này kiểm HAI LỚP trước khi gắn**
+Chủ tool đưa link thư mục Drive của **sếp** (`salesdeptdrt@gmail.com`) —
+*"1. Quote S&P 500 - IUL 2025"*. Trong đó là bộ PDF minh hoạ đặt tên theo **TỪNG
+TỔ HỢP**: `Female - NTBC - 42T - $250,000 - $308.25 - 20YRS.pdf`.
+Hai lớp kiểm, không lớp nào dựa vào lớp kia:
+1. **MỞ FILE RA ĐỌC** — nội dung: *"FlexLife · INDEXED UNIVERSAL LIFE · Life
+   Insurance Illustration … **For SAMPLE QUOTE**"*, bản minh hoạ chính thức của
+   National Life Group, tên khách là "SAMPLE QUOTE". Khác hẳn file gắn nhầm lần
+   trước (bản báo giá mang tên người thật).
+2. **ĐỐI CHIẾU SỐ** — phí ghi trong TÊN FILE khớp **8/8** với `bang-phi-iul.json`,
+   kể cả file 15 năm (45t/100k = $180). Tên file mà khớp được cả bảng phí thì
+   gần như không thể là file của bộ khác.
+→ Bảng tra: **`public/data/pdf-minh-hoa.json`**, khoá
+  `CHUONGTRINH|KYHAN|GIOI|SUCKHOE|TUOI|MENHGIA`.
+→ ☠️ **CHỈ CÓ 8 FILE, toàn FEMALE + NTBC.** Không có MALE, không có Term Life,
+  không có TBC/EX1. Tổ hợp không có file thì **KHÔNG hiện nút** — tuyệt đối không
+  đưa "file gần đúng": bản minh hoạ in rõ tuổi + mệnh giá + phí trên từng trang,
+  đưa nhầm một bản là sale gửi khách con số của người khác.
+→ Đo: **8/8 tổ hợp có file → hiện nút** đúng ID đúng tên · **6/6 tổ hợp không có
+  → ẩn nút**, gồm cả các ca sát biên (36 tuổi thay vì 35 · 125k thay vì 100k ·
+  Male · TBC · 15 năm tuổi 46 · Term Life).
+→ Thêm file mới: đặt tên đúng mẫu trên, rồi thêm một dòng vào JSON. Không có cơ
+  chế tự dò — cố ý, vì dò tự động là mở đường cho "gần đúng".
+→ ☠️ **KHÔNG CÓ FILE THÌ LÀM MỜ NÚT, ĐỪNG ẨN.** Bản đầu tôi ẩn hẳn; chủ tool mở
+  tổ hợp Nam·TBC và báo ngay *"không có nút tải file pdf nè em"* — đúng cái hiểu
+  nhầm mà luật này (đã áp cho nút hạng sức khoẻ ở CHÍNH màn này) sinh ra để chặn:
+  *ẩn thì sale tưởng tool thiếu, làm mờ thì hiểu là hãng không có*. Nút mờ còn nói
+  được LÝ DO trong tooltip, chỗ trống thì không nói được gì.
+  Đo: ca của chủ tool → nút hiện, chữ **"Chưa có PDF minh hoạ"**, opacity 0.45,
+  rộng 221px (nhìn thấy rõ), không bấm được · ca có file → "Tải PDF minh hoạ",
+  bấm được, đúng link. Luôn đúng **2 nút** nên bố cục không nhảy khi đổi tổ hợp.
+
+**⑭-ter ☠️ BỘ PDF+CSV THẬT LỚN HƠN NHIỀU — và Drive API KHÔNG với tới được**
+Chủ tool đưa thêm link: `1. NLG - IUL > 1. Quote S&P 500 - IUL 2025`. Cấu trúc thật:
+```
+CHƯƠNG TRÌNH (20 NĂM | 15 NĂM)
+  └ nhóm (Female-NTBC · Male-NTBC · Male-TBC · Female-EX1 · Male-EX1)
+      └ mệnh giá ($100,000 …)
+          └ mỗi TUỔI một CẶP file: .pdf + .csv
+```
+Tức là **hàng nghìn file**, phủ đủ cả Nam lẫn các hạng — không phải 8 file như tôi
+tưởng. 8 file kia chỉ là những file sếp **chia sẻ trực tiếp** với chủ tool.
+→ ☠️ **Drive API của tool chỉ thấy file được chia sẻ TRỰC TIẾP.** `parentId = '<thư
+  mục shared>'` trả **rỗng** dù thư mục tồn tại và đọc được metadata; `title contains
+  'Male - NTBC - 35T'` cũng rỗng. Không phải thiếu quyền — là giới hạn của công cụ
+  (không truyền được `supportsAllDrives`). Đừng mất thời gian dò lại.
+→ ☠️ **ĐÃ THỬ VÀ BỎ: link tìm kiếm Drive** (`/drive/search?q=...`). Nghe rất hợp lý
+  vì tên file suy được từ dữ liệu tool. Đo thật: tổ hợp **20 năm ra đúng 2 file**,
+  nhưng **15 năm ra RỖNG** với đúng cách viết đó; bỏ ngoặc kép thì trả về **hàng chục
+  file sai tổ hợp** (43T, 42T, 15T… và cả 20YRS khi đang tìm 15YRS). Một cách khớp
+  mà lúc đúng lúc sai thì tệ hơn không có — sale gửi khách nhầm bản minh hoạ.
+→ **Cách đang dùng — ba mức, xuống dần theo độ chắc chắn, không mức nào là đoán:**
+  1. **Có ID file** (8 file) → tải thẳng, một cú bấm.
+  2. **Biết thư mục** → mở đúng thư mục Drive **+ hiện TÊN FILE cần tìm** ngay trên
+     màn. Ưu tiên thư mục nhóm; chưa có ID nhóm thì lùi về thư mục chương trình.
+  3. **Term Life** → nút mờ "Chưa có PDF minh hoạ".
+→ ☠️ Tên file gợi ý **DỪNG Ở MỆNH GIÁ**, không ghép phí vào: phí là phần duy nhất có
+  định dạng không nhất quán (`$612.60` nhưng cũng có `$180`). Ghép vào là sale dán đi
+  tìm rồi Drive báo không thấy dù file nằm ngay đó. Ba phần (giới+hạng · tuổi · mệnh
+  giá) đã đủ định danh trong một thư mục.
+→ Kiểm chéo: phí trong tên file khớp bảng phí ở **cả Male NTBC** (1T/2T/3T $100k,
+  35T $600k) chứ không chỉ 8 file Female → công thức tên đúng cho toàn bộ.
+→ Đo 6 ca: có-ID → tải thẳng · Male-NTBC/Male-TBC → đúng thư mục nhóm · Female-EX1
+  → lùi về thư mục 20 NĂM · 15 năm → thư mục 15 NĂM · Term Life → nút mờ.
+→ `[CÒN THIẾU]` ID thư mục nhóm: **Female-EX1, Male-EX1 (20 năm) và cả 5 nhóm 15
+  năm**. Lấy phải bấm tay từng thư mục trên Drive (JS lấy `data-id` bị công cụ chặn
+  vì trông giống token). Thiếu thì tự lùi một tầng — vẫn dùng được.
+
+**⑮ HUY HIỆU "new" cho 3 mục vừa thêm** — SMS · Age · Quote.
+Đo: đúng 3 mục có huy hiệu, cả 3 nằm trọn trong hàng, cỡ **35×17px**, nhãn mục
+không bị cắt, 7 hàng vẫn cao đều **48px**.
+☠️ **Không có ngày hết hạn tự động.** Thêm mục thứ tư thì phải gỡ `nav-new` khỏi ba
+mục cũ — nhãn "new" dán mãi sẽ thành trang trí và người dùng thôi tin nó.
+Ba chỗ đặt: `brochure.js` (SMS) · `tinhtuoi.js` · `tinhphi.js` — grep `nav-new`.
+
+**⑯ Cách kiểm** — hai màn công cụ nằm sau đăng nhập Supabase nên không mở thẳng được.
+Dựng **trang đo tạm trong `public/`** nạp chính `js/tinhphi.js` / `js/tinhtuoi.js`
+với stub tối thiểu (`appState`, `dom`, `escapeHtml`…), đo xong **xoá file**.
+Cache-version: `style.css` 97→**100** · `tinhtuoi.js` 9→10 · `tinhphi.js` 2→**5** ·
+`main.js` 16→**19** · `core.js` 42→**44** · `portal.css` 78→**80** ·
+`members.js` 54→**56** · `auth.js` 10→**11** (cả 3 trang).
+
+---
+
+### 2026-08-10 14:24 — TÍNH PHÍ BẢO HIỂM: Term Life + IUL đầy đủ (v1.42). ⏳ CHƯA PUSH.
+
+**TRẠNG THÁI HIỆN TẠI**
+- Bản live đang chạy **v1.40** (mục SMS). Máy đang ở **v1.42**, CHƯA push — chủ tool
+  còn đang test (*"đang test cứ đòi push goài"*).
+- Hai công cụ mới **Tính tuổi bảo hiểm** + **Tính phí bảo hiểm** đều ở **NẤC 1**
+  (chỉ Super Admin thấy). Sale và Admin chưa thấy gì.
+- **Việc kế tiếp:** chủ tool test xong → push → chạy SQL thêm dòng `tinhtuoi`,
+  `tinhphi` vào bảng `khoa_muc` → khi ưng thì bấm lên nấc ở tab "Khoá mục".
+
+**① Tính phí bảo hiểm — `js/tinhphi.js` + `public/data/*.json`**
+Đưa về từ Quote Calculator của forum. Hai chương trình **cơ cấu khác hẳn nhau**:
+
+| | Term Life | IUL |
+|---|---|---|
+| Kỳ hạn | không chọn, trả về **4 số** (10/15/20/30) | **chọn** 15 hoặc 20 năm, trả về **1 số** |
+| Nhãn sức khoẻ | SNTBC · STBC · ENTBC1 | **NTBC · TBC · EX1** |
+| Nguồn | 1 Google Sheet (5 sheet "NEW") | **2 Google Sheet** (15 NĂM + 20 NĂM, 7 sheet) |
+
+☠️ **Hai bộ mã sức khoẻ KHÁC NHAU** (SNTBC ≠ NTBC). Đổi chương trình mà giữ mã cũ là
+tra không ra dòng nào → `tpGanSuKien` tự đặt lại mã khi đổi chương trình.
+
+**② Dữ liệu — 3 lớp kiểm, không lớp nào dựa vào lớp kia**
+
+| Lớp | Term Life | IUL |
+|---|---|---|
+| Tổng kiểm tra từng dòng (chống sai khi chép) | 161/161 · 4.172 ô | **342/342 · 6.240 ô** |
+| Kiểm tréo với forum đang chạy | 8/8 | **7/7** (mỗi sheet một ca) |
+| Chống **lẫn lộn sheet** | — | cùng ô 40t/250k ở 5 sheet → **5 giá trị khác nhau** |
+
+Lớp thứ ba là thứ tổng kiểm tra KHÔNG bắt được: chép đúng số nhưng bỏ nhầm sheet.
+
+**③ ☠️ 6 Ô NGHI GÕ NHẦM TRONG BẢNG IUL CỦA SẾP — GIỮ NGUYÊN, ĐỪNG SỬA**
+Soi 5.064 ô bằng quy luật "phí tỉ lệ thẳng với mệnh giá" (4.912 ô khớp tuyệt đối):
+
+| Sheet | Tuổi | Mệnh giá | Trong Drive | Theo quy luật |
+|---|---|---|---|---|
+| 20n Nữ NTBC | 33 | 700k | **577,20** | 557,20 |
+| 20n Nữ NTBC | 41 | 425k | **469,40** | 496,40 (đảo 496→469) |
+| 20n Nam NTBC | 30 | 300k | **233,70** | 242,70 |
+| 20n Nam NTBC | 36 | 700k | **735,20** | 753,20 (đảo) |
+| 20n Nam NTBC | 39 | 225k | **297,22** | 279,22 (đảo) |
+| 20n Nam NTBC | 59 | 225k | **730,25** | 830,25 (lệch $100/tháng) |
+
+Xác nhận độc lập bằng phép thứ hai (thứ tự phải tăng dần): *225k rẻ hơn 200k*,
+*59 tuổi rẻ hơn 58 tuổi*. Và forum trả về **đúng** những số đó → sai đang sống thật.
+**Chủ tool chốt: *"số Drive là chuẩn, em có thể làm theo số Drive"*** → chép nguyên văn.
+Danh sách 6 ô ghi ở đầu `scripts/bang-phi-iul-nlg-20nam-ntbc.txt` kèm dòng CẤM tự sửa.
+
+**④ Hai bộ soi giữ lại trong repo**
+- `scripts/soi-bang-phi.js` — soi Term Life: kỳ hạn 0 lỗi/4.097 ô · tuổi >26 sạch ·
+  269 chỗ "mệnh giá lớn rẻ hơn" **gom đúng một ngưỡng 200k→250k** = banding thật.
+- `scripts/kiem-tinh-tuoi.js` — 102.347 phép tính, 0 lỗi (chạy lại sau mọi sửa đổi).
+
+**⑤ Sửa theo yêu cầu chủ tool trong lúc test**
+- ☠️ **Ngày sinh nhập nhằng MM/DD ↔ DD/MM** — chủ tool gõ `22/05/1979` bị chặn. Chỗ
+  chặn được là còn may; nguy hiểm là `05/06/1979` (hai cách đọc đều hợp lệ → im lặng
+  sai tuổi, sai bậc phí). Gần **nửa số ngày trong năm** nằm trong vùng này. Sửa: hai
+  nút chọn kiểu gõ (nhớ lại), luôn đọc ngược ra chữ, tự đổi kiểu thì **báo bằng màu cam**.
+- Icon mục Tính tuổi: bỏ đồng hồ chồng lên lịch (18px thành một cục) → lịch trơn.
+- Bố cục: 3 ô kết quả **một hàng đều nhau** (đo 198px mỗi ô) · dòng giải thích lên
+  cùng hàng với dòng đọc ngày · hai cột **liền một khung** (hở 0px, kẻ 1px) · cột
+  lịch sử không cao hơn cột trái · rút gọn 2 dòng chữ.
+- ☠️ Bẫy đo: kẹp chiều cao lịch sử theo cột trái **trong lúc cột trái đang bị kéo
+  giãn bằng cột phải** = đo chính cái mình định sửa. Phải tạm bỏ `align-items:stretch`
+  để đo chiều cao thật.
+
+**⑥ CÒN TREO**
+- `[CHỜ]` **Push** — chủ tool đang test, đã dặn không push.
+- `[XONG 10/08 14:46]` ~~**SQL** thêm dòng `tinhtuoi`/`tinhphi`~~ — chủ tool đã chạy,
+  đọc lại bảng xác nhận cả hai ở `hien_cho: 'super'`.
+- `[CHỜ]` **6 ô nghi gõ nhầm** — chủ tool cầm sang hỏi sếp. Sửa trong Drive rồi thì
+  chạy lại `node scripts/doi-bang-phi-iul.js`, KHÔNG sửa tay.
+- `[XONG]` ~~File PDF minh hoạ~~ — đã gắn đúng bộ, xem mục ⑭-bis.
+- `[CHỜ]` **Chỉ có 8 PDF minh hoạ, toàn Female + NTBC.** Sale tra tổ hợp Nam hoặc
+  Term Life sẽ không thấy nút. Hỏi sếp chủ tool xem còn file khác chưa chia sẻ không.
+- `[CHỜ]` **Xem lại quyền chia sẻ 4 file trong Drive "File Thành phẩm"** — đang để
+  "anyone with the link" mà bên trong có tên khách hàng thật.
+- `[KHÔNG LÀM]` "Manage Data" — chủ tool chốt bỏ. Đổi bảng phí phải sửa file + push.
+
+---
+
+### 2026-08-10 — CƠ CHẾ 3 NẤC + công cụ TÍNH TUỔI BẢO HIỂM (nấc 1). ⏳ CHƯA PUSH.
+
+Chủ tool đưa 2 ảnh chụp 2 công cụ đã làm trên `forum.thinksmartinsurance.com`
+(Age Calculator + Quote Calculator), muốn đem về Tool. **Mới làm xong cái thứ nhất.**
+
+**① Cơ chế 3 nấc (hiện thực của điều khoản ghi bên dưới)**
+- Cột mới `khoa_muc.hien_cho` (`super` | `admin` | `all`, mặc định `all`) + ràng buộc
+  CHECK. 5 mục cũ không đụng gì.
+- `core.js`: `appState.hienCho` + `appState.vaiTro` + hàm `duocThayMuc(ma)`.
+  ☠️ `napKhoaMuc` **không còn return sớm khi role !== 'user'** — nay phải đọc bảng cho
+  MỌI role, vì nấc `super` phải giấu được cả với admin.
+- ☠️ **Mặc định nằm ở phía AN TOÀN:** `hienCho` khai sẵn `{ tinhtuoi: 'super' }` ngay
+  trong code. Bảng chưa có dòng / chưa có cột / mạng lỗi → vẫn KHÔNG lọt xuống sale.
+  Nếu để mặc định `all` thì mọi đường hỏng đều hỏng về phía lộ hàng.
+- Đọc bảng có **bước lùi**: `select ... hien_cho` lỗi thì thử lại bộ cột cũ — chưa chạy
+  migration cũng không trắng menu.
+- `members.js`: dải 3 nấc trong tab "Khoá mục". Nới ra mới hỏi lại (siết vào thì làm ngay).
+  Ghi xong **đọc lại giá trị thật** rồi mới vẽ (bài học 31/07: 204 ≠ đã ghi).
+- ⚠️ Nấc KHÁC Khoá, để hai hàng riêng: *"ai được thấy"* vs *"có đang tạm đóng không"*.
+
+**② Công cụ Tính tuổi bảo hiểm** — `js/tinhtuoi.js` (file mới), một dòng phẳng trên cây,
+vẽ vào `#doc-viewport` (có ô gõ chữ → không được nằm trong canvas).
+- **Quy tắc: AGE NEAREST BIRTHDAY, đo bằng THÁNG LỊCH.** Qua sinh nhật **hơn 6 tháng**
+  → +1. Đúng 6 tháng chẵn → giữ nguyên.
+- Lịch sử lưu **localStorage** (chủ tool chốt) — nó chứa ngày sinh khách hàng, không
+  đẩy lên máy chủ. Ô "đọc lại ngày ra chữ" để chặn lẫn MM/DD với DD/MM.
+- Hiện luôn **mốc đổi tuổi** ("từ 08/11/2026 trở đi sẽ tính lên 37") — sale biết còn
+  bao lâu nữa thì bậc phí đổi.
+
+**②b ☠️☠️ SUÝT GIAO BẢN LỆCH 1 TUỔI — bộ tự kiểm 9/9 ĐẠT mà vẫn sai**
+Bản đầu tôi tính "nửa năm" bằng **SỐ NGÀY** (so ngày đã qua với ngày còn lại, mốc
+182,5 ngày). Nghe hợp lý, tự viết 9 ca kiểm, **9/9 đạt**, đã định báo xong.
+Chủ tool cho phép điều khiển máy → chạy chính **bản forum của anh làm thước NGOÀI**,
+dò ranh giới ngày 10/08/2026:
+
+| Ngày sinh | Forum | Bản đo-bằng-ngày |
+|---|---|---|
+| 02/09/1990 | **37** | 36 ✗ |
+| 02/10/1990 | 36 | 36 ✓ |
+
+Vì 6 tháng lịch (10/02 → 10/08) chỉ có **181 ngày**, không phải 182,5. Hai cách lệch
+nhau vài ngày mỗi năm — mỗi ngày lệch là một khách bị báo **sai nguyên một bậc tuổi**,
+tức sai bậc phí gửi cho khách thật.
+→ Sửa sang đếm **tháng lịch** (kèm hàm kẹp cuối tháng: 31/08 + 6 tháng = 28/02).
+→ Đo lại: **13/13 khớp forum**, gồm cả 8 ca dò sát ranh giới 02/06→02/13.
+→ **Bài học (đúng luật 5d):** thước làm bằng cùng vật liệu với thứ nó đo thì luôn tự
+khen mình. 9/9 chỉ chứng minh "code làm đúng điều tôi nghĩ", không chứng minh "điều
+tôi nghĩ là đúng". Có bản đang chạy thật để so thì PHẢI so.
+
+**②c ĐỐI CHIẾU ĐẦY ĐỦ 35 CA với bản forum (chủ tool yêu cầu "test đầy đủ độ tuổi")**
+Điều khiển trình duyệt chạy bản forum, mốc "xong" lấy từ **bảng lịch sử dài thêm một
+dòng**, không phải hết giờ chờ (700ms là hụt, đã dính một lần).
+Phủ: 11 ngày sát ranh giới 02/06→02/16 · sinh nhật hôm qua/hôm nay/ngày mai · tuổi
+0→90 · sinh ngày 31 của 6 tháng · 29/02 (1992, 2000) · sinh trong tương lai.
+
+| Chỉ số | Kết quả |
+|---|---|
+| **Tuổi bảo hiểm** (số sale dùng báo giá) | **35/35 KHỚP** |
+| Tuổi thực | 33/35 — 2 ca lệch, **bản forum SAI** |
+
+☠️ **BA LỖI CỦA BẢN FORUM, đã đo, KHÔNG chép sang:**
+1. **Tuổi thực trừ mất 1 vào đúng ngày sinh nhật.** Sinh `08/10/1990`, hôm nay
+   10/08/2026 → forum ghi **35** (đúng phải 36). Sinh **đúng hôm nay** → forum ghi
+   tuổi thực **−1**. (Tuổi bảo hiểm của nó vẫn đúng, chỉ tuổi thực sai.)
+2. **"Ngày Tăng Tuổi" sớm hơn 1 ngày so với chính nó tính.** Sinh `02/10/1990` →
+   forum ghi *"Ngày Tăng Tuổi = Aug 10, 2026"* (tức hôm nay) mà tuổi bảo hiểm vẫn
+   **36**. Nghĩa là đúng ngày đó tuổi CHƯA đổi. Bản này lấy **ngày hôm sau** —
+   ngày con số thật sự đổi. Số ngày đếm ngược thì trùng khớp (146 = 146).
+3. **Sinh 29/02 bị cộng 7 tháng thay vì 6.** Sinh `02/29/1992` → forum ghi ngày tăng
+   tuổi **Sep 29, 2026**; đúng phải **Aug 29, 2026** (sinh nhật quy về 28/02 + 6 tháng).
+   Lệch một tháng, tức có nguyên một tháng bản forum báo thấp hơn một tuổi.
+→ Đã báo chủ tool cả ba, để anh quyết có sửa bên forum không.
+
+**②d Thêm "Ngày tăng tuổi" vào giao diện** (bản forum có, bản đầu của tôi thiếu):
+ngày đầu tiên khách được tính tuổi mới + số ngày còn lại, **dưới 30 ngày thì đổi màu
+cảnh báo** — sale nhìn màu là biết nên chốt trước khi khách nhảy bậc phí.
+⚠️ Ca đã lên tuổi rồi thì mốc kế tiếp phải lấy ở **chu kỳ sau** (sinh nhật tới + 6
+tháng); không có nhánh này là hiện ra một ngày trong quá khứ. Đã kiểm 35/35: không ca
+nào rơi vào quá khứ.
+
+**②f KIỂM VÉT CẠN 102.347 PHÉP TÍNH — vì "khớp forum" KHÔNG phải bằng chứng**
+Chủ tool: *"anh cần test lại xem có đúng không, vì sale mà nhập sai số tuổi bảo hiểm
+là nguy hiểm"*. Đúng — và 35/35 khớp forum **không chứng minh gì**, vì chính bản forum
+đã bị bắt 3 lỗi. Nên bỏ hẳn forum làm chuẩn, chuyển sang **cho hai bản cài đặt độc lập
+cãi nhau** (`scripts/kiem-tinh-tuoi.js`, giữ trong repo để chạy lại):
+- A = bản thật (cộng ngày tháng bằng `Date`)
+- B = viết lại theo cách khác hẳn (đếm số tháng trọn + số ngày lẻ)
+
+| Lớp | Số ca | Lệch |
+|---|---|---|
+| Mọi ngày sinh trong 100 năm (1 ngày tính) | 36.747 | 0 |
+| 89 ngày sinh × 800 ngày tính liên tiếp | 65.600 | 0 |
+| "Ngày tăng tuổi": đúng hôm đó số PHẢI đổi, hôm trước PHẢI chưa | 1.773 | 0 |
+
+☠️ **Lần chạy đầu ra 8 lệch, TẤT CẢ là sinh 29/02 — và đó là THƯỚC sai, không phải
+sản phẩm sai.** Bản B hiểu sinh nhật năm thường là 01/03, bản A hiểu là 28/02; thêm
+một lỗi nữa trong B là neo mốc 6 tháng theo `ns.ngay` thô (29) thay vì ngày đã kẹp (28).
+Chủ tool chốt **28/02** → sửa B, KHÔNG sửa A. Chạy lại: Lớp 1 vẫn 0 lệch như trước
+(bằng chứng là sửa thước chứ không nới chuẩn), Lớp 2 từ 8 → 0.
+
+**②g HAI LUẬT CHỦ TOOL CHỐT (đã ghi vào `CLAUDE.md` mục 2b-ter):**
+1. **Cả 3 hãng AIG · NLG · Allianz đều dùng `age nearest birthday`** → chỉ một quy tắc,
+   không cần chọn hãng. (Đây là rủi ro LỚN NHẤT đã nêu ra: nếu có hãng dùng
+   `age last birthday` thì sai với **hầu hết** khách, không phải vài ca hiếm.)
+2. **Sinh 29/02, năm không nhuận → sinh nhật là 28/02.**
+
+**②h Đổi icon mục Tính tuổi** — bản đầu chồng đồng hồ vào góc lịch, chủ tool gạch
+(*"icon này xấu quá"*): ở cỡ 18px hai hình đè nhau thành một cục. Nay là lịch trơn.
+Đo số nét cả 6 icon: Brochure 2 · SMS 3 · **Tính tuổi 4** · Name Card 4 · Proposal 5 ·
+Compare 5 — nay nằm đúng giữa bộ.
+
+**②e Sửa một lỗi luồng khởi động — suýt làm chủ tool không thấy gì**
+`napKhoaMuc` bản đầu chỉ trả `true` (⇒ vẽ lại cây) khi "có gì đó khác mặc định".
+Nhưng ca hay gặp nhất là **bảng CHƯA có dòng cho mục mới** → vòng lặp không chạm tới
+nó → không có gì "khác" → **không vẽ lại** → mục vẫn bị giấu theo lần vẽ đầu (lúc đó
+chưa biết vai trò). Super Admin sẽ không bao giờ thấy tính năng mình đang xây.
+→ Nay **luôn** trả `true`. Vẽ lại cây rất rẻ, đổi lấy việc bỏ hẳn một loại lỗi.
+→ Đo bằng cách giả lập đúng luồng thật (chưa chạy SQL, chưa có cột `hien_cho`):
+Super Admin thấy 6 mục · Nhân viên thấy 5 · Admin sau khi chạy SQL vẫn 5.
+
+**③ Đo bằng số**
+- **Cổng quyền:** giả lập 4 vai trò → `user`/`admin`/chưa-biết đều **KHÔNG** thấy mục,
+  chỉ `super_admin` thấy. Vẽ lại cây để xác nhận mục biến mất thật, không phải chỉ ẩn CSS.
+- **Tính tuổi: 9/9 ca đạt**, gồm đúng ca thật trên ảnh chủ tool chụp (07/02/1998 → 28/28),
+  sinh nhật hôm nay, ngày mai, vượt ngưỡng nửa năm (183>182 → +1), 29/02, bé mới sinh.
+  7 chuỗi ngày sai định dạng đều bị từ chối.
+- ☠️ **Một ca "trượt" hoá ra là THƯỚC SAI, không phải sản phẩm sai:** tôi ghi kỳ vọng
+  "qua sinh nhật 6 tháng lịch → +1", nhưng nửa năm tính theo NGÀY là 182,5 — 182 ngày
+  vẫn chưa quá nửa. Sửa kỳ vọng, không sửa code. (Lại đúng luật "số đo vô lý thì nghi
+  công cụ đo trước".)
+- Không phá 3 luồng cũ: rời Tính tuổi sang SMS/Proposal đều thoát `doc-mode` đúng;
+  quay lại vẫn giữ lịch sử. Bố cục không tràn ngang, sáng/tối đều đọc được. 0 lỗi console.
+
+**④b BẢNG PHÍ TERM LIFE — ĐÃ LẤY VỀ VÀ KIỂM TRÉO XONG** → `scripts/bang-phi-termlife-nlg.txt`
+Nguồn: Google Sheet *"2. Bảng giá quote Term life NLG - Final"* chủ tool gửi (do **sếp
+của chủ tool làm và kiểm tra** → là chuẩn, không được tự sửa).
+
+☠️ **CHỈ DÙNG 5 SHEET CÓ TIỀN TỐ "NEW".** File có cả bản cũ. Đối chiếu với forum:
+NEW khớp 100%, bản cũ lệch hẳn (Male 35/250k: NEW `20.90/25.74/30.14/42.90` ·
+cũ `19.36/24.64/27.94/43.78`). Lấy nhầm sheet = báo sai phí cho khách.
+
+☠️ **THỨ TỰ 4 CỘT = 10/15/20/30 NĂM — sheet KHÔNG ghi nhãn.** Xác định bằng đối chiếu
+forum, không phải đoán. Đoán sai thứ tự thì mọi số đều sai mà nhìn vẫn "hợp lý".
+
+☠️ **MỖI SHEET MỘT BỐ CỤC KHÁC NHAU — tôi đã suy từ 1 sheet ra cả 5 và LẤY SAI 3 sheet.**
+Phát hiện vì thấy 3 sheet chỉ ra 15 số/dòng trong khi sheet đầu ra 44. Bộ đọc phải
+đọc header của TỪNG sheet, không được dùng chung.
+
+| Sheet (NEW) | Mệnh giá có bảng | Tuổi | Ô trống |
+|---|---|---|---|
+| MALE - SNTBC | 11 mức (100k…500k, 750k, 1M) | 20–54 | 0 |
+| MALE - STBC | **chỉ 100k · 300k · 500k** | 30–70 | 75 |
+| MALE - ENTBC1 | **chỉ 100k · 300k · 500k** | 30–54 | 0 |
+| FEMALE - SNTBC | 11 mức | 20–54 | 0 |
+| FEMALE - ENTBC1 | **chỉ 100k · 300k · 500k** | 30–54 | 0 |
+| FEMALE - STBC | **KHÔNG CÓ SHEET** — sếp chủ tool **cố ý**, không phải thiếu sót | — | — |
+
+**Số kỳ hạn giảm dần theo tuổi** (sheet STBC): 30–50 đủ 10/15/20/30 · 51–65 mất 30 năm ·
+66–70 chỉ còn 10+15. Là luật sản phẩm của hãng, không phải dữ liệu thiếu.
+Khối cột 600k/700k/800k/900k toàn dấu `x` → chủ tool chốt **bỏ qua**.
+
+**HAI LỚP KIỂM CHỨNG (chủ tool: *"làm xong nhớ kiểm tra tréo"*):**
+1. **Tổng kiểm tra từng dòng** (mỗi dòng mang sẵn tổng các giá trị, đơn vị cent) →
+   **161/161 dòng khớp**, 4.172 ô, chứng minh không sai một con số nào khi chép.
+2. **Kiểm tréo với bản forum đang chạy** — 8 ca trải khắp 5 sheet + các ca biên
+   (tuổi nhỏ nhất/lớn nhất, mệnh giá lớn nhất, ca mất kỳ hạn 30 năm, ca chỉ còn
+   10+15 năm) → **8/8 khớp**.
+3. Thêm: **cấu tạo nút của forum khớp đúng vùng dữ liệu** — chọn STBC/ENTBC1 thì forum
+   chỉ hiện 3 nút mệnh giá; chọn Female thì nút STBC bị khoá. Xác nhận chéo bố cục sheet.
+
+**CHỦ TOOL CHỐT VỀ GIAO DIỆN:** tổ hợp không có số thì **ẩn/làm mờ nút** (giống forum),
+KHÔNG cho bấm rồi báo lỗi.
+
+**Không lấy được bằng đường tự động — ghi để phiên sau khỏi thử lại:**
+`localhost` bị CSP của Google chặn (thử cả preflight Private Network Access) ·
+kênh trả về của trình duyệt chỉ ~1KB/lượt · base64 bị chặn · **moi khoá API từ bundle
+của forum thì bị hệ thống chặn — và chặn đúng, đừng tìm cách lách.**
+Đường đi được: render dữ liệu gọn ra `<pre>` trong trang rồi đọc bằng `get_page_text`.
+
+**④ CÒN TREO — Quote Calculator.** Đã KHẢO SÁT XONG bản forum (chủ tool cho điều khiển
+máy). Cấu tạo thật, ghi lại để khỏi khảo sát lại:
+- Nó là **BẢNG TRA, không phải công thức**. Nguồn: file **Excel** chủ tool tải lên,
+  **mỗi sheet là một cặp (Giới tính – Hạng sức khoẻ)** — tên sheet dạng `"Male - NTBC"`,
+  `"Female - EX1"`. **Cột đầu = Age**, các cột sau = **face amount** ($100,000, $125,000…),
+  ô giao nhau = phí.
+- **Hai chương trình tách riêng**: IUL và TERM Life, mỗi cái một file Excel.
+- ☠️ **Term-Life trả về BỐN con số, không phải một**: phí/tháng của kỳ hạn
+  **10 / 15 / 20 / 30 năm**. Thiết kế giao diện phải chừa chỗ cho 4 dòng.
+- Face amount trên giao diện: 100k · 150k · 200k · 250k · 300k · 350k · 400k · 450k ·
+  500k · 750k · 1M. Hạng sức khoẻ: **SNTBC · STBC · ENTBC1**.
+- Còn một bộ **Mapping Data** (Age, Gender, HealthStatus, FaceAmount → `PDF_Link`,
+  `CSV_Link`) — link tới bản minh hoạ. Chưa rõ chủ tool có cần mang về không.
+- Dữ liệu nằm trong Supabase RIÊNG của forum (bảng `quote_pricing_data`,
+  `quote_lookup_data`), localStorage rỗng → **không lấy được từ trình duyệt**.
+
+**3 kết quả mẫu THẬT lấy từ forum 10/08/2026** (Term-Life) — dùng làm thước đối chiếu
+khi làm xong:
+
+| Tuổi | Mệnh giá | Giới | Sức khoẻ | 10 năm | 15 năm | 20 năm | 30 năm |
+|---|---|---|---|---|---|---|---|
+| 35 | 250.000 | Female | SNTBC | 18,26 | 22,00 | 25,52 | 35,20 |
+| 35 | 250.000 | Male | SNTBC | 20,90 | 25,74 | 30,14 | 42,90 |
+| 45 | 500.000 | Male | SNTBC | 70,84 | 89,32 | 113,52 | 179,52 |
+
+**CẦN CHỦ TOOL GỬI: hai file Excel bảng phí (IUL + TERM)** đã tải lên forum. Panel
+"Manage Data" chỉ có nút tải LÊN, không có chỗ tải XUỐNG. Không tự dựng số:
+luật số liệu bảo hiểm ở `CLAUDE.md` mục 2.
+
+---
+
+### 2026-08-10 — ĐIỀU KHOẢN MỚI: tính năng mới phát hành theo 3 NẤC QUYỀN.
+
+Chủ tool: *"các tính năng mới sẽ được build dưới quyền super admin — sau khi hoàn chỉnh
+và test xong mới được cho admin và user thấy"*.
+
+Nấc 1 chỉ `super_admin` → chủ tool duyệt → nấc 2 thêm `admin` (11 người) → dùng thật
+vài ngày → nấc 3 thêm `user` (77 sale). **Áp cho MỌI tính năng mới, không ngoại lệ.**
+Lý do: sale đang dùng tool với khách hàng THẬT — tính năng nửa vời lọt xuống họ là bản
+vẽ sai gửi tới khách, không phải "lỗi nhỏ sửa sau".
+
+Đã ghi vào **`CLAUDE.md` mục 2b-bis** (tự nạp mỗi phiên) + `conventions.md`.
+
+**Ba chỗ dễ làm sai, ghi rõ để phiên sau không vấp:**
+1. `khoa_muc` **KHÔNG dùng được** — `napKhoaMuc` return sớm khi `role !== 'user'`, nên
+   admin/super admin luôn thấy. Muốn "chỉ super admin thấy" phải có cổng riêng.
+2. **Ẩn ở giao diện ≠ chặn.** Có đọc/ghi dữ liệu thì phải chặn cả ở RLS.
+3. **Lên nấc phải là một cú BẤM**, không phải sửa code + push (đúng lý do đã đẻ ra tab
+   "Khoá mục" hôm nay).
+
+**Trạng thái:** mới là ĐIỀU KHOẢN, **chưa có cơ chế**. Chưa xây vì chưa biết tính năng
+đầu tiên là gì — xây một cái cổng không có gì để gác là đoán mò. Hướng đề xuất khi cần:
+thêm cột `hien_cho` (`super` | `admin` | `all`) vào chính bảng `khoa_muc`, tab "Khoá mục"
+đổi từ công tắc 2 nấc thành 3 nấc.
+
+---
+
 ### 2026-08-10 — MỤC THỨ 5 TRÊN MENU: "SMS / Tin nhắn mẫu" (v1.40). ⏳ CHƯA PUSH.
 
 Chủ tool: *"anh cần tạo một mục mới ở thanh menu — đây là một hình tab mới,

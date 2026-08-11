@@ -1,0 +1,440 @@
+{
+  "_doc": "PDF minh hoa cua hang (National Life Group - FlexLife IUL) tren Drive cua sep chu tool. Moi file la MOT to hop cu the.",
+  "_nguon": "Drive salesdeptdrt@gmail.com, chia se voi chu tool. Thu muc '1. Quote S&P 500 - IUL 2025'.",
+  "_ngayLay": "2026-08-10",
+  "_kiemChung": [
+    "MO FILE RA DOC: noi dung la 'FlexLife - INDEXED UNIVERSAL LIFE - Life Insurance Illustration ... For SAMPLE QUOTE' = ban minh hoa chinh thuc cua hang, ten khach la SAMPLE QUOTE (khong phai nguoi that).",
+    "DOI CHIEU SO: phi ghi trong TEN FILE khop 8/8 voi public/data/bang-phi-iul.json. Ke ca file 15 nam (45t/100k = $180).",
+    "☠️ BAI HOC 10/08/2026: ban truoc toi gan nham 4 file trong thu muc 'File Thanh pham' chi vi TEN KHOP. Do la ban bao gia da dien ten khach that. Khop ten KHONG phai la kiem - phai mo ra doc."
+  ],
+  "_luuY": [
+    "Khoa = CHUONGTRINH|KYHAN|GIOI|SUCKHOE|TUOI|MENHGIA",
+    "8 file duoi day duoc SEP CHIA SE TRUC TIEP voi chu tool nen co ID -> tai thang 1 buoc.",
+    "Con lai (hang nghin file) nam trong thu muc chia se; Drive API cua tool KHONG duyet duoc thu muc kieu do, chi thay file chia se truc tiep. Vi vay dung 'thuMuc' ben duoi: mo dung thu muc tren Drive, sale chon tiep nhom > menh gia > tuoi.",
+    "Them file moi co ID: dat ten dung mau roi them mot dong vao 'file'."
+  ],
+  "_camKhongDuocLam": [
+    "KHONG dung link tim kiem Drive (drive.google.com/drive/search?q=...) de nham file. DA DO 10/08/2026: to hop 20 nam ra dung, nhung 15 nam ra RONG voi cung cach viet; con neu bo ngoac kep thi tra ve hang chuc file SAI to hop (43T, 42T, 15T... va ca 20YRS khi dang tim 15YRS). Trong co ve chay duoc, thuc te dua nham ban minh hoa cho khach.",
+    "KHONG suy ID file tu ten file. Khong co quy luat nao."
+  ],
+  "_cauTrucDrive": {
+    "goc": "1. NLG - IUL > 1. Quote S&P 500 - IUL 2025",
+    "tang": "CHUONG TRINH (20/15 NAM) > nhom (Female-NTBC, Male-NTBC, Male-TBC, Female-EX1, Male-EX1) > menh gia ($100,000...) > file theo tuoi (moi tuoi mot cap .pdf + .csv)",
+    "tenFile": "{Male|Female} - {NTBC|TBC|EX1} - {tuoi}T - ${menhGia} - ${phi} - {20|15}YRS",
+    "canhBaoDinhDang": "Phi trong ten file KHONG nhat quan: 20 nam ghi $612.60 (2 chu so), nhung co file ghi $180 (khong .00). Dung dua dinh dang phi vao bat ky phep khop tu dong nao."
+  },
+  "thuMuc": {
+    "IUL|20": {
+      "id": "12bHymJj1ydjOBKztpSR1kvsCnIjpYPmd",
+      "ten": "1. CHUONG TRINH 20 NAM"
+    },
+    "IUL|15": {
+      "id": "1aCIMJKXu8zBcTHMIt0kFbsN-F89u8aBr",
+      "ten": "2. CHUONG TRINH 15 NAM"
+    },
+    "IUL|20|FEMALE|NTBC": {
+      "id": "1uPCOkeOSZWdpTXY9A8kn4AZVCZynM-_3",
+      "ten": "1. Female - NTBC (20 nam)"
+    },
+    "IUL|20|MALE|NTBC": {
+      "id": "1CqbaIouY-VvNsvEVB0dyEkf26Dg78e-D",
+      "ten": "2. Male - NTBC (20 nam)"
+    },
+    "IUL|20|MALE|TBC": {
+      "id": "1hHQkAt002aTrG5iOBBN9t5cP7ZJ6mlhC",
+      "ten": "3. Male - TBC (20 nam)"
+    },
+    "IUL|20|FEMALE|EX1": {
+      "id": "1_yyWF0aoyctJb6dMRdTG5n2RsR5Iu110",
+      "ten": "4. Female - EX1 (20 nam)"
+    },
+    "IUL|20|MALE|EX1": {
+      "id": "1kYAU9fI1jHU9tofkbPXUa2BcYjz9jk6R",
+      "ten": "5. Male - EX1 (20 nam)"
+    },
+    "IUL|15|FEMALE|NTBC|100000": {
+      "id": "1zkNOmPcDnFtti7z8o6NeIidPkvgCbkXg",
+      "ten": "$100,000 (FEMALE NTBC, 15 nam)"
+    },
+    "IUL|15|FEMALE|NTBC|150000": {
+      "id": "1R-gBVM7Vg7ifxam860kO3Nf_gU9lsCZ9",
+      "ten": "$150,000 (FEMALE NTBC, 15 nam)"
+    },
+    "IUL|15|FEMALE|NTBC|200000": {
+      "id": "1w51dybegAUjyW2mBtDBTeZ2oakSEEFk-",
+      "ten": "$200,000 (FEMALE NTBC, 15 nam)"
+    },
+    "IUL|15|FEMALE|NTBC|250000": {
+      "id": "1PvGeA7aOt3Uc1wfKoQY55IK4FqoTM51Y",
+      "ten": "$250,000 (FEMALE NTBC, 15 nam)"
+    },
+    "IUL|15|FEMALE|NTBC|300000": {
+      "id": "1UgaRaWZRGy7VLQuD-KVxY0dje7Yeenh4",
+      "ten": "$300,000 (FEMALE NTBC, 15 nam)"
+    },
+    "IUL|15|MALE|NTBC|100000": {
+      "id": "1niYA26vjOwc2ap2GAVbul0gad58lipOS",
+      "ten": "$100,000 (MALE NTBC, 15 nam)"
+    },
+    "IUL|15|MALE|NTBC|150000": {
+      "id": "1RTJpj3rScas1Sa1MMjbGMiGv0FKSq5lC",
+      "ten": "$150,000 (MALE NTBC, 15 nam)"
+    },
+    "IUL|15|MALE|NTBC|200000": {
+      "id": "1S9_lQzCpdnF765NPzR_P2pwcOwkxgKv5",
+      "ten": "$200,000 (MALE NTBC, 15 nam)"
+    },
+    "IUL|15|MALE|NTBC|250000": {
+      "id": "1ZZ0qgALD7xeBfuL9s-J2Co-QACiPRz7X",
+      "ten": "$250,000 (MALE NTBC, 15 nam)"
+    },
+    "IUL|15|MALE|NTBC|300000": {
+      "id": "1B1h8PfX-z6AeRM4idQNTW159qy2mjswk",
+      "ten": "$300,000 (MALE NTBC, 15 nam)"
+    },
+    "IUL|20|FEMALE|EX1|100000": {
+      "id": "1W8mqjgFeQ-urkRQ8cTeFsVTR8t2rpfI7",
+      "ten": "$100,000 (FEMALE EX1, 20 nam)"
+    },
+    "IUL|20|FEMALE|EX1|150000": {
+      "id": "1SyQCx0KGYSi-i8wcuF7JaMpr7h8u58m_",
+      "ten": "$150,000 (FEMALE EX1, 20 nam)"
+    },
+    "IUL|20|FEMALE|EX1|250000": {
+      "id": "1biCWSWVBHygNARh8cw5kHyXwKDZXSnwX",
+      "ten": "$250,000 (FEMALE EX1, 20 nam)"
+    },
+    "IUL|20|FEMALE|EX1|400000": {
+      "id": "1pqV3E9q1ddrF8ZYUqgckE1TZO319fQe2",
+      "ten": "$400,000 (FEMALE EX1, 20 nam)"
+    },
+    "IUL|20|FEMALE|EX1|500000": {
+      "id": "1SL0tRtX89rD6V_IYtSfUd7Xqpq22tgkN",
+      "ten": "$500,000 (FEMALE EX1, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|100000": {
+      "id": "1bnD_8nu79Tu8zHyIK1-_8dLhybT5-8Mx",
+      "ten": "$100,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|125000": {
+      "id": "1_0lOb2IDX-c3ZLGLAdaPJYwL4FryUxH-",
+      "ten": "$125,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|150000": {
+      "id": "12FpeZVAPP8v5PX-QMlwvnkU1cuTjIzjz",
+      "ten": "$150,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|175000": {
+      "id": "15198bniQeB0ynpKpycj51qVy63AHCEv6",
+      "ten": "$175,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|200000": {
+      "id": "16FD8RhJfg839aDVWatiMtlwn6WitMz8E",
+      "ten": "$200,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|225000": {
+      "id": "1GNNtnR8olp-diTwT3SAxY9Uqs8Mu0S-n",
+      "ten": "$225,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|250000": {
+      "id": "1LkPhS7e-OrIFKm7Eill9qsCxQdt460fU",
+      "ten": "$250,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|275000": {
+      "id": "1lhI2DXLvv7nlMBmxFs98nrZ4UtjNMevG",
+      "ten": "$275,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|300000": {
+      "id": "1Ty3IdV6XUF711faytNSFd0wzinK4W7bD",
+      "ten": "$300,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|325000": {
+      "id": "1qVhmkdcRWji8R-DUSyG7AIra5E_vrIxY",
+      "ten": "$325,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|350000": {
+      "id": "15SUu3cS1yw7Tu6DJJvwsAgFWLJR98w03",
+      "ten": "$350,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|375000": {
+      "id": "1j9cj89y_NTCfE-6FF6m9rVNRPEAd8it2",
+      "ten": "$375,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|400000": {
+      "id": "1uRylon2yZ9uog4lnZEMVU8yiSb2_lyoW",
+      "ten": "$400,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|425000": {
+      "id": "1bjmnilzGKih5ruSbJXWNKs6OZAfj4pOf",
+      "ten": "$425,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|450000": {
+      "id": "17fBvwJew8RgoG1dgr8A_6THzKiy62k32",
+      "ten": "$450,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|475000": {
+      "id": "1E-GrlyBqqaJWFCnefxOd_vVBP9SFsCS0",
+      "ten": "$475,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|500000": {
+      "id": "1h2VA_8w0GCvg7e8EV384p7aDSNoBTDb3",
+      "ten": "$500,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|525000": {
+      "id": "1iE7Ff0PgB66P8pwPomO4UV9vg2xJyoEu",
+      "ten": "$525,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|550000": {
+      "id": "18rWgzE_o67XSStU-OuvBxOR-Dp9FAafs",
+      "ten": "$550,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|575000": {
+      "id": "1XDp8mMF5Ee2sw9666lGxRejDr5RW5qjK",
+      "ten": "$575,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|600000": {
+      "id": "1iJcWt3zLX2fr5u8jqhNi4WleDplWyJPz",
+      "ten": "$600,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|625000": {
+      "id": "1Qx-qvECZvp9McPoPVFP8ImBm2VkKR9Sf",
+      "ten": "$625,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|650000": {
+      "id": "1-dNzuuWMxwOxUyqY-B0UY4wKI7mTZdon",
+      "ten": "$650,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|675000": {
+      "id": "1p9kJaE0x6cRUBtpgHhjzPzo3a3IYm5kh",
+      "ten": "$675,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|700000": {
+      "id": "1rTuQ4DIMC66urKPJnjo3QrHs3x6BJIKH",
+      "ten": "$700,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|725000": {
+      "id": "1IUYvULQ_hsMEEbYzi4kzy_BbeeVeJ9TP",
+      "ten": "$725,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|750000": {
+      "id": "1oD8Wx_sxZoB63-OUxS1B1uWVl1Tqq5kr",
+      "ten": "$750,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|775000": {
+      "id": "1pe2idR9jyYa59iF5hjeBO9yUsX3IZQhu",
+      "ten": "$775,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|800000": {
+      "id": "1RhpK9DDHQmfqJi2ZRXANgAWT0XnDdzLQ",
+      "ten": "$800,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|825000": {
+      "id": "1XJzmc7F91g41-qQFFT051xWh0bNawqDQ",
+      "ten": "$825,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|850000": {
+      "id": "1rdZfr_jTqZTbIQXqcK3ZrOVp2VE5mj_x",
+      "ten": "$850,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|875000": {
+      "id": "1xZTNGCspInzJFadQR1eqwhrkXBNs7rjQ",
+      "ten": "$875,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|FEMALE|NTBC|1000000": {
+      "id": "15_D4TyFQDjzBhL1QK8f_qPm0CN280io9",
+      "ten": "$1,000,000 (FEMALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|EX1|100000": {
+      "id": "1US2N64Ob6m3QQlF1D_laT1Te41oIwoeR",
+      "ten": "$100,000 (MALE EX1, 20 nam)"
+    },
+    "IUL|20|MALE|EX1|150000": {
+      "id": "15zZvRheJuuMXg2CYiCcKLftDZWlLrJS1",
+      "ten": "$150,000 (MALE EX1, 20 nam)"
+    },
+    "IUL|20|MALE|EX1|250000": {
+      "id": "1_t8A9P-3S5A9OWaR4C2u5c2irIogrfFK",
+      "ten": "$250,000 (MALE EX1, 20 nam)"
+    },
+    "IUL|20|MALE|EX1|300000": {
+      "id": "1AyqQgRhvsvkhq-H5vN-O_cD6sy74T5dY",
+      "ten": "$300,000 (MALE EX1, 20 nam)"
+    },
+    "IUL|20|MALE|EX1|350000": {
+      "id": "1z9bc7WrBkuSkrFbgyFlqtxqXn42JYm-l",
+      "ten": "$350,000 (MALE EX1, 20 nam)"
+    },
+    "IUL|20|MALE|EX1|500000": {
+      "id": "1VAiZQxR4R-ETZXtWgIc0fHsxZbCdw9wD",
+      "ten": "$500,000 (MALE EX1, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|100000": {
+      "id": "1OL4kLm2CihYd3rRajKsrTFKPrkRryZqF",
+      "ten": "$100,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|125000": {
+      "id": "1a934D5Ad3Oun6Kp6yYI3dMrqE3mSAOx8",
+      "ten": "$125,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|150000": {
+      "id": "1p91Cvsa4Lew0lpu25tonX_YVcIwoMmJ_",
+      "ten": "$150,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|175000": {
+      "id": "1wu1tWZ_AGUBXO93SKMe23hyWc7HVFTK_",
+      "ten": "$175,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|200000": {
+      "id": "1hvhrGzCsyL4IndyxfbxKUTIaX_4XfyOG",
+      "ten": "$200,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|225000": {
+      "id": "1rtGzaDm7f_m2fsjDQFJV2RaSUmi7GOgR",
+      "ten": "$225,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|250000": {
+      "id": "1R0xwhSSLy32bM-uEY7BuKGERirvt_dzG",
+      "ten": "$250,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|275000": {
+      "id": "1Xg-WPhjmVbkyYddGT65jGU-pEZnNwG5B",
+      "ten": "$275,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|300000": {
+      "id": "1BQViZxNbDArrwXT0y1pXq6J2nWSXaYvh",
+      "ten": "$300,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|325000": {
+      "id": "1LhrEYyxdvsmoDhzy9PX7r_AT657j1UvC",
+      "ten": "$325,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|350000": {
+      "id": "1SYi5TCVRv6o7Ppwpx2Y4ea4QDSWVolc4",
+      "ten": "$350,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|375000": {
+      "id": "1j7WnhdX-KpcK4fktC4DVWBc4tiW-k0yl",
+      "ten": "$375,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|400000": {
+      "id": "14rQrG5b-WAxkTgqjqGunDLiPSa6ux0m_",
+      "ten": "$400,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|425000": {
+      "id": "11P9WM7-5hURslfFfhokQ4QtbZKqBYmFb",
+      "ten": "$425,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|450000": {
+      "id": "1WRvNN2sHTYk78NlPaW__gHR850jj8L8-",
+      "ten": "$450,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|475000": {
+      "id": "1thRI70Tmr3dK4awiY8VrTlJPuPC9DG5B",
+      "ten": "$475,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|500000": {
+      "id": "1IFnFS6FSLftcqYmqAehinuNFR4KHyp8C",
+      "ten": "$500,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|525000": {
+      "id": "1qX4SHoVlzZLHTES7mGiQmRTlqFHjisiZ",
+      "ten": "$525,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|550000": {
+      "id": "1a08FXeqGbMVDOO5-PF1u6rAcvqtYX3rj",
+      "ten": "$550,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|575000": {
+      "id": "1afpUqr9ickzzup2wEqXNXApm7wQV8YBp",
+      "ten": "$575,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|600000": {
+      "id": "1tajPJoKO1ukP9DcCh2PcRdlTPNDMSwlV",
+      "ten": "$600,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|650000": {
+      "id": "1WzMKji9Kl1o0lTIGMbAZiHnnJHC6Jlar",
+      "ten": "$650,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|700000": {
+      "id": "18QfuszMZKpJz6cDdI-hCGcDpwp5w4ekI",
+      "ten": "$700,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|800000": {
+      "id": "1vGvr3Ewu5ntuAcypYACU3arx117Bop79",
+      "ten": "$800,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|900000": {
+      "id": "1RaydgwvlR99Kib35wtJQWb1d7JyCK0yj",
+      "ten": "$900,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|NTBC|1000000": {
+      "id": "1o5EX5Jx3mdwj8TSnNnEWTDFcIXGB9vcQ",
+      "ten": "$1,000,000 (MALE NTBC, 20 nam)"
+    },
+    "IUL|20|MALE|TBC|100000": {
+      "id": "1vGifuBuBi78aTruTh_QFYLGLgtVSzl70",
+      "ten": "$100,000 (MALE TBC, 20 nam)"
+    },
+    "IUL|20|MALE|TBC|150000": {
+      "id": "1_TBpJqcfRxfrx2Py4kLUpH4dTsVWTh3h",
+      "ten": "$150,000 (MALE TBC, 20 nam)"
+    },
+    "IUL|20|MALE|TBC|250000": {
+      "id": "1SC-p7TxMXYf6fVYKBgZNvbNTZqoJllV5",
+      "ten": "$250,000 (MALE TBC, 20 nam)"
+    },
+    "IUL|20|MALE|TBC|300000": {
+      "id": "1EUjXndA48bbd-94c-Q5QOwo_BmVQMVAQ",
+      "ten": "$300,000 (MALE TBC, 20 nam)"
+    },
+    "IUL|20|MALE|TBC|350000": {
+      "id": "1OjA61b3XB8M_DNXzarkF_4-3OumGmyo4",
+      "ten": "$350,000 (MALE TBC, 20 nam)"
+    },
+    "IUL|20|MALE|TBC|500000": {
+      "id": "1xQMEmub8knEbYuQCC37zDmOEQ7ygJxas",
+      "ten": "$500,000 (MALE TBC, 20 nam)"
+    }
+  },
+  "_thuMucConThieu": "Da co 86 thu muc MENH GIA (Gemini liet ke 11/08/2026, kiem 6/6 mau bang get_file_metadata + doi chieu so menh gia voi bang phi). Nhung to hop chua co thi tu lui ve thu muc NHOM roi CHUONG TRINH.",
+  "_cachLayThemID": [
+    "Cach RE va CHAC nhat (11/08/2026): mo thu muc tren Drive bang trinh duyet DA DANG NHAP, luu trang lai thanh .html, roi doc ID tu file do.",
+    "Trong HTML, ID nam ngay TRUOC ten thu muc (trong khoang ~400 ky tu). ID Drive dai 33 ky tu; chuoi trong HTML co duoi '-0-16' la phan thua cua thuoc tinh, phai cat bo.",
+    "☠️ LUON KIEM LAI truoc khi tin: goi get_file_metadata voi tung ID - no tra ve TEN THU MUC. Ten khop thi moi dung. Da bat duoc bang cach nay: 3 ID trich tu HTML khop chinh xac 3 ID lay tay doc lap truoc do."
+  ],
+  "file": {
+    "IUL|20|FEMALE|NTBC|35|100000": {
+      "id": "1n8BpSKMwAmk86H3MmbHIsOAVCsPjt_h1",
+      "ten": "Female - NTBC - 35T - $100,000 - $86.80 - 20YRS.pdf"
+    },
+    "IUL|20|FEMALE|NTBC|35|300000": {
+      "id": "1sBoZTiuvZyTFto74W8eS5MpmaXg34g_R",
+      "ten": "Female - NTBC - 35T - $300,000 - $260.40 - 20YRS.pdf"
+    },
+    "IUL|20|FEMALE|NTBC|35|550000": {
+      "id": "1aFzry4-5Q7Qhhwp3_7XZn5c_Qd_OWaVx",
+      "ten": "Female - NTBC - 35T - $550,000 - $477.40 - 20YRS.pdf"
+    },
+    "IUL|20|FEMALE|NTBC|40|600000": {
+      "id": "1eh65uIuWPD0KzAL_h5Ncfisg7qr8OAB_",
+      "ten": "Female - NTBC - 40T - $600,000 - $661.80 - 20YRS.pdf"
+    },
+    "IUL|20|FEMALE|NTBC|42|250000": {
+      "id": "1iXSfTXcfytxDIFb5DrgD0divM70e5UB6",
+      "ten": "Female - NTBC - 42T - $250,000 - $308.25 - 20YRS.pdf"
+    },
+    "IUL|20|FEMALE|NTBC|50|100000": {
+      "id": "13J6SdHo-GxhJTpcI1FtkFmDPFt5qjHMd",
+      "ten": "Female - NTBC - 50T - $100,000 - $190.50 - 20YRS.pdf"
+    },
+    "IUL|20|FEMALE|NTBC|50|500000": {
+      "id": "1qM1z6J0ccawxklYpNLmRFD_SpqYkLmZF",
+      "ten": "Female - NTBC - 50T - $500,000 - $952.50 - 20YRS.pdf"
+    },
+    "IUL|15|FEMALE|NTBC|45|100000": {
+      "id": "1f_ErmOLz49oILrt7Av2kDRXWIVv_SV-D",
+      "ten": "Female - NTBC - 45T - $100,000 - $180 - 15YRS.pdf"
+    }
+  }
+}

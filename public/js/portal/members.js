@@ -1001,6 +1001,8 @@
     $('tab-usage').addEventListener('click', function () { doiTab('usage'); });
     $('tab-khoa').addEventListener('click', function () { doiTab('khoa'); });
     $('khoa-list').addEventListener('click', function (e) {
+      const nacNut = e.target.closest('[data-nac]');
+      if (nacNut) { doiNac(nacNut.getAttribute('data-nac-muc'), nacNut.getAttribute('data-nac')); return; }
       const b = e.target.closest('[data-bat]');
       if (!b) return;
       const ma = b.getAttribute('data-bat');
@@ -1024,23 +1026,8 @@
     });
     // Bấm dòng "Tải về" → popup chi tiết tải gì
     $('uk-download-row').addEventListener('click', moChiTietTaiVe);
-    // Bấm SỐ ở cột "Lần tải" của một người → cùng popup đó nhưng lọc sẵn tên họ.
-    // Dùng lại ô tìm + locChiTietTaiVe() có sẵn, không dựng thêm đường lọc thứ hai.
-    $('usage-rows').addEventListener('click', function (e) {
-      const nut = e.target.closest('.ur-dl-btn');
-      if (!nut) return;
-      moChiTietTaiVe();
-      const ten = nut.getAttribute('data-ten') || '';
-      if (ten) { $('dl-search').value = ten; locChiTietTaiVe(); }
-      // Chỉ một người thì bung luôn danh sách — bấm vào số rồi còn phải bấm thêm
-      // một lần nữa mới thấy là thừa một bước.
-      const hien = Array.prototype.filter.call(
-        $('dl-rows').querySelectorAll('.dl-group'), function (g) { return g.style.display !== 'none'; });
-      if (hien.length === 1) {
-        const nutNguoi = hien[0].querySelector('.dl-per');
-        if (nutNguoi && nutNguoi.getAttribute('aria-expanded') !== 'true') nutNguoi.click();
-      }
-    });
+    // ☠️ Bộ nghe cho `#usage-rows` GỠ 10/08/2026 cùng bảng "Theo từng người".
+    // Popup chi tiết tải về vẫn mở được qua thẻ tổng `#uk-download-row`.
     // Bấm tên người → bung/gập danh sách lượt tải của người đó; bấm 👁 → bung "đã điền gì"
     $('dl-rows').addEventListener('click', function (e) {
       const per = e.target.closest('.dl-per');
@@ -1063,14 +1050,10 @@
     $('dl-search').addEventListener('input', locChiTietTaiVe);
     $('dl-close').addEventListener('click', dongChiTietTaiVe);
     $('dl-backdrop').addEventListener('click', function (e) { if (e.target === $('dl-backdrop')) dongChiTietTaiVe(); });
-    // Thanh "đang online" → mở modal chi tiết
-    $('online-bar').addEventListener('click', moOnlineModal);
-    $('online-close').addEventListener('click', dongOnlineModal);
-    $('online-backdrop').addEventListener('click', function (e) { if (e.target === $('online-backdrop')) dongOnlineModal(); });
+    // ☠️ Thanh "đang online" + hộp thoại của nó GỠ 10/08/2026.
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
       if ($('dl-backdrop').classList.contains('open')) dongChiTietTaiVe();
-      if ($('online-backdrop').classList.contains('open')) dongOnlineModal();
     });
   }
 
@@ -1088,8 +1071,6 @@
       if (nut) { nut.classList.toggle('is-on', dang); nut.setAttribute('aria-selected', String(dang)); }
       if (panel) panel.style.display = dang ? 'block' : 'none';
     });
-    // "đang online" chỉ chạy khi đang xem tab Đo lường — đừng ping khi không ai nhìn
-    if (which === 'usage') batDauOnline(); else dungOnline();
     if (which === 'usage' && !usageLoaded) { usageLoaded = true; taiDoLuong(); }
     if (which === 'khoa') taiKhoaMuc();
   }
@@ -1102,15 +1083,30 @@
   const MUC_KHOA = [
     { ma: 'proposal', ten: 'Proposal / Báo giá',        mo: 'Mẫu báo giá 4 hãng — phần sale dùng nhiều nhất' },
     { ma: 'brochure', ten: 'Brochure / Tài liệu',       mo: 'Thư viện tài liệu tải về' },
+    { ma: 'appform',  ten: 'Application Form / Biểu mẫu', mo: 'Biểu mẫu đăng ký của các hãng' },
     { ma: 'namecard', ten: 'Name Card / Danh thiếp',    mo: 'Mẫu danh thiếp cá nhân' },
     { ma: 'compare',  ten: 'Compare / So sánh quyền lợi', mo: 'Bảng so sánh 16 hãng' },
-    { ma: 'sms',      ten: 'SMS / Tin nhắn mẫu',         mo: 'Ảnh tin nhắn mẫu sale gửi khách' }
+    { ma: 'sms',      ten: 'SMS / Tin nhắn mẫu',         mo: 'Ảnh tin nhắn mẫu sale gửi khách' },
+    { ma: 'tinhtuoi', ten: 'Age / Tính tuổi bảo hiểm',   mo: 'Nhập ngày sinh → tuổi thật + tuổi báo giá' },
+    { ma: 'tinhphi',  ten: 'Quote / Tính phí bảo hiểm',  mo: 'Tra phí Term Life theo tuổi / mệnh giá / hạng' }
+  ];
+
+  // NẤC PHÁT HÀNH (10/08/2026) — luật "tính năng mới build dưới quyền super admin"
+  // (CLAUDE.md mục 2b-bis). Khác hẳn công tắc Khoá: khoá là "vẫn thấy mục nhưng đang
+  // cập nhật", nấc là "chưa tới lượt anh thấy, mục không hiện chút nào".
+  const NAC = [
+    { ma: 'super', ten: 'Chỉ mình tôi',  mo: 'Đang xây — chỉ Super Admin thấy' },
+    { ma: 'admin', ten: '+ Admin',       mo: 'Đang thử — thêm 11 Admin thấy' },
+    { ma: 'all',   ten: 'Cả đội',        mo: 'Đã phát hành — 77 Nhân viên thấy' }
   ];
   let khoaRows = {};
 
   async function taiKhoaMuc() {
     const bao = $('khoa-msg');
-    const { data, error } = await sb.from('khoa_muc').select('muc, khoa, loi_nhan, cap_nhat_luc');
+    // `hien_cho` có thể chưa tồn tại (chưa chạy migration) → thử cột đầy đủ trước,
+    // lỗi thì lùi về bộ cột cũ để tab vẫn dùng được cho phần Khoá.
+    let { data, error } = await sb.from('khoa_muc').select('muc, khoa, loi_nhan, cap_nhat_luc, hien_cho');
+    if (error) ({ data, error } = await sb.from('khoa_muc').select('muc, khoa, loi_nhan, cap_nhat_luc'));
     if (error) {
       bao.style.display = ''; 
       bao.textContent = /khoa_muc/.test(error.message || '') && /does not exist|schema cache/i.test(error.message || '')
@@ -1124,6 +1120,12 @@
     veKhoaMuc();
   }
 
+  // MỘT MỤC = MỘT HÀNG (chủ tool 10/08/2026: "làm gọn gàng lại, mỗi 1 phần là 1 hàng").
+  // Trước đó mỗi mục chiếm HAI tầng (tên + công tắc Khoá ở trên, dải "Ai được thấy" ở
+  // dưới) → 7 mục thành 14 tầng, phải cuộn mới thấy hết. Nay tất cả nằm trên một dòng:
+  //   tên+mô tả  |  dải 3 nấc  |  trạng thái  |  nút Khoá
+  // Ô lời nhắn vẫn xuống dòng riêng, nhưng nó CHỈ hiện khi mục đang khoá nên không
+  // làm dài danh sách ở trạng thái thường.
   function veKhoaMuc() {
     $('khoa-list').innerHTML = MUC_KHOA.map(function (m) {
       const r = khoaRows[m.ma] || { khoa: false, loi_nhan: '' };
@@ -1136,14 +1138,35 @@
               'placeholder="Để trống = dùng câu mặc định">' +
           '</div>'
         : '';
-      return '<div class="khoa-row' + (r.khoa ? ' is-locked' : '') + '" data-muc="' + m.ma + '">' +
+      // ☠️ Mục CHƯA CÓ DÒNG trong bảng: đừng vẽ như thể nấc là 'all'. Tool đọc mặc
+      // định trong code (tính năng mới = 'super') nên hai bên sẽ nói ngược nhau, mà
+      // bấm nút cũng vô ích — UPDATE không có dòng nào để sửa và trả 204 không báo lỗi.
+      const chuaCoDong = !khoaRows[m.ma];
+      const nacHienTai = r.hien_cho || 'all';
+      // Dải 3 nấc. Bỏ nhãn "AI ĐƯỢC THẤY" và câu mô tả dài — cả hai nói lại đúng thứ
+      // ba cái nút đã nói. Giữ mô tả trong `title` cho ai cần rà lại.
+      const daiNac = chuaCoDong
+        ? '<span class="khoa-nac-thieu" title="Chạy phần KHOÁ MỤC trong supabase/schema.sql rồi tải lại trang">' +
+            'Chưa có dòng trong bảng</span>'
+        : '<div class="khoa-nac-nut" role="group" aria-label="Ai được thấy mục này">' +
+            NAC.map(function (n) {
+              return '<button type="button" class="khoa-nac-o' + (n.ma === nacHienTai ? ' dang-chon' : '') +
+                '" data-nac="' + n.ma + '" data-nac-muc="' + m.ma + '" title="' + esc(n.mo) + '"' +
+                (n.ma === nacHienTai ? ' aria-pressed="true"' : ' aria-pressed="false"') + '>' +
+                esc(n.ten) + '</button>';
+            }).join('') +
+          '</div>';
+
+      return '<div class="khoa-row' + (r.khoa ? ' is-locked' : '') +
+        (nacHienTai !== 'all' || chuaCoDong ? ' dang-xay' : '') + '" data-muc="' + m.ma + '">' +
         '<div class="khoa-info">' +
           '<b>' + esc(m.ten) + '</b>' +
           '<span>' + esc(m.mo) + '</span>' +
         '</div>' +
+        daiNac +
         '<span class="khoa-trangthai">' + (r.khoa ? 'Đang khoá' : 'Đang mở') + '</span>' +
         '<button type="button" class="btn btn-sm ' + (r.khoa ? 'btn-primary' : 'btn-secondary') +
-          '" data-bat="' + m.ma + '">' + (r.khoa ? 'Mở lại' : 'Khoá mục này') + '</button>' +
+          '" data-bat="' + m.ma + '">' + (r.khoa ? 'Mở lại' : 'Khoá') + '</button>' +
         oNhan +
       '</div>';
     }).join('');
@@ -1158,6 +1181,41 @@
       .eq('muc', ma);
     if (error) { await showAppAlert(error.message, { title: 'Không lưu được lời nhắn', tone: 'danger' }); return; }
     if (khoaRows[ma]) khoaRows[ma].loi_nhan = chu;   // giữ trong bộ nhớ, khỏi vẽ lại cả bảng
+  }
+
+  // Đổi nấc phát hành. Nới ra (cho thêm người thấy) mới hỏi lại — siết vào thì cứ làm,
+  // vì siết là hành động an toàn, còn hỏi mỗi lần chỉ tổ phiền.
+  async function doiNac(ma, nac) {
+    const m = MUC_KHOA.find(function (x) { return x.ma === ma; });
+    const cu = (khoaRows[ma] && khoaRows[ma].hien_cho) || 'all';
+    if (cu === nac) return;
+    const thuTu = { super: 0, admin: 1, all: 2 };
+    if (thuTu[nac] > thuTu[cu]) {
+      const ai = nac === 'all' ? '77 Nhân viên' : '11 Admin';
+      if (!(await showAppConfirm(
+        'Cho ' + ai + ' thấy "' + m.ten + '"?\n\n' +
+        'Chỉ mở khi mục này đã dùng được thật — họ sẽ đem đi làm việc với khách ngay.',
+        { title: 'Mở rộng người thấy', tone: 'warning', confirmText: 'Cho thấy' }))) return;
+    }
+
+    setLoading(true);
+    const { error } = await sb.from('khoa_muc')
+      .update({ hien_cho: nac, cap_nhat_luc: new Date().toISOString(), cap_nhat_boi: me.id })
+      .eq('muc', ma);
+    // ⚠️ "không lỗi" KHÔNG có nghĩa là đã ghi — đọc lại giá trị thật (bài học 31/07).
+    await taiKhoaMuc();
+    setLoading(false);
+    if (error) {
+      await showAppAlert(/hien_cho/.test(error.message || '')
+        ? "Bảng chưa có cột 'hien_cho' — chạy lại phần KHOÁ MỤC trong supabase/schema.sql."
+        : error.message, { title: 'Không đổi được nấc', tone: 'danger' });
+      return;
+    }
+    const thuc = (khoaRows[ma] && khoaRows[ma].hien_cho) || 'all';
+    if (thuc !== nac) {
+      await showAppAlert('Máy chủ không nhận thay đổi này — kiểm tra lại quyền.',
+        { title: 'Chưa đổi được', tone: 'danger' });
+    }
   }
 
   async function batKhoa(ma, khoa) {
@@ -1184,125 +1242,13 @@
     }
   }
 
-  // ---- Đang online (presence, N3, 23/07/2026) ---------------------------
-  // Đọc `presence` (RLS super_admin) mỗi 30s KHI đang mở tab Đo lường; ai last_seen < 2' = online.
-  const ONLINE_WINDOW_MS = 2 * 60 * 1000;   // ngưỡng "còn online"
-  const ONLINE_POLL_MS = 30 * 1000;         // nhịp tự làm mới
-  let onlineTimer = null;
-  let onlineRows = [];   // [{r: dòng presence, p: profile}] của lần poll gần nhất
-
-  function batDauOnline() {
-    if (onlineTimer) return;
-    taiOnline();                                  // vẽ ngay, khỏi chờ nhịp đầu
-    onlineTimer = setInterval(taiOnline, ONLINE_POLL_MS);
-  }
-  function dungOnline() {
-    if (onlineTimer) { clearInterval(onlineTimer); onlineTimer = null; }
-  }
-
-  function viTriTrang(page) {
-    const p = String(page || '');
-    if (/tool/.test(p)) return 'Đang mở Tool';
-    if (/members/.test(p)) return 'Trang thành viên';
-    if (/videos/.test(p)) return 'Xem video';
-    if (/portal|index/.test(p)) return 'Trang chính';
-    return p ? esc(p) : '—';
-  }
-
-  // Nhóm vị trí để đếm chip trên thanh: tool / videos / còn lại = portal.
-  function nhomViTri(page) {
-    const p = String(page || '');
-    if (/tool/.test(p)) return 'tool';
-    if (/videos/.test(p)) return 'videos';
-    return 'portal';
-  }
-
-  async function taiOnline() {
-    const hint = $('online-hint');
-    if (!$('online-bar')) return;
-    const since = new Date(Date.now() - ONLINE_WINDOW_MS).toISOString();
-    let resp;
-    try {
-      resp = await sb.from('presence')
-        .select('user_id, last_seen, page')
-        .gte('last_seen', since)
-        .order('last_seen', { ascending: false });
-    } catch (e) { return; }   // lỗi mạng tạm — giữ nguyên màn, nhịp sau thử lại
-    const { data, error } = resp;
-    if (error) {
-      const chuaCo = /presence/.test(error.message || '') &&
-        /(does not exist|could not find|schema cache)/i.test(error.message || '');
-      if (chuaCo) { dungOnline(); if (hint) hint.textContent = "Bảng 'presence' chưa được tạo — chạy SQL trong schema.sql."; }
-      onlineRows = []; veOnlineBar(); if (onlineModalMo()) veOnlineChiTiet();
-      return;
-    }
-    if (hint) hint.textContent = '';
-    const pmap = {}; (toanBo || []).forEach(function (p) { pmap[p.id] = p; });
-    onlineRows = (data || []).map(function (r) { return { r: r, p: pmap[r.user_id] || {} }; });
-    veOnlineBar();
-    if (onlineModalMo()) veOnlineChiTiet();   // modal đang mở → cập nhật luôn cho tươi
-  }
-
-  // Thanh tóm tắt (luôn hiện): số tổng + chip theo vị trí. Bấm → modal chi tiết.
-  function veOnlineBar() {
-    $('online-count').textContent = String(onlineRows.length);
-    const b = { tool: 0, portal: 0, videos: 0 };
-    onlineRows.forEach(function (o) { b[nhomViTri(o.r.page)]++; });
-    // Tách TÊN và SỐ ra 2 thẻ riêng (chủ tool 31/07: "làm dạng cột"): ở cột phải chúng
-    // xếp thành từng dòng, tên trái — số phải, các con số dóng thẳng một mép nên liếc
-    // là so được. Gộp thành một chuỗi "🛠 Tool 1" thì CSS không tách nổi.
-    // Màn hẹp vẫn hiển thị như viên chip nằm ngang (xem portal.css).
-    const chips = [];
-    function chip(lop, icon, ten, so) {
-      return '<span class="online-chip ' + lop + '">' +
-             '<span class="oc-k">' + icon + ' ' + ten + '</span>' +
-             '<span class="oc-v">' + so + '</span></span>';
-    }
-    if (b.tool)   chips.push(chip('on-chip-tool', '🛠', 'Tool', b.tool));
-    if (b.portal) chips.push(chip('', '🏠', 'Trang chính', b.portal));
-    if (b.videos) chips.push(chip('', '🎬', 'Video', b.videos));
-    $('online-breakdown').innerHTML = chips.join('');
-  }
-
-  // Danh sách chi tiết trong modal: "đang mở Tool" LÊN ĐẦU, rồi tới mới nhất.
-  function veOnlineChiTiet() {
-    const box = $('online-detail-rows'), empty = $('online-detail-empty');
-    if (!box) return;
-    $('online-modal-sub').textContent = onlineRows.length
-      ? onlineRows.length + ' người đang online · tự làm mới mỗi 30 giây'
-      : 'Tính trong 2 phút gần nhất · tự làm mới mỗi 30 giây';
-    if (!onlineRows.length) { box.innerHTML = ''; empty.style.display = 'flex'; return; }
-    empty.style.display = 'none';
-    const rows = onlineRows.slice().sort(function (a, b) {
-      const ta = /tool/.test(String(a.r.page || '')) ? 1 : 0;
-      const tb = /tool/.test(String(b.r.page || '')) ? 1 : 0;
-      if (ta !== tb) return tb - ta;   // Tool lên đầu
-      return new Date(b.r.last_seen).getTime() - new Date(a.r.last_seen).getTime();
-    });
-    box.innerHTML = rows.map(function (o) {
-      const p = o.p;
-      const ten = esc(p.full_name || p.email || '(không rõ)');
-      const pb = p.department ? ' <span class="online-dept">· ' + esc(p.department) + '</span>' : '';
-      const laTool = /tool/.test(String(o.r.page || ''));
-      return '<div class="online-item' + (laTool ? ' is-tool' : '') + '">' +
-        '<span class="online-dot online-dot-sm"></span>' +
-        '<span class="online-name">' + ten + pb + '</span>' +
-        '<span class="online-where">' + viTriTrang(o.r.page) + '</span>' +
-        '<span class="online-ago">' + thoiGianTuong(new Date(o.r.last_seen).getTime()) + '</span>' +
-      '</div>';
-    }).join('');
-  }
-
-  function onlineModalMo() { return $('online-backdrop').classList.contains('open'); }
-  function moOnlineModal() {
-    veOnlineChiTiet();
-    $('online-backdrop').classList.add('open');
-    $('online-backdrop').setAttribute('aria-hidden', 'false');
-  }
-  function dongOnlineModal() {
-    $('online-backdrop').classList.remove('open');
-    $('online-backdrop').setAttribute('aria-hidden', 'true');
-  }
+  // ---- ☠️ ĐANG ONLINE (presence) — GỠ HẲN 10/08/2026 -------------------------
+  // Chủ tool: "tracking online và từng người đến ngày hôm nay thì nó đã hoàn thành
+  // nhiệm vụ rồi, anh không cần nó nữa". Gỡ ~120 dòng: taiOnline / veOnlineBar /
+  // veOnlineChiTiet / modal + nhịp poll 30 giây.
+  // Đây là gỡ CÓ CHỦ ĐÍCH, không phải sót. Bảng `presence` trên Supabase và
+  // heartbeat trong js/portal/auth.js vẫn còn (xem chú thích ở đó) — muốn bật lại
+  // thì dựng lại phần đọc, dữ liệu không mất.
 
   async function taiDoLuong() {
     const msg = $('usage-msg');
@@ -1415,7 +1361,7 @@
 
     veBieuDoKhoang(theoNgay, khoangFrom, soNgay);
     veTopMau(theoMau);
-    veBangNguoi(theoNguoi, pmap);
+    // veBangNguoi() gỡ 10/08/2026 — `theoNguoi` vẫn tính vì popup "đã tải gì" dùng.
   }
 
   // Gọi ĐÚNG TÊN SẢN PHẨM (chủ tool 27/07: "mẫu và tài liệu là gì, phải để Brochure
@@ -1432,6 +1378,12 @@
     }
     // Mẫu mở trong Tool: Name Card là loại riêng, còn lại là Proposal (báo giá)
     if (/name\s*card/i.test(nhan)) return { ten: 'Name Card', cls: 'top-tag-nc' };
+    // ☠️ Hai công cụ tra cứu (Age / Quote) KHÔNG phải Proposal — chúng không sinh ra
+    // bản vẽ nào để gửi khách. Dán nhãn "Proposal" là đọc bảng xếp hạng ra sai:
+    // "97 lượt NLG—IUL" và "8 lượt Tính tuổi" là hai loại việc khác hẳn nhau.
+    if (/^(Age|Quote)\s*\//i.test(nhan) || /tính (tuổi|phí) bảo hiểm/i.test(nhan)) {
+      return { ten: 'Công cụ', cls: 'top-tag-cc' };
+    }
     return { ten: 'Proposal', cls: 'top-tag-mau' };
   }
 
@@ -1554,54 +1506,8 @@
     return local.replace(/(^|\s)\S/g, function (c) { return c.toUpperCase(); });
   }
 
-  function veBangNguoi(theoNguoi, pmap) {
-    const ids = Object.keys(theoNguoi);
-    if (!ids.length) {
-      $('usage-rows').innerHTML = '';
-      $('usage-empty').style.display = 'flex';
-      return;
-    }
-    $('usage-empty').style.display = 'none';
-    ids.sort(function (a, b) {
-      return Math.max(theoNguoi[b].lastLogin, theoNguoi[b].lastTool) -
-             Math.max(theoNguoi[a].lastLogin, theoNguoi[a].lastTool);
-    });
-    // Chỉ 10 người GẦN NHẤT (chủ tool 27/07). Cắt bớt thì PHẢI nói ra đang cắt bao nhiêu,
-    // không thì bảng trông như "cả đội chỉ có 10 người hoạt động".
-    const tong = ids.length;
-    const hien = ids.slice(0, 10);
-    // Chỉ giữ phần KHÔNG nhìn thấy được: còn bao nhiêu người bị cắt. "10 người gần nhất"
-    // thì đếm số dòng là ra; đủ người rồi thì im hẳn.
-    const oHintNguoi = $('usage-nguoi-hint');
-    oHintNguoi.textContent = tong > hien.length ? 'còn ' + (tong - hien.length) + ' người nữa' : '';
-    oHintNguoi.hidden = tong <= hien.length;
-    $('usage-rows').innerHTML = hien.map(function (id) {
-      const u = theoNguoi[id];
-      const p = pmap[id] || {};
-      const ten = esc(p.full_name || p.email || '(không rõ)');
-      // Tên tiếng Anh + phòng ban để CỘT RIÊNG, không dán sau tên (chủ tool 27/07:
-      // "chia thành các cột, nhìn như này hơi rối"). Dán sau tên thì tên dài ngắn khác
-      // nhau kéo chúng lệch mỗi hàng một chỗ — mắt không có mốc nào để dóng theo.
-      const en = tenTiengAnh(p);
-      // Cột "Lần tải" BẤM ĐƯỢC → mở popup chi tiết, lọc sẵn đúng người đó (chủ tool 31/07:
-      // "có thể click vào đây để xem nhanh những cái gì đã được tải"). Số 0 thì KHÔNG làm
-      // nút — không có gì để xem mà vẫn mời bấm là bẫy người dùng.
-      const soTai = u.download || 0;
-      const oTai = soTai
-        ? '<button type="button" class="ur-dl-btn" data-ten="' + esc(p.full_name || p.email || '') +
-          '" title="Xem ' + soTai + ' lượt tải của ' + ten + '">' + soTai + '</button>'
-        : '<span class="ur-trong">0</span>';
-      return '<div class="usage-row">' +
-        '<span class="ur-name" data-label="Thành viên"><span class="ur-nm">' + ten + '</span></span>' +
-        '<span class="ur-en" data-label="Tên tiếng Anh">' + (en ? esc(en) : '<span class="ur-trong">—</span>') + '</span>' +
-        '<span class="ur-pb" data-label="Phòng ban">' + (p.department ? esc(p.department) : '<span class="ur-trong">—</span>') + '</span>' +
-        '<span data-label="Đăng nhập cuối">' + thoiGianTuong(u.lastLogin) + '</span>' +
-        '<span data-label="Mở tool cuối">' + thoiGianTuong(u.lastTool) + '</span>' +
-        '<span class="ta-right" data-label="Lần mở">' + (u.tool || 0) + '</span>' +
-        '<span class="ta-right ur-dl" data-label="Lần tải">' + oTai + '</span>' +
-      '</div>';
-    }).join('');
-  }
+  // ☠️ veBangNguoi() — bảng "Theo từng người" — GỠ HẲN 10/08/2026 theo yêu cầu
+  // chủ tool. Giữ tenTiengAnh() ở trên vì popup "đã tải gì" vẫn dùng.
 
   // Popup "tải CÁI GÌ" — liệt kê sự kiện download trong khoảng đang chọn (chủ tool 23/07).
   // Bản đồ "tên file → đường dẫn" của thư viện (Brochure / Bảng so sánh quyền lợi).

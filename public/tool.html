@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/vendor/animate.min.css">
-  <link rel="stylesheet" href="style.css?v=88">
+  <link rel="stylesheet" href="style.css?v=106">
   <link rel="stylesheet" href="/dialog.css?v=4">
 </head>
 <body>
@@ -149,8 +149,8 @@
 
         <!-- Phiên bản app: cập nhật số này mỗi lần deploy (xem conventions.md) -->
         <div class="sidebar-version-footer">
-          <span class="version-badge">v1.40</span>
-          <span class="version-date">10/08/2026</span>
+          <span class="version-badge">v1.43</span>
+          <span class="version-date">11/08/2026</span>
         </div>
       </aside>
 
@@ -360,7 +360,7 @@
        chưa cấu hình thì tool chạy mở như cũ. -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/portal/config.js?v=8"></script>
-  <script src="/js/portal/auth.js?v=10"></script>
+  <script src="/js/portal/auth.js?v=11"></script>
   <script>
     if (window.TSTAuth && TSTAuth.configured) {
       var sideLogout = document.getElementById('btn-logout-side');
@@ -372,6 +372,14 @@
       // Supabase) thì không có tài khoản nào để đổi, hiện ra chỉ gây bấm nhầm.
       var sidePw = document.getElementById('btn-change-pw');
       if (sidePw) { sidePw.style.display = ''; TSTAuth.initDoiMatKhau(); }
+      // ☠️ BẮT ĐẦU ĐỌC `khoa_muc` NGAY, song song với requireLogin (xem chú thích
+      // dài ở docKhoaMuc trong core.js). Không await ở đây — chỉ giữ promise lại.
+      // Chờ getSession chứ KHÔNG chờ profile: truy vấn cần token, không cần biết
+      // mình là ai. Bỏ được trọn một vòng mạng khỏi đường tới lúc cây vẽ đúng.
+      var pKhoa = TSTAuth.getSession().then(function (s) {
+        return s && typeof docKhoaMuc === 'function' ? docKhoaMuc() : null;
+      }).catch(function () { return null; });
+
       TSTAuth.requireLogin().then(function (r) {
         var p = r.profile;
         if (p && p.status !== 'active') { TSTAuth.signOut(); return; }   // chờ duyệt / tạm khoá / đã xoá
@@ -385,13 +393,18 @@
         // KHÔNG bao giờ bị khoá — họ là người đang cập nhật nội dung.
         // ⚠️ requireLogin BẤT ĐỒNG BỘ: cây thư mục có thể dựng XONG trước khi biết role
         // và trước khi bảng khoá về → phải vẽ lại, không thì nhân viên vẫn thấy nguyên.
+        // ⚠️ NỚI 10/08/2026: trước đây chỉ vẽ lại khi CÓ khoá và CÓ sẵn danh sách mẫu.
+        // Nay cột `hien_cho` cũng quyết định mục nào hiện ra, và mục mới có thể không
+        // dính gì tới danh sách mẫu — thiếu bước vẽ lại là Super Admin không thấy
+        // tính năng đang xây, còn nhân viên thì thoáng thấy rồi mới bị ẩn.
         if (p && typeof napKhoaMuc === 'function') {
-          napKhoaMuc(p).then(function (coKhoa) {
-            if (coKhoa && typeof renderFileTree === 'function' &&
-                appState.svgsList && appState.svgsList.length) {
-              renderFileTree();
-            }
-          });
+          // rows === null nghĩa là cú đọc sớm trượt (chưa có session lúc đó, hoặc
+          // mạng chớp). Truyền `undefined` để napKhoaMuc TỰ ĐỌC LẠI — thà chậm một
+          // vòng còn hơn Super Admin không thấy tính năng mình đang xây.
+          pKhoa.then(function (rows) { return napKhoaMuc(p, rows === null ? undefined : rows); })
+               .then(function (doiGiaoDien) {
+                 if (doiGiaoDien && typeof renderFileTree === 'function') renderFileTree();
+               });
         }
         // Super Admin dùng được MỌI công cụ (chủ tool quyết 20/07/2026) — trước đây
         // bị đá về /members, giờ không chặn nữa.
@@ -408,12 +421,14 @@
        (napThuVienPdf). Muốn đưa lại vào đây thì nhớ là đang đánh đổi tốc độ vào trang. -->
   <!-- Mỗi công cụ một file JS riêng — core nạp trước, main nạp cuối -->
   <script src="/js/ui-dialog.js?v=3"></script>
-  <script src="js/core.js?v=38"></script>
+  <script src="js/core.js?v=45"></script>
   <script src="js/proposal.js?v=39"></script>
-  <script src="js/brochure.js?v=16"></script>
+  <script src="js/brochure.js?v=23"></script>
   <script src="js/sosanh.js?v=11"></script>
   <script src="js/namecard.js?v=5"></script>
-  <script src="js/main.js?v=14"></script>
+  <script src="js/tinhtuoi.js?v=11"></script>
+  <script src="js/tinhphi.js?v=13"></script>
+  <script src="js/main.js?v=21"></script>
   <!-- Theme toggle (light / dark) -->
   <script>
     (function () {

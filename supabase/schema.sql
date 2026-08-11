@@ -368,6 +368,35 @@ create table if not exists public.khoa_muc (
 insert into public.khoa_muc (muc) values ('proposal'), ('brochure'), ('namecard'), ('compare'), ('sms')
 on conflict (muc) do nothing;
 
+-- ---------------------------------------------------------------------------
+-- NẤC PHÁT HÀNH (10/08/2026) — luật chủ tool: "tính năng mới build dưới quyền
+-- super admin, test xong mới cho admin và user thấy". Xem CLAUDE.md mục 2b-bis.
+--
+-- `hien_cho` KHÁC `khoa`, đừng gộp:
+--   khoa     = mục VẪN HIỆN nhưng thay bằng khối "Đang cập nhật". Chỉ áp cho 'user'.
+--   hien_cho = mục KHÔNG HIỆN chút nào với người chưa tới nấc. Áp cho MỌI role.
+-- Mặc định 'all' để 5 mục cũ giữ nguyên hành vi khi chạy lại file này.
+-- ---------------------------------------------------------------------------
+alter table public.khoa_muc
+  add column if not exists hien_cho text not null default 'all';
+
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'khoa_muc_hien_cho_hop_le') then
+    alter table public.khoa_muc
+      add constraint khoa_muc_hien_cho_hop_le check (hien_cho in ('super', 'admin', 'all'));
+  end if;
+end $$;
+
+-- Tính tuổi bảo hiểm — ĐANG XÂY, nấc 1: chỉ Super Admin thấy.
+-- Tính năng mới LUÔN vào ở nấc 'super' (CLAUDE.md mục 2b-bis). Lên nấc bằng dải
+-- 3 nút trong tab "Khoá mục", KHÔNG sửa code, KHÔNG chạy lại SQL.
+-- ☠️ Thiếu dòng ở đây là bấm nút đổi nấc KHÔNG ĂN mà cũng KHÔNG BÁO LỖI:
+-- UPDATE không khớp dòng nào vẫn trả 204. Thêm mục mới thì thêm vào đây NGAY.
+insert into public.khoa_muc (muc, hien_cho) values
+  ('tinhtuoi', 'super'), ('tinhphi', 'super'), ('appform', 'super')
+on conflict (muc) do nothing;
+
 alter table public.khoa_muc enable row level security;
 
 -- AI ĐĂNG NHẬP CŨNG ĐỌC ĐƯỢC — bắt buộc: Tool phải biết mục nào đang khoá thì

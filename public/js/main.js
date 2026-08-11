@@ -18,28 +18,44 @@ function renderFileTree() {
   const nameCards = matched.filter(isNameCardFile);
   const proposals = matched.filter(f => !isNameCardFile(f));
 
+  // NẤC PHÁT HÀNH (10/08/2026 — xem CLAUDE.md mục 2b-bis): mục chưa tới nấc của
+  // người đang đăng nhập thì KHÔNG vẽ ra chút nào. Khác hẳn `khoaMuc` bên dưới —
+  // khoá là "vẫn thấy mục, nhưng đang cập nhật"; chưa tới nấc là "chưa có gì để thấy".
+  const thay = ma => (typeof duocThayMuc === 'function' ? duocThayMuc(ma) : true);
+
   // ---------- PROPOSAL / BÁO GIÁ (js/proposal.js) ----------
-  total += renderProposalNavSection(dom.treeContainer, proposals, q);
+  if (thay('proposal')) total += renderProposalNavSection(dom.treeContainer, proposals, q);
 
   // ---------- BROCHURE (js/brochure.js) ----------
   // 3 mục dưới đây khoá theo cùng một kiểu: đang khoá thì thay danh sách bằng một
   // khối giải thích (makeKhoiKhoa trong proposal.js) — KHÔNG ẩn sạch, vì ẩn thì sale
   // tưởng tool hỏng hoặc mình bị mất quyền, lại nhắn hỏi admin.
-  if (appState.khoaMuc.brochure) {
+  if (!thay('brochure')) { /* chưa tới nấc — không vẽ */ }
+  else if (appState.khoaMuc.brochure) {
     dom.treeContainer.appendChild(makeKhoiKhoa('Brochure / Tài liệu', NAV_ICONS.brochure, 'brochure'));
   } else {
     total += renderLibrarySection(dom.treeContainer, 'Brochure / Tài liệu', NAV_ICONS.brochure, appState.library.brochure, q);
   }
 
+  // ---------- APPLICATION FORM ----------
+  if (!thay('appform')) { /* chưa tới nấc */ }
+  else if (appState.khoaMuc.appform) {
+    dom.treeContainer.appendChild(makeKhoiKhoa('Application Form / Biểu mẫu', NAV_ICONS.appform, 'appform'));
+  } else {
+    total += renderLibrarySection(dom.treeContainer, 'Application Form / Biểu mẫu', NAV_ICONS.appform, appState.library.appform, q, true);
+  }
+
   // ---------- NAME CARD (js/namecard.js) ----------
-  if (appState.khoaMuc.namecard) {
+  if (!thay('namecard')) { /* chưa tới nấc */ }
+  else if (appState.khoaMuc.namecard) {
     dom.treeContainer.appendChild(makeKhoiKhoa('Name Card / Danh thiếp', NAV_ICONS.namecard, 'namecard'));
   } else {
     total += renderNameCardNavSection(dom.treeContainer, nameCards, q);
   }
 
   // ---------- SO SÁNH QUYỀN LỢI CÁC HÃNG (js/brochure.js) ----------
-  if (appState.khoaMuc.compare) {
+  if (!thay('compare')) { /* chưa tới nấc */ }
+  else if (appState.khoaMuc.compare) {
     dom.treeContainer.appendChild(makeKhoiKhoa('Compare / So sánh quyền lợi', NAV_ICONS.compare, 'compare'));
   } else {
     total += renderCompareNavSection(dom.treeContainer, q);
@@ -51,10 +67,46 @@ function renderFileTree() {
   // dùng được khung ảnh brochure. Chi tiết ở showTallPreview.
   // File nằm ở thư mục `SMS/` NGAY GỐC dự án (không phải 2-Templates/ — chỗ đó
   // bị gitignore, bỏ vào là mất trên bản live).
-  if (appState.khoaMuc.sms) {
+  if (!thay('sms')) { /* chưa tới nấc */ }
+  else if (appState.khoaMuc.sms) {
     dom.treeContainer.appendChild(makeKhoiKhoa('SMS / Tin nhắn mẫu', NAV_ICONS.sms, 'sms'));
   } else {
     total += renderSmsNavSection(dom.treeContainer, q);
+  }
+
+  // ---------- TÍNH TUỔI BẢO HIỂM (js/tinhtuoi.js — 10/08/2026) ----------
+  // ĐANG Ở NẤC 1: chỉ Super Admin thấy (cột `hien_cho` = 'super' trong bảng khoa_muc).
+  // Đưa về từ bản chủ tool làm trên forum. Lên nấc bằng tab "Khoá mục", KHÔNG sửa code.
+  if (!thay('tinhtuoi')) { /* chưa tới nấc */ }
+  else if (appState.khoaMuc.tinhtuoi) {
+    dom.treeContainer.appendChild(makeKhoiKhoa('Age / Tính tuổi', NAV_ICONS.tinhtuoi, 'tinhtuoi'));
+  } else {
+    total += renderTinhTuoiNavSection(dom.treeContainer, q);
+  }
+
+  // ---------- TÍNH PHÍ BẢO HIỂM (js/tinhphi.js — 10/08/2026) ----------
+  // ĐANG Ở NẤC 1: chỉ Super Admin thấy. Bảng tra phí Term Life NLG, dữ liệu lấy từ
+  // Google Sheet do sếp chủ tool làm — xem đầu js/tinhphi.js.
+  if (!thay('tinhphi')) { /* chưa tới nấc */ }
+  else if (appState.khoaMuc.tinhphi) {
+    dom.treeContainer.appendChild(makeKhoiKhoa('Quote / Tính phí', NAV_ICONS.tinhphi, 'tinhphi'));
+  } else {
+    total += renderTinhPhiNavSection(dom.treeContainer, q);
+  }
+
+  // Cây vẽ ra ở trạng thái ĐÓNG (xem makeCollapsibleFolder). Hai ngoại lệ:
+  //  (1) đang gõ ô tìm → mở hết, không thì tìm ra kết quả mà nó nằm trong nhóm đóng;
+  //  (2) đang mở một file → bung ĐÚNG nhánh chứa nó (kể cả nhóm hãng lồng bên trong),
+  //      không thì vừa "Tạo bản cho khách" xong, cây vẽ lại là file mới biến mất.
+  if (q) {
+    dom.treeContainer.querySelectorAll('.tree-folder').forEach(f => f.classList.add('open'));
+  } else {
+    // Dò theo DẤU `.active` TRÊN CÂY, không theo `appState.activeFile` — mục thư
+    // viện (brochure/name card) đánh dấu bằng `activeLibraryPath`, hỏi sai biến là
+    // nhánh đó không bung mà chẳng có lỗi nào.
+    const item = dom.treeContainer.querySelector('.tree-file-item.active');
+    let cha = item && item.closest('.tree-folder');
+    while (cha) { cha.classList.add('open'); cha = cha.parentElement.closest('.tree-folder'); }
   }
 
   dom.fileCount.textContent = total;
@@ -530,12 +582,40 @@ function initTouchGestures() {
   cc.addEventListener('touchcancel', endTouch);
 }
 
+// --- NÚT "CÔNG CỤ" Ở THANH TRÁI: VỀ MÀN TRỐNG, ĐÓNG HẾT DROPDOWN (10/08/2026) ---
+// Chủ tool muốn bấm cờ lê là quay về trạng thái sạch: cây thu về đúng 7 dòng,
+// bên phải trống chờ chọn.
+// ☠️ Nó là <a href="/tool">, mà mình ĐANG ở /tool → tải lại nguyên trang: chớp
+// trắng, nạp lại toàn bộ bảng phí, và NHÁP CHƯA LƯU thì trình duyệt phải chặn
+// bằng hộp thoại xấu xí của beforeunload. Xử lý tại chỗ thì hỏi được bằng hộp
+// thoại của tool, và tức thì.
+// Chỉ chặn khi ĐÃ ở /tool — ở trang khác thì cứ để nó điều hướng bình thường.
+function ganNutCongCu() {
+  const a = document.querySelector('.sidebar-nav a[href="/tool"]');
+  // Chấp nhận cả `/tool` (đường dẫn thật, cả local lẫn Vercel) lẫn `/tool.html`
+  // — mở thẳng file thì pathname là dạng thứ hai, và đó là lúc dễ quên nhất.
+  const p = location.pathname.replace(/\/$/, '');
+  if (!a || (p !== '/tool' && p !== '/tool.html')) return;
+  a.addEventListener('click', async (e) => {
+    e.preventDefault();
+    if (!(await confirmLeaveUnsaved())) return;
+    // Đóng mọi dropdown đang xổ (Proposal / Brochure / Name Card và các nhóm hãng
+    // lồng bên trong), và bỏ dấu "đang mở" của các mục phẳng.
+    document.querySelectorAll('.tree-folder.open').forEach(f => f.classList.remove('open'));
+    document.querySelectorAll('.tree-folder-header.is-open').forEach(h => h.classList.remove('is-open'));
+    document.querySelectorAll('.tree-file-item.active').forEach(x => x.classList.remove('active'));
+    resetCanvasToWelcome();   // gọi sẵn hideLibraryPreview + thoát doc-mode
+    updateStatus('Chọn một mục ở cột trái để bắt đầu');
+  });
+}
+
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
   initEventListeners();
   initMobileUI();
   initTouchGestures();
   updateHeaderActions();
+  ganNutCongCu();
   fetchSvgsList();
 });
 
