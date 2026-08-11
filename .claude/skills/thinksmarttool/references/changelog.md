@@ -5,9 +5,13 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 
 ---
 
-## TRẠNG THÁI HIỆN TẠI — chốt 2026-08-11 20:35
+## TRẠNG THÁI HIỆN TẠI — chốt 2026-08-11 21:05
 
 **Bản live `tool.thinksmartinsurance.com` đã push hết.** Không còn gì nằm chờ trên máy.
+
+☠️ **HÀM MÁY CHỦ CHẠY Ở `sin1` (Singapore) — vì sale ở Việt Nam** (chủ tool xác nhận
+11/08/2026). Khai ở `"regions"` trong `vercel.json`. **Đừng đổi lại `iad1`** trừ khi
+đội ngũ chuyển sang Mỹ — đo được chênh **281 → 63 ms mỗi lời gọi API**.
 
 ☠️ **TỪ 11/08/2026 FILE TĨNH CÓ `?v=` ĐƯỢC CACHE 1 NĂM (`immutable`).**
 Sửa file mà quên bump `?v=` là **77 sale ôm code cũ cả năm** và không có dấu hiệu gì.
@@ -43,7 +47,7 @@ chạy bản nào (dùng khi "tool vẫn thấy sai" để tách lỗi CODE vớ
 
 ---
 
-### 2026-08-11 20:35 — TỐC ĐỘ TẢI: cache 1 năm · gỡ 70 KB CSS chết · menu bớt một vòng mạng.
+### 2026-08-11 21:05 — TỐC ĐỘ TẢI: menu 580 → 71 ms (−88%) · cache 1 năm · gỡ 70 KB CSS chết. ✅ ĐÃ PUSH + ĐO LẠI TRÊN LIVE (38/38 đạt).
 
 Chủ tool: *"em kiểm tra và fix phần loading của menu và các tool — anh thấy có cái
 xuất hiện chậm, load lâu"*. **Đo trước, sửa sau** — cả 3 chỗ dưới đều có số đo.
@@ -115,18 +119,55 @@ sau (thêm/xoá file thư viện) vẫn lấy dữ liệu mới. Chạy **chính
 **9/9 đạt** — gồm 2 ca bẫy: bắn sớm trượt (`null`) phải tự gọi lại chứ không được để
 trắng menu, và lần gọi thứ hai phải đi mạng thật.
 
-**④ CHƯA SỬA — nói rõ để phiên sau không tưởng là đã xong**
+**④ ☠️ HÀM MÁY CHỦ CHẠY Ở MỸ TRONG KHI SALE Ở VIỆT NAM — đây là thủ phạm LỚN NHẤT**
+
+`X-Vercel-Id` cho thấy `sin1 -> iad1`: cạnh nhận request ở **Singapore** nhưng hàm
+chạy ở **Washington DC**. Mỗi lời gọi API tốn trọn một vòng xuyên Thái Bình Dương.
+Chủ tool xác nhận **"sale ở Việt Nam"** → `iad1` là sai chỗ. Đặt `"regions": ["sin1"]`
+trong `vercel.json`.
+
+| Đo từ Việt Nam | Trước (`iad1`) | Sau (`sin1`) |
+|---|---|---|
+| `/api/svgs` | 281 ms | **63 ms** |
+| `/api/library` | 273 ms | **63 ms** |
+
+⚠️ **Ngay sau deploy đo ra cụm 312–465 ms, suýt kết luận là đổi region không ăn.**
+Đó là **khởi động nguội**, không phải bản chất — đo xen kẽ 20 lượt mỗi bên thì
+**0/20 lượt vượt 200 ms**. Đo lại sau khi hàm đã ấm mới có số thật.
+
+**Cộng dồn cả phiên — đường tới lúc menu hiện:**
+
+| | ms |
+|---|---|
+| ① bản gốc (nối tiếp, hàm ở Mỹ) | **580** |
+| ② sau khi bắn sớm song song (hàm còn ở Mỹ) | 363 |
+| ③ nếu chỉ đổi region mà vẫn nối tiếp | 125 |
+| ④ **bản hiện tại (song song + hàm ở SIN)** | **71** |
+
+→ **580 → 71 ms, nhanh hơn 509 ms (−88%).**
+
+**⑤ SỬA LẠI MỘT SỐ ĐO TÔI ĐÃ BÁO SAI TRONG CHÍNH PHIÊN NÀY**
+
+Mục ⑥ dưới đây bản đầu ghi *"`getSession` ~377 ms + `khoa_muc` ~444 ms"*. **Sai** —
+thước đo hỏng: script cũ mỗi lượt `fetch` đều bắt tay TLS lại nên đo cả chi phí mở
+kết nối. Đo lại với kết nối đã ấm: **`khoa_muc` 136 ms · `auth health` 132 ms ·
+cạnh Cloudflare 44 ms** (`CF-RAY: …-SIN` → Supabase ở Singapore).
+→ **Supabase KHÔNG phải vấn đề**, đừng đi migrate project.
+→ Bài học lặp lại: số quá xấu cũng đáng nghi như số quá đẹp.
+
+**⑥ CHƯA SỬA — nói rõ để phiên sau không tưởng là đã xong**
 
 - **Menu vẽ HAI LẦN** (thấy đồ hiện muộn): `renderFileTree()` chạy lần đầu lúc **chưa
   biết vai trò** → `duocThayMuc()` giấu mục nấc `super`/`admin`; xong `napKhoaMuc`
-  mới vẽ lại. Đo: `getSession` ~377 ms + `khoa_muc` ~444 ms. **Chỉ 12 admin/super
-  admin thấy hiện tượng này** — 77 sale chỉ có mục nấc `all` nên không có gì hiện thêm.
+  mới vẽ lại (~136 ms sau). **Chỉ 12 admin/super admin thấy hiện tượng này** — 77 sale
+  chỉ có mục nấc `all` nên không có gì hiện thêm.
   **Không cache vai trò vào localStorage**: vai trò cũ còn treo là **hỏng về phía LỘ**,
   ngược đúng luật phát hành tính năng mới (mục 2b-bis trong `CLAUDE.md`).
-- **Hàm chạy ở `iad1` (Mỹ) trong khi cạnh vào là `hkg1`** (`x-vercel-id: hkg1::iad1::`).
-  Mỗi lời gọi API tốn một vòng xuyên Thái Bình Dương (~280 ms đo từ VN). Nếu phần
-  lớn sale ở Mỹ thì đang đúng — **cần chủ tool xác nhận đội ngũ ngồi ở đâu** trước
-  khi đổi region.
+- **Khởi động nguội**: người đầu tiên vào sau một lúc không ai dùng vẫn phải chờ
+  ~190–465 ms cho lời gọi API đầu. Đây là bản chất của serverless, muốn bỏ thì phải
+  cache `/api/svgs` + `/api/library` ở cạnh (`s-maxage` + `stale-while-revalidate`).
+  **Chưa làm** — cần cân nhắc: file thư viện thêm qua git push nên deploy tự xoá cache,
+  nhưng phải đo trước.
 - `fetchLibrary()` khi API lỗi trả về `{brochure, namecard, sms}` nhưng máy chủ thật
   trả `{brochure, soSanh, sms, appform}` — lệch tên, chỉ ảnh hưởng đường lỗi.
 
