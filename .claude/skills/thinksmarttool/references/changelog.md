@@ -5,6 +5,35 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 
 ### 2026-08-11 17:20 — Huy hiệu "NEW" bị cắt · rút gọn tên · ☠️ XÁC NHẬN 4 Ô BẢNG PHÍ SAI · stress test. ✅ ĐÃ PUSH.
 
+**⓪-a GỌN LẠI KHỐI NÚT TẢI — chủ tool: *"nhiều nút download quá"***
+Còn **đúng 2 nút** và **chỉ ở màn IUL**: *Tải PDF* · *Tải CSV*.
+- **Term Life: KHÔNG nút nào** — chỉ bảng 4 kỳ hạn. Hãng không phát hành bản minh
+  hoạ cho Term Life nên chẳng có gì để tải; một nút mờ ở đó là chữ thừa.
+- Gỡ nút *"Tải CSV bảng phí"* + **hàm `tpXuatCsv` (~55 dòng)** + CSS `.tp-nut-tai.tat`.
+  Không để code chết; muốn lấy lại thì xem commit trước 11/08 trong git.
+- Đo: Term Life **0 nút** (4 ô phí còn nguyên) · IUL có file **2 nút** · IUL chưa có
+  file 1 nút mở thư mục + dòng chỉ tên file.
+
+**⓪-b PHẦN TIẾNG VIỆT TRONG NHÃN MỤC MỜ ĐI** — chủ tool: *"giảm opacity phần tiếng
+Việt để làm nổi bật phần tiếng Anh"*, và *"sau này thêm mục nào cũng áp dụng luôn"*.
+→ Làm bằng **MỘT hàm dùng chung `nhanMuc()` trong core.js**: tự tách `"Anh / Việt"`
+  và bọc phần Việt bằng `<span class="nav-viet">`. Thêm mục mới chỉ cần gọi hàm này.
+→ ☠️ Dùng `color` chứ KHÔNG dùng `opacity` — opacity làm mờ cả nền/viền nếu sau này
+  span có thêm gì; màu thì chỉ đụng chữ.
+→ ☠️ **Bản đầu sót 2 mục**: Proposal và Name Card dựng nhãn trong file riêng
+  (`proposal.js` / `namecard.js`), không đi qua hàm chung — chủ tool nhìn ra ngay vì
+  hai mục đó vẫn đen đậm. Rà lại bằng `grep makeCollapsibleFolder | grep -v nhanMuc`:
+  4 dòng còn lại đều là **nhóm hãng** ("AIG", "Của tôi") — đúng, không cần.
+  Đo: cả 8 mục tách đúng, phần Việt `rgb(102,112,133)` vs phần Anh `rgb(17,20,32)`.
+
+**⓪-c HAI CỘT BẰNG NHAU** — chủ tool: *"làm cột kết quả rộng bằng cột trái"*.
+`grid-template-columns` **1.5fr/1fr → 1fr/1fr**. Đo ở 1280px: **591 / 591**.
+☠️ Cột trái hẹp lại làm hàng đầu suýt vỡ: Term Life chỉ còn **dư 6px**. Hạ đệm
+quanh đường kẻ 14 → 10px, dư lên **21px** (IUL 62px). Lịch sử số đo ghi trong CSS.
+☠️ Và thước tự bẫy: bản đầu đo `.tp-hang > .tp-nhom` gom **cả hai** khối `.tp-hang`
+của IUL (hàng đầu + hàng Tuổi/Kỳ hạn) → báo "rớt dòng" trong khi hàng đầu vẫn thẳng.
+Phải đo `.tp-hang` ĐẦU TIÊN.
+
 **⓪ Rút gọn tên hai mục** — chủ tool: *"bỏ 2 từ bảo hiểm cho gọn"*.
 `Age / Tính tuổi bảo hiểm` → **`Age / Tính tuổi`** · `Quote / Tính phí bảo hiểm` →
 **`Quote / Tính phí`**. Đổi ĐỒNG BỘ ở cả 4 nơi (cây điều hướng · tiêu đề màn ·

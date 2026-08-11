@@ -166,98 +166,53 @@ const TP_ICON_TAI = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none"
 //   1. Có ID file       → tải thẳng, một cú bấm.
 //   2. Biết thư mục     → mở đúng thư mục trên Drive + CHỈ RÕ TÊN FILE cần lấy.
 //   3. Không biết gì    → nút mờ, nói thẳng là chưa có.
+// ☠️ ĐÚNG HAI NÚT, VÀ CHỈ Ở MÀN IUL — chủ tool chốt 11/08/2026:
+//   "nhiều nút download quá, chỉ cần 2 nút PDF và CSV là được, còn lại không cần"
+//   "ở Term Life xoá giúp anh 2 nút download, chỉ cần phần 10-15-20-30 năm"
+// Đã GỠ theo yêu cầu đó:
+//   · nút "Tải CSV bảng phí" (CSV tự sinh từ bảng phí) — cùng hàm `tpXuatCsv`
+//   · mọi nút ở màn Term Life, kể cả nút mờ báo "Term Life không có PDF"
+// → Term Life giờ chỉ có bảng 4 kỳ hạn, không nút nào. Hãng không phát hành bản
+//   minh hoạ cho Term Life nên chẳng có gì để tải; một nút mờ ở đó là chữ thừa.
+// ⚠️ Đừng thêm nút thứ ba vào đây mà chưa hỏi — chủ tool đã cắt một lần.
 function tpNutTai() {
+  if (tpChon.chuongTrinh !== 'IUL') return '';   // Term Life: không nút nào
+
   const p = tpFilePdf();
   const tm = p ? null : tpThuMucPdf();
-  const tenFile = tm ? tpTenFileDrive() : '';
 
   const taiThang = (id, chu, ten) =>
     `<a class="tp-nut-tai" href="https://drive.google.com/uc?export=download&id=${id}"
        target="_blank" rel="noopener" download title="${escapeHtml(ten)}">${TP_ICON_TAI} ${chu}</a>`;
 
-  let nutHang;
+  // Có đủ cặp file → hai nút tải thẳng. PDF là bản minh hoạ gửi khách, CSV là
+  // bảng dòng tiền theo từng năm — hai tài liệu khác nhau, không gộp được.
   if (p) {
-    // Có CSV của hãng thì hiện thành nút RIÊNG, không gộp — hai file khác nhau:
-    // PDF là bản minh hoạ để gửi khách, CSV là bảng dòng tiền theo từng năm.
-    nutHang = taiThang(p.pdf, 'Tải PDF minh hoạ', p.ten + '.pdf')
-            + (p.csv ? taiThang(p.csv, 'Tải CSV của hãng', p.ten + '.csv') : '');
-  } else if (tm) {
-    nutHang = `<a class="tp-nut-tai" href="https://drive.google.com/drive/folders/${tm.id}"
-       target="_blank" rel="noopener"
-       title="Mở ${escapeHtml(tm.ten)} trên Drive">${TP_ICON_TAI} Mở PDF + CSV của hãng</a>`;
-  } else {
-    // ☠️ NÓI THẲNG LÝ DO, đừng để nhãn chung chung. Chủ tool mở màn Term Life thấy
-    // nút mờ và tưởng tool hỏng ("button nó vẫn đang bị ẩn đó em") — trong khi sự
-    // thật là hãng KHÔNG phát hành bản minh hoạ cho Term Life, cả Drive chỉ có IUL.
-    // Nhãn "Chưa có PDF minh hoạ" nghe như thiếu sót tạm thời; "Term Life không có
-    // PDF minh hoạ" nói rõ đây là chuyện của hãng, không phải lỗi tool.
-    const laTerm = tpChon.chuongTrinh !== 'IUL';
-    nutHang = `<button type="button" class="tp-nut-tai tat" disabled
-       title="${laTerm ? 'Hãng chỉ phát hành bản minh hoạ cho chương trình IUL (FlexLife).'
-                       : 'Tổ hợp này chưa có bản minh hoạ trên Drive.'}">${TP_ICON_TAI} ${
-         laTerm ? 'Term Life không có PDF' : 'Tổ hợp này chưa có PDF'}</button>`;
+    return `<div class="tp-tai">
+      ${taiThang(p.pdf, 'Tải PDF', p.ten + '.pdf')}
+      ${p.csv ? taiThang(p.csv, 'Tải CSV', p.ten + '.csv') : ''}
+    </div>`;
   }
 
-  return `
-    <div class="tp-tai">
-      ${nutHang}
-      <button type="button" class="tp-nut-tai" id="tp-tai-csv">${TP_ICON_TAI} Tải CSV bảng phí</button>
+  // Chưa có link file cho tổ hợp này → mở đúng thư mục sâu nhất còn biết, kèm tên
+  // file cần tìm. Vẫn là đường tới đúng hai tài liệu đó, chỉ thêm một cú bấm.
+  if (tm) {
+    return `<div class="tp-tai">
+      <a class="tp-nut-tai" href="https://drive.google.com/drive/folders/${tm.id}"
+         target="_blank" rel="noopener"
+         title="Mở ${escapeHtml(tm.ten)} trên Drive">${TP_ICON_TAI} Mở PDF + CSV của hãng</a>
     </div>
-    ${tenFile ? `<p class="tp-ten-file">Tìm file: <b>${escapeHtml(tenFile)}</b></p>` : ''}`;
-}
-
-// ☠️ CSV sinh TẠI CHỖ từ chính bảng phí tool đang tra (`public/data/*.json`),
-// KHÔNG tải một file CSV dựng sẵn ở đâu khác. Lý do: file rời sẽ lệch khỏi bảng
-// phí ngay lần đầu bảng được cập nhật, mà không có gì báo — sale gửi khách một
-// đằng, tool tra một nẻo. Sinh tại chỗ thì hai thứ không bao giờ lệch được.
-// Xuất TRỌN tổ hợp đang chọn (mọi tuổi × mọi mệnh giá), không chỉ một dòng.
-function tpXuatCsv() {
-  const iul = tpChon.chuongTrinh === 'IUL';
-  const khoa = iul ? `${tpChon.kyHan}|${tpChon.gioi}|${tpChon.sucKhoe}`
-                   : `${tpChon.gioi}|${tpChon.sucKhoe}`;
-  const o = (iul ? tpIul : tpBang).bang[khoa];
-  if (!o) return;
-
-  const dong = [];
-  if (iul) {
-    // ☠️ `menhGiaCoSo`, KHÔNG phải `menhGia`: đó mới là danh sách hàm tra cứu
-    // (`traPhiIul`) chấp nhận, tức đúng những mức người dùng bấm được trên màn.
-    const mgs = o.menhGiaCoSo;
-    dong.push(['Tuoi', ...mgs.map(m => m + '')].join(','));
-    Object.keys(o.tuoi).sort((a, b) => a - b).forEach(t => {
-      dong.push([t, ...mgs.map(m => {
-        const v = o.tuoi[t][m];
-        return (v === undefined || v === null) ? '' : v;
-      })].join(','));
-    });
-  } else {
-    // Term Life: mỗi ô là MẢNG 4 số theo kỳ hạn → mỗi kỳ hạn một cột.
-    dong.push(['Tuoi', 'Menh gia', ...tpBang.kyHan.map(k => k + ' nam')].join(','));
-    Object.keys(o.tuoi).sort((a, b) => a - b).forEach(t => {
-      o.menhGia.forEach(m => {
-        const v = o.tuoi[t][m];
-        if (!v) return;
-        dong.push([t, m, ...v.map(x => (x === null ? '' : x))].join(','));
-      });
-    });
+    <p class="tp-ten-file">Tìm file: <b>${escapeHtml(tpTenFileDrive())}</b></p>`;
   }
 
-  // Tên file phải ĐỌC LÀ HIỂU khi nó nằm trong thư mục Downloads cùng chục file khác:
-  // nói rõ đây là BẢNG PHÍ, của hãng nào, chương trình gì, tổ hợp nào.
-  // ☠️ KHÔNG dấu tiếng Việt: sale gửi file này qua email/Zalo, tên có dấu hay bị đổi
-  // thành chuỗi %C3%A1… ở đầu nhận. Đây là file đi ra ngoài, không phải file nội bộ.
-  const ctTen = iul ? 'IUL ' + tpChon.kyHan + ' nam' : 'Term Life';
-  const gioiTen = tpChon.gioi === 'MALE' ? 'Nam' : 'Nu';
-  const ten = `Bang phi NLG - ${ctTen} - ${gioiTen} - ${tpChon.sucKhoe}.csv`;
-  // ﻿ (BOM) để Excel bản tiếng Việt không đọc sai dấu; \r\n vì Excel trên
-  // Windows là nơi file này sẽ được mở.
-  const blob = new Blob(['﻿' + dong.join('\r\n')], { type: 'text/csv;charset=utf-8' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = ten;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  return '';   // IUL mà không biết cả thư mục → im lặng, đừng bày nút bấm không được
 }
+
+// ☠️ HÀM  ĐÃ GỠ 11/08/2026 cùng nút "Tải CSV bảng phí".
+// Chủ tool: *"nhiều nút download quá, chỉ cần 2 nút PDF và CSV"*. CSV của HÃNG
+// (bảng dòng tiền theo từng năm) mới là thứ sale cần gửi khách; CSV tự sinh từ
+// bảng phí chỉ là danh sách giá, không dùng để gửi đi đâu.
+// Muốn lấy lại: xem commit trước 11/08/2026 trong git.
 
 async function tpNapBang() {
   if (tpBang) return tpBang;
@@ -351,7 +306,7 @@ function renderTinhPhiNavSection(container, q) {
   el.setAttribute('title', 'Tra phí Term Life theo tuổi, mệnh giá, giới tính, hạng sức khoẻ');
   el.innerHTML = `
     <span class="tree-folder-icon">${NAV_ICONS.tinhphi}</span>
-    <span class="tree-folder-label">Quote / Tính phí</span><span class="nav-new">new</span>
+    <span class="tree-folder-label">${nhanMuc('Quote / Tính phí')}</span><span class="nav-new">new</span>
   `;
   el.addEventListener('click', async () => {
     if (!(await confirmLeaveUnsaved())) return;
@@ -584,10 +539,10 @@ function bamTinhPhi() {
 function veKetQuaTinhPhi(kq) {
   const o = document.getElementById('tp-kq');
   if (!o) return;
-  // Khối này bị vẽ lại mỗi lần bấm Tính phí → gắn bộ nghe lên chính KHỐI (uỷ
-  // quyền), đừng gắn lên nút. Gắn lên nút thì lần vẽ sau nút là phần tử mới,
-  // bộ nghe cũ đi theo nút cũ và bấm không ăn — loại lỗi im lặng.
-  o.onclick = (e) => { if (e.target.closest('#tp-tai-csv')) tpXuatCsv(); };
+  // (Khối này không còn bộ nghe nào: hai nút tải đều là thẻ <a> trỏ thẳng
+  //  tới Drive. Nếu sau này thêm nút <button>, nhớ gắn bộ nghe lên CHÍNH KHỐI
+  //  này chứ đừng gắn lên nút — khối bị vẽ lại mỗi lần bấm Tính phí, bộ nghe
+  //  gắn lên nút sẽ đi theo nút cũ và bấm không ăn, không báo lỗi gì.)
   if (!kq) {
     o.innerHTML = `
       <div class="tp-cho">

@@ -177,7 +177,7 @@ function renderCompareNavSection(container, q) {
   el.setAttribute('title', 'Bảng so sánh Living Benefits — 16 hãng bảo hiểm');
   el.innerHTML = `
     <span class="tree-folder-icon">${NAV_ICONS.compare}</span>
-    <span class="tree-folder-label">Compare / So sánh quyền lợi</span>
+    <span class="tree-folder-label">${nhanMuc('Compare / So sánh quyền lợi')}</span>
   `;
   el.addEventListener('click', async () => {
     if (!(await confirmLeaveUnsaved())) return;

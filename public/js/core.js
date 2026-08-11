@@ -828,6 +828,21 @@ function carrierSort(a, b) {
   return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib) || a.localeCompare(b);
 }
 
+// Nhãn mục trên cây: tách "Anh / Việt" và làm MỜ phần tiếng Việt (chủ tool
+// 11/08/2026: "giảm opacity phần tiếng Việt để làm nổi bật phần tiếng Anh").
+// Sale quét mắt theo từ tiếng Anh (Proposal · Brochure · Quote…), phần tiếng Việt
+// chỉ để đối chiếu lần đầu — hai phần cùng độ đậm thì mắt phải đọc cả hai.
+// ☠️ MỘT hàm duy nhất cho cả 8 mục. Trước đây mỗi mục tự dựng nhãn một kiểu, nên
+// đổi cách hiển thị là phải sửa 5 chỗ và chắc chắn sót.
+// Không có " / " thì trả nguyên văn — mục nào sau này chỉ có một thứ tiếng vẫn đúng.
+function nhanMuc(ten) {
+  const s = String(ten);
+  const i = s.indexOf(' / ');
+  if (i < 0) return escapeHtml(s);
+  return escapeHtml(s.slice(0, i)) +
+         '<span class="nav-viet"> / ' + escapeHtml(s.slice(i + 3)) + '</span>';
+}
+
 // Build a collapsible folder shell → { folder, content }
 // ☠️ MẶC ĐỊNH `open = false` từ 10/08/2026. Trước đó là `true` nên MỌI nhóm đều xổ
 // sẵn ngay khi vẽ cây — chủ tool: "dropdown vẫn tự mở nè em". Cây 7 mục × các nhóm

@@ -123,7 +123,7 @@ function renderLibrarySection(container, label, iconHTML, groupsObj, q, moi) {
   // Huy hiệu truyền bằng `moi` để makeCollapsibleFolder đặt NGOÀI nhãn — nhét vào
   // trong nhãn thì bị `text-overflow: ellipsis` cắt thành "NE…" (chủ tool bắt được
   // 11/08/2026 ở đúng mục này, vì nó là mục CÓ dropdown nên nhãn hẹp hơn).
-  const section = makeCollapsibleFolder(escapeHtml(label), { extraClass: 'nav-section', iconHTML, moi });
+  const section = makeCollapsibleFolder(nhanMuc(label), { extraClass: 'nav-section', iconHTML, moi });
   let count = 0;
   Object.keys(groupsObj).sort(carrierSort).forEach(carrier => {
     let items = (groupsObj[carrier] || []).filter(it => !q || it.name.toLowerCase().includes(q));
@@ -220,7 +220,7 @@ function renderSmsNavSection(container, q) {
   el.setAttribute('title', items.length ? `${items.length} tin nhắn mẫu` : 'Chưa có tin nhắn mẫu');
   el.innerHTML = `
     <span class="tree-folder-icon">${NAV_ICONS.sms}</span>
-    <span class="tree-folder-label">SMS / Tin nhắn mẫu</span><span class="nav-new">new</span>
+    <span class="tree-folder-label">${nhanMuc('SMS / Tin nhắn mẫu')}</span><span class="nav-new">new</span>
   `;
   el.addEventListener('click', async () => {
     if (!(await confirmLeaveUnsaved())) return;

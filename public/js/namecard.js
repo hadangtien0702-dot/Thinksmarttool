@@ -9,7 +9,7 @@
 
 // --- NAV SECTION: "Name Card" (gọi từ renderFileTree trong js/main.js) ---
 function renderNameCardNavSection(container, nameCards, q) {
-  const ncSection = makeCollapsibleFolder('Name Card / Danh thiếp', { extraClass: 'nav-section', iconHTML: NAV_ICONS.namecard });
+  const ncSection = makeCollapsibleFolder(nhanMuc('Name Card / Danh thiếp'), { extraClass: 'nav-section', iconHTML: NAV_ICONS.namecard });
   const ncMasters = nameCards.filter(f => (f.folder || '').toLowerCase().startsWith('name card'));
   const ncCopies = nameCards.filter(f => !(f.folder || '').toLowerCase().startsWith('name card'));
   let ncCount = 0;

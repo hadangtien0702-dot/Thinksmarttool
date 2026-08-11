@@ -163,7 +163,7 @@ function renderTinhTuoiNavSection(container, q) {
   el.setAttribute('title', 'Tính tuổi bảo hiểm từ ngày sinh khách hàng');
   el.innerHTML = `
     <span class="tree-folder-icon">${NAV_ICONS.tinhtuoi}</span>
-    <span class="tree-folder-label">Age / Tính tuổi</span><span class="nav-new">new</span>
+    <span class="tree-folder-label">${nhanMuc('Age / Tính tuổi')}</span><span class="nav-new">new</span>
   `;
   el.addEventListener('click', async () => {
     if (!(await confirmLeaveUnsaved())) return;

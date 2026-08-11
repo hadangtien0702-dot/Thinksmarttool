@@ -1388,6 +1388,18 @@ select.text-input-field option, .select-field option { background-color: var(--s
    dùng chung màu thương hiệu ở luật `.nav-section … .tree-folder-icon` bên trên.
    Đừng thêm lại kiểu này: nó neo theo `nth-of-type` tức theo VỊ TRÍ, nên chỉ cần
    thêm/bớt một mục là màu nhảy sang mục khác trong im lặng. */
+/* Phần tiếng Việt trong nhãn mục — MỜ HƠN để phần tiếng Anh nổi lên
+   (chủ tool 11/08/2026). Sale quét mắt theo từ tiếng Anh: Proposal · Brochure ·
+   Quote…; phần tiếng Việt chỉ để đối chiếu lần đầu.
+   ☠️ Dùng `color` chứ KHÔNG dùng `opacity`: opacity làm mờ cả nền/viền nếu sau này
+   thêm gì vào span, còn màu thì chỉ đụng chữ. .62 là mức đo được vẫn đọc rõ trên
+   cả nền sáng lẫn nền tối — hạ thấp nữa là chữ Việt bắt đầu khó đọc.
+   ☠️ ĐỪNG dựng nhãn thủ công ở mục mới — gọi `nhanMuc()` trong core.js, nó tự tách
+   "Anh / Việt". Trước đây mỗi mục tự dựng một kiểu nên đổi hiển thị phải sửa 5 chỗ. */
+.nav-viet { color: var(--text-3); font-weight: 600; }
+.tree-folder-header.is-open .nav-viet,
+.tree-folder.open > .tree-folder-header .nav-viet { color: inherit; opacity: .72; }
+
 /* Huy hiệu "new" cho mục vừa thêm (10/08/2026: SMS · Age · Quote).
    ☠️ NÓ PHẢI ĐƯỢC GỠ khi hết mới — không có ngày hết hạn tự động, ai thêm mục
    thứ tư thì nhớ bỏ `nav-new` khỏi ba mục cũ. Nhãn "new" dán mãi thì thành trang
@@ -2198,14 +2210,15 @@ body.doc-mode .canvas-status-bar { display: none; }
 /* Cùng kiểu "một khung, hai cột liền nhau" với màn Tính tuổi — hai công cụ anh em
    thì phải nhìn ra là một hệ, đừng mỗi màn một kiểu. */
 .tp-wrap {
-  /* 1.5fr chứ không phải 1.25fr gốc: hàng đầu nay có BA nhóm nút nằm chung hàng
-     (Chương trình · Giới tính · Hạng sức khoẻ) + đường kẻ ngăn.
+  /* HAI CỘT BẰNG NHAU (chủ tool 11/08/2026: "làm cột kết quả rộng bằng cột trái").
      Lịch sử số đo ở màn 1440px, để khỏi dò lại từ đầu:
-       1.25fr → cột nhập 657px  · 1.45fr → 700px · 1.6fr → 763px · 1.75fr → 789px
-     Từng phải lên 1.75fr khi IUL có BỐN nhóm (thêm "Kỳ hạn"); nay Kỳ hạn đã dời
-     xuống cạnh ô Tuổi nên ba nhóm là đủ, hạ lại để cột kết quả rộng ra.
-     Đổi số này thì PHẢI mở CẢ HAI màn đo lại — chúng có số nhóm khác nhau. */
-  display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+       1.25fr → cột nhập 657px · 1.45fr → 700px · 1.6fr → 763px · 1.75fr → 789px
+       1fr    → 620px  ← đang dùng
+     Từng phải lên 1.75fr khi hàng đầu của IUL có BỐN nhóm nút; sau đó "Kỳ hạn" dời
+     xuống cạnh ô Tuổi nên chỉ còn BA nhóm, cột trái hẹp lại vẫn đủ.
+     ☠️ Đổi số này thì PHẢI mở màn IUL đo lại (không chỉ Term Life): ba nhóm nút +
+     hai đường kẻ ngăn cần ~491px, cột trái phải còn ít nhất chừng đó sau padding. */
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 0; max-width: 1240px; margin: 28px auto; align-items: stretch;
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--r-xl); box-shadow: var(--shadow-sm); overflow: hidden;
@@ -2224,7 +2237,7 @@ body.dark-theme .tp-loi { color: #E9A23B; }
    (chủ tool 10/08/2026). Bốn nhóm này đều ít nút (2–3 nút) nên xếp dọc là phí
    ba tầng chiều cao, đẩy Mệnh giá và nút Tính phí xuống dưới màn hình.
    `align-items: flex-start` để nhóm nào nhiều nút hơn không kéo giãn nhóm kia. */
-.tp-hang { display: flex; flex-wrap: wrap; align-items: stretch; gap: 0 14px; }
+.tp-hang { display: flex; flex-wrap: wrap; align-items: stretch; gap: 0 10px; }
 .tp-hang .tp-nhom { margin-bottom: 18px; }
 /* ☠️ Xếp cùng hàng KHÔNG đủ để người ta thấy đây là BA CÂU HỎI RIÊNG (chủ tool
    10/08/2026: "phải thể hiện làm sao cho người ta nhận diện nó là 3 phần riêng
@@ -2234,7 +2247,7 @@ body.dark-theme .tp-loi { color: #E9A23B; }
    nhau — thêm nền/khung riêng cho mỗi nhóm là dựng thêm một ngôn ngữ thứ hai. */
 .tp-hang > .tp-nhom + .tp-nhom {
   border-left: 1px solid var(--divider);
-  padding-left: 14px;
+  padding-left: 10px;
 }
 .tp-nhan { display: block; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--text-3); margin-bottom: 8px; }
 .tp-khoang { text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--text-2); }
@@ -2305,13 +2318,8 @@ body.dark-theme .tp-loi { color: #E9A23B; }
   text-decoration: none; cursor: pointer;
 }
 .tp-nut-tai:hover { border-color: var(--brand); }
-/* Tổ hợp chưa có PDF: mờ + không bấm được. Cùng cách xử với nút hạng sức khoẻ
-   hãng không bán — một màn hình chỉ nên có MỘT cách nói "cái này không có". */
-.tp-nut-tai.tat {
-  opacity: .45; cursor: not-allowed;
-  background: var(--surface-2); color: var(--text-3);
-}
-.tp-nut-tai.tat:hover { border-color: transparent; }
+/* ☠️ Kiểu nút tải "mờ" ĐÃ XÓA 11/08/2026: không còn nút nào ở trạng thái đó.
+   Chủ tool chốt Term Life không hiện nút nào, IUL thì chỉ hai nút tải thật. */
 /* Tên file cần tìm trên Drive — chỉ hiện khi phải mở thư mục (không tải thẳng được).
    Cho chọn được bằng chuột để sale dán thẳng vào ô tìm của Drive. */
 .tp-ten-file {
