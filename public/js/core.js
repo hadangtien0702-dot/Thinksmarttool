@@ -835,7 +835,13 @@ function carrierSort(a, b) {
 // Hai chỗ VẪN phải mở, xử lý ở cuối renderFileTree() chứ không ở đây:
 //   (1) đang gõ ô tìm  → mở hết, không thì tìm ra mà không thấy;
 //   (2) đang mở một file → bung đúng nhánh chứa nó.
-function makeCollapsibleFolder(labelHTML, { extraClass = '', open = false, iconHTML = '' } = {}) {
+// `moi` = true → huy hiệu "new".
+// ☠️ Huy hiệu phải là ANH EM của `.tree-folder-label`, KHÔNG được nằm trong nó.
+// Bản đầu ghép thẳng vào chuỗi label và chủ tool thấy ngay: huy hiệu hiện ra
+// "NE…" — vì `.tree-folder-label` có `overflow:hidden; text-overflow:ellipsis`
+// nên nó CẮT LUÔN cả huy hiệu. Mục phẳng (SMS/Age/Quote) không lộ lỗi này vì
+// chúng tự dựng header và đặt huy hiệu bên ngoài label.
+function makeCollapsibleFolder(labelHTML, { extraClass = '', open = false, iconHTML = '', moi = false } = {}) {
   const folderEl = document.createElement('div');
   folderEl.className = `tree-folder ${extraClass} ${open ? 'open' : ''}`.replace(/\s+/g, ' ').trim();
 
@@ -844,6 +850,7 @@ function makeCollapsibleFolder(labelHTML, { extraClass = '', open = false, iconH
   headerEl.innerHTML = `
     ${iconHTML ? `<span class="tree-folder-icon">${iconHTML}</span>` : ''}
     <span class="tree-folder-label">${labelHTML}</span>
+    ${moi ? '<span class="nav-new">new</span>' : ''}
     <span class="tree-folder-arrow">${NAV_ICONS.arrow}</span>
   `;
   headerEl.addEventListener('click', () => folderEl.classList.toggle('open'));

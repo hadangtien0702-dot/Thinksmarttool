@@ -1087,8 +1087,8 @@
     { ma: 'namecard', ten: 'Name Card / Danh thiếp',    mo: 'Mẫu danh thiếp cá nhân' },
     { ma: 'compare',  ten: 'Compare / So sánh quyền lợi', mo: 'Bảng so sánh 16 hãng' },
     { ma: 'sms',      ten: 'SMS / Tin nhắn mẫu',         mo: 'Ảnh tin nhắn mẫu sale gửi khách' },
-    { ma: 'tinhtuoi', ten: 'Age / Tính tuổi bảo hiểm',   mo: 'Nhập ngày sinh → tuổi thật + tuổi báo giá' },
-    { ma: 'tinhphi',  ten: 'Quote / Tính phí bảo hiểm',  mo: 'Tra phí Term Life theo tuổi / mệnh giá / hạng' }
+    { ma: 'tinhtuoi', ten: 'Age / Tính tuổi',   mo: 'Nhập ngày sinh → tuổi thật + tuổi báo giá' },
+    { ma: 'tinhphi',  ten: 'Quote / Tính phí',  mo: 'Tra phí Term Life theo tuổi / mệnh giá / hạng' }
   ];
 
   // NẤC PHÁT HÀNH (10/08/2026) — luật "tính năng mới build dưới quyền super admin"

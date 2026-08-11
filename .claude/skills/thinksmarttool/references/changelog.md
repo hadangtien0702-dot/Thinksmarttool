@@ -3,6 +3,72 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
+### 2026-08-11 17:20 — Huy hiệu "NEW" bị cắt · rút gọn tên · ☠️ XÁC NHẬN 4 Ô BẢNG PHÍ SAI · stress test. ✅ ĐÃ PUSH.
+
+**⓪ Rút gọn tên hai mục** — chủ tool: *"bỏ 2 từ bảo hiểm cho gọn"*.
+`Age / Tính tuổi bảo hiểm` → **`Age / Tính tuổi`** · `Quote / Tính phí bảo hiểm` →
+**`Quote / Tính phí`**. Đổi ĐỒNG BỘ ở cả 4 nơi (cây điều hướng · tiêu đề màn ·
+nhãn ghi `usage_events` · tab Khoá mục) — sót một chỗ là hai tên cùng tồn tại.
+
+**① Huy hiệu "NEW" hiện ra "NE…"** ở mục Application Form (chủ tool bắt).
+Nguyên nhân: huy hiệu bị nhét **BÊN TRONG** `.tree-folder-label`, mà nhãn có
+`overflow:hidden; text-overflow:ellipsis` → cắt luôn cả huy hiệu. Ba mục phẳng
+(SMS/Age/Quote) không lộ lỗi vì chúng tự dựng header, đặt huy hiệu ngoài nhãn.
+Mục này là mục **có dropdown** nên nhãn còn hẹp hơn (mũi tên chiếm chỗ) → lộ ngay.
+→ Sửa gốc: `makeCollapsibleFolder` nhận tham số `moi`, đặt huy hiệu làm **anh em**
+  của nhãn. Đo: huy hiệu ngoài nhãn · rộng 35px · **không bị cắt**.
+
+**② ☠️☠️ BẢNG PHÍ IUL CÓ 4 Ô SAI THẬT — CHỦ TOOL ĐÚNG, VÀ ĐÂY LÀ BẰNG CHỨNG**
+Hôm qua (10/08) tôi soi ra 6 ô "nghi gõ nhầm" bằng quy luật tỉ lệ, chủ tool chốt
+*"số Drive là chuẩn"* nên giữ nguyên. Hôm nay chủ tool nói rõ hơn: **Drive (PDF của
+hãng) mới đúng, Excel/Sheet là chỗ đánh lộn**.
+Có thước ngoài để phân xử: **tên file PDF của hãng chứa luôn số phí**. Đối chiếu
+**5.193 dòng** file `final_database_v2.csv` với bảng phí → **5.178 khớp (99,7%)**,
+15 lệch. Trong 15 ô lệch có **đúng 4 trong 6 ô nghi**, và PDF ghi **chính xác con
+số theo quy luật** mà tôi suy ra hôm qua:
+
+| Tổ hợp | Sheet (tool đang dùng) | PDF của hãng | Quy luật (suy 10/08) |
+|---|---|---|---|
+| Nam NTBC 59t / 225k | 730,25 | **830,25** | 830,25 ✔ |
+| Nữ NTBC 41t / 425k | 469,40 | **496,40** | 496,40 ✔ |
+| Nữ NTBC 33t / 700k | 577,20 | **557,20** | 557,20 ✔ |
+| Nam NTBC 36t / 700k | 735,20 | **753,20** | 753,20 ✔ |
+
+Ba đường độc lập cùng chỉ một chỗ: quy luật tỉ lệ · thứ tự tăng dần · **tên file
+PDF của hãng**. Nặng nhất là ô 59t: sai **$100/tháng**.
+→ ☠️ **VÀ 2 Ô KIA THÌ SHEET ĐÚNG**: Nam NTBC 30t/300k (233,70) và 39t/225k (297,22)
+  — PDF khớp Sheet, tức **thước quy luật của tôi báo nhầm 2 ô**. Đúng bài học 5ac:
+  phải phân biệt "thước sai" với "dữ liệu sai"; 6 ô nghi thì chỉ 4 là thật.
+→ `[CHỜ CHỦ TOOL CHỐT]` Sửa 4 ô này trong `scripts/bang-phi-iul-nlg-20nam-ntbc.txt`
+  rồi chạy lại `node scripts/doi-bang-phi-iul.js`. **Chưa sửa** — đổi số phí là việc
+  của người có thẩm quyền, không phải của tôi.
+
+**②-bis STRESS TEST — `node scripts/stress-tinhphi.js` · 7.123 phép thử, 0 lỗi**
+Bộ mới, chạy được offline. Nó nạp **CHÍNH `js/tinhphi.js`** trong sandbox `vm` với
+`fetch` giả (đọc JSON dưới đĩa) — không chép lại logic sang file test, vì chép là
+thước cùng vật liệu.
+Quét: **mọi** tổ hợp Term Life (1.043 ô có phí) · **mọi** tổ hợp IUL (5.194 ô có
+phí, 619 ô hãng không bán) · biên NGOÀI khoảng tuổi · mệnh giá lạ · tổ hợp hãng
+không bán · **đầu vào rác** (null/NaN/Infinity/{}/[]/chuỗi) · tuổi-mệnh-giá dạng
+CHUỖI phải ra cùng kết quả dạng SỐ · bảng tra PDF không trỏ tổ hợp không tồn tại.
+Ba điều test bắt buộc phải đúng, và đều đúng: **không bao giờ nội suy** · không
+tổ hợp nào trả "có phí" ở chỗ hãng không bán · trả "không có" thì **luôn kèm lý do**.
+☠️ Bàn đo tự bẫy mình một lần: `let`/`const` top-level trong `vm` **không** thành
+thuộc tính của sandbox, nên `sandbox.tpBang` luôn `undefined` → test báo "KHONG NAP
+DUOC BANG PHI" trong khi code đúng hoàn toàn. Phải lấy qua `vm.runInContext(ten)`.
+
+**③ Kiểm file `final_database_v2.csv` (5.194 dòng) — CHƯA NẠP VÀO TOOL**
+Bản v1 (1.927 dòng) đã bị loại vì 2 lỗi: 10 dòng gán tuổi = mệnh giá÷10.000, và
+~160 dòng file **15YRS trộn vào danh sách 20 năm**. Bản v2 có thêm cột `Term` +
+`Fee` (đúng yêu cầu) nên kiểm được 100%:
+- Term: 15 → **160 dòng** (= đúng 160 tổ hợp 15 năm trong bảng phí) · 20 → 5.033
+- Độ phủ: **5.192 / 5.194 tổ hợp có phí** — thiếu đúng 2
+- Còn 3 chỗ cần chủ tool xử: **1 dòng** `Term = KHONG DOC DUOC` (Nam EX1 33t/250k) ·
+  **1 tổ hợp có HAI file trên Drive** với hai mức phí khác nhau (Nam NTBC 2t/100k:
+  $29.90 và $97.17, bản sau mới hơn) · **10 ô lệch nhỏ** (0,01–1,55) chưa rõ vì sao.
+
+---
+
 ### 2026-08-11 16:10 — MỤC "APPLICATION FORM" vào Khoá mục · sửa 2 lỗi nhãn (v1.43). ✅ ĐÃ PUSH.
 
 Chủ tool tự thêm mục **Application Form / Biểu mẫu** (8 ảnh A4 300dpi của AIG ·

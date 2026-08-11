@@ -163,7 +163,7 @@ function renderTinhTuoiNavSection(container, q) {
   el.setAttribute('title', 'Tính tuổi bảo hiểm từ ngày sinh khách hàng');
   el.innerHTML = `
     <span class="tree-folder-icon">${NAV_ICONS.tinhtuoi}</span>
-    <span class="tree-folder-label">Age / Tính tuổi bảo hiểm</span><span class="nav-new">new</span>
+    <span class="tree-folder-label">Age / Tính tuổi</span><span class="nav-new">new</span>
   `;
   el.addEventListener('click', async () => {
     if (!(await confirmLeaveUnsaved())) return;
@@ -194,13 +194,13 @@ function openTinhTuoi() {
   updateHeaderActions();
 
   if (dom.activeFileTitle) {
-    dom.activeFileTitle.textContent = 'Age / Tính tuổi bảo hiểm';
+    dom.activeFileTitle.textContent = 'Age / Tính tuổi';
     dom.activeFileTitle.classList.add('is-active');
   }
   dom.btnSaveTop.disabled = true;
 
   // Đo lường: 1 lượt MỞ công cụ. KHÔNG bao giờ ghi ngày sinh khách vào đây.
-  if (window.TSTAuth && TSTAuth.logUsage) TSTAuth.logUsage('view', 'Age / Tính tuổi bảo hiểm');
+  if (window.TSTAuth && TSTAuth.logUsage) TSTAuth.logUsage('view', 'Age / Tính tuổi');
 
   document.body.classList.add('doc-mode');
   const view = document.getElementById('doc-viewport');

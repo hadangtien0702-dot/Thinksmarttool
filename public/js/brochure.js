@@ -120,8 +120,10 @@ function preprocessLibraryItems(items) {
 // thẻ HTML, và lỗi đó không liên quan gì tới người vừa sửa.
 function renderLibrarySection(container, label, iconHTML, groupsObj, q, moi) {
   groupsObj = groupsObj || {};
-  const nhan = escapeHtml(label) + (moi ? '<span class="nav-new">new</span>' : '');
-  const section = makeCollapsibleFolder(nhan, { extraClass: 'nav-section', iconHTML });
+  // Huy hiệu truyền bằng `moi` để makeCollapsibleFolder đặt NGOÀI nhãn — nhét vào
+  // trong nhãn thì bị `text-overflow: ellipsis` cắt thành "NE…" (chủ tool bắt được
+  // 11/08/2026 ở đúng mục này, vì nó là mục CÓ dropdown nên nhãn hẹp hơn).
+  const section = makeCollapsibleFolder(escapeHtml(label), { extraClass: 'nav-section', iconHTML, moi });
   let count = 0;
   Object.keys(groupsObj).sort(carrierSort).forEach(carrier => {
     let items = (groupsObj[carrier] || []).filter(it => !q || it.name.toLowerCase().includes(q));

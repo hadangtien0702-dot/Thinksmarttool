@@ -82,10 +82,23 @@ function tpNapPdf() {
 // Tổ hợp đang chọn có file map sẵn (tải thẳng) không?
 // ☠️ Tuyệt đối không trả về "file gần đúng": bản minh hoạ ghi rõ tuổi + mệnh giá +
 // phí trên từng trang, đưa nhầm một bản là sale gửi khách con số của người khác.
+// Trả về { pdf: id, csv: id|null, ten } hoặc null.
 function tpFilePdf() {
-  if (!tpPdf || !tpPdf.file) return null;
+  if (!tpPdf) return null;
   const kyHan = tpChon.chuongTrinh === 'IUL' ? tpChon.kyHan : '-';
-  return tpPdf.file[`${tpChon.chuongTrinh}|${kyHan}|${tpChon.gioi}|${tpChon.sucKhoe}|${tpChon.tuoi}|${tpChon.menhGia}`] || null;
+
+  // (1) Bộ 1.927 CẶP pdf+csv của chương trình 20 NĂM — dạng nén "pdfId,csvId".
+  if (tpPdf.capFile20 && tpChon.chuongTrinh === 'IUL' && tpChon.kyHan === '20') {
+    const c = tpPdf.capFile20[`${tpChon.gioi}|${tpChon.sucKhoe}|${tpChon.tuoi}|${tpChon.menhGia}`];
+    if (c) {
+      const [pdf, csv] = c.split(',');
+      return { pdf, csv: csv || null, ten: tpTenFileDrive() };
+    }
+  }
+
+  // (2) 8 file lẻ sếp chia sẻ trực tiếp (có cả 15 năm) — chỉ có PDF.
+  const f = tpPdf.file && tpPdf.file[`${tpChon.chuongTrinh}|${kyHan}|${tpChon.gioi}|${tpChon.sucKhoe}|${tpChon.tuoi}|${tpChon.menhGia}`];
+  return f ? { pdf: f.id, csv: null, ten: f.ten } : null;
 }
 
 // Thư mục Drive SÂU NHẤT còn biết được cho tổ hợp này, dò từ sâu ra nông:
@@ -136,22 +149,28 @@ function tpNutTai() {
   const tm = p ? null : tpThuMucPdf();
   const tenFile = tm ? tpTenFileDrive() : '';
 
-  let nutPdf;
+  const taiThang = (id, chu, ten) =>
+    `<a class="tp-nut-tai" href="https://drive.google.com/uc?export=download&id=${id}"
+       target="_blank" rel="noopener" download title="${escapeHtml(ten)}">${TP_ICON_TAI} ${chu}</a>`;
+
+  let nutHang;
   if (p) {
-    nutPdf = `<a class="tp-nut-tai" href="https://drive.google.com/uc?export=download&id=${p.id}"
-       target="_blank" rel="noopener" download title="${escapeHtml(p.ten)}">${TP_ICON_TAI} Tải PDF minh hoạ</a>`;
+    // Có CSV của hãng thì hiện thành nút RIÊNG, không gộp — hai file khác nhau:
+    // PDF là bản minh hoạ để gửi khách, CSV là bảng dòng tiền theo từng năm.
+    nutHang = taiThang(p.pdf, 'Tải PDF minh hoạ', p.ten + '.pdf')
+            + (p.csv ? taiThang(p.csv, 'Tải CSV của hãng', p.ten + '.csv') : '');
   } else if (tm) {
-    nutPdf = `<a class="tp-nut-tai" href="https://drive.google.com/drive/folders/${tm.id}"
+    nutHang = `<a class="tp-nut-tai" href="https://drive.google.com/drive/folders/${tm.id}"
        target="_blank" rel="noopener"
        title="Mở ${escapeHtml(tm.ten)} trên Drive">${TP_ICON_TAI} Mở PDF + CSV của hãng</a>`;
   } else {
-    nutPdf = `<button type="button" class="tp-nut-tai tat" disabled
+    nutHang = `<button type="button" class="tp-nut-tai tat" disabled
        title="Hãng chỉ phát hành bản minh hoạ cho chương trình IUL.">${TP_ICON_TAI} Chưa có PDF minh hoạ</button>`;
   }
 
   return `
     <div class="tp-tai">
-      ${nutPdf}
+      ${nutHang}
       <button type="button" class="tp-nut-tai" id="tp-tai-csv">${TP_ICON_TAI} Tải CSV bảng phí</button>
     </div>
     ${tenFile ? `<p class="tp-ten-file">Tìm file: <b>${escapeHtml(tenFile)}</b></p>` : ''}`;
@@ -302,7 +321,7 @@ function renderTinhPhiNavSection(container, q) {
   el.setAttribute('title', 'Tra phí Term Life theo tuổi, mệnh giá, giới tính, hạng sức khoẻ');
   el.innerHTML = `
     <span class="tree-folder-icon">${NAV_ICONS.tinhphi}</span>
-    <span class="tree-folder-label">Quote / Tính phí bảo hiểm</span><span class="nav-new">new</span>
+    <span class="tree-folder-label">Quote / Tính phí</span><span class="nav-new">new</span>
   `;
   el.addEventListener('click', async () => {
     if (!(await confirmLeaveUnsaved())) return;
@@ -333,11 +352,11 @@ async function openTinhPhi() {
   updateHeaderActions();
 
   if (dom.activeFileTitle) {
-    dom.activeFileTitle.textContent = 'Quote / Tính phí bảo hiểm';
+    dom.activeFileTitle.textContent = 'Quote / Tính phí';
     dom.activeFileTitle.classList.add('is-active');
   }
   dom.btnSaveTop.disabled = true;
-  if (window.TSTAuth && TSTAuth.logUsage) TSTAuth.logUsage('view', 'Quote / Tính phí bảo hiểm');
+  if (window.TSTAuth && TSTAuth.logUsage) TSTAuth.logUsage('view', 'Quote / Tính phí');
 
   document.body.classList.add('doc-mode');
   const view = document.getElementById('doc-viewport');
