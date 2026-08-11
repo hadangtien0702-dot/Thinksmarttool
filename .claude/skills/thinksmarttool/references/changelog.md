@@ -3,6 +3,37 @@
 **This is the freshest source of truth.** Read it first every session; update it last every session.
 Newest entries on top. Keep it concrete (versions, files, commands).
 
+---
+
+## TRẠNG THÁI HIỆN TẠI — chốt 2026-08-11 20:10
+
+**Bản live `tool.thinksmartinsurance.com` = v1.43, đã push hết** (commit `0525c0a`).
+Không còn gì nằm chờ trên máy.
+
+**8 mục trên cây điều hướng** — Proposal · Brochure · **Application Form** · Name Card ·
+Compare · SMS · **Age / Tính tuổi** · **Quote / Tính phí**.
+Ba mục cuối + Application Form đang ở **NẤC 1 hoặc mới ra**, xem tab "Khoá mục".
+
+**Việc kế tiếp — theo thứ tự:**
+1. `[CHỜ SẾP]` **11 ô bảng phí IUL còn lệch** với PDF của hãng: 10 ô lệch nhỏ
+   (0,01–1,55) chưa rõ nguyên nhân, và **Nam NTBC 2t/$100.000 có HAI file trên Drive**
+   với hai mức phí ($29.90 và $97.17, bản $97.17 mới hơn). **Không tự chọn.**
+2. `[CHỜ CHỦ TOOL]` **Lên nấc cho Age · Quote · Application Form** khi test xong —
+   bấm dải 3 nút ở tab "Khoá mục", không cần push.
+3. `[CHỜ]` **15 năm chưa có bảng tra file** — Gemini mới liệt kê xong 20 năm.
+   Bộ 15 năm chạy lại thì lọc đúng 4 cửa như đã làm (xem mục ③-bis ngày 11/08).
+
+**Chạy trước khi tin bất cứ thay đổi nào về phí:**
+```
+node scripts/stress-tinhphi.js    # 12.305 phep thu
+node scripts/kiem-tinh-tuoi.js    # 102.347 phep tinh
+node scripts/soi-bang-phi.js      # soi quy luat bang Term Life
+```
+Và mở `localhost:8000/kiem-nhanh.html` — trang tự chẩn đoán, biết ngay máy chủ đang
+chạy bản nào (dùng khi "tool vẫn thấy sai" để tách lỗi CODE với cache trình duyệt).
+
+---
+
 ### 2026-08-11 17:20 — Huy hiệu "NEW" bị cắt · rút gọn tên · ☠️ XÁC NHẬN 4 Ô BẢNG PHÍ SAI · stress test. ✅ ĐÃ PUSH.
 
 **⓪-a GỌN LẠI KHỐI NÚT TẢI — chủ tool: *"nhiều nút download quá"***

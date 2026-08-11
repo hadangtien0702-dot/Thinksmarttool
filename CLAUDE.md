@@ -167,12 +167,20 @@ làm thước báo sai — tuổi 20–26 phí giảm dần, và "banding" khi�
 Trước đây muốn khoá phải sửa code + push. Nay bật/tắt ngay trên web.
 
 - **Ở đâu:** `/members` → tab thứ 3 **"Khoá mục"**. Super Admin **và Admin** đều dùng được.
-- **Khoá được 4 mục:** `proposal` · `brochure` · `namecard` · `compare` (khớp cây thư mục Tool).
+- **Khoá được 8 mục** (cập nhật 11/08/2026 — trước đây tài liệu này ghi 4, đã sai):
+  `proposal` · `brochure` · `appform` · `namecard` · `compare` · `sms` · `tinhtuoi` · `tinhphi`.
+  Danh sách nằm ở `MUC_KHOA` trong `js/portal/members.js` — thêm mục thì sửa ở đó.
 - **Khoá chỉ áp cho role `user`** (77 nhân viên). Admin/Super Admin luôn vào được — họ là
   người đang cập nhật nội dung, khoá họ là tự khoá đường sửa.
 - **Trạng thái nằm ở bảng `khoa_muc` trên Supabase**, KHÔNG phải localStorage — khoá phải
   áp cho cả đội, để ở máy chủ tool thì chỉ mình chủ tool thấy.
-- ☠️ **Dùng `UPDATE`, KHÔNG `upsert`.** 4 dòng đã tạo sẵn bằng SQL. `upsert` bị PostgREST
+- ☠️ **THÊM MỤC MỚI = 7 CHỖ, thiếu một là hỏng lặng lẽ** (đúc 11/08/2026 khi nối
+  Application Form): `appState.khoaMuc` · `appState.hienCho` (='super') ·
+  `appState.library` (nếu là thư viện file) · `NAV_ICONS` · `renderFileTree`
+  (main.js) · **`MUC_KHOA` (members.js)** · **`insert into khoa_muc` (schema.sql)**.
+  Thiếu dòng SQL thì bấm đổi nấc **không ăn mà cũng không báo lỗi** — UPDATE khớp
+  0 dòng vẫn trả 204.
+- ☠️ **Dùng `UPDATE`, KHÔNG `upsert`.** Các dòng đã tạo sẵn bằng SQL. `upsert` bị PostgREST
   dịch thành `INSERT ... ON CONFLICT DO UPDATE` — lệnh này phải ĐỌC hàng để dò trùng khoá,
   chính là lỗi đã làm tính năng "ai đang online" chết câm suốt 8 ngày mà không ai biết.
 - **Lỗi mạng khi đọc bảng → coi như không khoá gì.** Thà mở nhầm một lúc còn hơn cả đội
@@ -199,6 +207,34 @@ Trước đây muốn khoá phải sửa code + push. Nay bật/tắt ngay trên
 - Khoá mục được như 4 mục kia, nhưng bảng `khoa_muc` phải có dòng `sms`:
   `insert into public.khoa_muc (muc) values ('sms') on conflict (muc) do nothing;`
   Thiếu dòng đó thì bấm khoá **không ăn mà cũng không báo lỗi** (UPDATE 0 dòng → 204).
+
+## 2c-ter. PDF + CSV MINH HOẠ CỦA HÃNG trong màn Tính phí (11/08/2026)
+
+Bấm là tải **đúng file của đúng tổ hợp**, không phải mở thư mục dò tay.
+
+- **Bảng tra:** `public/data/pdf-file-iul.json` — **5.181 tổ hợp IUL**, khoá
+  `KYHAN|GIOI|SUCKHOE|TUOI|MENHGIA` → `"pdfId,csvId"`. 505 KB nên **nạp riêng**, chỉ
+  khi mở màn Tính phí. File nhỏ `pdf-minh-hoa.json` giữ việc khác: thư mục Drive dự
+  phòng + 8 file lẻ + toàn bộ ghi chú cấm.
+- **Chỉ IUL có.** Hãng **không phát hành** bản minh hoạ cho Term Life → màn Term Life
+  không hiện nút nào. Đó là sự thật về dữ liệu, đừng "sửa" cho có nút.
+- **Đúng 2 nút** (chủ tool chốt): *Tải PDF* · *Tải CSV*. Đừng thêm nút thứ ba mà chưa
+  hỏi — đã bị cắt một lần.
+
+☠️ **NẠP BỘ DỮ LIỆU MỚI (ví dụ 15 năm) PHẢI QUA ĐỦ 4 CỬA**, trượt một cửa là loại dòng:
+1. đọc được kỳ hạn (15/20) · 2. tổ hợp có thật trong bảng phí ·
+3. **phí ghi trong TÊN FILE khớp bảng phí đến 0,005** · 4. hai link hợp lệ và khác nhau.
+
+Cửa số 3 là cửa quan trọng nhất — chính nó bắt được bản đầu (Gemini liệt kê) có
+**~160 dòng file 15 năm bị trộn vào danh sách 20 năm** (tuổi đúng, mệnh giá đúng, chỉ
+sai kỳ hạn nên không phép kiểm cấu trúc nào thấy) và **10 dòng gán tuổi = mệnh giá÷10.000**.
+
+☠️ **Bắt bên liệt kê xuất kèm cột `Term` + `Fee`.** Thiếu hai cột đó thì không tách
+được 15/20 năm và không tự kiểm được gì — bản v1 thiếu, phải bỏ cả bộ 1.927 dòng.
+
+☠️ **KHÔNG dùng link tìm kiếm Drive** (`/drive/search?q=…`) để nhắm file. Đã đo: tổ hợp
+20 năm ra đúng, **15 năm ra rỗng** với cùng cách viết; bỏ ngoặc kép thì trả về hàng chục
+file sai tổ hợp. Lúc đúng lúc sai còn tệ hơn không có.
 
 ## 2d. ⚠️ AI ĐƯỢC XEM DỮ LIỆU KHÁCH HÀNG (nới 10/08/2026 — ĐẢO NGƯỢC quyết định 27/07)
 
