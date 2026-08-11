@@ -29,6 +29,17 @@ app.use(express.json({ limit: '50mb' }));
 // (static sẽ tự trả public/index.html cho "/" nếu đặt sau).
 
 // Static files from "public" directory
+//
+// ☠️☠️ ĐỌC TRƯỚC KHI SỬA CACHE Ở ĐÂY: KHỐI NÀY **KHÔNG CHẠY TRÊN BẢN LIVE**.
+// Vercel phục vụ `public/` thẳng từ CDN biên, request không bao giờ tới hàm Node.
+// Đo được 11/08/2026 — dấu hiệu nằm ở `X-Vercel-Id`:
+//     /js/core.js?v=47  ->  hkg1::s4htd-…          MỘT chặng  = CDN trả thẳng
+//     /api/library      ->  hkg1::iad1::bm7zq-…    HAI chặng  = biên -> hàm ở iad1
+// Tôi đã sửa đúng chỗ này, push, rồi đo lại: HTML mới lên nhưng `Cache-Control`
+// KHÔNG đổi chút nào. Sửa ở đây chỉ ăn khi chạy `node server.js` ở máy.
+// => Luật cache CHO BẢN LIVE nằm ở **`vercel.json`** (mục `headers`). Sửa một chỗ
+//    phải sửa cả chỗ kia, không thì máy mình và bản live cư xử khác nhau.
+//
 // ☠️ CACHE — sửa 11/08/2026 sau khi ĐO trên bản live.
 // Trước đó express.static để mặc định `max-age=0, must-revalidate`, nghĩa là MỖI lần
 // vào trang trình duyệt phải hỏi lại máy chủ TỪNG file một dù file không đổi. Đo thật

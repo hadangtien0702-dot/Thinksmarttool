@@ -58,6 +58,17 @@ cả khi chạy được dòng JS đầu tiên. Trong khi tool **đã có sẵn 
 
 Sửa ở `server.js`: **có `?v=` → `max-age=31536000, immutable`; không có → giữ nguyên**.
 
+☠️☠️ **SỬA server.js XONG, PUSH, ĐO LẠI → HEADER KHÔNG ĐỔI GÌ CẢ.** Vì
+**Vercel phục vụ `public/` thẳng từ CDN biên, request không bao giờ tới hàm Node** —
+`express.static` **chỉ chạy khi `node server.js` ở máy**. Dấu hiệu nhận ra nằm ở
+`X-Vercel-Id`: `/js/core.js?v=47` → `hkg1::s4htd-…` (**một** chặng = CDN trả thẳng),
+còn `/api/library` → `hkg1::iad1::bm7zq-…` (**hai** chặng = biên → hàm ở `iad1`).
+→ Luật cache **cho bản live** phải nằm ở **`vercel.json`** (mục `headers`, dùng
+`has: [{type:"query", key:"v"}]` để bám đúng quy ước `?v=`). **Sửa một chỗ phải sửa
+cả chỗ kia**, không thì máy mình và bản live cư xử khác nhau.
+→ Bài học: *"đã push"* ≠ *"đã ăn"*. Nếu không đo lại trên live thì đã báo xong với
+một bản vá **không có tác dụng gì** cho 77 sale.
+
 ☠️ **VÌ SAO BÁM THEO `?v=` CHỨ KHÔNG THEO ĐUÔI FILE:** thứ KHÔNG có `?v=` đúng là thứ
 tuyệt đối không được cache lâu — `public/data/*.json` (**BẢNG PHÍ**) và
 `public/templates/*` (mẫu proposal). Thay bảng phí mà sale ôm bản cũ 1 năm là **báo
