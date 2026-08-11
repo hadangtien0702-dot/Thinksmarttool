@@ -54,7 +54,7 @@ let tongCa = 0, loi = [];
 const bao = (nhom, mo) => loi.push(nhom + ': ' + mo);
 
 (async function () {
-  await Promise.all([tpNapBang(), tpNapIul(), tpNapPdf()]);
+  await Promise.all([tpNapBang(), tpNapIul(), tpNapPdf(), lay("tpNapFile")()]);
   const bangTerm = lay("tpBang"), bangIul = lay("tpIul");
   if (!bangTerm || !bangIul) { console.log('KHONG NAP DUOC BANG PHI'); process.exit(1); }
 
@@ -173,6 +173,36 @@ const bao = (nhom, mo) => loi.push(nhom + ': ' + mo);
       if (!/^IUL\|(15|20)(\|(MALE|FEMALE)\|(NTBC|TBC|EX1)(\|\d+)?)?$/.test(k)) bao('PDF', `khoa thu muc sai dinh dang: ${k}`);
     });
     if (pdf.capFile20) bao('PDF', 'capFile20 VAN CON — bo du lieu nay da bi loai (xem _capFile20)');
+  }
+
+  // ---- 5. BẢNG TRA 5.181 FILE: mọi khoá phải trỏ tổ hợp CÓ PHÍ THẬT -------
+  // Đây là cửa chặn quan trọng nhất. Bản v1 (đã loại) trộn file 15 năm vào 20 năm
+  // và gán tuổi = mệnh giá÷10.000 — cả hai đều bị bắt bởi đúng phép kiểm này.
+  console.log('5. Bang tra file (pdf-file-iul.json)');
+  const tep = lay('tpFile');
+  if (!tep || !tep.file) { bao('FILE', 'KHONG nap duoc pdf-file-iul.json'); }
+  else {
+    let ok = 0;
+    Object.keys(tep.file).forEach(k => {
+      tongCa++;
+      const p = k.split('|');            // KYHAN|GIOI|SUCKHOE|TUOI|MENHGIA
+      if (p.length !== 5) { bao('FILE', `khoa sai dinh dang: ${k}`); return; }
+      const o = bangIul.bang[`${p[0]}|${p[1]}|${p[2]}`];
+      if (!o) { bao('FILE', `${k}: nhom nay khong co trong bang phi`); return; }
+      const v = o.tuoi[+p[3]] && o.tuoi[+p[3]][+p[4]];
+      if (v == null) { bao('FILE', `${k}: to hop KHONG co phi trong bang phi`); return; }
+      const [a, b] = String(tep.file[k]).split(',');
+      if (!a || !b) { bao('FILE', `${k}: thieu link pdf hoac csv`); return; }
+      if (a === b) { bao('FILE', `${k}: pdf id TRUNG csv id`); return; }
+      if (a.length < 20 || b.length < 20) { bao('FILE', `${k}: id qua ngan`); return; }
+      ok++;
+    });
+    // Không ID nào được dùng cho hai tổ hợp khác nhau
+    const tatCa = Object.values(tep.file).flatMap(v => String(v).split(','));
+    const trung = tatCa.length - new Set(tatCa).size;
+    tongCa++;
+    if (trung) bao('FILE', `${trung} ID bi dung lai cho to hop khac`);
+    console.log(`   ${ok} to hop hop le · ${trung} ID trung`);
   }
 
   // ---- KẾT ---------------------------------------------------------------

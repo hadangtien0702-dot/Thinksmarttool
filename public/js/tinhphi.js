@@ -79,24 +79,46 @@ function tpNapPdf() {
   return tpPdfDangNap;
 }
 
+// ---- BẢNG TRA FILE THEO TỪNG TỔ HỢP (11/08/2026) --------------------------
+// 5.181 tổ hợp IUL, mỗi tổ hợp một CẶP pdf+csv → bấm là tải đúng file, không phải
+// mở thư mục rồi tự dò. Nguồn: danh sách file trên Drive của sếp.
+// ☠️ File 505 KB nên nạp RIÊNG và chỉ khi mở màn Tính phí — đừng gộp vào
+// `pdf-minh-hoa.json` (file đó nhỏ, nạp cùng lúc, giữ vai trò khác: thư mục + 8
+// file lẻ + toàn bộ ghi chú cấm).
+// ☠️ Mỗi dòng trong đó đã qua 4 cửa: đọc được kỳ hạn · tổ hợp có thật trong bảng
+// phí · **phí ghi trong TÊN FILE khớp bảng phí** · hai link hợp lệ và khác nhau.
+// Cửa thứ ba là cửa quan trọng nhất — nó chính là thứ bắt được bản v1 gán sai
+// (trộn file 15 năm vào 20 năm). Nạp bộ mới thì PHẢI kiểm lại đúng 4 cửa đó.
+let tpFile = null;
+let tpFileDangNap = null;
+function tpNapFile() {
+  if (tpFile) return tpFileDangNap;
+  if (tpFileDangNap) return tpFileDangNap;
+  tpFileDangNap = fetch('/data/pdf-file-iul.json')
+    .then(r => r.ok ? r.json() : null)
+    .then(j => { tpFile = j; return j; })
+    .catch(() => null);
+  return tpFileDangNap;
+}
+
 // Tổ hợp đang chọn có file map sẵn (tải thẳng) không?
 // ☠️ Tuyệt đối không trả về "file gần đúng": bản minh hoạ ghi rõ tuổi + mệnh giá +
 // phí trên từng trang, đưa nhầm một bản là sale gửi khách con số của người khác.
 // Trả về { pdf: id, csv: id|null, ten } hoặc null.
 function tpFilePdf() {
-  if (!tpPdf) return null;
-  const kyHan = tpChon.chuongTrinh === 'IUL' ? tpChon.kyHan : '-';
-
-  // (1) Bộ 1.927 CẶP pdf+csv của chương trình 20 NĂM — dạng nén "pdfId,csvId".
-  if (tpPdf.capFile20 && tpChon.chuongTrinh === 'IUL' && tpChon.kyHan === '20') {
-    const c = tpPdf.capFile20[`${tpChon.gioi}|${tpChon.sucKhoe}|${tpChon.tuoi}|${tpChon.menhGia}`];
+  // (1) Bảng tra 5.181 tổ hợp — CẶP pdf+csv, dạng nén "pdfId,csvId".
+  if (tpFile && tpFile.file && tpChon.chuongTrinh === 'IUL') {
+    const c = tpFile.file[`${tpChon.kyHan}|${tpChon.gioi}|${tpChon.sucKhoe}|${tpChon.tuoi}|${tpChon.menhGia}`];
     if (c) {
       const [pdf, csv] = c.split(',');
       return { pdf, csv: csv || null, ten: tpTenFileDrive() };
     }
   }
 
-  // (2) 8 file lẻ sếp chia sẻ trực tiếp (có cả 15 năm) — chỉ có PDF.
+  // (2) 8 file lẻ sếp chia sẻ trực tiếp — chỉ có PDF, nhưng có ca 15 năm mà
+  //     bảng trên chưa phủ, nên vẫn giữ làm lớp dự phòng.
+  if (!tpPdf) return null;
+  const kyHan = tpChon.chuongTrinh === 'IUL' ? tpChon.kyHan : '-';
   const f = tpPdf.file && tpPdf.file[`${tpChon.chuongTrinh}|${kyHan}|${tpChon.gioi}|${tpChon.sucKhoe}|${tpChon.tuoi}|${tpChon.menhGia}`];
   return f ? { pdf: f.id, csv: null, ten: f.ten } : null;
 }
@@ -164,8 +186,16 @@ function tpNutTai() {
        target="_blank" rel="noopener"
        title="Mở ${escapeHtml(tm.ten)} trên Drive">${TP_ICON_TAI} Mở PDF + CSV của hãng</a>`;
   } else {
+    // ☠️ NÓI THẲNG LÝ DO, đừng để nhãn chung chung. Chủ tool mở màn Term Life thấy
+    // nút mờ và tưởng tool hỏng ("button nó vẫn đang bị ẩn đó em") — trong khi sự
+    // thật là hãng KHÔNG phát hành bản minh hoạ cho Term Life, cả Drive chỉ có IUL.
+    // Nhãn "Chưa có PDF minh hoạ" nghe như thiếu sót tạm thời; "Term Life không có
+    // PDF minh hoạ" nói rõ đây là chuyện của hãng, không phải lỗi tool.
+    const laTerm = tpChon.chuongTrinh !== 'IUL';
     nutHang = `<button type="button" class="tp-nut-tai tat" disabled
-       title="Hãng chỉ phát hành bản minh hoạ cho chương trình IUL.">${TP_ICON_TAI} Chưa có PDF minh hoạ</button>`;
+       title="${laTerm ? 'Hãng chỉ phát hành bản minh hoạ cho chương trình IUL (FlexLife).'
+                       : 'Tổ hợp này chưa có bản minh hoạ trên Drive.'}">${TP_ICON_TAI} ${
+         laTerm ? 'Term Life không có PDF' : 'Tổ hợp này chưa có PDF'}</button>`;
   }
 
   return `
@@ -365,7 +395,7 @@ async function openTinhPhi() {
 
   // Bảng tra PDF nạp CÙNG LÚC với hai bảng phí (nó chỉ ~2 KB) — nạp sau thì lần
   // bấm "Tính phí" đầu tiên chưa biết có PDF hay không, nút sẽ thiếu rồi mới hiện.
-  await Promise.all([tpNapBang(), tpNapIul(), tpNapPdf()]);
+  await Promise.all([tpNapBang(), tpNapIul(), tpNapPdf(), tpNapFile()]);
   if (!tpBang) {
     view.innerHTML = `<div class="tp-wrap"><section class="tp-card">
       <h2 class="tp-title">Tính phí bảo hiểm</h2>

@@ -131,10 +131,20 @@ Hai bảng phí nằm ở `public/data/*.json`, **SINH RA** từ `scripts/*.txt`
 **Nguồn gốc:** Google Sheet trong Drive do **sếp của chủ tool** làm và kiểm tra.
 Chủ tool chốt: *"số Drive là chuẩn, em có thể làm theo số Drive"*.
 
-☠️ **SÁU Ô TRONG BẢNG IUL 20 NĂM (2 sheet NTBC) PHÁ VỠ QUY LUẬT — GIỮ NGUYÊN.**
-Danh sách + số "theo quy luật" ghi ở đầu `scripts/bang-phi-iul-nlg-20nam-ntbc.txt`.
-Nặng nhất: Nam NTBC 59 tuổi / 225k lệch **$100/tháng**. Forum cũng trả về đúng những
-số đó. **Đừng "sửa cho đẹp"** — sếp phải sửa trong Drive, rồi chạy lại script.
+☠️ **BỐN Ô TRONG BẢNG IUL 20 NĂM ĐÃ ĐƯỢC SỬA 11/08/2026 — chủ tool duyệt.**
+10/08 soi ra "6 ô nghi gõ nhầm" bằng quy luật tỉ lệ, chủ tool chốt giữ nguyên.
+11/08 chủ tool nói rõ: **PDF minh hoạ của hãng là số đúng, Sheet/Excel mới là chỗ
+đánh lộn**. Có thước ngoài phân xử — **tên file PDF chứa luôn số phí** — nên đối
+chiếu được 5.193 dòng: 4 ô có PDF khớp đúng "số theo quy luật" → đã sửa; **2 ô kia
+PDF khớp Sheet** → thước của tôi báo nhầm, giữ nguyên.
+Chi tiết + số cũ/mới ghi ở đầu `scripts/bang-phi-iul-nlg-20nam-ntbc.txt`.
+→ **Bài học: quy luật tỉ lệ chỉ để KHOANH VÙNG, không đủ để kết tội.** 6 ô nghi thì
+  chỉ 4 là thật. Muốn sửa số phí phải có thước NGOÀI (PDF hãng / bản đang chạy).
+→ Sửa số trong file `.txt` thì **phải sửa cả TỔNG KIỂM TRA cuối dòng** (không thì
+  script chặn) và sửa **theo vị trí cột** đọc từ header `#MG` của chính sheet đó —
+  thay bằng chuỗi sẽ bắt nhầm (dòng `20FN|33` có cả `577.20` lẫn `577.10`).
+→ Còn **11 ô lệch nhỏ** (0,01–1,55) chưa rõ nguyên nhân, và **1 tổ hợp có HAI file
+  trên Drive** với hai mức phí (Nam NTBC 2t/100k: $29.90 vs $97.17) — chờ sếp xác nhận.
 
 ☠️ **HAI CHƯƠNG TRÌNH DÙNG HAI BỘ MÃ SỨC KHOẺ:** Term Life `SNTBC/STBC/ENTBC1` ·
 IUL `NTBC/TBC/EX1`. Dùng nhầm bộ là tra không ra dòng nào.

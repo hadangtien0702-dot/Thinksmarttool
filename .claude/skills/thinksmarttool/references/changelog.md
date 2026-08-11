@@ -39,9 +39,15 @@ PDF của hãng**. Nặng nhất là ô 59t: sai **$100/tháng**.
 → ☠️ **VÀ 2 Ô KIA THÌ SHEET ĐÚNG**: Nam NTBC 30t/300k (233,70) và 39t/225k (297,22)
   — PDF khớp Sheet, tức **thước quy luật của tôi báo nhầm 2 ô**. Đúng bài học 5ac:
   phải phân biệt "thước sai" với "dữ liệu sai"; 6 ô nghi thì chỉ 4 là thật.
-→ `[CHỜ CHỦ TOOL CHỐT]` Sửa 4 ô này trong `scripts/bang-phi-iul-nlg-20nam-ntbc.txt`
-  rồi chạy lại `node scripts/doi-bang-phi-iul.js`. **Chưa sửa** — đổi số phí là việc
-  của người có thẩm quyền, không phải của tôi.
+→ ✅ **ĐÃ SỬA 11/08 sau khi chủ tool duyệt** ("sửa 4 ô đó đi em"). Cách làm:
+  sao lưu file nguồn trước · sửa **theo vị trí cột** đọc từ header `#MG` của chính
+  sheet đó (KHÔNG thay bằng chuỗi — dòng `20FN|33` có cả `577.20` lẫn `577.10` cạnh
+  nhau) · cập nhật **tổng kiểm tra** cuối dòng · chạy lại `doi-bang-phi-iul.js`.
+  Kiểm sau khi sửa: **đúng 4 ô đổi, 0 ô khác bị đụng** (so từng ô với bản trong git).
+  Đối chiếu lại với PDF: khớp **5.178 → 5.182**, lệch **15 → 11**.
+→ `[CHỜ]` **11 ô còn lệch** — 10 ô lệch nhỏ (0,01–1,55) chưa rõ nguyên nhân, và
+  **Nam NTBC 2t/$100.000** thì Drive có **HAI file** khác phí ($29.90 và $97.17,
+  bản $97.17 mới hơn). Cần sếp xác nhận, không tự chọn.
 
 **②-bis STRESS TEST — `node scripts/stress-tinhphi.js` · 7.123 phép thử, 0 lỗi**
 Bộ mới, chạy được offline. Nó nạp **CHÍNH `js/tinhphi.js`** trong sandbox `vm` với
@@ -57,7 +63,25 @@ tổ hợp nào trả "có phí" ở chỗ hãng không bán · trả "không c�
 thuộc tính của sandbox, nên `sandbox.tpBang` luôn `undefined` → test báo "KHONG NAP
 DUOC BANG PHI" trong khi code đúng hoàn toàn. Phải lấy qua `vm.runInContext(ten)`.
 
-**③ Kiểm file `final_database_v2.csv` (5.194 dòng) — CHƯA NẠP VÀO TOOL**
+**③-bis ✅ ĐÃ NẠP 5.181 TỔ HỢP — bấm là tải ĐÚNG FILE, không phải mở thư mục**
+Chủ tool: *"bấm nút download thì chỉ link tới thư mục Drive thôi chứ không chính xác
+là file anh cần"* — đúng, trước đó chỉ 8 tổ hợp có ID file.
+Bản v2 có cột `Term` + `Fee` nên lọc được. **`public/data/pdf-file-iul.json`** (505 KB,
+nạp riêng, chỉ khi mở màn Tính phí). Mỗi dòng phải qua **4 CỬA**, trượt một cửa là loại:
+1. đọc được kỳ hạn (15/20) · 2. tổ hợp có thật trong bảng phí ·
+3. **phí trong TÊN FILE khớp bảng phí đến 0,005** · 4. hai link hợp lệ và khác nhau.
+→ Nhận **5.181**, loại **13** (11 phí lệch · 1 kỳ hạn không đọc được · 1 link hỏng).
+→ Cửa số 3 chính là thứ bắt được bản v1: nó loại sạch các dòng trộn 15 năm vào 20 năm.
+→ Kiểm chính ví dụ chủ tool đưa (Nam·TBC·35t·$175.000): file trả về đúng
+  `Male - TBC - 35T - $175,000 - $205.45 - 20YRS` — khớp cả tổ hợp lẫn phí trên màn.
+→ Nút nay có **3 mức**: có file → *Tải PDF minh hoạ* + *Tải CSV của hãng* (hai nút
+  riêng, hai loại tài liệu khác nhau) · chỉ biết thư mục → *Mở PDF + CSV của hãng* ·
+  Term Life → nút mờ **"Term Life không có PDF"** (nói thẳng lý do, vì nhãn cũ
+  "Chưa có PDF minh hoạ" làm chủ tool tưởng tool hỏng).
+→ Stress test thêm mục 5: mọi khoá phải trỏ tổ hợp **có phí thật**, không ID nào
+  dùng lại cho hai tổ hợp. **12.305 phép thử, 0 lỗi.**
+
+**③ Kiểm file `final_database_v2.csv` (5.194 dòng) — bản gốc trước khi lọc**
 Bản v1 (1.927 dòng) đã bị loại vì 2 lỗi: 10 dòng gán tuổi = mệnh giá÷10.000, và
 ~160 dòng file **15YRS trộn vào danh sách 20 năm**. Bản v2 có thêm cột `Term` +
 `Fee` (đúng yêu cầu) nên kiểm được 100%:
