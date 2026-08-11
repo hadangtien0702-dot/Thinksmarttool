@@ -1,0 +1,74 @@
+{
+  "dialog.css": {
+    "v": "4",
+    "bam": "7091b8f31b67"
+  },
+  "js/animations.js": {
+    "v": "4",
+    "bam": "78d5c3a552ef"
+  },
+  "js/brochure.js": {
+    "v": "26",
+    "bam": "ba7d543444a2"
+  },
+  "js/core.js": {
+    "v": "47",
+    "bam": "1c636a037382"
+  },
+  "js/main.js": {
+    "v": "22",
+    "bam": "be3ac91df418"
+  },
+  "js/namecard.js": {
+    "v": "6",
+    "bam": "a7ff647bdc0e"
+  },
+  "js/portal/auth.js": {
+    "v": "11",
+    "bam": "c80c448b723e"
+  },
+  "js/portal/config.js": {
+    "v": "8",
+    "bam": "60bca9fe50ff"
+  },
+  "js/portal/members.js": {
+    "v": "58",
+    "bam": "8037ee766adc"
+  },
+  "js/portal/videos.js": {
+    "v": "2",
+    "bam": "9c8798add265"
+  },
+  "js/proposal.js": {
+    "v": "40",
+    "bam": "851547b30f94"
+  },
+  "js/sosanh.js": {
+    "v": "12",
+    "bam": "97006a54c6c7"
+  },
+  "js/tinhphi.js": {
+    "v": "18",
+    "bam": "964f16e7b120"
+  },
+  "js/tinhtuoi.js": {
+    "v": "12",
+    "bam": "b27c947365e6"
+  },
+  "js/ui-dialog.js": {
+    "v": "3",
+    "bam": "42e3b54ad49d"
+  },
+  "portal.css": {
+    "v": "80",
+    "bam": "58696d8adb5f"
+  },
+  "style.css": {
+    "v": "110",
+    "bam": "431cec098004"
+  },
+  "vendor/gsap.min.js": {
+    "v": "3.15.0",
+    "bam": "4d0f51c97fae"
+  }
+}

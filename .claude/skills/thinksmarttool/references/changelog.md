@@ -5,10 +5,19 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 
 ---
 
-## TRẠNG THÁI HIỆN TẠI — chốt 2026-08-11 20:10
+## TRẠNG THÁI HIỆN TẠI — chốt 2026-08-11 20:35
 
-**Bản live `tool.thinksmartinsurance.com` = v1.43, đã push hết** (commit `0525c0a`).
-Không còn gì nằm chờ trên máy.
+**Bản live `tool.thinksmartinsurance.com` đã push hết.** Không còn gì nằm chờ trên máy.
+
+☠️ **TỪ 11/08/2026 FILE TĨNH CÓ `?v=` ĐƯỢC CACHE 1 NĂM (`immutable`).**
+Sửa file mà quên bump `?v=` là **77 sale ôm code cũ cả năm** và không có dấu hiệu gì.
+**Bắt buộc chạy trước mỗi lần push:**
+```
+node scripts/kiem-cache-version.js
+```
+Bump xong thì chốt lại sổ: `node scripts/kiem-cache-version.js --ghi`.
+Thứ **không** có `?v=` (bảng phí `public/data/*.json`, `public/templates/*`, mọi `.html`)
+vẫn hỏi lại mỗi lần — **cố ý**, đừng gắn `?v=` cho chúng.
 
 **8 mục trên cây điều hướng** — Proposal · Brochure · **Application Form** · Name Card ·
 Compare · SMS · **Age / Tính tuổi** · **Quote / Tính phí**.
@@ -31,6 +40,84 @@ node scripts/soi-bang-phi.js      # soi quy luat bang Term Life
 ```
 Và mở `localhost:8000/kiem-nhanh.html` — trang tự chẩn đoán, biết ngay máy chủ đang
 chạy bản nào (dùng khi "tool vẫn thấy sai" để tách lỗi CODE với cache trình duyệt).
+
+---
+
+### 2026-08-11 20:35 — TỐC ĐỘ TẢI: cache 1 năm · gỡ 70 KB CSS chết · menu bớt một vòng mạng.
+
+Chủ tool: *"em kiểm tra và fix phần loading của menu và các tool — anh thấy có cái
+xuất hiện chậm, load lâu"*. **Đo trước, sửa sau** — cả 3 chỗ dưới đều có số đo.
+
+**① ☠️ MỌI FILE TĨNH ĐỀU KHÔNG ĐƯỢC CACHE — 16 vòng hỏi lại mỗi lượt vào trang**
+
+`express.static` để mặc định `Cache-Control: public, max-age=0, must-revalidate`.
+Đo trên live: **16/16 file trả 304** (không tải lại nội dung) **nhưng vẫn tốn
+1.233 ms tổng vòng hỏi** — chạy 6 kết nối song song vẫn ~206 ms đứng không, trước
+cả khi chạy được dòng JS đầu tiên. Trong khi tool **đã có sẵn `?v=`** (`style.css?v=110`,
+`core.js?v=47`…) — đúng thứ sinh ra để cache vĩnh viễn mà chưa từng dùng tới.
+
+Sửa ở `server.js`: **có `?v=` → `max-age=31536000, immutable`; không có → giữ nguyên**.
+
+☠️ **VÌ SAO BÁM THEO `?v=` CHỨ KHÔNG THEO ĐUÔI FILE:** thứ KHÔNG có `?v=` đúng là thứ
+tuyệt đối không được cache lâu — `public/data/*.json` (**BẢNG PHÍ**) và
+`public/templates/*` (mẫu proposal). Thay bảng phí mà sale ôm bản cũ 1 năm là **báo
+sai số tiền cho khách**. Bám `?v=` thì hai nhóm đó **tự động** an toàn. Đã đo lại
+từng cái: `tool.html` · `index.html` · `bang-phi-iul.json` · `bang-phi-termlife.json` ·
+`pdf-file-iul.json` · `templates/manifest.json` — **6/6 vẫn `must-revalidate`**.
+
+**②-bis ☠️ CACHE 1 NĂM ĐẺ RA MỘT CÁI BẪY MỚI → PHẢI CHẶN BẰNG CƠ CHẾ**
+
+Sửa file mà **quên bump `?v=` = 77 sale ôm code cũ suốt một năm**, không dấu hiệu gì
+(máy mình luôn đúng vì là file mới tải lần đầu). Trước khi đổi luật, quên bump chỉ
+chậm một nhịp; sau khi đổi luật là **hỏng thật**. Nên dựng
+**`scripts/kiem-cache-version.js`** — băm nội dung từng file có `?v=`, đối chiếu sổ
+`scripts/cache-version.json`.
+
+```
+node scripts/kiem-cache-version.js         # soi — CHAY TRUOC MOI LAN PUSH
+node scripts/kiem-cache-version.js --ghi   # chot lai sau khi da bump dung
+```
+
+**Vừa lắp đã bắt được 2 lỗi CÓ SẴN** (vô hại dưới luật cũ, thành lỗi thật dưới luật mới):
+`auth.js` ghi `?v=10` ở `login.html`+`videos.html` nhưng `?v=11` ở 3 trang kia ·
+`portal.css` ghi `?v=76` ở 3 trang nhưng `?v=80` ở `members.html`. Đã thống nhất về
+số cao nhất. **Đối chứng**: cố tình sửa `core.js` không bump → script báo đúng chỗ,
+thoát 1; khôi phục → thoát 0.
+
+**② `animate.min.css` — 70 KB CHẶN VẼ TRANG, DÙNG 0 LẦN**
+
+Nạp ở **cả 4 trang** (`index` · `members` · `videos` · `tool`). Lấy **105 tên class
+thật từ chính file đó** rồi dò ngược toàn bộ mã nguồn: **0/105 được dùng**. Đã gỡ.
+CSS chặn vẽ trang ở `<head>`: **210,9 → 140,9 KB (−33%)**.
+Kèm theo: gắn `?v=3.15.0` cho `gsap.min.js` (71 KB) để nó ăn theo luật cache mới.
+
+**③ MENU CHỜ HAI VÒNG MẠNG NỐI ĐUÔI NHAU**
+
+Cây điều hướng cần **hai** API. Bản cũ chỉ bắn sớm `/api/svgs` ở `<head>`; `/api/library`
+nằm sau `await` trong `fetchSvgsList` nên **phải đợi cái thứ nhất về xong mới được đi**.
+Đo trên live: nối tiếp **580 ms** → bắn sớm cả hai, chồng lên nhau **363 ms**
+= **menu hiện sớm hơn 217 ms (−37%)**.
+
+Sửa: thêm `window.__libSom` cạnh `__svgsSom` trong `tool.html`, `fetchLibrary()`
+(`brochure.js`) dùng lại — **và xoá đi sau lần đầu**, y hệt `__svgsSom`, để lần gọi
+sau (thêm/xoá file thư viện) vẫn lấy dữ liệu mới. Chạy **chính hàm thật** kiểm 5 ca,
+**9/9 đạt** — gồm 2 ca bẫy: bắn sớm trượt (`null`) phải tự gọi lại chứ không được để
+trắng menu, và lần gọi thứ hai phải đi mạng thật.
+
+**④ CHƯA SỬA — nói rõ để phiên sau không tưởng là đã xong**
+
+- **Menu vẽ HAI LẦN** (thấy đồ hiện muộn): `renderFileTree()` chạy lần đầu lúc **chưa
+  biết vai trò** → `duocThayMuc()` giấu mục nấc `super`/`admin`; xong `napKhoaMuc`
+  mới vẽ lại. Đo: `getSession` ~377 ms + `khoa_muc` ~444 ms. **Chỉ 12 admin/super
+  admin thấy hiện tượng này** — 77 sale chỉ có mục nấc `all` nên không có gì hiện thêm.
+  **Không cache vai trò vào localStorage**: vai trò cũ còn treo là **hỏng về phía LỘ**,
+  ngược đúng luật phát hành tính năng mới (mục 2b-bis trong `CLAUDE.md`).
+- **Hàm chạy ở `iad1` (Mỹ) trong khi cạnh vào là `hkg1`** (`x-vercel-id: hkg1::iad1::`).
+  Mỗi lời gọi API tốn một vòng xuyên Thái Bình Dương (~280 ms đo từ VN). Nếu phần
+  lớn sale ở Mỹ thì đang đúng — **cần chủ tool xác nhận đội ngũ ngồi ở đâu** trước
+  khi đổi region.
+- `fetchLibrary()` khi API lỗi trả về `{brochure, namecard, sms}` nhưng máy chủ thật
+  trả `{brochure, soSanh, sms, appform}` — lệch tên, chỉ ảnh hưởng đường lỗi.
 
 ---
 

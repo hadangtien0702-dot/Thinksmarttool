@@ -14,8 +14,19 @@ async function fetchLibrary() {
     return;
   }
   try {
-    const resp = await fetch('/api/library');
-    const data = await resp.json();
+    // Lần gọi ĐẦU dùng lại kết quả đã bắn sớm từ <head> tool.html (bỏ được trọn một
+    // vòng mạng ~298ms khỏi đường tới lúc menu hiện — xem chú thích dài ở đó).
+    // Các lần sau (thêm/xoá file trong thư viện) PHẢI lấy dữ liệu mới → xoá đi để
+    // không bao giờ dùng lại bản cũ. Cùng cách làm với __svgsSom trong core.js.
+    let data = null;
+    if (window.__libSom) {
+      data = await window.__libSom;
+      window.__libSom = null;
+    }
+    if (!data) {
+      const resp = await fetch('/api/library');
+      data = await resp.json();
+    }
     appState.library = (data && data.success && data.library) ? data.library : { brochure: {}, namecard: {}, sms: {} };
   } catch (e) {
     appState.library = { brochure: {}, namecard: {}, sms: {} };

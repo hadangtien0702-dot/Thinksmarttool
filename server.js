@@ -29,7 +29,35 @@ app.use(express.json({ limit: '50mb' }));
 // (static sẽ tự trả public/index.html cho "/" nếu đặt sau).
 
 // Static files from "public" directory
-app.use(express.static(path.join(__dirname, 'public')));
+// ☠️ CACHE — sửa 11/08/2026 sau khi ĐO trên bản live.
+// Trước đó express.static để mặc định `max-age=0, must-revalidate`, nghĩa là MỖI lần
+// vào trang trình duyệt phải hỏi lại máy chủ TỪNG file một dù file không đổi. Đo thật
+// trên thinksmarttool-gy6f.vercel.app: 16/16 file trả 304 (không tải lại nội dung)
+// nhưng vẫn tốn 1.233 ms tổng vòng hỏi — chạy 6 kết nối song song vẫn ~206 ms đứng
+// không, trước cả khi chạy được dòng JS đầu tiên.
+//
+// Trong khi đó tool ĐÃ có sẵn cơ chế `?v=` (style.css?v=110, core.js?v=47...) —
+// chính là thứ sinh ra để cache vĩnh viễn. Nên luật ở đây là:
+//
+//   CÓ `?v=`  → cache 1 năm, immutable (đổi nội dung thì bump `?v=`, ra khoá cache mới)
+//   KHÔNG có  → giữ nguyên must-revalidate như cũ
+//
+// ⚠️ VÌ SAO DỰA VÀO `?v=` CHỨ KHÔNG THEO ĐUÔI FILE: những thứ KHÔNG có `?v=` đúng là
+// những thứ TUYỆT ĐỐI không được cache lâu — `public/data/*.json` (BẢNG PHÍ BẢO HIỂM)
+// và `public/templates/*` (mẫu proposal). Chủ tool thay bảng phí mà sale ôm bản cũ
+// 1 năm là báo SAI SỐ TIỀN cho khách. Bám theo `?v=` thì hai nhóm đó tự động an toàn
+// vì chúng vốn không mang tham số này.
+// ⚠️ File .html cũng luôn phải hỏi lại — nó chính là chỗ chứa các con số `?v=`.
+const CACHE_MOT_NAM = 31536000;
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders(res, filePath) {
+    const coDauVan = !!(res.req && res.req.query && res.req.query.v);
+    const laHtml = /\.html?$/i.test(filePath);
+    res.setHeader('Cache-Control', (coDauVan && !laHtml)
+      ? `public, max-age=${CACHE_MOT_NAM}, immutable`
+      : 'public, max-age=0, must-revalidate');
+  }
+}));
 
 // Root workspace directory
 const WORKSPACE_DIR = __dirname;
