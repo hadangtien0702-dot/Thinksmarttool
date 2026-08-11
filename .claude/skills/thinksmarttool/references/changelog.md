@@ -5,9 +5,20 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 
 ---
 
-## TRẠNG THÁI HIỆN TẠI — chốt 2026-08-11 21:05
+## TRẠNG THÁI HIỆN TẠI — chốt 2026-08-11 22:17
 
 **Bản live `tool.thinksmartinsurance.com` đã push hết.** Không còn gì nằm chờ trên máy.
+
+🛑 **CHỦ TOOL CHỐT DỪNG PHẦN TOOL Ở ĐÂY (11/08/2026 22:17):** *"tạm thời gì hôm nay ở
+phần tool thì cứ như vậy thôi em ha"*. **Đừng tự ý tối ưu thêm** — hai việc dưới đây
+đã bàn tới nhưng **CỐ Ý không làm**, phiên sau muốn làm phải hỏi lại:
+- Cache `/api/svgs` + `/api/library` ở cạnh (`s-maxage` + `stale-while-revalidate`)
+  để bỏ nốt độ trễ khởi động nguội. **Chưa đo, chưa làm.**
+- 20 file rác ở gốc dự án (~3,2 MB: `check_*.py`, `generate_*.py`, `final_database*.csv`,
+  `folder.html`…). Trong đó **`test_api.py` có khoá Google API viết cứng** — là khoá
+  công khai của trang Drive, không phải khoá riêng, nhưng **repo này public trên
+  GitHub**, lỡ ai chạy `git add .` là nó lên mạng. **Đã hỏi xoá hay `.gitignore`,
+  chủ tool chưa trả lời.** Hiện để nguyên, KHÔNG nằm trong commit nào.
 
 ☠️ **HÀM MÁY CHỦ CHẠY Ở `sin1` (Singapore) — vì sale ở Việt Nam** (chủ tool xác nhận
 11/08/2026). Khai ở `"regions"` trong `vercel.json`. **Đừng đổi lại `iad1`** trừ khi
@@ -35,6 +46,12 @@ Ba mục cuối + Application Form đang ở **NẤC 1 hoặc mới ra**, xem ta
    bấm dải 3 nút ở tab "Khoá mục", không cần push.
 3. `[CHỜ]` **15 năm chưa có bảng tra file** — Gemini mới liệt kê xong 20 năm.
    Bộ 15 năm chạy lại thì lọc đúng 4 cửa như đã làm (xem mục ③-bis ngày 11/08).
+4. `[CHỜ CHỦ TOOL]` **Bấm thử tool một vòng sau đợt tối ưu tốc độ 11/08.** Tôi đo
+   được bằng mạng và chạy chính hàm thật (38/38 trên live, 9/9 cho `fetchLibrary`,
+   12.305 phép thử phí 0 lỗi) nhưng **chưa nhìn tận mắt giao diện lúc đã đăng nhập** —
+   phiên đó chặn điều hướng trình duyệt và tôi không nhập mật khẩu của chủ tool.
+5. `[CHỜ CHỦ TOOL]` **20 file rác ở gốc dự án**: xoá hẳn hay chặn bằng `.gitignore`
+   (xem khối 🛑 ở trên — có một khoá API viết cứng trong đó).
 
 **Chạy trước khi tin bất cứ thay đổi nào về phí:**
 ```

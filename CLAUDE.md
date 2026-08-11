@@ -263,6 +263,46 @@ Tách ra vì Supabase SQL Editor chạy **cả file trong MỘT giao dịch**: l
 sạch phần sau (đã dính 27/07 — mất luôn cột `anh` và bucket ảnh dù không liên quan).
 Cả hai đều **chạy lại an toàn**.
 
+## 2f. ☠️ CACHE + REGION — đúc 11/08/2026, ba thứ dễ làm hỏng lặng lẽ
+
+**① FILE TĨNH CÓ `?v=` ĐƯỢC CACHE **1 NĂM** (`immutable`).**
+Sửa file mà **quên bump `?v=` = 77 sale ôm code cũ cả năm**, và **không có dấu hiệu gì**
+(máy mình luôn đúng vì tải mới lần đầu). Bắt buộc chạy **trước mỗi lần push**:
+
+```
+node scripts/kiem-cache-version.js          # soi
+node scripts/kiem-cache-version.js --ghi    # chot lai sau khi da bump dung
+```
+
+Nó băm nội dung từng file có `?v=` rồi đối chiếu `scripts/cache-version.json`. Vừa lắp
+đã bắt được **2 lỗi có sẵn** (`auth.js` ghi `?v=10` ở 2 trang / `?v=11` ở 3 trang;
+`portal.css` ghi `?v=76` ở 3 trang / `?v=80` ở `members.html`).
+
+☠️ **ĐỪNG GẮN `?v=` CHO `public/data/*.json` HAY `public/templates/*`.** Luật cache bám
+theo `?v=`, nên **chính việc chúng KHÔNG có `?v=`** là thứ giữ cho bảng phí luôn được
+tải mới. Gắn vào là chủ tool thay bảng phí mà sale vẫn báo **giá cũ cho khách** suốt
+một năm. Mọi `.html` cũng vậy — nó là chỗ chứa các con số `?v=`.
+
+**② LUẬT CACHE CHO BẢN LIVE NẰM Ở `vercel.json`, KHÔNG PHẢI `server.js`.**
+Vercel phục vụ `public/` **thẳng từ CDN biên**, request không bao giờ tới hàm Node →
+`express.static` **chỉ chạy khi `node server.js` ở máy**. Tôi đã sửa `server.js`, push,
+đo lại: header **không đổi một chút nào**. Dấu hiệu nhận ra nằm ở `X-Vercel-Id`:
+
+```
+/js/core.js?v=47  ->  sin1::s4htd-…          MOT chang  = CDN tra thang
+/api/library      ->  sin1::sin1::bm7zq-…    HAI chang  = bien -> ham
+```
+
+→ **Sửa cache là phải sửa CẢ HAI chỗ**, không thì máy mình và bản live cư xử khác nhau.
+
+**③ HÀM MÁY CHỦ CHẠY Ở `sin1` (Singapore) — vì SALE Ở VIỆT NAM.**
+Chủ tool xác nhận 11/08/2026. Trước đó hàm chạy ở `iad1` (Washington DC) trong khi cạnh
+nhận request ở `sin1` → mỗi lời gọi API tốn trọn một vòng xuyên Thái Bình Dương.
+Đo được: `/api/svgs` **281 → 63 ms**, `/api/library` **273 → 63 ms**.
+**Đừng đổi lại `iad1`** trừ khi đội ngũ chuyển sang Mỹ.
+→ Supabase nằm ở **Singapore** (`CF-RAY: …-SIN`, truy vấn thật 136 ms) — **không phải
+vấn đề**, đừng đi migrate project Supabase.
+
 ## 3. Chạy thử ở máy
 
 ```bash
@@ -274,9 +314,19 @@ commit + push (Vercel deploy lúc đó). Chi tiết ở `references/conventions.
 
 ## 4. Ngăn nhớ riêng của dự án
 
-`~/.claude/projects/E--2026-Thinksmart-Sale-Proposal2026/memory/` — nay chỉ giữ vài
-ghi chú KHÔNG có trong skill. Có gì mâu thuẫn thì **skill thắng**, và sửa lại ghi
-chú cho khớp.
+☠️ **SỬA 11/08/2026 — mục này trước đây ghi SAI đường dẫn.** Dự án đã dời từ
+`E:\2026\Thinksmart\Sale\Proposal2026` sang `E:\2026\Production\Thinksmart Tool`,
+nên ngăn nhớ tự động **theo đường dẫn hiện tại** là:
+
+```
+~/.claude/projects/E--2026-Production-Thinksmart-Tool/memory/
+```
+
+Ba ghi chú cũ vẫn nằm ở slug cũ `E--2026-Thinksmart-Sale-Proposal2026` — **mở ở đường
+dẫn mới thì KHÔNG đọc được chúng**. Đó chính là lý do thứ gì quan trọng phải viết vào
+**file này** (đi theo mã nguồn) chứ không để trong ngăn nhớ tự động.
+
+Có gì mâu thuẫn thì **skill thắng**, và sửa lại ghi chú cho khớp.
 
 > Bối cảnh con người (anh Tiến là ai, cách làm việc, góc nhìn sản phẩm) nằm ở
 > `~/.claude/CLAUDE.md` — tự nạp ở mọi dự án, không lặp lại ở đây.
