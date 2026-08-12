@@ -204,6 +204,90 @@ function formatCurrencyValue(raw) {
   });
 }
 
+// ============================================================================
+// Ô TIỀN KHOÁ DẤU "$" — chủ tool chốt 11/08/2026 sau khi báo lỗi ở "Phí đóng mỗi tháng".
+//
+// ☠️ VÌ SAO PHẢI KHOÁ, KHÔNG PHẢI CHỈ CHUẨN HOÁ LÚC RỜI Ô. Đo được ba thứ, thứ hai
+// mới là thứ nguy hiểm nhất và chính chủ tool cũng tưởng nó "không bị lỗi":
+//
+//   1. Lúc ĐANG gõ, tool ghi THẲNG chữ thô vào bản vẽ; chuẩn hoá chỉ chạy khi rời ô.
+//      → gõ "$2 00" là bản vẽ hiện luôn "$2 00" kèm dấu cách. Đây là lỗi khoảng
+//        trắng chủ tool nhìn thấy.
+//   2. ☠️ formatCurrencyValue("$200,00") trả về "$20,000" — GẤP 100 LẦN, KHÔNG BÁO GÌ.
+//      Dấu phẩy kiểu châu Âu bị hiểu thành dấu phân nghìn. Bản vẽ gửi khách ghi phí
+//      $20,000/tháng thay vì $200. Nhìn thì "đẹp" nên không ai nghi.
+//   3. Chuỗi hỏng hẳn ("$200..00", "$200-") trả null → KHÔNG được sửa, nằm nguyên
+//      trong bản vẽ.
+//
+// Khoá "$" + chỉ cho gõ số diệt cả ba: không gõ được dấu cách, không gõ được dấu
+// phẩy nhập nhằng, không gõ được ký tự rác. Cùng khuôn với ô "Tuổi 63" / "20 năm"
+// đã khoá đơn vị từ 23/07.
+//
+// ⚠️ CÓ CHO GÕ XU — mẫu gốc của hãng ghi $152.70, phí thật CÓ phần lẻ. Chủ tool
+// chốt 11/08/2026: tối đa 2 số lẻ.
+// ⚠️ SALE KHÔNG GÕ DẤU PHÂN NGHÌN — tool tự chèn. Đó chính là chỗ bỏ đi sự nhập nhằng
+// giữa "dấu phẩy = phân nghìn" và "dấu phẩy = dấu thập phân".
+// ============================================================================
+
+// Lọc thứ người dùng gõ xuống còn: chữ số + nhiều nhất MỘT dấu chấm + tối đa 2 số lẻ.
+// Trả về chuỗi THÔ (chưa có dấu phân nghìn, chưa có "$") để còn gõ tiếp được.
+function locSoTien(raw) {
+  let s = String(raw == null ? '' : raw).replace(/[^\d.]/g, '');   // bỏ hết: dấu cách, phẩy, chữ, ký tự lạ
+  const i = s.indexOf('.');
+  if (i !== -1) {
+    // Chỉ giữ dấu chấm ĐẦU TIÊN; các dấu chấm sau bị bỏ ("200..00" → "200.00")
+    s = s.slice(0, i + 1) + s.slice(i + 1).replace(/\./g, '');
+    const [nguyen, le] = s.split('.');
+    s = nguyen + '.' + le.slice(0, 2);
+  }
+  return s;
+}
+
+// "1234.5" → "1,234.5" · "" → "" . KHÔNG kèm "$" (dấu $ là con chip khoá ngoài ô nhập).
+// ⚠️ Giữ nguyên phần lẻ ĐANG GÕ DỞ: gõ "200." phải ra "200." chứ không nuốt dấu chấm,
+// không thì không bao giờ gõ được số lẻ.
+function hienSoTien(soTho) {
+  const s = String(soTho == null ? '' : soTho);
+  if (s === '') return '';
+  const coCham = s.includes('.');
+  const [nguyen, le] = s.split('.');
+  const nhomNghin = nguyen === '' ? '' : Number(nguyen).toLocaleString('en-US');
+  return nhomNghin + (coCham ? '.' + (le || '') : '');
+}
+
+// Chuỗi cuối cùng ghi vào bản vẽ. Rỗng → "-" (khớp cách bản mẫu để trống một cột).
+function chuoiTienChoBanVe(soTho) {
+  const hien = hienSoTien(soTho);
+  return hien === '' ? '-' : '$' + hien;
+}
+
+// Tách "$1,234.50" trong bản mẫu ra phần số thô "1234.50" để đổ vào ô nhập.
+function soThoTuChuoiTien(chuoi) {
+  return locSoTien(String(chuoi == null ? '' : chuoi));
+}
+
+// Gọi lúc RỜI Ô: bù cho tròn phần lẻ. "200.5" → "200.50" · "200." → "200".
+// KHÔNG gọi lúc đang gõ, không thì gõ "200." là bị nuốt dấu chấm ngay.
+function chotSoTienKhiRoiO(soTho) {
+  const s = locSoTien(soTho);
+  if (!s.includes('.')) return s;
+  const [nguyen, le] = s.split('.');
+  if (le === '') return nguyen;                 // gõ dở "200." rồi bỏ đi → "200"
+  return nguyen + '.' + (le + '0').slice(0, 2); // "200.5" → "200.50"
+}
+
+// ☠️ ĐIỀU NÀY PHẢI NÓI RÕ, ĐỪNG TƯỞNG KHOÁ Ô LÀ HẾT LỖI TIỀN.
+// Khoá ô KHÔNG cứu được ca "sale định gõ 200 đô nhưng bấm 200,00".
+// Bỏ dấu phẩy đi thì còn "20000" — vẫn ra $20,000, vẫn gấp 100 lần.
+// Cái mà khoá ô đổi được là: KHÔNG CÒN DIỄN GIẢI NGẦM NỮA.
+//   - Trước: gõ "200,00" → tool TỰ HIỂU dấu phẩy là phân nghìn → đổi thành 20000.
+//            Sale gõ 3 chữ số mà bản vẽ ra 5 chữ số. Không nhìn thấy lúc nào nó đổi.
+//   - Nay:   mỗi phím số bấm xuống hiện ra ngay, tool KHÔNG thêm/bớt chữ số nào.
+//            Bấm tới phím thứ 4 là thấy "$2,000", phím thứ 5 thấy "$20,000" —
+//            con số tự nhảy bậc ngay trước mắt, sai là biết liền.
+// Muốn chặn nốt loại sai này thì phải có NGƯỠNG HỢP LÝ cho từng ô (vd phí tháng
+// trên $5,000 thì hỏi lại) — CHƯA LÀM, cần chủ tool cho khoảng giá trị thật.
+
 // --- DOM ELEMENTS CACHE ---
 const dom = {
   treeContainer: document.getElementById('tree-container'),

@@ -2165,6 +2165,13 @@ body.no-editor .sidebar-right { display: none; }
 .dual-input-row .unit-input-row { min-width: 0; }
 .dual-input-row .unit-input-row .unit-suffix { padding: 0 8px; }
 
+/* Ô TIỀN (11/08/2026): dấu "$" là chip KHOÁ, sale chỉ gõ được số.
+   Chip chỉ một ký tự nên hẹp hơn chip chữ ("Tuổi"/"năm"), và dùng màu chữ đậm hơn
+   để nhìn ra ngay đây là đơn vị tiền chứ không phải chữ gõ được. */
+.text-edit-block > .unit-input-row.o-tien { width: 100%; }
+.unit-input-row.o-tien .unit-suffix { padding: 0 10px; color: var(--text-2); }
+.dual-input-row .unit-input-row.o-tien .unit-suffix { padding: 0 8px; }
+
 /* --------------------------------------------------------------------------
    22b. SO SÁNH LIVING BENEFITS (js/sosanh.js)
    Bảng 5 cột: 1 cột hãng + 4 cột quyền lợi.

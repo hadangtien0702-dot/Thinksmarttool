@@ -250,19 +250,111 @@ function elCanvas(editorId) {
 
 // Bề rộng ô chứa (px màn hình) = thẻ <rect> HẸP NHẤT bao quanh tâm chữ.
 function rongOChua(editorId) {
+  const n = theNenBaoChu(editorId);
+  return n ? n.rong : null;
+}
+
+// Thẻ nền HẸP NHẤT bao quanh chữ, kèm hộp bao của chính chữ đó.
+// Dùng để biết bản vẽ neo chữ này TRÁI hay CĂN GIỮA — xem laCanGiuaTheoBanVe().
+function theNenBaoChu(editorId) {
   const svg = dom.canvasWrapper.querySelector('svg');
   const o = elCanvas(editorId);
   if (!svg || !o) return null;
   const r = o.getBoundingClientRect();
   const cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;
-  let hep = null;
+  let hep = null, hopNen = null;
   svg.querySelectorAll('rect').forEach(function (n) {
     const b = n.getBoundingClientRect();
     if (b.width < 20 || b.height < 12) return;
     if (cx < b.left || cx > b.right || cy < b.top || cy > b.bottom) return;
-    if (hep === null || b.width < hep) hep = b.width;
+    if (hep === null || b.width < hep) { hep = b.width; hopNen = b; }
   });
-  return hep;
+  return hopNen ? { rong: hep, nen: hopNen, chu: r } : null;
+}
+
+// ☠️ BẢN VẼ NÀY VỐN CĂN GIỮA HAY NEO TRÁI? — thêm 11/08/2026.
+//
+// Chủ tool báo: gõ "$200" vào ô "Mức đóng mỗi tháng" thì chữ hở một khoảng bên trái,
+// mà gõ "$200,00" (ra "$20,000") thì KHÔNG hở. Đo ra đúng cơ chế:
+//
+//   canhGiuaTheoBanVe() đổi ô sang text-anchor="middle", neo vào TÂM CỦA CHỮ GỐC
+//   "$152.70". Ô này bản vẽ neo TRÁI, nên chữ càng NGẮN càng bị hút vào giữa:
+//
+//     $152.70 (gốc)  thụt vào  1,0 px   <- thẳng hàng với nhãn "Monthly Premium"
+//     $20,000        thụt vào -2,5 px   <- 7 ký tự, bằng chữ gốc → nhìn vẫn thẳng
+//     $200           thụt vào 17,1 px   <- HỞ, đúng lỗi chủ tool báo
+//     $99            thụt vào 25,1 px   <- càng ngắn càng hở
+//
+// Căn giữa ĐÚNG cho các ô designer vốn căn giữa (cột biểu đồ, ô trong bảng), nhưng
+// SAI cho ô neo trái. Luật cũ đã ghi ở LE_PHAI_O_KHACH: "mấy ô này neo TRÁI theo đúng
+// bản vẽ, KHÔNG được đổi sang căn giữa" — chỉ là chưa áp cho phần Kế hoạch.
+//
+// Cách phân biệt: so LỀ TRÁI và LỀ PHẢI của chữ GỐC trong thẻ nền của nó.
+// Căn giữa thì hai lề xấp xỉ nhau; neo trái thì lề phải rộng hơn hẳn.
+// Đo thật ô phí: thẻ nền 263,4px · lề trái 36,9px · lề phải 128,0px → lệch 35% → neo TRÁI.
+// KHÔNG tìm được thẻ nền → giữ nguyên nếp cũ (căn giữa), để không đổi hành vi các ô đã chạy đúng.
+// ☠️ PHẢI QUA ĐỦ BA CỬA MỚI ĐƯỢC COI LÀ NEO TRÁI. Mỗi cửa bịt một kiểu bắt nhầm mà
+// tôi đã ĐO RA khi thử từng cửa riêng lẻ (11/08/2026):
+//   - Chỉ dùng lề trái/phải  → bắt nhầm 37 ô, vì khi ô không có thẻ nền riêng thì
+//     hàm vớ nhầm NỀN CẢ TRANG (620px), làm mọi thứ lệch tâm trông như neo trái.
+//   - Chỉ dùng "thẳng mép nhãn" → bắt nhầm ô "20 năm", "$36,648": trong một ô hẹp,
+//     nhãn và giá trị cùng căn giữa thì mép trái TRÙNG NHAU một cách tình cờ.
+// Ghép cả ba: 7 ô đổi / 59 ô giữ nguyên trên cả 5 mẫu — và trong 7 ô đó chỉ có
+// "$152.70" (Mức đóng mỗi tháng) là thuộc phần Kế hoạch; 5 ô "43" là ô Tuổi vốn
+// đã đi đường riêng (vuaKhungOKhach), không qua hàm này.
+const SAI_SO_MEP_TRAI = 2.5;         // px — thẳng hàng trong khoảng này thì coi là cùng mép
+const XA_TOI_DA_THEO_DONG = 3.0;     // lần chiều cao dòng — xa hơn thì không cùng khối
+const NGUONG_LECH_CAN_GIUA = 0.15;   // lệch quá 15% bề rộng thẻ nền thì KHÔNG phải căn giữa
+
+// CỬA 1 — có chữ khác thẳng MÉP TRÁI và nằm cùng khối (ngay trên/dưới, chồng nhau ngang).
+// Designer chỉ xếp thẳng mép trái khi họ CỐ Ý neo trái; hai chữ dài ngắn khác nhau mà
+// cùng căn giữa thì không bao giờ thẳng mép trái được.
+function coNhanThangMepTrai(svgEl, o) {
+  const a = o.getBoundingClientRect();
+  if (!a.width || !a.height) return false;
+  const ds = svgEl.querySelectorAll('text');
+  for (let i = 0; i < ds.length; i++) {
+    const k = ds[i];
+    if (k === o) continue;
+    const b = k.getBoundingClientRect();
+    if (!b.width || !b.height) continue;
+    if (Math.abs(b.left - a.left) > SAI_SO_MEP_TRAI) continue;
+    const doc = b.top > a.bottom ? b.top - a.bottom : (a.top > b.bottom ? a.top - b.bottom : 0);
+    if (doc > XA_TOI_DA_THEO_DONG * a.height) continue;
+    if (b.right < a.left || b.left > a.right) continue;
+    return true;
+  }
+  return false;
+}
+
+// CỬA 3 — thẻ nền phải chỉ ôm ĐÚNG MỘT ô giá trị. Nền ôm nhiều giá trị nghĩa là nó là
+// một HÀNG nhiều cột (hoặc nền cả trang), lúc đó đo lề trái/phải là vô nghĩa.
+function nenChiOmMotGiaTri(svgEl, hopNen) {
+  let dem = 0;
+  const ds = svgEl.querySelectorAll('text');
+  for (let i = 0; i < ds.length; i++) {
+    const t = ds[i].textContent.replace(/\s+/g, ' ').trim();
+    if (!/\$|^\d/.test(t) || t.length > 24) continue;
+    const b = ds[i].getBoundingClientRect();
+    if (!b.width) continue;
+    const cx = (b.left + b.right) / 2, cy = (b.top + b.bottom) / 2;
+    if (cx >= hopNen.left && cx <= hopNen.right && cy >= hopNen.top && cy <= hopNen.bottom) dem++;
+    if (dem > 1) return false;
+  }
+  return true;
+}
+
+function laCanGiuaTheoBanVe(editorId) {
+  const svgEl = dom.canvasWrapper.querySelector('svg');
+  const o = elCanvas(editorId);
+  if (!svgEl || !o) return true;                              // không đo được → giữ nếp cũ
+  if (!coNhanThangMepTrai(svgEl, o)) return true;             // cửa 1
+  const n = theNenBaoChu(editorId);
+  if (!n || !n.rong) return true;                             // cửa 2
+  if (!nenChiOmMotGiaTri(svgEl, n.nen)) return true;          // cửa 3
+  const leTrai = n.chu.left - n.nen.left;
+  const lePhai = n.nen.right - n.chu.right;
+  return Math.abs(lePhai - leTrai) <= NGUONG_LECH_CAN_GIUA * n.rong;
 }
 
 // --- Ô THÔNG TIN KHÁCH HÀNG: chữ dài thì thu nhỏ cho vừa khung -----------------
@@ -398,10 +490,14 @@ function canhGiuaTheoBanVe(neo) {
   neo.rong = rong;
   neo.coChuGoc = parseFloat(getComputedStyle(oC).fontSize) || null;
 
-  [oD, oC].forEach(function (o) {
-    o.setAttribute('text-anchor', 'middle');
-    datTranslateX(o, tam);
-  });
+  // ☠️ Ô neo TRÁI thì KHÔNG được đổi sang căn giữa — xem chú thích dài ở
+  // laCanGiuaTheoBanVe(). Vẫn giữ phần thu nhỏ cho vừa ô: chữ dài vẫn không được tràn.
+  if (laCanGiuaTheoBanVe(neo.id)) {
+    [oD, oC].forEach(function (o) {
+      o.setAttribute('text-anchor', 'middle');
+      datTranslateX(o, tam);
+    });
+  }
   neo.xong = true;
   thuNhoChoVua(neo);
 }
@@ -1154,6 +1250,45 @@ function populateProposalTextsEditor(svgEl, textElements) {
     return { row, input: row.querySelector('.unit-number') };
   }
 
+  // Ô TIỀN — khoá dấu "$", chỉ gõ được SỐ (chủ tool chốt 11/08/2026).
+  // Cùng khuôn với unitInputGroup ở trên, chỉ khác: đơn vị đứng trước và là "$".
+  // Vì sao phải khoá: xem khối chú thích dài ở locSoTien() trong core.js.
+  function moneyInputGroup(chuoiGoc, editorId, ariaLabel) {
+    const row = document.createElement('div');
+    row.className = 'unit-input-row o-tien';
+    const so = soThoTuChuoiTien(chuoiGoc);
+    row.innerHTML =
+      `<span class="unit-suffix unit-prefix" aria-hidden="true">$</span>` +
+      `<input type="text" inputmode="decimal" class="text-input-field unit-number" ` +
+      `data-editor-id="${editorId}" value="${escapeHtml(hienSoTien(so))}" ` +
+      `aria-label="${escapeHtml(ariaLabel || 'Số tiền')}">`;
+    return { row, input: row.querySelector('.unit-number') };
+  }
+
+  // Gắn sự kiện cho một ô tiền. `sauKhiGhi` chạy sau mỗi lần ghi (thu nhỏ chữ, xếp hậu tố…).
+  // ⚠️ Ghi vào bản vẽ luôn là chuỗi ĐÃ CHUẨN HOÁ, không bao giờ là chữ thô người dùng gõ.
+  // Đây chính là chỗ sửa lỗi khoảng trắng: trước đây `input` ghi thẳng e.target.value.
+  function ganOTien(input, el, editorId, sauKhiGhi) {
+    const ghi = (soTho) => {
+      input.value = hienSoTien(soTho);
+      applyTextValue(el, editorId, chuoiTienChoBanVe(soTho));
+      if (sauKhiGhi) sauKhiGhi();
+    };
+    input.addEventListener('input', () => {
+      // Chèn thêm dấu phân nghìn làm chuỗi dài ra → phải dời con trỏ theo, không thì
+      // gõ tới hàng nghìn là con trỏ nhảy về sai chỗ.
+      const truoc = input.value;
+      const viTri = input.selectionStart == null ? truoc.length : input.selectionStart;
+      const soTho = locSoTien(truoc);
+      const sau = hienSoTien(soTho);
+      ghi(soTho);
+      const moi = Math.max(0, Math.min(sau.length, viTri + (sau.length - truoc.length)));
+      try { input.setSelectionRange(moi, moi); } catch (e) {}
+    });
+    // Bù tròn phần lẻ khi rời ô: "200.5" → "200.50". KHÔNG làm lúc đang gõ.
+    input.addEventListener('blur', () => ghi(chotSoTienKhiRoiO(input.value)));
+  }
+
   // Hàng gộp cho 1 cột biểu đồ: ô TIỀN bên trái + ô TUỔI bên phải
   function buildChartComboBlock(combo) {
     const idx = combo.index + 1;
@@ -1163,26 +1298,15 @@ function populateProposalTextsEditor(svgEl, textElements) {
       <div class="text-meta">
         <span class="text-id">Giá trị tích luỹ — Cột ${idx}</span>
       </div>
-      <div class="dual-input-row">
-        ${combo.money ? `<input type="text" class="text-input-field" data-editor-id="${combo.money.editorId}" value="${escapeHtml(combo.money.textContent)}" aria-label="Số tiền cột ${idx}" title="Số tiền">` : ''}
-      </div>
+      <div class="dual-input-row"></div>
     `;
     const row = block.querySelector('.dual-input-row');
 
     if (combo.money) {
-      const moneyInput = block.querySelector(`input[data-editor-id="${combo.money.editorId}"]`);
-      moneyInput.addEventListener('input', (e) => {
-        applyTextValue(combo.money.el, combo.money.editorId, e.target.value);
-        thuNhoChoVua(combo.money.neoGiua);
-      });
-      moneyInput.addEventListener('blur', (e) => {
-        const formatted = formatCurrencyValue(e.target.value);
-        if (formatted !== null && formatted !== e.target.value) {
-          e.target.value = formatted;
-          applyTextValue(combo.money.el, combo.money.editorId, formatted);
-          thuNhoChoVua(combo.money.neoGiua);
-        }
-      });
+      const g = moneyInputGroup(combo.money.textContent, combo.money.editorId, 'Số tiền cột ' + idx);
+      row.appendChild(g.row);
+      ganOTien(g.input, combo.money.el, combo.money.editorId,
+        () => thuNhoChoVua(combo.money.neoGiua));
     }
     if (combo.age) {
       // "Tuổi 63": ĐƠN VỊ ĐỨNG TRƯỚC. Khoá chữ "Tuổi", chỉ gõ số.
@@ -1236,19 +1360,11 @@ function populateProposalTextsEditor(svgEl, textElements) {
       });
     }
     if (combo.money) {
-      row.insertAdjacentHTML('beforeend', `<input type="text" class="text-input-field" data-editor-id="${combo.money.editorId}" value="${escapeHtml(combo.money.textContent)}" aria-label="Phí mỗi tháng gói ${idx}" title="Phí mỗi tháng">`);
-      const moneyInput = block.querySelector(`input[data-editor-id="${combo.money.editorId}"]`);
-      moneyInput.addEventListener('input', (e) => {
-        applyTextValue(combo.money.el, combo.money.editorId, e.target.value.trim() ? e.target.value : '-');   // trống → "-"
-      });
-      moneyInput.addEventListener('blur', (e) => {
-        const formatted = formatCurrencyValue(e.target.value);
-        if (formatted !== null && formatted !== e.target.value) {
-          e.target.value = formatted;
-          applyTextValue(combo.money.el, combo.money.editorId, formatted);
-          thuNhoChoVua(combo.money.neoGiua);
-        }
-      });
+      // Ô trống → chuoiTienChoBanVe() tự trả "-", khớp bản mẫu cột chưa dùng.
+      const g = moneyInputGroup(combo.money.textContent, combo.money.editorId, 'Phí mỗi tháng gói ' + idx);
+      row.appendChild(g.row);
+      ganOTien(g.input, combo.money.el, combo.money.editorId,
+        () => thuNhoChoVua(combo.money.neoGiua));
     }
     return block;
   }
@@ -1399,30 +1515,30 @@ function populateProposalTextsEditor(svgEl, textElements) {
       <div class="text-meta">
         <span class="text-id">${item.displayName || 'Giá trị'}</span>
       </div>
-      <input type="text" class="text-input-field" data-editor-id="${item.editorId}" value="${escapeHtml(item.textContent)}" aria-label="${escapeHtml(item.displayName || 'Giá trị')}">
     `;
 
-    const inputEl = itemBlock.querySelector('.text-input-field');
-    inputEl.addEventListener('input', (e) => {
-      applyTextValue(item.el, item.editorId, e.target.value);
-      // Chart age label: keep the English "Cash Value at N" subtitle in sync
-      if (item.paired) {
-        const num = (e.target.value.match(/\d+/) || [null])[0];
-        if (num) applyTextValue(item.paired.el, item.paired.editorId, 'Cash Value at ' + num);
-      }
-      thuNhoChoVua(item.neoGiua);
-      xepLaiHauTo(item.neoHauTo);   // đẩy chữ "/năm" ra sau con số vừa gõ
-    });
-    // Auto-format money on blur: "1000000" → "$1,000,000" (skip label fields like "20 năm")
+    // Ô TIỀN (Mức bảo vệ · Phí đóng mỗi tháng · Tổng tiền đóng…): KHOÁ dấu "$",
+    // chỉ gõ được số. `noCurrency` là ô nhãn kiểu "20 năm" — giữ ô gõ tự do như cũ.
     if (!item.noCurrency) {
-      inputEl.addEventListener('blur', (e) => {
-        const formatted = formatCurrencyValue(e.target.value);
-        if (formatted !== null && formatted !== e.target.value) {
-          e.target.value = formatted;
-          applyTextValue(item.el, item.editorId, formatted);
-          thuNhoChoVua(item.neoGiua);
-          xepLaiHauTo(item.neoHauTo);
+      const g = moneyInputGroup(item.textContent, item.editorId, item.displayName || 'Số tiền');
+      itemBlock.appendChild(g.row);
+      ganOTien(g.input, item.el, item.editorId, () => {
+        thuNhoChoVua(item.neoGiua);
+        xepLaiHauTo(item.neoHauTo);   // đẩy chữ "/năm" ra sau con số vừa gõ
+      });
+    } else {
+      itemBlock.insertAdjacentHTML('beforeend',
+        `<input type="text" class="text-input-field" data-editor-id="${item.editorId}" value="${escapeHtml(item.textContent)}" aria-label="${escapeHtml(item.displayName || 'Giá trị')}">`);
+      const inputEl = itemBlock.querySelector('.text-input-field');
+      inputEl.addEventListener('input', (e) => {
+        applyTextValue(item.el, item.editorId, e.target.value);
+        // Chart age label: keep the English "Cash Value at N" subtitle in sync
+        if (item.paired) {
+          const num = (e.target.value.match(/\d+/) || [null])[0];
+          if (num) applyTextValue(item.paired.el, item.paired.editorId, 'Cash Value at ' + num);
         }
+        thuNhoChoVua(item.neoGiua);
+        xepLaiHauTo(item.neoHauTo);
       });
     }
 

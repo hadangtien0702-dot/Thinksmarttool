@@ -5,11 +5,17 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 
 ---
 
-## TRẠNG THÁI HIỆN TẠI — chốt 2026-08-11 22:17
+## TRẠNG THÁI HIỆN TẠI — chốt 2026-08-12 08:05
 
 **Bản live `tool.thinksmartinsurance.com` đã push hết.** Không còn gì nằm chờ trên máy.
 
-🛑 **CHỦ TOOL CHỐT DỪNG PHẦN TOOL Ở ĐÂY (11/08/2026 22:17):** *"tạm thời gì hôm nay ở
+☠️ **6 Ô TIỀN TRONG PROPOSAL ĐÃ KHOÁ DẤU `$`** (12/08/2026) — sale chỉ gõ được số,
+tool tự chèn dấu phân nghìn, cho tối đa 2 số lẻ. **Đừng trả về ô gõ tự do.**
+Và **`canhGiuaTheoBanVe` nay KHÔNG căn giữa ô mà bản vẽ neo TRÁI** — xem
+`laCanGiuaTheoBanVe()` (3 cửa lọc, có số đo tại chỗ). Sửa hàm đó thì phải đo lại trên
+**cả 5 mẫu**, kỳ vọng **7 ô neo trái / 59 ô căn giữa**.
+
+🛑 **CHỦ TOOL CHỐT DỪNG PHẦN TỐI ƯU TỐC ĐỘ (11/08/2026 22:17):** *"tạm thời gì hôm nay ở
 phần tool thì cứ như vậy thôi em ha"*. **Đừng tự ý tối ưu thêm** — hai việc dưới đây
 đã bàn tới nhưng **CỐ Ý không làm**, phiên sau muốn làm phải hỏi lại:
 - Cache `/api/svgs` + `/api/library` ở cạnh (`s-maxage` + `stale-while-revalidate`)
@@ -61,6 +67,80 @@ node scripts/soi-bang-phi.js      # soi quy luat bang Term Life
 ```
 Và mở `localhost:8000/kiem-nhanh.html` — trang tự chẩn đoán, biết ngay máy chủ đang
 chạy bản nào (dùng khi "tool vẫn thấy sai" để tách lỗi CODE với cache trình duyệt).
+
+---
+
+### 2026-08-12 08:05 — Ô TIỀN: khoá dấu `$` + sửa lỗi "$200 bị hở bên trái". ✅ CHỦ TOOL ĐÃ TEST VÀ DUYỆT.
+
+Chủ tool báo: *"bị lỗi khoảng trắng khi nhập $200 vào chỗ mức đóng mỗi tháng"*, và
+manh mối quyết định: *"nhập `$200` thì bị lỗi mà nhập `$200,00` thì không bị"*.
+
+**① ☠️ TÔI ĐI SAI HƯỚNG LẦN ĐẦU — ghi lại để phiên sau không lặp**
+
+Đọc code thấy Illustrator chẻ ô tiền thành 4 tspan mỗi cái ghim `x` tuyệt đối
+(`$152` · `.` · `7` · `0`), kết luận ngay đó là thủ phạm. **Đo ra thì sai**: dựng
+4 cách ghi khác nhau (ghi vào mảnh đầu + xoá mảnh em / ghi vào một tspan sạch / xoá
+hết tspan) — **cả 4 ra vị trí ký tự y hệt nhau, khe giữa `$` và `2` = 0,00px**.
+→ Đúng bài học 5b: *thấy dấu hiệu là một chuyện, biết thủ phạm là chuyện khác.*
+
+**② THỦ PHẠM THẬT: `canhGiuaTheoBanVe` đổi ô NEO TRÁI sang NEO GIỮA**
+
+Hàm này đổi ô sang `text-anchor="middle"` rồi neo vào **tâm của chữ GỐC `$152.70`**.
+Ô này bản vẽ neo TRÁI, nên chữ càng ngắn càng bị hút vào giữa — hở ra bên trái:
+
+| Giá trị | Thụt vào so với nhãn "Monthly Premium" |
+|---|---|
+| `$152.70` (gốc) | 1,0 px — thẳng hàng |
+| `$20,000` (= `$200,00` sau chuẩn hoá) | −2,5 px — **nên chủ tool thấy "không bị"** |
+| **`$200`** | **+17,1 px — HỞ** |
+| `$99` | +25,1 px |
+
+Luật này đã có sẵn cho phần Thông tin khách hàng (`LE_PHAI_O_KHACH`: *"mấy ô này neo
+TRÁI theo đúng bản vẽ, KHÔNG được đổi sang căn giữa"*) — chỉ là chưa áp cho phần Kế hoạch.
+
+**③ ☠️ HAI BỘ DÒ ĐẦU ĐỀU BẮT NHẦM — phải ghép BA CỬA**
+
+| Cách dò | Bắt nhầm gì |
+|---|---|
+| Lề trái/phải trong thẻ nền | **37 ô** — ô không có nền riêng thì hàm vớ nhầm **nền cả trang 620px**, mọi thứ lệch tâm trông như neo trái |
+| "Thẳng mép nhãn" | `20 năm`, `$36,648` — trong ô hẹp, nhãn và giá trị **cùng căn giữa** thì mép trái trùng nhau tình cờ |
+| **Ghép cả hai + chặn nền ôm nhiều giá trị** | sạch |
+
+Đo trên **cả 5 mẫu**: **7 ô đổi · 59 ô giữ căn giữa**. Trong 7 ô đó có 5 ô là `43`
+(Tuổi) vốn đã đi đường riêng `vuaKhungOKhach` → **thực chất chỉ ô "Mức đóng mỗi tháng"
+đổi**. Cột biểu đồ · ô trong bảng · vòng cấp độ giữ nguyên hết.
+Hàm mới: `laCanGiuaTheoBanVe()` trong `proposal.js` (3 cửa, có chú thích số đo tại chỗ).
+
+**④ KHOÁ DẤU `$` — chủ tool đề xuất, và nó sửa 3 lỗi KHÁC**
+
+Chủ tool: *"khoá dấu $ ở đầu và số đi theo sau"*. Hợp lý và **đúng khuôn đã có** (ô
+`Tuổi 63` / `20 năm` đã khoá đơn vị từ 23/07). Áp cho **cả 6 ô tiền** (chủ tool chốt),
+**có cho gõ xu** vì mẫu gốc ghi `$152.70`.
+
+Sửa được 3 thứ, chạy hàm thật **31/31 đạt**:
+
+| Sale gõ | Trước | Sau |
+|---|---|---|
+| `2 00` (lỡ bấm cách) | bản vẽ hiện `$2 00` | `$200` |
+| `200..00` · `200-` | để nguyên chuỗi hỏng | `$200.00` · `$200` |
+| `hai tram` | để nguyên | `-` |
+
+Gốc của lỗi khoảng trắng khi gõ: **`input` ghi THẲNG `e.target.value` vào bản vẽ**,
+chuẩn hoá chỉ chạy lúc `blur`. Nay mọi phím đều đi qua `locSoTien()` trước khi vẽ.
+
+**⑤ ☠️ KHOÁ Ô KHÔNG CỨU ĐƯỢC `$200,00` — ĐỪNG TƯỞNG ĐÃ HẾT LỖI TIỀN**
+
+`formatCurrencyValue("$200,00")` trả `"$20,000"` — **gấp 100 lần, không báo gì**.
+Bỏ dấu phẩy đi thì còn `20000`, **vẫn ra $20,000**. Cái khoá ô đổi được là **bỏ hẳn
+việc diễn giải ngầm**: mỗi phím số bấm xuống hiện ra ngay, tool không thêm/bớt chữ số
+nào, và con số **tự nhảy bậc trước mắt** (`$200` → `$2,000` → `$20,000`) nên sai là thấy.
+→ `[CHỜ CHỦ TOOL]` Muốn chặn nốt thì cần **ngưỡng hợp lý cho từng ô** (vd phí tháng
+  vượt $5.000 thì hỏi lại). Chưa làm — cần chủ tool cho khoảng giá trị thật.
+
+**File đụng:** `core.js` (thêm `locSoTien` · `hienSoTien` · `chuoiTienChoBanVe` ·
+`soThoTuChuoiTien` · `chotSoTienKhiRoiO`) · `proposal.js` (`moneyInputGroup` ·
+`ganOTien` · `laCanGiuaTheoBanVe` + 3 cửa) · `style.css` (chip `$`) · `tool.html`
+(bump `core.js?v=48` · `proposal.js?v=42` · `style.css?v=111`).
 
 ---
 
