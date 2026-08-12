@@ -8,12 +8,12 @@
     "bam": "78d5c3a552ef"
   },
   "js/brochure.js": {
-    "v": "26",
-    "bam": "ba7d543444a2"
+    "v": "32",
+    "bam": "e62d0d1fe35a"
   },
   "js/core.js": {
-    "v": "47",
-    "bam": "1c636a037382"
+    "v": "49",
+    "bam": "15e96aef3fe5"
   },
   "js/main.js": {
     "v": "22",
@@ -32,16 +32,16 @@
     "bam": "60bca9fe50ff"
   },
   "js/portal/members.js": {
-    "v": "58",
-    "bam": "8037ee766adc"
+    "v": "60",
+    "bam": "4d53ffbb1a77"
   },
   "js/portal/videos.js": {
     "v": "2",
     "bam": "9c8798add265"
   },
   "js/proposal.js": {
-    "v": "40",
-    "bam": "851547b30f94"
+    "v": "42",
+    "bam": "8576d58fa339"
   },
   "js/sosanh.js": {
     "v": "12",
@@ -60,12 +60,12 @@
     "bam": "42e3b54ad49d"
   },
   "portal.css": {
-    "v": "80",
-    "bam": "58696d8adb5f"
+    "v": "83",
+    "bam": "dfc083fca515"
   },
   "style.css": {
-    "v": "110",
-    "bam": "431cec098004"
+    "v": "113",
+    "bam": "708a2e74922a"
   },
   "vendor/gsap.min.js": {
     "v": "3.15.0",

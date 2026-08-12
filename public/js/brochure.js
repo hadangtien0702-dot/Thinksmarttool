@@ -146,7 +146,14 @@ function renderLibrarySection(container, label, iconHTML, groupsObj, q, moi) {
     if (carrier === 'Chung') {
       // Append items directly to section content, bypassing folder grouping.
       // GIỮ tên hãng trong nhãn: ở đây không có tiêu đề hãng phía trên để bù lại.
-      items.sort((a, b) => a.name.localeCompare(b.name)).forEach(it => section.content.appendChild(makeDownloadItem(it, true)));
+      // Xếp theo THỨ TỰ HÃNG trước (AIG → NLG → Allianz → Khác), giống hệt mọi mục
+      // khác trên cây; cùng hãng mới xếp theo tên. Xếp thuần theo tên thì đổi tên file
+      // là mục nhảy chỗ — đổi "AIG Application Form" thành "NLG & AIG — Application
+      // Form" (12/08/2026) đủ để đẩy nó xuống dưới Allianz, trong khi chủ tool chỉ
+      // yêu cầu đổi CHỮ. Chỉ mục Application Form rơi vào nhánh này (Brochure/ chia
+      // hãng bằng thư mục con nên không có file lẻ nào ở gốc).
+      items.sort((a, b) => carrierSort(carrierOf(a), carrierOf(b)) || a.name.localeCompare(b.name))
+           .forEach(it => section.content.appendChild(makeDownloadItem(it, true)));
     } else {
       const grp = makeCollapsibleFolder(`${escapeHtml(carrier)} <span class="nav-count">${items.length}</span>`, { extraClass: 'nav-carrier', iconHTML: NAV_ICONS.carrier });
 
@@ -435,7 +442,7 @@ function openLibraryItem(item) {
   dom.canvasWrapper.innerHTML = '';
 
   let view = document.getElementById('library-view');
-  if (view) view.classList.remove('has-group', 'is-tall');
+  if (view) view.classList.remove('has-group', 'is-tall', 'is-wide');
 
   if (item.isMultiPage) {
     showLibraryMultiPagePreview(item);
@@ -492,6 +499,15 @@ function showLibraryMultiPagePreview(item) {
   view.innerHTML = html;
   view.style.display = 'flex';
 
+  // ⚠️ CÒN TREO (12/08/2026): thuộc tính `onload` gắn `is-landscape` ở trên KHÔNG
+  // chạy khi ảnh đã nằm trong bộ đệm — cùng lỗi đã sửa ở showLibraryPreview (xem
+  // khiAnhCoKichThuoc). Ở đây CHƯA sửa vì không đo được: ảnh `loading="lazy"` chỉ
+  // giải mã khi trình duyệt thật sự dựng khung, mà bàn đo không dựng. Sửa mù trên
+  // đường brochure (thứ đội sale dùng nhiều nhất) thì rủi ro hơn là để nguyên.
+  // Sửa khi nào mở được tool.html có đăng nhập: đổi sang khiAnhCoKichThuoc rồi đo
+  // đúng brochure vừa xem lần thứ hai — trang ngang phải rộng hết hàng, không co
+  // về một phần ba.
+
   // For image (non-PDF) multi-page brochures: download every page on "Tải tất cả"
   if (!isPdf) {
     const btnAll = view.querySelector('#btn-dl-all-pages');
@@ -522,6 +538,11 @@ function showLibraryPreview(item) {
     dom.canvasContainer.appendChild(view);
   }
 
+  // Tự dọn chế độ của LƯỢT TRƯỚC ngay tại đây, đừng trông vào hàm gọi. Đo 12/08/2026:
+  // xem ảnh ngang rồi bấm sang ảnh dọc thì ảnh dọc vẫn ăn khung rộng, cao 1797px
+  // trong khung 719px. Hàm nào BẬT một chế độ thì chính nó phải TẮT được chế độ đó.
+  view.classList.remove('is-wide');
+
   const dl = `/api/download?path=${encodeURIComponent(item.path)}`;
   const inlineUrl = dl + '&inline=1';
   const ext = (item.ext || '').toLowerCase();
@@ -530,6 +551,12 @@ function showLibraryPreview(item) {
 
   let previewHTML;
   if (isImg) {
+    // ẢNH NGANG RẤT RỘNG (Application Form 7440x3508) — họ hàng với `is-tall` của SMS,
+    // chỉ khác trục. Khung ảnh thường ghim `max-width: min(72%,760px)` + `max-height:
+    // 62vh`; ảnh tỉ lệ 2,1:1 bị mốc CHIỀU CAO chặn trước → đo 12/08/2026 chỉ còn
+    // 726px bề ngang trong khung rộng 1279px, chữ nhỏ như kiến. Cùng ảnh đó nằm
+    // trong lưới nhiều trang lại được `is-landscape` cho rộng 100% (~1150px).
+    // Ngưỡng 1,3 (không phải "ngang > dọc") để brochure 4:3 vẫn dùng khung thường.
     previewHTML = `<div class="library-thumb"><img src="${inlineUrl}" alt="${escapeHtml(item.name)}"></div>`;
   } else if (isPdf) {
     previewHTML = `<div class="library-thumb library-thumb-pdf"><iframe src="${inlineUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH" title="preview"></iframe></div>`;
@@ -544,13 +571,32 @@ function showLibraryPreview(item) {
     </div>
   `;
   view.style.display = 'flex';
+
+  // Ảnh biết kích thước rồi mới quyết được khung — xem chú thích `.library-view.is-wide`.
+  if (isImg) {
+    const img = view.querySelector('.library-thumb img');
+    if (img) khiAnhCoKichThuoc(img, () => {
+      if (img.naturalWidth > img.naturalHeight * 1.3) view.classList.add('is-wide');
+    });
+  }
+}
+
+// ☠️ ẢNH ĐÃ NẰM TRONG BỘ ĐỆM THÌ `onload` KHÔNG BAO GIỜ CHẠY.
+// Gắn bằng innerHTML: ảnh đã cache xong ngay lúc trình duyệt đọc thẻ → `complete`
+// đã là true trước khi có ai kịp nghe, và sự kiện `load` đã bay mất. Đo 12/08/2026:
+// lần vào đầu tiên chạy đúng, bấm lại chính file đó thì khung không đổi. Loại lỗi
+// "chỉ sai từ lần thứ hai" nên rất dễ nghiệm thu nhầm là đã xong.
+// Ảnh hỏng (naturalWidth = 0 dù complete) thì bỏ qua, đừng đo trên số 0.
+function khiAnhCoKichThuoc(img, fn) {
+  if (img.complete && img.naturalWidth) { fn(); return; }
+  img.addEventListener('load', fn, { once: true });
 }
 
 function hideLibraryPreview() {
   const view = document.getElementById('library-view');
   if (view) {
     view.style.display = 'none';
-    view.classList.remove('has-group', 'is-tall');
+    view.classList.remove('has-group', 'is-tall', 'is-wide');
   }
   // Đây là chỗ DUY NHẤT mọi luồng "mở thứ khác" đều đi qua (loadSvgContent,
   // resetCanvasToWelcome, mở brochure/name card) → tắt luôn khung tài liệu của

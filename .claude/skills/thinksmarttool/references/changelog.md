@@ -5,7 +5,77 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 
 ---
 
-## TRẠNG THÁI HIỆN TẠI — chốt 2026-08-12 09:14
+## TRẠNG THÁI HIỆN TẠI — chốt 2026-08-12 20:38
+
+### 12/08/2026 20:38 — MỤC APPLICATION FORM: 3 chỗ chủ tool yêu cầu sửa (đã push)
+
+Chủ tool gửi 3 ảnh chụp màn hình có khoanh đỏ. Làm đúng 3 việc, không thêm gì:
+
+| Trước | Sau |
+|---|---|
+| `AIG — Application Form` | **`NLG & AIG — Application Form`** |
+| 3 tấm lẻ (AIG) + 2 tấm lẻ (Allianz) hiện thành thẻ nhỏ, tấm gộp nằm cuối | **chỉ còn tấm gộp** |
+| `Thông tin khách hàng` | **`Phiên bản gửi nhanh cho khách`** |
+
+**Sửa ở DỮ LIỆU, không sửa chỗ vẽ** — nhãn sinh ra từ tên file:
+- 5 tấm lẻ chuyển sang `_Archive/Application Form/` (thư mục bị `.gitignore` → biến khỏi
+  bản live, vẫn còn trên máy). Còn đúng 3 file, mỗi file 1 trang → `preprocessLibraryItems`
+  không gộp nữa nên **lưới thẻ nhỏ tự biến mất**, không phải đụng vào hàm dựng lưới.
+- Đổi tên: `AIG Application Form (4).jpg` → `NLG & AIG — Application Form.jpg` ·
+  `Allianz Application Form (3).jpg` → `Allianz Application Form.jpg` ·
+  `Thông tin khách hàng.jpg` → `Phiên bản gửi nhanh cho khách.jpg`.
+  ☠️ **Đã MỞ TỪNG ẢNH RA ĐỌC trước khi chọn giữ tấm nào** (bài học 5af): tấm giữ lại của
+  AIG là bản 7440x3508 chứa đủ mục 1→14, của Allianz là 4678x3308 chứa đủ mục 1→10 + Hồ sơ
+  trẻ em. Không suy từ tên file.
+
+**Ba chỗ trong code phải sửa theo, mỗi chỗ đều là lỗi thật đo được:**
+
+1. **`tachTenMau` (core.js) bắt nhầm tên nhiều hãng.** Cả hàm giả định *một file = một
+   hãng*: `carrierOf` trả hãng ĐẦU TIÊN gặp (`aig` dò trước `nlg`), rồi regex cắt tên hãng
+   ở đầu/cuối. `NLG & AIG — Application Form` ra nhãn **`AIG — & AIG — Application Form`**.
+   → Thêm cửa chặn: tên chứa **từ 2 hãng trở lên** thì trả nguyên văn, không tách.
+   Đo hồi quy: 6 mẫu proposal + 4 brochure nhãn **không đổi một chữ**.
+
+2. **Nhóm "Chung" xếp thuần theo tên → đổi CHỮ làm mục NHẢY CHỖ.** `NLG & AIG` sắp sau
+   `Allianz`, trong khi chủ tool chỉ xin đổi chữ. → Xếp theo **thứ tự hãng** trước
+   (`carrierSort(carrierOf(a), carrierOf(b))`), cùng hãng mới theo tên. Chỉ mục Application
+   Form đi qua nhánh này (`Brochure/` chia hãng bằng thư mục con, không có file lẻ ở gốc).
+
+3. ☠️ **KHUNG XEM 1 ẢNH BÓP CHẾT ẢNH NGANG — lỗi CHỈ LỘ RA sau khi bỏ mấy tấm lẻ.**
+   `.library-thumb` ghim `max-width: min(72%,760px)` + `max-height: 62vh`; ảnh tỉ lệ 2,1:1
+   bị mốc **chiều cao** chặn trước. Đo trong khung 1279x719:
+
+   | Ảnh | Trước | Sau |
+   |---|---|---|
+   | NLG & AIG (7440x3508) | 726x342 | **1175x554** |
+   | Allianz (4678x3308) | 583x413 | **1166x824** |
+   | Phiên bản gửi nhanh (dọc 1727x2662) | 268x413 | 268x413 (không đổi) |
+
+   → Thêm `.library-view.is-wide` (họ hàng với `is-tall` của SMS, khác trục): bỏ cả hai
+   mốc, cho cuộn, **nút Tải về dính ĐÁY khung** (ảnh Allianz cao 824px > khung 719px thì
+   nút rơi khỏi tầm mắt — đúng lỗi chủ tool bắt 31/07). Đo lại: nút nằm cách đáy 13px ở
+   cả 3 ảnh.
+
+☠️ **HAI CÁI BẪY ĐO ĐƯỢC, ghi để phiên sau khỏi vấp lại:**
+- **`onload` trong chuỗi HTML KHÔNG chạy khi ảnh đã nằm trong bộ đệm.** Bản đầu tôi gắn
+  `is-wide` bằng thuộc tính `onload` — lần vào đầu đúng, **bấm lại chính file đó thì
+  không đổi khung**. Loại lỗi "chỉ sai từ lần thứ hai". Nay dùng `khiAnhCoKichThuoc()`
+  (kiểm `complete && naturalWidth` trước, không thì mới nghe `load`). Đo 2 lượt liên tiếp
+  cho cả 3 ảnh: giống hệt nhau.
+- **Hàm nào BẬT một chế độ thì chính nó phải TẮT được chế độ đó.** Bản đầu để
+  `openLibraryItem` gỡ `is-wide`; đo xen kẽ ngang→dọc thì ảnh dọc ăn khung rộng,
+  cao **1797px** trong khung 719px. Nay `showLibraryPreview` tự gỡ ở dòng đầu.
+
+**Bumped:** `core.js?v=49` · `brochure.js?v=32` · `style.css?v=113` (`kiem-cache-version.js` xanh).
+
+**CÒN TREO (cố ý không sửa):** cùng lỗi "`onload` không chạy khi ảnh đã cache" vẫn còn ở
+`showLibraryMultiPagePreview` (class `is-landscape`) — **chưa sửa vì không đo được**: ảnh
+ở đó có `loading="lazy"`, chỉ giải mã khi trình duyệt thật sự dựng khung, mà bàn đo không
+dựng (đo ra `naturalWidth = 0` dù request trả 200). Sửa mù trên đường brochure — thứ đội
+sale dùng nhiều nhất — rủi ro hơn để nguyên. Đã ghi rõ cách sửa + cách đo ngay tại chỗ
+trong `brochure.js`.
+
+---
 
 ☠️ **SỬA CSS/JS XONG PHẢI BUMP `?v=` NGAY.** File tĩnh cache 1 NĂM (`immutable`). Đã cắn
 hai lần trong ngày 12/08: một lần tôi đo thấy CSS "không ăn", một lần chủ tool gửi ảnh

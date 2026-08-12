@@ -1499,6 +1499,27 @@ body.no-editor .sidebar-right { display: none; }
   display: flex; align-items: center; justify-content: center;
 }
 .library-thumb img { max-width: 100%; max-height: 60vh; display: block; }
+
+/* ẢNH NGANG RẤT RỘNG — "Application Form" (12/08/2026). Cùng bài toán với
+   `.library-view.is-tall` bên dưới (ảnh SMS cao 7082px), chỉ khác trục: ở đây
+   mốc `max-height: 62vh` chặn TRƯỚC mốc bề ngang nên ảnh 7440x3508 co còn 726px
+   trong khung 1279px. Bỏ cả hai mốc, để bề ngang khung quyết định — đúng như
+   `.library-item-card.is-landscape` vẫn làm trong lưới nhiều trang.
+   `display: block` + `overflow: auto`: ảnh cao hơn khung thì cuộn được, chứ
+   flex `justify-content: center` sẽ cắt cụt phần trên và không cuộn tới được. */
+.library-view.is-wide { display: block !important; overflow: auto; padding: 24px; }
+.library-view.is-wide .library-thumb { max-width: 100%; max-height: none; margin: 0 auto; }
+.library-view.is-wide .library-thumb img { max-width: 100%; max-height: none; }
+/* Nút Tải về DÍNH ĐÁY khung cuộn. Ảnh 4678x3308 mở hết bề ngang thì cao 824px
+   trong khung 719px → nút nằm dưới mép, đúng lỗi chủ tool bắt 31/07/2026 ("nút
+   download bị tọt xuống dưới luôn, người ta không biết thì không download được").
+   Ảnh SMS đã chữa bằng thanh dính ĐỈNH; ở đây nội dung chỉ dài hơn khung một
+   chút nên dính ĐÁY gọn hơn — nút luôn trong tầm mắt mà không che phần đầu ảnh. */
+.library-view.is-wide .library-meta {
+  position: sticky; bottom: 0;
+  margin-top: 20px; padding: 12px 0 4px;
+  background: linear-gradient(to top, var(--canvas-bg) 55%, transparent);
+}
 .library-thumb-pdf { width: min(72%, 760px); height: 60vh; }
 .library-thumb-pdf iframe { width: 100%; height: 100%; border: 0; background: #fff; }
 .library-thumb-file { width: 200px; height: 200px; color: var(--text-3); }

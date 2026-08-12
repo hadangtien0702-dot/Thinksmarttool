@@ -892,6 +892,15 @@ function tachTenMau(file) {
     String(file.path || '').replace(/\\/g, '/').toLowerCase().startsWith('4-clients/');
   if (laNhap) return { hang: '', chuongTrinh: goc, day: goc };
 
+  // ☠️ FILE DÙNG CHUNG CHO NHIỀU HÃNG → GIỮ NGUYÊN TÊN, KHÔNG TÁCH.
+  // Cả bộ máy dưới đây giả định "một file = một hãng": carrierOf trả về hãng ĐẦU
+  // TIÊN nó gặp, rồi hai regex cắt tên hãng ở đầu/cuối. Với "NLG & AIG — Application
+  // Form" thì carrierOf ra 'AIG' (nó dò 'aig' trước), còn regex cắt mất chữ 'NLG' ở
+  // đầu → nhãn hiện ra "AIG — & AIG — Application Form". Sai cả tên lẫn hãng.
+  // Tên có từ HAI hãng trở lên thì người đặt tên đã nói rõ ý rồi — chép nguyên văn.
+  const soHang = ['AIG', 'NLG', 'Allianz'].filter(h => new RegExp('\\b' + h + '\\b', 'i').test(goc)).length;
+  if (soHang > 1) return { hang: '', chuongTrinh: goc, day: goc };
+
   const hang = carrierOf(file);
   let ct = goc
     .replace(/^\s*(AIG|NLG|Allianz)\s*[-–—_]*\s*/i, '')   // hãng ở ĐẦU tên
