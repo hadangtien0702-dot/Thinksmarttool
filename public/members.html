@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
   <!-- animate.min.css GO 11/08/2026: 70 KB CSS chan viec ve trang tren ca 4 trang,
        ma do ra 0/105 class duoc dung o bat cu dau. Muon dung lai thi them link nay ve. -->
-  <link rel="stylesheet" href="/portal.css?v=80">
+  <link rel="stylesheet" href="/portal.css?v=83">
   <link rel="stylesheet" href="/dialog.css?v=4">
 </head>
 <body>
@@ -316,6 +316,40 @@
             </div>
           </div>
 
+          <!-- CÔNG CỤ TRA CỨU (12/08/2026) — chủ tool: "anh cần thêm cột đo lường về
+               tính tuổi và tính phí… một con số tổng quan và một biểu đồ 30 ngày và 60 ngày".
+               ⚠️ Khối này có BỘ CHỌN KHOẢNG RIÊNG (30/60), KHÔNG ăn theo dải 14/30/60 ở
+               trên — chủ tool chốt vậy để so 30 với 60 ngày mà không phải kéo lên kéo xuống.
+               Vì trang có hai chỗ chọn ngày nên nhãn ở đây phải nói rõ nó chỉ lọc khối này. -->
+          <div class="usage-block" id="usage-tools-block">
+            <!-- Dải nút 30/60 nằm NGAY TRÊN ĐẦU KHỐI, không để thành một hàng riêng dưới
+                 biểu đồ: hàng riêng ăn trọn ~44px chiều cao chỉ để chứa hai cái nút.
+                 Chủ tool bảo làm gọn hai lần — đây là chỗ cắt được nhiều nhất mà không
+                 mất thông tin nào. -->
+            <div class="usage-block-head ucc-head">
+              <div class="ucc-title">
+                <h2>Công cụ tra cứu — Tính tuổi &amp; Tính phí</h2>
+                <span class="usage-hint" id="usage-tools-range">—</span>
+              </div>
+              <div class="usage-presets" id="usage-tools-presets" role="group" aria-label="Chọn khoảng thời gian cho khối công cụ tra cứu">
+                <button class="btn btn-secondary btn-sm" type="button" data-tpreset="30">30 ngày</button>
+                <button class="btn btn-secondary btn-sm" type="button" data-tpreset="60">60 ngày</button>
+              </div>
+            </div>
+            <!-- GỌN LẠI 12/08/2026 (chủ tool: "chỗ này em làm gọn lại cho anh được không").
+                 Bản đầu xếp DỌC: hai thẻ số → biểu đồ → dải nút, cao ~570px mà phần lớn là
+                 mảng trắng (mới có 2 ngày số liệu, biểu đồ vẫn kéo hết chiều ngang).
+                 Nay số nằm CỘT TRÁI, biểu đồ CỘT PHẢI — cùng chiều cao, hết mảng trắng. -->
+            <div class="ucc-grid">
+              <div class="ucc-stats" id="usage-tools-stats"></div>
+              <div class="ucc-right">
+                <div class="usage-chart ucc-chart" id="usage-tools-chart" role="img"
+                     aria-label="Biểu đồ lượt dùng Tính tuổi và Tính phí theo ngày"></div>
+                <span class="usage-range-note ucc-note" id="usage-tools-note" hidden></span>
+              </div>
+            </div>
+          </div>
+
           <!-- ☠️ GỠ 10/08/2026 — hai khối "Theo từng người" và "ĐANG ONLINE".
                Chủ tool: "tracking online và từng người đến ngày hôm nay thì nó đã
                HOÀN THÀNH NHIỆM VỤ rồi, anh không cần nó nữa".
@@ -501,7 +535,7 @@
   <script src="/js/portal/config.js?v=8"></script>
   <script src="/js/portal/auth.js?v=11"></script>
   <script src="/js/ui-dialog.js?v=3"></script>
-  <script src="/js/portal/members.js?v=58"></script>
+  <script src="/js/portal/members.js?v=60"></script>
   <script src="/vendor/gsap.min.js?v=3.15.0"></script>
   <script src="/js/animations.js?v=4"></script>
 </body>

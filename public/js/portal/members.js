@@ -1024,6 +1024,12 @@
       const b = e.target.closest('[data-preset]');
       if (b) datPreset(parseInt(b.getAttribute('data-preset'), 10));
     });
+    // Mốc 30/60 RIÊNG của khối "Công cụ tra cứu" — cố ý tách khỏi dải trên (chủ tool
+    // 12/08/2026), để so 30 với 60 ngày mà không phải kéo lên kéo xuống.
+    $('usage-tools-presets').addEventListener('click', function (e) {
+      const b = e.target.closest('[data-tpreset]');
+      if (b) datKhoangCongCu(parseInt(b.getAttribute('data-tpreset'), 10));
+    });
     // Bấm dòng "Tải về" → popup chi tiết tải gì
     $('uk-download-row').addEventListener('click', moChiTietTaiVe);
     // ☠️ Bộ nghe cho `#usage-rows` GỠ 10/08/2026 cùng bảng "Theo từng người".
@@ -1285,8 +1291,10 @@
     // .usage-stats và đổi theo khoảng đang chọn (preset "Hôm nay" cho lại đúng
     // con số cũ). Gỡ phần tử khỏi HTML thì phải gỡ luôn chỗ JS ghi vào nó.
     await taiBanDoThuVien();   // cần TRƯỚC veTopMau: tra đường dẫn để gắn đúng nhãn Brochure/So sánh
+    await bandamKhoaRows();    // cần TRƯỚC veKhoiCongCu: để in đúng nấc "đang mở cho ai"
     khoiTaoKhoang();      // đặt khoảng mặc định 14 ngày + min/max cho ô ngày
     apDungKhoang();       // lọc theo khoảng → số tổng + biểu đồ + bảng
+    datKhoangCongCu(khoangCongCu);   // khối "Công cụ tra cứu" — khoảng RIÊNG, mặc định 30 ngày
   }
 
   // Đặt khoảng mặc định 14 ngày (lần đầu). Hai ô nhập ngày đã gỡ 31/07 nên không còn
@@ -1479,6 +1487,179 @@
                '<div class="uc-barwrap">' +
                  '<span class="uc-n">' + (c.n || '') + '</span>' +
                  thanh +
+               '</div>' +
+               '<span class="uc-x">' + (hienX ? c.d.getDate() : '') + '</span>' +
+             '</div>';
+    }).join('');
+  }
+
+  // ==========================================================================
+  // KHỐI "CÔNG CỤ TRA CỨU" — Tính tuổi & Tính phí (12/08/2026)
+  //
+  // Chủ tool: *"anh cần thêm cột đo lường về tính tuổi và tính phí… các bạn sale truy
+  // cập ra sao là được, anh cần một con số tổng quan và một biểu đồ 30 ngày và 60 ngày"*.
+  //
+  // ☠️ BA THỨ PHẢI NÓI RA TRÊN GIAO DIỆN, KHÔNG THÌ ĐỌC SỐ RA SAI:
+  //
+  // 1. **Có THROTTLE 15 phút** (USAGE_THROTTLE_MS.view trong auth.js). Cùng một người
+  //    mở lại trong 15 phút chỉ ghi MỘT sự kiện. Nên con số là "lượt dùng", KHÔNG phải
+  //    "số lần bấm". Ghi sai nhãn là chủ tool tưởng sale dùng ít hơn thực tế.
+  //
+  // 2. **Hai mục đang ở HAI NẤC KHÁC NHAU** (chủ tool xác nhận 12/08/2026):
+  //    Tính tuổi mở cho `user` (cả đội) · Tính phí còn ở `admin`.
+  //    → Số Tính phí thấp là ĐÚNG THEO THIẾT KẾ, không phải "sale chê". Vì vậy khối này
+  //      đọc `khoa_muc.hien_cho` rồi in thẳng nấc lên cạnh mỗi con số. Thiếu dòng đó là
+  //      mời người đọc kết luận sai về đội ngũ.
+  //
+  // 3. **Tách SALE với ADMIN.** Câu hỏi của chủ tool là "SALE truy cập ra sao", mà admin
+  //    dùng thử cũng sinh sự kiện. Gộp chung thì 8 lượt của chính chủ tool trông như
+  //    8 lượt của đội. Nên mỗi công cụ hiện cả hai con số.
+  //
+  // ⚠️ Khối này có khoảng ngày RIÊNG (30/60), không dùng khoangFrom/khoangTo của trang.
+  const CONG_CU_DO = [
+    { ma: 'tinhtuoi', nhan: 'Age / Tính tuổi',  ten: 'Tính tuổi' },
+    { ma: 'tinhphi',  nhan: 'Quote / Tính phí', ten: 'Tính phí'  }
+  ];
+  const NAC_TEN = { super: 'chỉ Super Admin', admin: 'Admin trở lên', all: 'cả đội' };
+  let khoangCongCu = 30;      // mặc định 30 ngày
+
+  function datKhoangCongCu(soNgay) {
+    khoangCongCu = soNgay;
+    document.querySelectorAll('#usage-tools-presets [data-tpreset]').forEach(function (b) {
+      b.classList.toggle('is-on', parseInt(b.getAttribute('data-tpreset'), 10) === soNgay);
+    });
+    veKhoiCongCu();
+  }
+
+  // `khoa_muc` do tab "Khoá mục" nạp. Tab Đo lường có thể mở TRƯỚC tab đó → tự nạp nếu
+  // còn rỗng. Đọc hỏng thì thôi, chỉ mất dòng ghi nấc chứ không làm trắng cả khối.
+  async function bandamKhoaRows() {
+    if (Object.keys(khoaRows).length) return;
+    try {
+      let { data, error } = await sb.from('khoa_muc').select('muc, hien_cho');
+      if (error || !data) return;
+      data.forEach(function (r) { if (!khoaRows[r.muc]) khoaRows[r.muc] = r; });
+    } catch (e) { /* bỏ qua */ }
+  }
+
+  function veKhoiCongCu() {
+    const oStats = $('usage-tools-stats');
+    if (!oStats) return;
+    const homNay = batDauNgay(new Date());
+    const from = new Date(homNay.getTime() - (khoangCongCu - 1) * NGAY_MS);
+    const f = from.getTime(), t = homNay.getTime() + NGAY_MS - 1;
+
+    // Vai trò từng người — để tách SALE với ADMIN. Không có hồ sơ thì coi như sale
+    // (hỏng về phía "đếm là sale" an toàn hơn: không thổi phồng con số của đội).
+    const vaiTro = {};
+    (toanBo || []).forEach(function (p) { vaiTro[p.id] = p.role || 'user'; });
+
+    const so = {};
+    CONG_CU_DO.forEach(function (c) {
+      so[c.ma] = { luot: 0, luotSale: 0, nguoi: new Set(), nguoiSale: new Set(), theoNgay: {} };
+    });
+
+    usageEvents.forEach(function (e) {
+      if (e.kind !== 'view') return;
+      const ts = new Date(e.at).getTime();
+      if (ts < f || ts > t) return;
+      let cc = null;
+      for (let i = 0; i < CONG_CU_DO.length; i++) if (e.label === CONG_CU_DO[i].nhan) cc = CONG_CU_DO[i];
+      if (!cc) return;
+      const o = so[cc.ma];
+      o.luot++; o.nguoi.add(e.user_id);
+      if ((vaiTro[e.user_id] || 'user') === 'user') { o.luotSale++; o.nguoiSale.add(e.user_id); }
+      const k = ngayKey(ts);
+      (o.theoNgay[k] || (o.theoNgay[k] = { tinhtuoi: 0, tinhphi: 0 }))[cc.ma]++;
+    });
+
+    $('usage-tools-range').textContent =
+      fmtNgay(from) + ' – ' + fmtNgay(homNay) + ' · 1 lượt = 1 lần mở (gộp trong 15 phút)';
+
+    oStats.innerHTML = CONG_CU_DO.map(function (c) {
+      const o = so[c.ma];
+      const nac = (khoaRows[c.ma] && khoaRows[c.ma].hien_cho) || 'all';
+      // ☠️ Mục chưa mở cho sale thì SỐ SALE luôn bằng 0 — phải nói vì sao, không thì
+      // chủ tool đọc thành "sale không dùng".
+      const chuaMo = nac !== 'all';
+      return '<div class="ucc-stat ucc-' + c.ma + '">' +
+               '<div class="ucc-stat-head">' +
+                 '<span class="ucc-dot"></span>' +
+                 '<span class="ucc-name">' + esc(c.ten) + '</span>' +
+                 '<span class="ucc-nac' + (chuaMo ? ' is-warn' : '') + '">Đang mở cho: ' +
+                   esc(NAC_TEN[nac] || nac) + '</span>' +
+               '</div>' +
+               // Số lượt và số người CÙNG MỘT DÒNG — tách hai dòng chỉ làm thẻ cao thêm.
+               '<div class="ucc-big">' + o.luot + '<span class="ucc-unit">lượt</span>' +
+                 '<span class="ucc-sub">· ' + o.nguoi.size + ' người</span></div>' +
+               '<div class="ucc-sale' + (chuaMo ? ' is-muted' : '') + '">' +
+                 (chuaMo
+                   ? 'Sale chưa vào được mục này'
+                   : '<b>' + o.luotSale + '</b> lượt của sale · <b>' + o.nguoiSale.size + '</b>/' +
+                     demSale() + ' nhân viên') +
+               '</div>' +
+             '</div>';
+    }).join('');
+
+    veBieuDoCongCu(so, from, khoangCongCu);
+  }
+
+  function demSale() {
+    return (toanBo || []).filter(function (p) { return (p.role || 'user') === 'user'; }).length;
+  }
+
+  // Biểu đồ hai loạt cột đứng cạnh nhau. Dùng lại đúng luật của veBieuDoKhoang:
+  // cắt phần ĐẦU chưa từng có số liệu (hệ đo lường mới bật 23/07, chọn 60 ngày mà
+  // không cắt là một mảng trắng dài), nhưng GIỮ ngày 0 nằm giữa vì đó là tin thật.
+  function veBieuDoCongCu(so, from, soNgay) {
+    const chart = $('usage-tools-chart');
+    if (!chart) return;
+    const start = batDauNgay(from).getTime();
+    const cols = [];
+    let max = 1;
+    for (let i = 0; i < soNgay; i++) {
+      const d = new Date(start + i * NGAY_MS);
+      const k = ngayKey(d.getTime());
+      const a = (so.tinhtuoi.theoNgay[k] || {}).tinhtuoi || 0;
+      const b = (so.tinhphi.theoNgay[k]  || {}).tinhphi  || 0;
+      if (a > max) max = a;
+      if (b > max) max = b;
+      cols.push({ d: d, a: a, b: b });
+    }
+    // ☠️ SÀN 10 CỘT. Cắt sạch phần đầu chưa có số liệu là đúng (21 cột rỗng thì "thấy
+    // gớm" — chủ tool 31/07), NHƯNG cắt tới mức chỉ còn 2 cột thì biểu đồ thành hai
+    // que lạc lõng giữa mảng trắng — đúng cái chủ tool chê 12/08. Giữ ít nhất 10 ngày
+    // gần nhất để còn ra hình một biểu đồ; mấy cột 0 nằm trong đó là tin THẬT
+    // ("mấy hôm đó không ai dùng"), không phải rác.
+    const SAN_COT = 10;
+    const iDau = cols.findIndex(function (c) { return c.a > 0 || c.b > 0; });
+    const daCat = iDau > 0 ? Math.min(iDau, Math.max(0, soNgay - SAN_COT)) : 0;
+    const veCols = daCat ? cols.slice(daCat) : cols;
+
+    const oNote = $('usage-tools-note');
+    if (oNote) {
+      if (iDau === -1) { oNote.textContent = 'Chưa có lượt dùng nào trong khoảng này.'; oNote.hidden = false; }
+      else if (daCat)  { oNote.textContent = 'Số liệu từ ' + fmtNgay(veCols[0].d); oNote.hidden = false; }
+      else oNote.hidden = true;
+    }
+
+    const soCot = veCols.length;
+    const step = soCot <= 16 ? 1 : Math.ceil(soCot / 12);
+    chart.style.gap = (soCot > 20 ? 3 : soCot > 14 ? 4 : 6) + 'px';
+
+    chart.innerHTML = veCols.map(function (c, idx) {
+      const hienX = (idx % step === 0) || idx === veCols.length - 1;
+      const nhanNgay = c.d.getDate() + '/' + (c.d.getMonth() + 1);
+      const thanh = function (n, lop) {
+        if (!n) return '';
+        const h = Math.max(Math.round((n / max) * 100), 6);
+        return '<span class="uc-bar ' + lop + '" style="height:' + h + '%"></span>';
+      };
+      const tong = c.a + c.b;
+      return '<div class="uc-col" title="' + nhanNgay + ': Tính tuổi ' + c.a + ' · Tính phí ' + c.b + '">' +
+               '<div class="uc-barwrap ucc-barwrap">' +
+                 '<span class="uc-n">' + (tong || '') + '</span>' +
+                 '<span class="ucc-pair">' + thanh(c.a, 'ucc-bar-a') + thanh(c.b, 'ucc-bar-b') + '</span>' +
                '</div>' +
                '<span class="uc-x">' + (hienX ? c.d.getDate() : '') + '</span>' +
              '</div>';

@@ -5,7 +5,13 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 
 ---
 
-## TRẠNG THÁI HIỆN TẠI — chốt 2026-08-12 08:05
+## TRẠNG THÁI HIỆN TẠI — chốt 2026-08-12 09:14
+
+☠️ **SỬA CSS/JS XONG PHẢI BUMP `?v=` NGAY.** File tĩnh cache 1 NĂM (`immutable`). Đã cắn
+hai lần trong ngày 12/08: một lần tôi đo thấy CSS "không ăn", một lần chủ tool gửi ảnh
+chê "chưa gọn" trong khi máy chủ đang trả bản mới. Bảo chủ tool **Ctrl+Shift+R**.
+
+
 
 **Bản live `tool.thinksmartinsurance.com` đã push hết.** Không còn gì nằm chờ trên máy.
 
@@ -67,6 +73,63 @@ node scripts/soi-bang-phi.js      # soi quy luat bang Term Life
 ```
 Và mở `localhost:8000/kiem-nhanh.html` — trang tự chẩn đoán, biết ngay máy chủ đang
 chạy bản nào (dùng khi "tool vẫn thấy sai" để tách lỗi CODE với cache trình duyệt).
+
+---
+
+### 2026-08-12 09:14 — ĐO LƯỜNG: thêm khối "Công cụ tra cứu" (Tính tuổi & Tính phí). ✅ CHỦ TOOL DUYỆT.
+
+Chủ tool: *"anh cần thêm cột đo lường về tính tuổi và tính phí… các bạn sale truy cập
+ra sao là được, anh cần một con số tổng quan và một biểu đồ 30 ngày và 60 ngày"*.
+
+**① DỮ LIỆU ĐÃ CÓ SẴN — không phải dựng mới**
+`tinhtuoi.js:203` và `tinhphi.js:344` đã ghi `logUsage('view', 'Age / Tính tuổi')` /
+`('Quote / Tính phí')` từ lúc phát hành. Chỉ cần đọc và bày ra.
+
+**② ☠️ BA THỨ PHẢI IN LÊN GIAO DIỆN, KHÔNG THÌ ĐỌC SỐ RA SAI**
+1. **Throttle 15 phút** (`USAGE_THROTTLE_MS.view`) → nhãn ghi rõ *"1 lượt = 1 lần mở
+   (gộp trong 15 phút)"*. Không nói ra là tưởng sale dùng ít hơn thực tế.
+2. **Hai mục ở HAI NẤC KHÁC NHAU** (chủ tool xác nhận 12/08): Tính tuổi mở cho `user`,
+   **Tính phí còn ở `admin`**. Khối đọc `khoa_muc.hien_cho` rồi in nấc ngay cạnh tên;
+   ô Tính phí ghi *"Sale chưa vào được mục này"* thay vì con số 0 trần trụi — số 0 rất
+   dễ đọc thành "sale chê".
+3. **Tách SALE với ADMIN**: câu hỏi là "SALE truy cập ra sao", mà admin dùng thử cũng
+   sinh sự kiện. Gộp chung thì 8 lượt của chính chủ tool trông như 8 lượt của đội.
+
+**③ ☠️ LÀM GỌN — VÀ MỘT LẦN ĐOÁN SAI CHỖ SIẾT**
+Chủ tool chê 2 lần: *"làm gọn lại"* rồi *"làm gọn gàng lại"*. Bản đầu xếp DỌC (hai thẻ
+số → biểu đồ → dải nút) cao **458px**, phần lớn là mảng trắng.
+- Dời dải nút 30/60 lên đầu khối cho gọn → **đo lại: chiều cao KHÔNG ĐỔI (308px)**.
+  Đo tiếp mới thấy thứ quyết định chiều cao là **cột trái — 2 thẻ số xếp dọc, 107px
+  mỗi thẻ = 225px**; biểu đồ chỉ giãn cho bằng. **Siết đúng thẻ số mới xuống 267px.**
+  → Không đo thì đã báo "đã gọn" sau khi dời nút, mà thực tế không đổi gì.
+- Kết quả: **458 → 267px (−42%)**. Bố cục nay là số bên trái / biểu đồ bên phải.
+- **Sàn 10 cột** (`SAN_COT`): cắt sạch ngày chưa có số liệu là đúng (21 cột rỗng thì
+  "thấy gớm" — 31/07), nhưng cắt còn **2 cột** thì thành hai que lạc lõng. Giữ tối
+  thiểu 10 ngày; cột 0 nằm trong đó là tin THẬT.
+- **Căn giữa cụm cột**: chỉ đặt trần bề rộng thôi thì đo ra **trống 1.070px dồn hết
+  bên phải** — mới là DỜI mảng trắng chứ chưa xoá.
+
+**④ ☠️ CACHE 1 NĂM CẮN NGAY TRONG LÚC LÀM**
+Sửa `portal.css` xong đo lại, `justify-content: center` **không ăn** — trình duyệt giữ
+`portal.css?v=81` theo đúng luật `immutable` đặt hôm qua. Phải phá cache mới đo được.
+→ Và chủ tool cũng dính: gửi ảnh chê "chưa gọn" trong khi **máy chủ đang trả bản mới**
+  — tab cũ chưa tải lại. **Sửa CSS/JS xong phải bump `?v=` NGAY, và bảo chủ tool
+  Ctrl+Shift+R**, không thì cả hai bên nhìn hai bản khác nhau mà tưởng cùng một bản.
+
+**⑤ QUYỀN XEM CHO ADMIN — ĐÃ MỞ SẴN TỪ 10/08, KHÔNG PHẢI SỬA GÌ**
+Chủ tool xin *"mở quyền xem cho admin ở phần đo lường"*. Kiểm ra **đã mở sẵn cả 3 tầng**:
+`initTracking()` cho `['admin','super_admin']` · policy `usage: admin doc` dùng
+`is_admin()` · `is_admin()` = `role in ('admin','super_admin')`.
+→ Admin vào vẫn thấy trống thì **KHÔNG phải lỗi code** — là do **chưa chạy
+  `supabase/quyen.sql`** trên Supabase SQL Editor. Đó là bước THỦ CÔNG, sửa file trong
+  repo không tự áp lên database.
+
+**File đụng:** `members.html` (khối mới) · `js/portal/members.js` (`veKhoiCongCu` ·
+`veBieuDoCongCu` · `datKhoangCongCu` · `bandamKhoaRows`) · `portal.css` (`.ucc-*`) ·
+bump `portal.css?v=83` · `members.js?v=60`.
+**Kiểm:** 36/36 (mọi `id` JS gọi có trong HTML · mọi class có trong CSS · logic đếm trên
+dữ liệu giả lập). ☠️ Bộ kiểm ban đầu **sai signature** — nhận tham số 2 làm boolean nên
+`luotSale = 0` báo trượt trong khi sản phẩm đúng; sửa thước rồi mới đọc được kết quả.
 
 ---
 

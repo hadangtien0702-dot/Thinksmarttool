@@ -1708,6 +1708,76 @@ button:active, .btn:active, .icon-btn:active, .sidebar-nav a:active, .sidebar-fo
 .uc-bar.is-zero { display: none; }
 .uc-x { font-size: var(--fs-xs); color: var(--text-3); font-variant-numeric: tabular-nums; }
 
+/* ---- KHỐI "CÔNG CỤ TRA CỨU" — Tính tuổi & Tính phí (12/08/2026) ----------------
+   ☠️ GỌN LẠI ngay trong ngày (chủ tool: "chỗ này em làm gọn lại cho anh được không").
+   Bản đầu xếp DỌC — hai thẻ số, rồi biểu đồ, rồi dải nút — cao ~570px mà phần lớn là
+   mảng trắng: hệ đo lường mới có 2 ngày số liệu, biểu đồ vẫn kéo hết chiều ngang nên
+   hai cặp cột lạc lõng giữa khoảng không.
+   Nay chia HAI CỘT: số bên trái, biểu đồ bên phải, cao bằng nhau. */
+.ucc-grid { display: grid; grid-template-columns: minmax(250px, 300px) 1fr; gap: 16px; align-items: stretch; }
+@media (max-width: 860px) { .ucc-grid { grid-template-columns: 1fr; } }
+.ucc-right { display: flex; flex-direction: column; min-width: 0; }
+/* Dòng "Số liệu từ …" bám ĐÁY cột phải để hai cột luôn kết thúc bằng nhau. */
+.ucc-note { margin-top: auto; text-align: right; }
+
+/* Tiêu đề + dải nút 30/60 CÙNG MỘT HÀNG. Bản trước để nút thành hàng riêng dưới biểu
+   đồ — ăn trọn ~44px chỉ để chứa hai cái nút, mà chủ tool đã bảo làm gọn hai lần. */
+.ucc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.ucc-title { min-width: 0; }
+.ucc-head .usage-presets { flex: none; }
+
+/* ☠️ ĐO RỒI MỚI BIẾT SIẾT CHỖ NÀO. Bản trước tôi dời dải nút lên đầu khối cho gọn —
+   đo lại thì chiều cao KHÔNG ĐỔI (308px). Vì cột trái (hai thẻ số xếp dọc, 107px mỗi
+   thẻ = 225px) mới là thứ quyết định chiều cao; biểu đồ chỉ giãn ra cho bằng.
+   Nên chỗ phải siết là THẺ SỐ, không phải dải nút. */
+.ucc-stats { display: grid; grid-template-columns: 1fr; gap: 8px; align-content: start; }
+@media (max-width: 860px) { .ucc-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .ucc-stats { grid-template-columns: 1fr; } }
+.ucc-stat { border: 1px solid var(--border); border-radius: var(--r-md); padding: 8px 11px; background: var(--surface-2); }
+.ucc-stat-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 2px; }
+.ucc-dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.ucc-tinhtuoi .ucc-dot { background: var(--brand); }
+.ucc-tinhphi  .ucc-dot { background: #f0a02c; }
+.ucc-name { font-weight: 700; font-size: var(--fs-sm); color: var(--text); }
+/* Nấc phát hành đứng NGAY CẠNH TÊN, không nhét xuống cuối: nó là thứ quyết định cách
+   đọc con số bên dưới ("0 lượt sale" vì chưa mở, chứ không phải vì sale chê). */
+.ucc-nac { font-size: var(--fs-xs); color: var(--text-3); background: var(--surface-3);
+           border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+.ucc-nac.is-warn { color: #8a5a00; background: #fff4e0; }
+/* Con số và "N người dùng tới" nằm CÙNG MỘT DÒNG — bản đầu tách hai dòng, cao thêm
+   mà không nói thêm gì. Cỡ 26px vẫn là thứ đập vào mắt đầu tiên trong thẻ. */
+.ucc-big { font-size: 22px; font-weight: 800; line-height: 1.2; color: var(--text);
+           font-variant-numeric: tabular-nums; display: flex; align-items: baseline;
+           gap: 5px; flex-wrap: wrap; }
+.ucc-unit { font-size: var(--fs-sm); font-weight: 600; color: var(--text-3); }
+.ucc-sub { font-size: var(--fs-xs); color: var(--text-3); font-weight: 500; }
+/* Không còn vạch kẻ + khoảng đệm riêng: dòng này đã khác hẳn về cỡ chữ và màu, thêm
+   vạch chỉ tốn 12px chiều cao mà không nói thêm gì. */
+.ucc-sale { font-size: var(--fs-xs); color: var(--text-2); margin-top: 3px; }
+.ucc-sale.is-muted { color: var(--text-3); font-style: italic; }
+.ucc-sale b { color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* Cao co theo cột phải, có TRẦN để khối không phình ra khi cửa sổ rộng. */
+.ucc-chart { height: auto; flex: 1 1 auto; min-height: 112px; max-height: 168px; }
+/* ☠️ TRẦN BỀ RỘNG CHO MỖI CỘT. `.uc-col { flex: 1 1 0 }` chia đều cả chiều ngang, nên
+   khoảng mới có 2 ngày số liệu thì hai cặp cột bị kéo giãn ra hai đầu, ở giữa là một
+   mảng trắng khổng lồ — đúng cái chủ tool chê 12/08. Có trần thì cột không phình ra.
+   ⚠️ CHỈ có trần thôi thì CHƯA ĐỦ: đo được cụm cột dồn về trái, chừa 1.070px trắng bên
+   phải — mới là DỜI mảng trắng chứ chưa xoá. Phải CĂN GIỮA cụm nữa (members.js còn đặt
+   sàn 10 cột để cụm không quá nhỏ). */
+.ucc-chart { justify-content: center; }
+.ucc-chart .uc-col { max-width: 58px; }
+
+/* Hai thanh đứng CẠNH nhau trong một ngày (không chồng lên nhau): chồng thì không đọc
+   được từng công cụ, mà câu hỏi của chủ tool là so hai công cụ với nhau. */
+.ucc-barwrap { width: 100%; }
+.ucc-pair { display: flex; align-items: flex-end; justify-content: center; gap: 2px;
+            width: 100%; height: 100%; }
+.ucc-pair .uc-bar { width: 46%; max-width: 16px; }
+.ucc-bar-a { background: var(--gradient-brand); }
+.ucc-bar-b { background: linear-gradient(180deg, #ffc266, #f0a02c); }
+.dark-theme .ucc-nac.is-warn { color: #ffce7a; background: rgba(240, 160, 44, .16); }
+
 /* Bảng theo người — 7 cột. Tên tiếng Anh và Phòng ban có CỘT RIÊNG (27/07): dán chúng
    sau tên thì tên dài ngắn khác nhau kéo chúng lệch mỗi hàng một chỗ, mắt không dóng
    được — chủ tool gọi là "rối". Mọi cột trừ cột tên đều CỐ ĐỊNH px vì giá trị luôn ngắn
