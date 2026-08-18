@@ -373,7 +373,13 @@
 
   <!-- Portal auth guard: chỉ chặn khi đã cấu hình Supabase (SETUP-SUPABASE.md);
        chưa cấu hình thì tool chạy mở như cũ. -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- supabase-js TU HOST (18/08/2026). Truoc day tai tu jsdelivr:
+       - ton mot vong DNS+TLS rieng cho ten mien la (do tren live: TLS xong o 79-121ms)
+       - `@2` KHONG ghim ban: jsdelivr doi ban luc nao cung duoc, minh khong biet
+       File nay giong HET TUNG BYTE ban @2 dang chay luc tai (2.112.3, md5 660d082f).
+       DOI BAN: tai lai tu https://cdn.jsdelivr.net/npm/@supabase/supabase-js@<ban>
+       roi doi so trong ?v= o CA 5 trang (index/login/members/tool/videos). -->
+  <script src="/vendor/supabase-js.min.js?v=2.112.3"></script>
   <script src="/js/portal/config.js?v=8"></script>
   <script src="/js/portal/auth.js?v=11"></script>
   <script>

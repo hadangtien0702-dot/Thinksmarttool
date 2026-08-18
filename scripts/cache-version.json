@@ -74,5 +74,9 @@
   "vendor/gsap.min.js": {
     "v": "3.15.0",
     "bam": "4d0f51c97fae"
+  },
+  "vendor/supabase-js.min.js": {
+    "v": "2.112.3",
+    "bam": "cb41d8abf53d"
   }
 }
