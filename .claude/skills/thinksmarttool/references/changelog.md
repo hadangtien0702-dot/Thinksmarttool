@@ -5,6 +5,64 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 
 ---
 
+### 18/08/2026 11:50 — TU HOST supabase-js (da push, DA KIEM TREN LIVE BANG TRINH DUYET)
+
+Bo `https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2` -> `/vendor/supabase-js.min.js?v=2.112.3`
+o ca 5 trang (index/login/members/tool/videos).
+
+**HAI LY DO (ly do 2 quan trong hon toc do):**
+1. Ten mien la = mot vong DNS+TCP+TLS RIENG. Do live 5 lan: TLS xong o 79-121ms,
+   TTFB 117-166ms. Ket noi toi origin minh thi da mo san tu luc tai HTML.
+2. **`@2` KHONG ghim ban** — jsdelivr doi ban luc nao cung duoc ma minh khong biet,
+   tren dung duong DANG NHAP cua 77 sale.
+
+**CHOT AN TOAN — giong het tung byte ban dang chay:**
+  md5 jsdelivr @2 = md5 jsdelivr @2.112.3 = md5 file tu host = `660d082ff26f26940da446e9acd5e386`
+
+**KIEM TREN LIVE BANG TRINH DUYET THAT** (khong dung o "file tra ve 200"):
+| Kiem | Ket qua |
+|---|---|
+| the script tren live | `/vendor/supabase-js.min.js?v=2.112.3` |
+| con goi jsdelivr | **0** |
+| `window.supabase` | co (object) |
+| `createClient` | co |
+| tao client bang `TST_CONFIG` that | duoc |
+| `auth.signInWithPassword` | la ham |
+| o email / mat khau / nut dang nhap | co du |
+| loi console | **0** |
+
+**FONT tren live (do bang `document.fonts`, khong doan):**
+- 8 @font-face, net ghi la **"400 800"** = dung dai font BIEN THIEN.
+- Trinh duyet chi tai **3 file** (latin / latin-ext / vietnamese cua net thuong);
+  italic `unloaded` vi trang khong dung. `taiNguyenFont` rong trong Resource Timing
+  la chuyen binh thuong cua gstatic, KHONG phai font hong — `document.fonts.check`
+  tra `true`.
+
+**☠️ SO DO THOI GIAN — PHAI DOC KEM CANH BAO KHOI DONG NGUOI:**
+Do 8 lan lien tiep, GIU NGUYEN THU TU (html_ms / supabase_ms):
+```
+856/637 · 304/79 · 64/638 · 66/319 · 59/61 · 56/59 · 55/60 · 57/59
+```
+- Trung vi: **html 64ms · supabase 79ms**. On dinh khi da am: **~55-60ms moi cai**.
+- **Lan dieu huong DAU TIEN vao live do duoc TTFB 5.317ms, load 7.367ms.** Do la
+  cong don: ket noi nguoi cua trinh duyet + ham Vercel nguoi. KHONG phai con so
+  binh thuong, nhung **nguoi dau tien vao sau luc vang VAN chiu no**.
+- Lay trung vi tren ca 8 lan la tron hai che do -> vo nghia. Phai nhin THU TU.
+
+**TONG KET HAI BUOC TOI UU HOM NAY (do tren live):**
+| | Truoc | Sau |
+|---|---|---|
+| Font (bo tai ve) | 261,7 KB | **51,4 KB** |
+| @font-face | 38 | **8** |
+| Ten mien ngoai phai bat tay | 3 (googleapis, gstatic, jsdelivr) | **2** |
+| supabase-js | jsdelivr, khong ghim ban | tu host, ghim 2.112.3 |
+| Tong trang tool | 522,9 KB | **312,6 KB (-40%)** |
+
+**DOI BAN supabase SAU NAY:** tai lai tu jsdelivr roi doi so trong `?v=` o CA 5 trang.
+Huong dan da ghi ngay tren the `<script>` de khoi phai tra lai changelog.
+
+---
+
 ### 18/08/2026 11:30 — TOI UU TOC DO TAI TRANG: FONT 261,7 -> 51,4 KB (da push, da do tren LIVE)
 
 Chu tool yeu cau toi uu toc do toan tool, va noi ro: **khong do o localhost**.
