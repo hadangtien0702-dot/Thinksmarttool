@@ -1186,7 +1186,7 @@
     <polyline class="cls-80" points="44.97 562.91 44.97 566.62 47.44 567.86"/>
   </g>
   <text class="cls-13" transform="translate(68.29 549.04)"><tspan x="0" y="0">Th</tspan><tspan class="cls-120" x="14.37" y="0">ờ</tspan><tspan x="21.48" y="0">i gian đóng phí</tspan></text>
-  <text class="cls-23" transform="translate(68.29 589.82)"><tspan x="0" y="0">5 </tspan><tspan class="cls-169" x="15.7" y="0">N</tspan><tspan x="29.12" y="0">ăm</tspan></text>
+  <text data-neo="trai" class="cls-23" transform="translate(68.29 589.82)"><tspan x="0" y="0">5 </tspan><tspan class="cls-169" x="15.7" y="0">N</tspan><tspan x="29.12" y="0">ăm</tspan></text>
   <rect class="cls-173" x="206.63" y="531.64" width="178.62" height="69.97" rx="11.66" ry="11.66"/>
   <circle class="cls-109" cx="234.19" cy="566.62" r="14.84"/>
   <g>
@@ -1194,7 +1194,7 @@
     <polyline class="cls-80" points="232.15 566.62 233.57 568.04 236.23 565.2"/>
   </g>
   <text class="cls-13" transform="translate(257.51 549.04)"><tspan x="0" y="0">Bảo </tspan><tspan class="cls-211" x="23.71" y="0">v</tspan><tspan x="29.93" y="0">ệ đến khi nào</tspan></text>
-  <text class="cls-23" transform="translate(257.51 589.82)"><tspan x="0" y="0">1</tspan><tspan class="cls-205" x="9.16" y="0">2</tspan><tspan x="20.62" y="0">0 tuổi</tspan></text>
+  <text data-neo="trai" class="cls-23" transform="translate(257.51 589.82)"><tspan x="0" y="0">1</tspan><tspan class="cls-205" x="9.16" y="0">2</tspan><tspan x="20.62" y="0">0 tuổi</tspan></text>
   <rect class="cls-173" x="395.85" y="531.64" width="178.62" height="69.97" rx="11.66" ry="11.66"/>
   <circle class="cls-109" cx="423.42" cy="566.62" r="14.84"/>
   <g>

@@ -329,6 +329,63 @@ tool ghi `12/08` — lệch từ lâu mà không ai để ý, vì mỗi trang s�
 `thinksmarttool-gy6f.vercel.app` — chủ tool dùng tên miền đó. Hai đường cùng trỏ về
 một deploy, nhưng khi đo/kiểm nên dùng đúng tên miền chủ tool đang mở.
 
+## 2h. ☠️☠️ CHỖ HAY LỖI MỖI LẦN PUSH — chủ tool yêu cầu ghi lại 18/08/2026
+
+> Nguyên văn: *"đây là các phần hay lỗi khi push code lên, em phải ghi nhớ lại các
+> điểm này để tự chỉnh sửa cho các lần sau"*.
+
+### A. Chạy cửa chặn TỰ ĐỘNG trước mỗi lần push
+
+```
+node scripts/kiem-truoc-push.js      # 7 nhóm kiểm, thoát khác 0 là DỪNG
+node scripts/kiem-cache-version.js   # bump ?v= — cửa riêng, vẫn phải chạy
+```
+
+`kiem-truoc-push.js` bắt 7 thứ **đã tái diễn thật**:
+
+| # | Kiểm | Đã vấp khi nào |
+|---|---|---|
+| 1 | Dữ liệu khách hàng THẬT còn sót trong mẫu | 18/08 — 4 mẫu nhúng sẵn 3 tên khách + tên/SĐT đại lý |
+| 2 | Logo Thinksmart có đủ 5 mẫu | 18/08 — 4 mẫu thiếu vì ảnh **liên kết bị đứt** trong `.ai` |
+| 3 | Chữ cấm (`iNDEXED`, `INDEXD`) | 18/08 — sửa lỗi này lại đẻ ra lỗi khác |
+| 4 | `public/templates` khớp `2-Templates` | luật cũ, hay quên một bên |
+| 5 | File tạm (`__*`, `.bak`) còn sót | 18/08 — suýt commit file đo tạm |
+| 6 | Số phiên bản + NGÀY khớp ở 3 trang | 18/08 — ngày lệch 11/08 vs 12/08 từ lâu |
+| 7 | `templates/` `data/` bị gắn `?v=` | luật 2f-① — gắn vào là sale ôm bảng phí cũ cả năm |
+
+☠️ **Đã đối chứng 18/08**: cố tình bỏ file tạm / làm lệch phiên bản / nhét lại tên
+khách thật → cả 3 đều báo đỏ và thoát `1`; khôi phục → thoát `0`. **Phép kiểm chưa
+bao giờ thấy đỏ thì chưa chứng minh được nó biết đỏ là gì.**
+
+### B. Ba thứ script KHÔNG kiểm được — phải ĐO TAY trên DOM
+
+Chúng là **hình học**, chỉ hiện ra khi render. Nạp mẫu vào DOM rồi đo:
+
+1. **Ô nhập có còn nhận diện được không.** `tagClientInfoElements` (proposal.js) dò
+   5 ô khách hàng **theo nội dung**: tuổi ghim cứng `=== '43'` · bang phải nằm trong
+   `US_STATES` · tên phải khớp regex **không dấu** và không chứa `Khách|Client|State…`
+   → **Đổi giá trị trong mẫu là ô biến mất, không báo lỗi gì.**
+   *Kiểm:* chạy `tagClientInfoElements` rồi đếm 5 id `client-*`. Phải đủ **5/5**.
+2. **Neo trái hay canh giữa.** `laCanGiuaTheoBanVe` **đo hình học** (lề trái/phải
+   trong thẻ nền). Thay chữ mà giữ nguyên toạ độ góc trái là nó chấm sai → sale gõ
+   số dài thì chữ **tràn khỏi thẻ**.
+   *Kiểm:* chạy `laCanGiuaTheoBanVe` cho mọi ô giá trị, so với ý đồ bản vẽ.
+   Muốn ép một ô neo trái: **đánh dấu `data-neo="trai"` trên thẻ `<text>`** trong SVG
+   — ĐỪNG nới hàm dò (thử 18/08: nới ra làm **65/404 ô** đổi phân loại).
+3. **Tiêu đề có chồng chữ / lệch không.** Illustrator cắt mỗi dòng thành nhiều cụm
+   với `x` ghim cứng; máy thiếu nét SF Pro Bold là chữ nở ~7% và đè nhau.
+   *Kiểm:* mỗi cụm phải KHÔNG rộng hơn khe `x` kế tiếp.
+
+### C. Ba chỗ trong file thiết kế hay sai — báo chủ tool, ĐỪNG tự sửa
+
+- **Ảnh liên kết đứt** trong `.ai` → xuất SVG ra là mất ảnh, không cảnh báo trên SVG.
+  Hiện Allianz còn **1** cái. Sửa: Window → Links → relink/embed.
+- **Huy hiệu mục lệch nhau.** Đo 18/08 trên Allianz: ô I/II rộng 29,75–29,83 còn ô
+  III chỉ **28,62**; tiêu đề mục III thụt trái **2,3** so với I và II. Số La Mã thì
+  nằm đúng tâm (lệch ≤0,47) — **lỗi ở Ô, không phải ở CHỮ**.
+- **Số La Mã có thể là `<text>` HOẶC `<path>`** (luật 2b-④). Allianz để chữ sống,
+  AIG/NLG đã create outlines. Đừng grep `<text>` rồi kết luận "mất chữ".
+
 ## 3. Chạy thử ở máy
 
 ```bash
