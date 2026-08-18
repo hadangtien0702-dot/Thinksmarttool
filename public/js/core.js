@@ -949,6 +949,10 @@ function nhanMuc(ten) {
 // "NE…" — vì `.tree-folder-label` có `overflow:hidden; text-overflow:ellipsis`
 // nên nó CẮT LUÔN cả huy hiệu. Mục phẳng (SMS/Age/Quote) không lộ lỗi này vì
 // chúng tự dựng header và đặt huy hiệu bên ngoài label.
+// `moi`: false = khong co nhan · true = nhan "new" · CHUOI = dung chinh chu do
+//        (chu tool xin nhan "updated" cho muc Proposal, 18/08/2026).
+// Nhan dat NGOAI <span class="tree-folder-label"> — nhet vao trong thi bi
+// `text-overflow: ellipsis` cat cut (da vap 11/08 o muc Application Form).
 function makeCollapsibleFolder(labelHTML, { extraClass = '', open = false, iconHTML = '', moi = false } = {}) {
   const folderEl = document.createElement('div');
   folderEl.className = `tree-folder ${extraClass} ${open ? 'open' : ''}`.replace(/\s+/g, ' ').trim();
@@ -958,7 +962,7 @@ function makeCollapsibleFolder(labelHTML, { extraClass = '', open = false, iconH
   headerEl.innerHTML = `
     ${iconHTML ? `<span class="tree-folder-icon">${iconHTML}</span>` : ''}
     <span class="tree-folder-label">${labelHTML}</span>
-    ${moi ? '<span class="nav-new">new</span>' : ''}
+    ${moi ? `<span class="nav-new${typeof moi === 'string' ? ' nav-upd' : ''}">${typeof moi === 'string' ? escapeHtml(moi) : 'new'}</span>` : ''}
     <span class="tree-folder-arrow">${NAV_ICONS.arrow}</span>
   `;
   headerEl.addEventListener('click', () => folderEl.classList.toggle('open'));

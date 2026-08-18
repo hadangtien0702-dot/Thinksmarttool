@@ -303,6 +303,32 @@ nhận request ở `sin1` → mỗi lời gọi API tốn trọn một vòng xuy
 → Supabase nằm ở **Singapore** (`CF-RAY: …-SIN`, truy vấn thật 136 ms) — **không phải
 vấn đề**, đừng đi migrate project Supabase.
 
+## 2g. ☠️ PUSH LÀ PHẢI BUMP SỐ PHIÊN BẢN — chủ tool chốt 18/08/2026
+
+Nguyên văn: *"mỗi lần anh bảo e update lên git là mỗi lần update verson mà"*.
+
+**Số phiên bản nằm ở 3 trang, phải sửa HẾT:**
+
+| File | Dòng | Nội dung |
+|---|---|---|
+| `public/index.html` | ~140 | `<span class="version-badge">v1.45</span>` + `<span>18/08/2026 · Thinksmart…` |
+| `public/members.html` | ~528 | như trên |
+| `public/tool.html` | ~167 | `version-badge` + `<span class="version-date">18/08/2026</span>` |
+
+☠️ **Ngày phải GIỐNG NHAU ở cả 3.** Vấp 18/08/2026: index và members ghi `11/08`,
+tool ghi `12/08` — lệch từ lâu mà không ai để ý, vì mỗi trang sửa một lần khác nhau.
+
+- Sửa nhỏ / sửa lỗi → tăng số cuối (v1.44 → v1.45). Đổi lớn → **hỏi chủ tool**.
+- Lấy ngày bằng lệnh `date`, không suy từ mục changelog trước đó (luật 5q).
+- Ghi số phiên bản mới vào changelog để phiên sau dò được.
+
+**Vì sao quan trọng:** chủ tool và 77 sale dùng số này để đối chiếu đang chạy bản nào.
+Đẩy code mới mà để số cũ thì họ báo lỗi của bản cũ, còn mình đi tìm trong bản mới.
+
+☠️ **BẢN LIVE THẬT LÀ `tool.thinksmartinsurance.com`** (tên miền riêng), không phải
+`thinksmarttool-gy6f.vercel.app` — chủ tool dùng tên miền đó. Hai đường cùng trỏ về
+một deploy, nhưng khi đo/kiểm nên dùng đúng tên miền chủ tool đang mở.
+
 ## 3. Chạy thử ở máy
 
 ```bash
