@@ -27,13 +27,16 @@
     } catch (e) {}
   </script>
 
-  <!-- Google Fonts: Plus Jakarta Sans (UI) + Fira Code (code / mono) -->
+  <!-- Google Fonts: Plus Jakarta Sans BIEN THIEN (400..800) — 1 file thay 5 nét tĩnh.
+       Đo 18/08/2026 trên live: 38 -> 8 @font-face, bộ latin+vietnamese 261,7 -> 51,4 KB (-80%).
+       Đã BỎ Fira Code: chỉ dùng ở 2 chỗ (chỉ báo zoom + ô mã màu), tốn 70,8 KB — nay dùng
+       ui-monospace của hệ điều hành (vốn đã là dự phòng trong --font-mono). -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400..800;1,400&display=swap" rel="stylesheet">
   <!-- animate.min.css GO 11/08/2026: 70 KB CSS chan viec ve trang tren ca 4 trang,
        ma do ra 0/105 class duoc dung o bat cu dau. Muon dung lai thi them link nay ve. -->
-  <link rel="stylesheet" href="style.css?v=114">
+  <link rel="stylesheet" href="style.css?v=115">
   <link rel="stylesheet" href="/dialog.css?v=4">
 </head>
 <body>

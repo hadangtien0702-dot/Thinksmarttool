@@ -59,7 +59,7 @@
   --area-forum: #C2740B;  --area-forum-soft: rgba(194, 116, 11, 0.10);
 
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'Fira Code', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --font-mono: ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
   --fs-2xs: 10.5px;
   --fs-xs: 11.5px;

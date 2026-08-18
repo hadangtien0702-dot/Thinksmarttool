@@ -69,7 +69,7 @@
 
   /* Fonts */
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'Fira Code', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --font-mono: ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
   /* Type scale */
   --fs-2xs: 10.5px;
