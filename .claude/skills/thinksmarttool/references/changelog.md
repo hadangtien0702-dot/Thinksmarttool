@@ -5,6 +5,74 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 
 ---
 
+## TRẠNG THÁI HIỆN TẠI — chốt 2026-08-18 12:50 (+0700)
+
+- **Bản live:** `tool.thinksmartinsurance.com` — **v1.45 · 18/08/2026** (3 trang khớp nhau).
+- **Phiên bản file:** `style.css?v=116` · `js/core.js?v=50` · `js/proposal.js?v=47` ·
+  `js/dropdown.js?v=1` · `vendor/supabase-js.min.js?v=2.112.3` · `portal.css?v=84`.
+- **5 mẫu proposal:** đã là bản mockup — KHÔNG còn dữ liệu khách hàng thật.
+  Giá trị giả: `Nguyen Van Mau` · `43` · `California` · `$0` · `TÊN AGENT ASSISTANT` ·
+  `(000) 000-0000`.
+- **Trang tool:** 522,9 → **312,6 KB** (−40%) sau khi tối ưu font + tự host supabase-js.
+
+**[CHỜ] — hai việc dừng vì lý do ngoài repo:**
+
+1. **`iNDEXED` (chữ i thường) VẪN CÒN trong file `.ai`.** Trên live đã đúng
+   (`INDEXED`), nhưng **lần xuất sau từ Illustrator sẽ lỗi lại**.
+   *Lý do dừng:* `ReplaceText` đòi uuid của thẻ chữ, mà **không lấy được bằng máy**.
+   Đã thử 6 đường, đều trượt vì MCP giới hạn **25.000 ký tự mỗi phản hồi**:
+   `GetArtboardStructure` (103/126 và 100/125 — tiêu đề nằm trong phần bị cắt) ·
+   `GetCanvasStructure` maxDepth 1 (118/679) và −1 · `GetObjectStructure` trên layer
+   gốc ("Response too large") · dò theo TÊN (trượt vì dấu tiếng Việt) · dò theo
+   TOẠ ĐỘ · dò uuid khuyết (uuid dùng chung cả tài liệu → 2.921/2.991 số khuyết) ·
+   `RunPreflightChecks` (chỉ liệt kê đối tượng CÓ lỗi — tiêu đề không dính lỗi nào).
+   *Cách gỡ:* chủ tool bấm chọn dòng chữ đó ở artboard **AIG IUL**, Shift-chọn thêm
+   ở **NLG IUL** → `VisualizeSelection` trả uuid → `ReplaceText` là xong.
+
+2. **Tài liệu Illustrator CHƯA LƯU.** `ListDocuments` trả `filePath: null`, tên
+   `Untitled`. Trong đó có phần Claude đã sửa: **4 logo Thinksmart nhân bản** từ logo
+   nhúng thật của Allianz (uuid 1531) + **đã xoá 2 `<Linked File>` đứt** (3200, 3264).
+   Đóng không lưu là mất.
+   *Bản sao lưu trước khi sửa:* `_Archive/ai-backup-2026-08-18/` (236,6 MB, gitignore).
+   *Lý do dừng:* đợi làm xong việc 1 để gộp một lần lưu.
+
+3. Allianz: 11 ô lệch nhỏ trong bảng phí và 1 tổ hợp có 2 file Drive — vẫn chờ sếp
+   chủ tool xác nhận (treo từ 11/08).
+
+---
+
+### 18/08/2026 12:00 — NHÃN "UPDATED" CHO MỤC PROPOSAL + BUMP v1.45 (đã push, đã kiểm live)
+
+Chủ tool xin nhãn `updated` cho mục Proposal ở cây điều hướng.
+
+**Cơ chế:** `makeCollapsibleFolder` nay nhận `moi` là **chuỗi** (không chỉ true/false):
+`true` → nhãn "new" như cũ · **chuỗi** → dùng chính chữ đó + class `.nav-upd`.
+
+☠️ **HAI RÀNG BUỘC ĐO ĐƯỢC — đã ghi thẳng vào CSS để không ai nới ra:**
+
+| | Kiểu `.nav-new` gốc | Kiểu `.nav-upd` đã làm |
+|---|---|---|
+| Bề rộng pill | 58,9 px → nhãn "Proposal / Báo giá" **thiếu 12 px**, cắt thành "Proposal / Báo gi…" | **47,5 px** → **thiếu 0** |
+| Tương phản | tô đặc `--success` (#15A34A) + chữ trắng = **3,30:1** (dưới chuẩn) | viền nhạt (`--brand` trên `--brand-soft`) = **6,44:1** |
+
+Bỏ phương án tô nền xanh vì rơi đúng cái bẫy mà `.nav-badge-lock` đã ghi chú tránh
+với `--warning`. Kiểu viền nhạt cũng **cố ý nhẹ hơn NEW** — "vừa cập nhật" không cần
+hét to bằng "mới tinh". **Đo lại: nhãn NEW của 4 mục kia GIỮ NGUYÊN** (35,7 px, 7,1:1).
+
+**PHIÊN BẢN v1.44 → v1.45, ngày về 18/08/2026 ở cả 3 trang.**
+☠️ Phát hiện ngày đang **lệch nhau** mà không ai để ý: `index`+`members` ghi `11/08`,
+`tool` ghi `12/08`. Nay thống nhất.
+
+**Luật mới chủ tool chốt:** *"mỗi lần anh bảo e update lên git là mỗi lần update
+verson mà"* → đã ghi vào `~/.claude/commands/xong.md` mục 2b (dùng ở mọi dự án) và
+`CLAUDE.md` mục 2g (kèm vị trí chính xác 3 chỗ ghi phiên bản).
+
+**Kiểm trên `tool.thinksmartinsurance.com`:** v1.45 + ngày 18/08 khớp ở cả 3 trang ·
+`.nav-upd` có trong CSS · `moi: 'updated'` có trong proposal.js · font biến thiên và
+supabase tự host còn nguyên · **0 lời gọi jsdelivr**.
+
+---
+
 ### 18/08/2026 11:50 — TU HOST supabase-js (da push, DA KIEM TREN LIVE BANG TRINH DUYET)
 
 Bo `https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2` -> `/vendor/supabase-js.min.js?v=2.112.3`
@@ -604,7 +672,7 @@ logo phai duoc them vao file goc `.ai`.
 
 ---
 
-## TRẠNG THÁI HIỆN TẠI — chốt 2026-08-12 20:38
+## (trạng thái cũ — chốt 2026-08-12 20:38)
 
 ### 12/08/2026 20:38 — MỤC APPLICATION FORM: 3 chỗ chủ tool yêu cầu sửa (đã push)
 
