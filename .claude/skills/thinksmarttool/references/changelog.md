@@ -5,6 +5,500 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 
 ---
 
+### 18/08/2026 11:00 — ALLIANZ: 5 O TIEN NEO TRAI + `data-neo="trai"` (chua push)
+
+Chu tool chot: ca 5 o tien cua Allianz neo trai theo nhan.
+
+**3 o lam duoc bang FILE** (keo chu ve le trai cua nhan, 3 cua cua `laCanGiuaTheoBanVe`
+tu nhan ra): Muc dong moi nam (keo 40,65) · Muc bao ve ban dau (47,68) · Tong so tien dong (33,84).
+
+**2 o trong DAI XANH bi cua 3 chan.** `nenChiOmMotGiaTri()` doi the nen chi om DUNG MOT
+gia tri; dai xanh om CA HAI ("Thu nhap huu tri" + "Tong dong tien du kien") -> ham bo cuoc
+-> tra `true` (canh giua). Va vi toi da keo chu sang trai trong file, cum bi canh giua quanh
+tam MOI -> chu tool go `$123,123` thi **tran han ra ngoai mep trai the** (anh chup 11:00).
+
+**☠️ BAN VA DAU TIEN CUA TOI SAI — DA VUT:** noi cua 3 thanh "chia nen thanh COT theo tung
+gia tri roi do trong cot". Nghe hop ly, nhung **do truoc/sau tren ca 5 mau: 65/404 o doi
+phan loai** — lot ca tieu de muc, doan van, ten dai ly, "PRESENTED BY". Qua rong.
+=> **Phep do nay la thu cuu ban va.** Neu chi nhin "2 o can sua da dung" thi da day len live
+   mot thay doi cham vao 65 cho. Doi mot HEURISTIC DUNG CHUNG thi bat buoc phai dem
+   truoc/sau tren toan bo, dung chi kiem cho minh vua sua.
+
+**CACH DA CHON — danh dau thang trong ban ve:** `data-neo="trai"` tren the `<text>`.
+`laCanGiuaTheoBanVe()` gap thuoc tinh nay thi tra `false` ngay, khong do gi ca.
+Da danh dau 2 the trong `Max-Funded Allianz.svg` (khoi 54 va 56).
+**Do lai truoc/sau: dung 2/404 o doi**, ca hai deu la o `$0` cua Allianz. 5/5 o tien
+cua Allianz nay bao NEO TRAI.
+
+**Kem theo — `xepLaiHauTo()` biet neo trai:** cum `[so | /nam]` truoc day LUON duoc canh
+giua quanh `neo.tam` tinh mot lan. Nay neu `laCanGiuaTheoBanVe(idTien)` tra false thi giu
+`neo.trai` (translate ban dau cua so) lam moc, hau to `/nam` day ra sau. Khong co dong nay
+thi moi chinh trong file .svg deu vo ich — cum bi keo ve giua ngay lan go dau tien.
+`neoHauTo` chi ton tai cho DUNG MOT o ("Thu nhap huu tri" cua Allianz, proposal.js:1084)
+nen pham vi anh huong hep.
+
+**File:** keo them the `/nam` (khoi 55) cung 62,58 de giu khe ho voi con so.
+`js/proposal.js` 43 -> **46** (3 lan bump trong mot buoi — cua chan bat dung ca 3 lan).
+
+**BAI HOC:**
+1. **Kieu neo cua mot o KHONG nam trong code — no duoc SUY RA tu hinh hoc file mau.** Muon
+   doi thi sua file .svg. Khi hinh hoc khong noi ro duoc (nen dung chung), thi **danh dau
+   tuong minh trong file**, dung di noi cai heuristic.
+2. **Doi heuristic dung chung = phai dem truoc/sau tren TOAN BO du lieu that.** 65 vs 2 la
+   khoang cach giua mot ban va hong va mot ban va dung, ma nhin code thi ca hai deu "hop ly".
+
+---
+
+### 18/08/2026 10:35 — 2 O "MUC BAO VE" + "MUC DONG MOI THANG" CUA MAU IUL: NEO TRAI (chu tool yeu cau)
+
+Chu tool go `$47,000` vao o Muc Bao Ve -> chu nam GIUA the, trong khi nhan "Muc Bao Ve"
+neo trai. Yeu cau: *"rieng 2 cho nay anh muon lay sat le ben trai"*.
+
+**Cach lam — dung dung co che san co, khong them code:** keo chu ve dung le trai cua NHAN.
+`laCanGiuaTheoBanVe()` do le trai/le phai so voi the nen; lech qua `NGUONG_LECH_CAN_GIUA`
+(0,15) thi KHONG bat `text-anchor:middle` -> gia tri sale go vao moc tu le trai va no
+sang phai. `thuNhoChoVua()` van chay binh thuong (canhGiuaTheoBanVe dat `neo.rong` +
+`neo.coChuGoc` TRUOC nhanh if, nen khong bi bo qua).
+
+**4 o da keo** (chi 2 mau IUL — bo cuc giong nhau):
+| Mau | O | x cu -> x moi | keo trai |
+|---|---|---|---|
+| AIG IUL | Muc Bao Ve | 118,964 -> 56,724 | 62,24 |
+| AIG IUL | Muc Dong Moi Thang | 89,796 -> 58,366 | 31,43 |
+| IUL - NLG | Muc Bao Ve | 123,674 -> 61,434 | 62,24 |
+| IUL - NLG | Muc Dong Moi Thang | 94,506 -> 63,086 | 31,42 |
+
+**Kiem (do that tren DOM):**
+| O | lech le trai so voi nhan | ty le lech trong the nen | tool se canh giua? |
+|---|---|---|---|
+| AIG IUL · Bao Ve | **-0,49** | 0,543 | **KHONG** |
+| AIG IUL · Dong Moi Thang | **-0,26** | 0,592 | **KHONG** |
+| IUL-NLG · Bao Ve | **-0,49** | 0,543 | **KHONG** |
+| IUL-NLG · Dong Moi Thang | **-0,25** | 0,592 | **KHONG** |
+(-0,x la do chan chu `$` khac chu `M`, mat nhin la thang hang.)
+Da render kem **mo phong go `$47,000` va `$1,234.56`** -> ca hai deu moc tu le trai, no
+sang phai, khong tran the.
+
+**KHONG ap cho AIG Termlife / TERMLIFE-NLG / Allianz** — bo cuc khac han: o "Muc Bao Ve"
+cua Term Life nam trong o rong BEN PHAI nhan (x=368 so voi nhan x=51), khong cung cot
+nhu IUL. Cac o tien con lai (bieu do Cash Value, Tong so tien dong) VAN canh giua.
+
+**Ghi chu ky thuat:** cach neo cua tung o KHONG nam trong code — no duoc SUY RA tu hinh hoc
+cua file mau. Nghia la **muon doi kieu neo cua mot o thi sua vi tri chu trong file .svg**,
+dung di tim cho sua trong `proposal.js`. Va nguoc lai: **moi lan xuat lai mau tu Illustrator,
+kieu neo co the doi** neu designer keo chu di cho khac.
+
+---
+
+### 18/08/2026 10:20 — ☠️ TEXT GIA LAM TAT LUON CANH-GIUA O TIEN (da sua) — LOI THU HAI CUNG MOT GOC
+
+Chu tool: *"co truong hop anh dien dau - thi em cho vao giua nha em"*. Dau `-` bi troi
+sang trai. **Lai la loi cua ban mockup**, va **cung mot co che voi loi 10:05**.
+
+**GOC RE:** `laCanGiuaTheoBanVe()` (proposal.js:347) quyet dinh co bat canh-giua hay khong
+bang cach **DO xem chu co nam giua khung nen khong**:
+```
+const leTrai = n.chu.left - n.nen.left;
+const lePhai = n.nen.right - n.chu.right;
+return Math.abs(lePhai - leTrai) <= NGUONG_LECH_CAN_GIUA * n.rong;   // nguong 15%
+```
+Ban goc `$180.00` nam giua o -> do ra can -> tool bat `text-anchor:middle`.
+Toi thay thanh `$0` **nhung giu nguyen toa do neo trai** -> do ra lech trai ->
+**KHONG bat canh giua** -> go `-` vao thi chu neo trai, nhin nhu lech.
+
+**CACH SUA — va vi sao KHONG chon cach de hon:**
+- ❌ KHONG ghi san `text-anchor="middle"` vao file: `canhGiuaTheoBanVe()` co dong
+  `if (oC.getAttribute('text-anchor') === 'middle') { neo.xong = true; return; }` — thoat
+  SOM, khong dat `neo.rong` / `neo.coChuGoc`, ma `thuNhoChoVua()` doi dung hai gia tri do
+  (`if (!neo.xong || !neo.rong || !neo.coChuGoc) return`). Lam vay la **tat luon tinh nang
+  thu nho chu dai cho vua o** — doi mot loi lay mot loi khac.
+- ✅ **Dich chu `$0` ve dung TAM ma ban goc da can.** Do be rong chu goc (tu ban sao luu)
+  va chu moi, dich `translate(X ...)` thêm `(rongCu - rongMoi)/2`. Tool tu bat canh giua
+  nhu cu, VA `thuNhoChoVua()` van chay.
+
+**Da dich 25 o: AIG IUL 6 · AIG Termlife 4 · IUL-NLG 6 · TERMLIFE-NLG 4 · Allianz 5.**
+
+**Kiem:** do tam tung o cua ban mockup so voi ban goc -> **lech 0,000 tuyet doi o ca 25 o**.
+Tam trung khop nghia la `laCanGiuaTheoBanVe` se cham diem y het nhu voi ban goc.
+Kem: `tagClientInfoElements` van **5/5** o ca 5 mau; tong so o van 89/73/88/81/73;
+`kiem-cache-version` 19/19.
+
+**BAI HOC (nang len tu bai 10:05 — DAY MOI LA DANG DAY DU):**
+☠️☠️ **Doi noi dung trong file mau khong chi doi CHU — no doi ca HINH HOC va DAU VAO cua
+moi bo do dang doc file do.** Hai lan lien tiep trong mot buoi, cung mot goc:
+| Doi gi | Bo do bi anh huong | Trieu chung nguoi dung thay |
+|---|---|---|
+| ten/tuoi/bang -> text gia | `tagClientInfoElements` (so khop CHUOI) | muc "Thong tin khach hang" chi con 2/5 o |
+| tien -> `$0` giu neo trai | `laCanGiuaTheoBanVe` (do HINH HOC) | go `-` bi lech trai |
+=> **Truoc khi doi mot gia tri trong file mau, hoi DU HAI CAU:**
+   1. Co doan code nao **so khop chuoi** nay khong? (`===`, `includes`, regex)
+   2. Co doan code nao **do hinh hoc** cua no khong? (bbox, tam, le trai/le phai)
+   Cau 2 la cau toi quen ca hai lan.
+=> Va: **thay chu thi phai giu nguyen TAM**, dung chi giu toa do goc trai.
+
+**CHUA KIEM DUOC TRUC TIEP:** khong dang nhap duoc vao tool nen chua tu tay go `-` de nhin.
+Bang chung gian tiep: tam trung khop 100% voi ban goc, ma ban goc thi canh giua dung.
+
+---
+
+### 18/08/2026 10:05 — ☠️☠️ TEXT GIA LAM CHET BO DO O KHACH HANG (da sua)
+
+Chu tool bao *"bam chu tren ban ve khong nhay"*. Mo anh chup ra thi thay muc
+**"1. Thong tin khach hang" chi con 2 o** (Gioi tinh, Suc khoe) thay vi 5.
+**Loi cua toi**, do chinh ban mockup vua lap.
+
+**GOC RE:** `tagClientInfoElements()` (proposal.js:648) nhan dien 5 o khach hang
+**THEO NOI DUNG CHU**, moi o mot dieu kien rieng:
+
+| O | Dieu kien that trong code | Text gia dot 1 | Ket qua |
+|---|---|---|---|
+| Gioi tinh | `t === 'Male'` hoac `'Female'` | giu `Male` | ✅ |
+| Suc khoe | `ALL_RATE_CLASSES.includes(t)` (14 muc) | giu nguyen | ✅ |
+| **Tuoi** | ☠️ **`line(el) === '43'`** — GHIM CUNG dung chuoi "43" | `00` | ❌ |
+| **Tieu bang** | `US_STATES.includes(t)` (50 bang) | `State` | ❌ |
+| **Ten** | `^[A-Z][A-Za-z'.]+( [A-Z][A-Za-z'.]+){1,3}$` + KHONG chua `Khach\|Client\|State\|Standard\|Preferred...` + `getAbsoluteY < 450` | `TÊN KHÁCH HÀNG` | ❌ (co dau tieng Viet, va dinh tu cam "Khách") |
+
+**Da sua (dot 2):** `Nguyen Van Mau` · `43` · `California`. Do lai bang **chinh ham
+`tagClientInfoElements`** (nap kem `ALL_RATE_CLASSES` 14 muc, `US_STATES` 50 bang,
+`getAbsoluteY`): **5/5 o nhan duoc o ca 5 mau**.
+
+**BA BAI HOC:**
+1. ☠️ **Doi DU LIEU trong mau = doi DAU VAO cua bo do.** Toi chi nghi "thay chu cho
+   khong lo thong tin khach" ma khong hoi *"co doan code nao dang DOC chu nay khong?"*.
+   Cau tra loi la CO — va no im lang bo qua o khong khop, khong bao loi gi.
+   => Truoc khi doi bat ky gia tri nao trong file mau: **grep xem chuoi do co bi so sanh
+   o dau khong** (`=== '43'`, `includes(...)`, regex ten).
+2. ☠️ **`line(el) === '43'` la MIN CHUA NO.** Bat cu ai doi tuoi trong mau — hoac xuat lai
+   mau voi khach khac tuoi — la **o Tuoi bien mat khong dau vet**. Chua sua vi
+   `/^\d+$/` se bat nham cac so "1/2/3/4" cua vong "Cap do". Muon sua phai neo them
+   dieu kien vi tri (cung the `<text>` voi nhan "Tuoi / Age") va co bo kiem rieng.
+3. **Phep kiem cua toi truoc do KHONG DU:** toi da do "so o nhap khong doi 89/73/88/81/73"
+   va "0 o con du lieu that" — **ca hai deu dung ma van lot loi**, vi chung do TONG SO,
+   khong do **PHAN LOAI**. Dem khong phai la kiem (bai hoc 5k lap lai lan thu N).
+   Phep do dung la chay `tagClientInfoElements` roi dem 5 id `client-*`.
+
+**Ghi chu:** tuoi phai de `43` nen mau van mang dung tuoi cua khach cu. Tuoi don le khong
+dinh danh duoc ai, nhung neu chu tool muon so khac thi **phai sua ca dong `=== '43'`**.
+
+---
+
+### 18/08/2026 09:55 — DA LAP 5 BAN MOCKUP VAO TOOL (chua push)
+
+Chu tool duyet -> lap ca 5 vao `public/templates/` **va** `2-Templates/<hang>/`.
+Sao luu ban truoc do o `_Archive/truoc-mockup-2026-08-18/` (5 file .bak).
+
+**Do tren FILE DANG CHAY, bang chinh chuoi ham cua tool:**
+
+| Mau | So o nhap (truoc -> sau) | Con du lieu that | Ten khach | O dai ly | O tien $0 |
+|---|---|---|---|---|---|
+| AIG IUL | 89 -> **89** | **0** | TÊN KHÁCH HÀNG | 4 | 6 |
+| AIG Termlife | 73 -> **73** | **0** | TÊN KHÁCH HÀNG | 4 | 4 |
+| IUL - NLG | 88 -> **88** | **0** | TÊN KHÁCH HÀNG | 4 | 6 |
+| TERMLIFE - NLG | 73 -> **73** | **0** | TÊN KHÁCH HÀNG | 4 | 4 |
+| Max-Funded Allianz | 81 -> **81** | **0** | TÊN KHÁCH HÀNG | 4 | 5 |
+
+- md5 `public/templates` vs `2-Templates` **khop ca 5 cap**.
+- `2-Templates/` bi `.gitignore:9` chan — **dung nhu thiet ke**, ban live chay tu
+  `public/templates` (da xac nhan bang `git check-ignore -v`).
+- `kiem-cache-version.js` 19/19 khop. **KHONG gan `?v=` cho templates** (luat 2f-①).
+- Da render ca 5 ra anh va nhin bang mat.
+
+**Bao dong nham cua toi:** nhin anh thu nho tuong Allianz ghi "Preferred Plus Nortobacco".
+Doc bang `getLineTextContent` thi dung la **"Preferred Plus Nontobacco"** — khong co loi.
+=> Bai hoc lap lai: **anh render thu nho khong phai la phep doc chu**; muon doc chu thi
+   doc qua ham that, dung doan bang mat tren anh nen.
+
+**Luu y con lai:** AIG/NLG viet `Standard Non-Tobacco` (co gach ngang) con Allianz viet
+`Preferred Plus Nontobacco` (khong gach). Chua ro co y theo tung hang hay khong — CHUA SUA.
+
+---
+
+### 18/08/2026 09:45 — 05 BAN MOCKUP (bo du lieu khach that) + DROPDOWN TU DUNG (chua push)
+
+**A. 05 BAN TEST MOCKUP — go het du lieu khach hang/dai ly that khoi mau**
+
+☠️ **Phat hien: 4 mau dang NHUNG SAN TEN KHACH HANG THAT.** Chu tool thay "luc thi
+Vu Nguyen luc thi Dinh Thi Thao Nguyen" chinh la vi moi mau giu mot khach khac nhau:
+`Vu Nguyen` (AIG IUL) · `Dinh Thi Thao Nguyen` (AIG Termlife, IUL-NLG, TERMLIFE-NLG) ·
+`Chau Dang Khoa` (Allianz). Kem theo la ten + SDT dai ly that.
+
+Da thay bang text gia (script `tao-mockup.js` o scratchpad, ban giao o thu muc `mockup/`):
+`TÊN KHÁCH HÀNG` · `00` · `State` · `$0` · `TÊN AGENT ASSISTANT` / `TÊN LICENSED AGENT` ·
+`(000) 000-0000`. **Tien deu dat $0** — khong bia so bao hiem, va o chua sua thi lo ngay.
+GIU nguyen: Gioi tinh, Xep hang suc khoe, dia chi/SDT/website cong ty, ten CEO (sale
+khong sua duoc muc CEO — luat 2b-①).
+
+**Cach lam — chay dung duong cua tool, khong tu viet lai:** trich thang tu `core.js`
+cac ham `optimizeSvgTexts` · `chuanHoaKerningDongDaGop` · `getLineTextContent` ·
+`manhCungDong` · `boQuenKerning` · `clearSiblingTspans` roi chay chuoi
+optimize -> gan `data-editor-id` (cum DAU cua moi dong, nhom theo y) -> chuan hoa kerning.
+Ghi chu gia thi lam giong `gomMotKhoiChu`: don chu vao cum dau, cum sau de rong + go x/y.
+
+**Kiem:**
+- **0 o con du lieu that** o ca 5 file (quet bang chinh `getLineTextContent`).
+- **So o nhap KHONG DOI**: 89 / 73 / 88 / 81 / 73 — mockup khong them bot o nao.
+- Hai bo cai dat doc lap (trinh duyet + Node) ra **cung so khoi doi**: 13/11/13/11/12.
+- Da render 3 mau ra anh va nhin bang mat.
+
+⚠️ **Ban mockup KICH HOAT mot nhanh code ma ban goc khong chay vao**: `boQuenKerning`
+(dong da gop -> cum dau om het chu, cum sau rong). Tool CO san xu ly, nhung day dung la
+kieu "duong code chua bao gio chay" — neu doi mau sang mockup that thi phai thu ky.
+
+**CHUA lap vao `public/templates/`** — moi ban giao file cho chu tool duyet.
+
+---
+
+**B. DROPDOWN TU DUNG — `public/js/dropdown.js` (MOI)**
+
+☠️ **Danh sach option cua `<select>` do HE DIEU HANH ve, CSS khong cham toi.** Dong
+`select.text-input-field option { background-color... }` (style.css) gan nhu **vo tac dung**
+tren Windows/Chrome. Muon dung style app thi bat buoc phai tu dung panel.
+
+**Ap cho CA 6 the `<select class="select-field">`** (5 o `members.html` + 1 o `proposal.js`),
+khong va rieng mot cho — luat 5n.
+
+☠️ **GIU NGUYEN the `<select>` trong DOM**, chi an ve mat nhin (`opacity:0`).
+Ba cho dang truy van no va se hong LANG LE neu go:
+`core.js:1189` · `core.js:1728` (`chupThongTinDaDien` doc `.value` + `aria-label`) ·
+`main.js:338` (bam chu tren ban ve -> focus o tuong ung). Chon xong thi ghi vao `<select>`
+roi ban `change` — moi doan code cu chay y nguyen. Them `sel.onfocus -> btn.focus()`
+de duong focus cua main.js van thay duoc.
+
+☠️ **Dung lai danh sach muc MOI LAN MO, dung chup mot lan.** `members.html` khai
+`<select>` RONG roi `members.js` do option vao sau — chup mot lan se ra panel trong tron.
+☠️ **Panel dat `position:fixed` va gan vao `<body>`** — de trong `.dd` thi bi khung cuon
+cua thanh ben cat mat.
+
+**Do that (dung 2 o canh nhau, doc computed style ca hai — luat "comment co the noi doi"):**
+| | O nhap thuong | Nut dropdown |
+|---|---|---|
+| cao | 38,3 | **38,3** |
+| bo goc | 8px | **8px** |
+| co chu | 14px | **14px** |
+| dem | 8px 10px | **8px 10px** |
+| mau vien | rgb(213,217,227) | **giong het** |
+
+- mo/dong OK · 9 muc dung thu tu · muc dang chon: nen `rgb(245,242,255)` (--brand-50),
+  chu `rgb(109,40,217)` (--brand-600), dam 600, co dau check
+- panel: `fixed`, gan vao body, bo goc 10px (--r-md), co bong, cach nut 4px
+- chon muc -> ban `change` **dung 1 lan**, `sel.value` doi dung, nhan tren nut doi, panel dong
+- Enter mo duoc · bam ra ngoai dong duoc · truy van cu van thay `SELECT#edit-text-9`
+
+⚠️ **rAF KHONG CHAY khi khung trinh duyet dang an** — phep do dau tien treo 30s vi cho
+`requestAnimationFrame`. Do DOM dong bo thi khong dinh. (Ho hang bai hoc 5j.)
+⚠️ Va: lan chay bi ngat giua chung de lai dropdown DANG MO, nen cu bam sau do thanh DONG
+-> bao "mo khong duoc". **Reset trang thai o dau moi phep do.**
+
+**Cache:** `style.css` 113 -> **114**, `js/proposal.js` 42 -> **43**, them
+`js/dropdown.js?v=1` vao `tool.html` + `members.html`. `kiem-cache-version.js` da bat
+dung 2 file quen bump; da chot lai bang `--ghi` (19 file).
+
+**CON TREO:** chua push · chua xem duoc anh chup (khung trinh duyet dang an) — chu tool
+tai lai trang tool de nhin · chua thu tren `members.html` that (can dang nhap).
+
+---
+
+### 18/08/2026 09:10 — NOI THANG VAO ILLUSTRATOR QUA MCP; XUAT LAI 4 MAU (chua push)
+
+**MOI: Illustrator co MCP server.** Preferences > MCP & Tools > Enable MCP server.
+Chu tool bam nut copy dong "Claude Code" roi dan vao terminal chay:
+`claude mcp add --transport http --header "Authorization: Bearer ilst_..." --scope user illustrator http://localhost:18412/v1/mcp`
+Da them vao `~/.claude.json` (scope user) — con o day cho phien sau.
+**46 cong cu.** Trong phien dang chay co the goi thang bang curl (khong can mo lai
+phien): script tien ich o scratchpad `ai.sh` — initialize -> notifications/initialized
+-> tools/call, phai giu header `Mcp-Session-Id`.
+⚠️ Gioi han **25.000 ky tu moi phan hoi**. `GetArtboardStructure` tra 103/126 doi tuong
+va **truncated:true**; `GetObjectStructure` tren layer goc thi bao "Response too large".
+=> Khong duyet duoc cay layer cua tai lieu nay. Lay uuid bang cach doc **bounds** o
+`GetArtboardStructure` roi doi chieu toa do trang, dung hon la tim theo ten.
+
+**TAI LIEU:** "Proposal NLG AIG", 6 artboard, **filePath = null (CHUA LUU RA O DIA)**.
+=> Tu tao diem lui bang `Export` format AI:
+`_Archive/ai-backup-2026-08-18/Proposal NLG AIG - truoc khi Claude sua.ai` (236,6 MB).
+
+**GOC RE THAT CUA "THIEU LOGO":** khong phai quen dat — ma la **anh LIEN KET BI DUT**.
+`uuid 3200` (AIG IUL, trang x=496,7 y=30,2) va `uuid 3264` (AIG Termlife, x=488,1 y=29,9)
+deu la `<Linked File>` hong => xuat SVG ra **khong co gi**. NLG thi khong co doi tuong nao.
+Chi Allianz co logo **nhung that** (`uuid 1531`, `<Image>`, trang x=482,0 y=14,9).
+=> Da lam: `DuplicateObjects` 1531 x4 -> `MoveObjects` absolute vao 4 artboard;
+`DeleteObjects` 3200 + 3264. Sau do AIG xuat **het canh bao broken link**.
+
+**BA VIEC XU LY TREN FILE SVG SAU KHI XUAT** (script trong scratchpad):
+1. ☠️ **Anh nen NLG phinh lai 2604 KB -> 8321 KB.** Tai lieu Illustrator van giu ban
+   **5802x3749** goc; ban dang chay la ban da nen con **2800x1810** tu 31/07 (luat 2b-④
+   trong CLAUDE.md). Xuat lai la mat cong nen. => Da **dung lai dung blob 2800px cua ban
+   dang chay** (the `<image>` giong het tung thuoc tinh: width/height/transform) ->
+   8,30 MB tro ve **2,72 MB**.
+2. `iNDEXED` -> `INDEXED`. ☠️ **Loi nay VAN CON TRONG FILE .ai** — doi chung ban xuat
+   tho van ra `iNDEXED`. Chu tool phai sua trong Illustrator, khong thi lan xuat sau lai loi.
+3. **Gop cum + neo giua cho 2 dong tieu de**: 6 tspan -> 2, `text-anchor="middle"`,
+   x = tam trang tru translate cua the `<text>` (122,73 cho IUL / 122,59 cho Termlife).
+   Chua tan goc font, nhung **bao dam THEO CAU TAO**: font nao cung can giua, khong chong chu.
+
+**SO DO SAU KHI LAP:**
+| | AIG IUL | AIG Termlife | IUL-NLG | TERMLIFE-NLG |
+|---|---|---|---|---|
+| lech tam tieu de (2 dong) | -0,15 | -0,15 | -0,15 | -0,14 |
+| logo x / le phai | 481,76 / 18,77 | 481,76 / 18,77 | 481,76 / 18,77 | 481,77 / 18,75 |
+| so `<text>` cu -> moi | 82 -> 82 | 72 -> 72 | 81 -> 81 | 72 -> 72 |
+| dung luong | 2,02 -> 2,14 MB | 2,01 -> 2,14 MB | 2,60 -> 2,72 MB | 2,59 -> 2,71 MB |
+
+- **So cau truc toan bo khoi `<text>`** (bo qua so class — Illustrator danh lai): chi khac
+  dung khoi tieu de + nhom "Cap do/Anh huong". Nhom sau khac **0,04 don vi toa do**
+  (77,44->77,4) = sai so lam tron khi xuat lai, duoi mot diem anh.
+- **Khoi `PRESENTED BY` GIONG HET ban cu** (cung `<text>`, 3 cum, cung translate) ->
+  moc neo cua `yPresentedBy` trong `js/proposal.js` van tim thay nhu cu.
+- `node scripts/kiem-cache-version.js` -> 18/18 khop, exit 0.
+- Da render 5 dai header ra anh va **nhin bang mat** kem duong tam.
+
+**☠️ THUOC CUA TOI SAI 4 LAN TRONG PHIEN NAY — deu cung mot goc: LAY NHAM TANG DOM.**
+1. `getComputedStyle` tren `<text class="cls-52">` (chi co `fill`) -> tuong font la
+   "Plus Jakarta Sans", suyt bao voi chu tool la font bi doi. Font nam o **tspan con**.
+2. Ep font bang `parent.style.fontFamily` -> 6 font ra cung be rong = thuoc chet.
+   Phai bom `<style>` co `!important`. **Doi chung: 7 font phai ra 7 be rong khac nhau.**
+3. Gom cum theo thuoc tinh `y` -> tron dong tagline "Making promises" (cung y=0 nhung
+   khac the `<text>`) vao tieu de.
+4. Duyet "dong" bang tspan la -> ra manh vun ("gent", "si", "tant") va
+   `yPresentedBy = 0` (vi nhan bi tach thanh 3 cum) -> dem ra **148 o dai ly** thay vi 4.
+=> **Luat: truoc khi tin mot phep do tren SVG cua Illustrator, hoi "toi dang dung o TANG
+   nao — the `<text>`, tspan DONG, hay tspan CUM?"** Ba tang nay khac nhau hoan toan.
+   Dau hieu thuoc sai: **ket qua ra manh vun chu khong ra cau hoan chinh.**
+=> Va khi thuoc tay lien tuc sai: **bo tu dung lai logic, chuyen sang SO CAU TRUC ban cu
+   voi ban moi.** Do la phep chac chan nhat va da dung de ket luan o tren.
+
+**CON TREO:**
+- Chua push.
+- **Tai lieu Illustrator dang CO THAY DOI CHUA LUU** (4 logo moi + da xoa 2 lien ket dut).
+  Chu tool can Ctrl+S / Save As ra file .ai, khong thi mat phan sua ben Illustrator.
+- **`iNDEXED` van con trong file .ai.**
+- **Allianz chua duoc gop cum tieu de** — van no +14,19, chu "HOẠ" hoi chen. Chua sua vi
+  chu tool chi noi ve 4 mau.
+- NLG IUL va AIG IUL nay **gian dong tieu de khac nhau** (27,9 vs 21,2) — do chu tool
+  sua trong Illustrator (ban xuat tho cung vay), khong phai loi. Can xac nhan co y.
+- Con 3 `<Linked File>` dut khac trong tai lieu (canh bao van hien khi xuat artboard NLG).
+
+---
+
+### 18/08/2026 08:35 — GOC RE CUA "TIEU DE BI LECH": TEN FONT POSTSCRIPT KHONG PHAN GIAI DUOC
+
+Chu tool bao tieu de 4 mau bi lech. **KHONG lien quan ban va logo** — da chung minh:
+`git diff --numstat` cho thay moi file SVG dung **1 dong doi** (dong cuoi, cho chen
+`<image>`), khong file CSS/HTML nao bi sua. Dong Google Fonts o `tool.html:33` la
+commit `47a21b9` ngay 14/07/2026 cua chinh chu tool.
+
+**GOC RE — do bang doi chung "ten font bia dat":**
+
+| Do (chuoi "BAN BAO GIA CHUONG TRINH", 18,02px) | Be rong |
+|---|---|
+| Illustrator chua san cho dong nay | **237,58** |
+| `SFProDisplay-Bold` (ten PostScript file SVG khai) | **259,25** — GIONG HET mot ten font bia dat -> **khong phan giai duoc** |
+| Roi ve `SF Pro Display` + `font-weight:700` | **254,77** -> **thua 17,19 (~7%)** |
+| Cung font, `font-weight:800` | **254,77** — y het 700 -> dau van tay **DAM GIA** |
+
+**May chu tool CO `SF Pro Display` (Regular) va `Semibold`, nhung THIEU net `Bold`.**
+Trinh duyet bom dam gia -> chu no 7%. Ma Illustrator ghi **toa do x CUNG cho tung cum
+chu** (`x="0"`, `51.07`, `62.75`, `138.33`, `150.63`...), nen phan thua don vao cac khe
+-> **chong chu + dong day sang phai** = cai "lech" nhin thay.
+
+Cong don do no dong chu nho: **IUL-NLG +11,04 · TERMLIFE-NLG +11,81 · Allianz +14,19**.
+Dong chu lon (net Black) chi **+0,14 - +0,50** -> gan nhu dung. Vi vay dong NHO lech ro hon.
+
+**HAI LAN THUOC CUA TOI BAO SAI TRONG CHINH VIEC NAY** (ghi lai de khong lap):
+1. Doc `getComputedStyle` tren the `<text class="cls-52">` -> bao font la "Plus Jakarta
+   Sans". SAI: `.cls-52` chi co `fill:#fff`; font nam o **tspan con** (`.cls-9`
+   SFProDisplay-Bold 18,02px · `.cls-37` SFProDisplay-Black 40px). Suyt bao nham voi
+   chu tool la font da bi doi.
+2. Ep font bang `parent.style.fontFamily` -> 6 font ra **cung mot be rong** = thuoc chet.
+   Vi font khai o tspan con, dat style len the cha khong thang duoc class con.
+   Sua: bom `<style>` voi `svg text, svg tspan { font-family: X !important }`.
+   **Doi chung bat buoc: 7 font phai ra 7 be rong khac nhau** thi thuoc moi dung.
+3. Gom cum chu theo thuoc tinh `y` -> o 2 mau AIG bi tron dong tagline
+   "Making promises Keeping them" (cung `y=0` nhung thuoc `<text>` KHAC) vao cung nhom
+   -> so vo nghia. Chi so cua NLG va Allianz la sach.
+
+**LOI NOI DUNG PHAT HIEN KEM:** tieu de ghi **"INDEXD UNIVERSAL LIFE"** — thieu chu E,
+dung ra la **"INDEXED"**. Co o ca `AIG IUL.svg` va `IUL - NLG.svg`. KHONG tu sua.
+
+**CHU TOOL CHOT: se TU XUAT LAI 4 FILE tu Illustrator** (sua ca lech ca chinh ta).
+-> Khi do **ban va logo Thinksmart 18/08 se MAT** neu file .ai chua co logo.
+   Xem muc "CAN LAM KHI NHAN 4 FILE MOI" ngay duoi.
+
+---
+
+### CAN LAM KHI CHU TOOL GUI 4 FILE MOI (18/08/2026)
+
+1. Kiem `<image>` logo Thinksmart co san trong file moi chua (`id="logo-thinksmart"`
+   hoac anh 2370x896). Chua co -> chen lai theo so do da chot:
+   AIG IUL `481.95 22.67` · AIG Termlife `481.95 22.66` ·
+   IUL-NLG `481.95 25.69` · TERMLIFE-NLG `481.95 25.67` (scale .04).
+   Node goc lay tu `Max-Funded Allianz.svg`.
+2. Do lai do no cum chu: moi cum phai **KHONG rong hon** khoang x Illustrator chua san.
+   Neu tieu de da create outlines thi khong con `<text>` o dai `y<135` — do la dau hieu
+   TOT, va luc do bo qua phep do nay.
+3. Chay du 5 buoc thay mau o `CLAUDE.md` muc 2b (sao luu -> thay CA HAI noi -> doi chieu
+   md5 -> nen anh nen neu >2800px -> IN RA DOC TUNG O).
+4. Kiem muc "3. Thong tin dai ly" van **dung 4 o** (luat 2b-①).
+5. `node scripts/kiem-cache-version.js` truoc khi push.
+
+---
+
+### 18/08/2026 08:11 — THEM LOGO THINKSMART VAO 4 MAU PROPOSAL (chua push)
+
+Chu tool bao: 4 mau AIG/NLG thieu logo Thinksmart o goc phai header (Allianz co).
+
+**DO TRUOC KHI SUA** — nap 5 file SVG vao DOM, doc `getBBox` + `getCTM` quy ve toa do
+goc, quet dai header `y < 70`. Khong doan theo toa do:
+
+| Mau | Logo hang (trai) | Logo Thinksmart (phai) |
+|---|---|---|
+| Max-Funded Allianz | paths x 25-117 | CO — `<image>` 94,8 x 35,8 tai x=481,7 y=14,9 |
+| AIG IUL / AIG Termlife | `<image>` 112x36 tai x=12,5 | KHONG — trong tu x=331 den 595 |
+| IUL - NLG / TERMLIFE - NLG | polygon+paths x 12-148 | KHONG |
+
+Dem `<image>` moi file: Allianz **4** · AIG **2** · NLG **1**. Anh 2370x896 scale .04
+chi ton tai trong file Allianz.
+
+**KIEM NGUON TRUOC KHI DUNG** (bai hoc 5af — dung tin ten): giai base64 ra PNG, doc
+IHDR (2370x896, bitDepth 8, colorType 6 = RGBA). Xem tren nen trang thi TRANG TINH —
+vi logo trang nen trong suot. Ghep len nen toi moi doc duoc: dung la logo
+"THINKSMART INSURANCE". Diem duc (alpha>200) **384.294 = 18,1%**, mau trung binh
+**rgb(255,255,255)** tuyet doi. Nen goc phai header ca 4 mau deu toi
+(AIG tim `rgb(120,80,221)` alpha .78 · NLG xanh la `rgb(30,132,71)` alpha .85)
+-> logo trang hien ro.
+
+**CACH DAT — khong be nguyen toa do Allianz.** Giu cung be rong (94,75) va cung le
+phai (18,82), nhung **canh giua theo tam doc cua logo HANG trong chinh mau do**:
+
+| Mau | Tam doc logo hang | translate |
+|---|---|---|
+| AIG IUL | 40,59 | `481.95 22.67` |
+| AIG Termlife | 40,58 | `481.95 22.66` |
+| IUL - NLG | 43,61 | `481.95 25.69` |
+| TERMLIFE - NLG | 43,59 | `481.95 25.67` |
+
+Chen `<image id="logo-thinksmart" ...>` ngay truoc `</svg>` (ve sau cung = nam tren).
+
+**DA LAM DUNG QUY TRINH THAY MAU:**
+1. Sao luu 4 file vao `_Archive/logo-fix-2026-08-18/` (KHONG de trong `2-Templates/`)
+2. Ghi ca HAI noi: `public/templates/` va `2-Templates/<hang>/` — md5 tung cap khop
+3. Khong nen lai anh nen (khong dung toi)
+4. `node scripts/kiem-cache-version.js` -> 18/18 file khop, exit 0
+
+**DO SAU KHI SUA:**
+- 5/5 mau co logo · be rong **94,75** · le phai **18,82** · lech tam so voi logo hang
+  **<= 0,02** (rieng Allianz von lech 2,56 — thiet ke goc, khong dung vao)
+- `soPhanTuVeSauLogo = 0` o ca 4 mau moi -> khong phan tu nao ve de len logo
+- **Go dung the vua chen ra thi file GIONG HET ban cu tung byte** (4/4)
+- So `<text>` va `<tspan>` KHONG DOI (82/82 · 72/72 · 81/81 · 72/72)
+  -> khong sinh them o sua nao cho sale
+- Render that 5 dai header ra anh va **NHIN BANG MAT** (bai hoc 5k — dem khong phai
+  la kiem): ca 5 logo hien trang tren nen toi, khong dinh chu, khong tran le
+
+**CON TREO:** chua push. Neu chu tool xuat lai mau tu Illustrator thi ban va nay mat —
+logo phai duoc them vao file goc `.ai`.
+
+---
+
 ## TRẠNG THÁI HIỆN TẠI — chốt 2026-08-12 20:38
 
 ### 12/08/2026 20:38 — MỤC APPLICATION FORM: 3 chỗ chủ tool yêu cầu sửa (đã push)

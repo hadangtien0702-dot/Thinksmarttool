@@ -224,8 +224,18 @@ function xepLaiHauTo(neo) {
     const a = docTranslate(oTienD), b = docTranslate(oHauToD);
     if (!a || !b) return;
     neo.tam = (a.x + b.x + wHauTo) / 2;
+    // ☠️ Ô NEO TRÁI thì giữ MÉP TRÁI, không canh giữa cả cụm (chủ tool chốt 18/08 cho
+    // mẫu Allianz: "$0 /năm" phải thẳng hàng với nhãn "THU NHẬP HƯU TRÍ"). Không có
+    // dòng này thì cụm bị kéo về giữa ngay lần gõ đầu, mọi chỉnh trong file .svg vô ích.
+    // Quyết định bằng chính HÌNH HỌC của bản vẽ — đúng cách laCanGiuaTheoBanVe() dùng cho
+    // mọi ô khác — nên muốn đổi kiểu neo thì sửa vị trí chữ trong .svg, KHÔNG sửa ở đây.
+    // Hàm đó trả TRUE khi không đo được, nên đo hỏng là giữ nguyên nếp cũ (canh giữa).
+    neo.neoTrai = !laCanGiuaTheoBanVe(neo.idTien);
+    neo.trai = a.x;
   }
-  const xTien = neo.tam - (wTien + KHE_TIEN_HAUTO + wHauTo) / 2;
+  const xTien = neo.neoTrai
+    ? neo.trai
+    : neo.tam - (wTien + KHE_TIEN_HAUTO + wHauTo) / 2;
   const xHauTo = xTien + wTien + KHE_TIEN_HAUTO;
   [oTienD, oTienC].forEach(o => datTranslateX(o, xTien));
   [oHauToD, oHauToC].forEach(o => datTranslateX(o, xHauTo));
@@ -344,10 +354,24 @@ function nenChiOmMotGiaTri(svgEl, hopNen) {
   return true;
 }
 
+// ☠️ ĐÁNH DẤU THẲNG TRONG BẢN VẼ: `data-neo="trai"` trên thẻ <text> thì BẮT BUỘC neo trái,
+// không cần đo. Thêm 18/08/2026 cho dải xanh mẫu Allianz ("Thu nhập hưu trí" và
+// "Tổng dòng tiền dự kiến"): hai ô đó dùng CHUNG một thẻ nền nên cửa 3 chặn lại
+// (nền ôm 2 giá trị → đo lề trái/phải vô nghĩa), mà chủ tool thì muốn chúng neo trái.
+//
+// ĐÃ THỬ VÀ BỎ: nới cửa 3 thành "chia nền thành cột theo từng giá trị rồi đo trong cột".
+// Đo trước/sau trên cả 5 mẫu: **65/404 ô đổi phân loại** — lọt cả tiêu đề mục, đoạn văn,
+// tên đại lý. Quá rộng, không dùng. Cách đánh dấu này đổi ĐÚNG những ô được đánh dấu.
+function coDanhDauNeoTrai(o) {
+  const t = o && (o.tagName.toLowerCase() === 'text' ? o : o.closest('text'));
+  return !!t && t.getAttribute('data-neo') === 'trai';
+}
+
 function laCanGiuaTheoBanVe(editorId) {
   const svgEl = dom.canvasWrapper.querySelector('svg');
   const o = elCanvas(editorId);
   if (!svgEl || !o) return true;                              // không đo được → giữ nếp cũ
+  if (coDanhDauNeoTrai(o)) return false;                      // bản vẽ đã chốt: neo trái
   if (!coNhanThangMepTrai(svgEl, o)) return true;             // cửa 1
   const n = theNenBaoChu(editorId);
   if (!n || !n.rong) return true;                             // cửa 2
@@ -831,6 +855,9 @@ function populateProposalTextsEditor(svgEl, textElements) {
           </select>
         `;
         const select = itemBlock.querySelector('select');
+        // Thay danh sach xo cua he dieu hanh bang panel dung style cua app (js/dropdown.js).
+        // The <select> that VAN O LAI trong DOM — core.js/main.js dang truy van no.
+        if (window.napDropdown) window.napDropdown(itemBlock);
         select.addEventListener('change', (e) => {
           applyTextValue(el, editorId, e.target.value);
           vuaKhungOKhach(neoVuaKhach[editorId], idOKhach);

@@ -15,6 +15,10 @@
     "v": "49",
     "bam": "15e96aef3fe5"
   },
+  "js/dropdown.js": {
+    "v": "1",
+    "bam": "832743922754"
+  },
   "js/main.js": {
     "v": "22",
     "bam": "be3ac91df418"
@@ -40,8 +44,8 @@
     "bam": "9c8798add265"
   },
   "js/proposal.js": {
-    "v": "42",
-    "bam": "8576d58fa339"
+    "v": "46",
+    "bam": "c87b68227273"
   },
   "js/sosanh.js": {
     "v": "12",
@@ -64,8 +68,8 @@
     "bam": "dfc083fca515"
   },
   "style.css": {
-    "v": "113",
-    "bam": "708a2e74922a"
+    "v": "114",
+    "bam": "f3af58eb9b5e"
   },
   "vendor/gsap.min.js": {
     "v": "3.15.0",
