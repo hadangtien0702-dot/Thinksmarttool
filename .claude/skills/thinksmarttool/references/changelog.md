@@ -5,6 +5,53 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 
 ---
 
+### 18/08/2026 11:30 — TOI UU TOC DO TAI TRANG: FONT 261,7 -> 51,4 KB (da push, da do tren LIVE)
+
+Chu tool yeu cau toi uu toc do toan tool, va noi ro: **khong do o localhost**.
+
+**DO PHAN BO TRUOC KHI SUA** (luat 5x — thu "hien nhien cham" thuong khong phai thu pham).
+Can toan bo trang tool tren live:
+
+| Thanh phan | Kich thuoc that |
+|---|---|
+| 17 file ma nguon (da nen brotli) | 207,7 KB |
+| **Font Google (bo latin + vietnamese)** | **261,7 KB** |
+| supabase-js (jsdelivr) | 53,3 KB |
+| /api/svgs + /api/library | 327 + 812 byte |
+
+=> **Nut that la FONT, nang hon ca ma nguon.** Trang tool khai **38 @font-face**.
+
+**HAI VIEC DA LAM:**
+1. Plus Jakarta Sans: 5 net TINH (400/500/600/700/800) -> **1 font BIEN THIEN**
+   `ital,wght@0,400..800;1,400`. Nhin y het, tai 1 file thay 5.
+2. **Bo Fira Code** — ton **70,8 KB** ma chi dung o DUNG 2 cho: `.zoom-indicator`
+   (chi bao "107%") va `.color-hex` (o ma mau). Nay dung `ui-monospace` cua he dieu
+   hanh, von DA nam san trong chuoi du phong cua `--font-mono` (khong them gi moi).
+
+**DO LAI TREN LIVE SAU KHI DEPLOY** (bat buoc — luat 5ah):
+| | Truoc | Sau |
+|---|---|---|
+| @font-face | 38 | **8** |
+| Bo chu tai ve (latin+viet) | 261,7 KB | **51,4 KB** |
+| Tong trang tool | 522,9 KB | **312,6 KB** |
+| | | **-210,3 KB · -40% ca trang** |
+Da xac nhan ca 5 trang (index/login/members/tool/videos) deu dung font bien thien va
+khong con Fira Code; `--font-sans` giu nguyen; `--font-mono` con dung chuoi du phong.
+
+**DO ROI LOAI — KHONG phai nut that:**
+- `/api/svgs` 327 byte, `/api/library` 812 byte, ttfb ~130-160ms. May lan vot len
+  **2,95s / 1,23s** la **KHOI DONG NGUOI** (phan bo hai cum — bai hoc 5ai), khong phai
+  hieu nang. ☠️ NHUNG phai noi voi chu tool: nguoi dau tien vao sau luc vang VAN chiu
+  do tre do; con so "130ms" la cua ham da am.
+- Ma nguon noi bo da nen brotli san; chi `config.js` (0,9 KB) khong nen — khong dang.
+
+**CHUA LAM — de rieng:** `supabase-js` tai tu **jsdelivr**: 53,3 KB + mot vong DNS/TLS
+rieng (do: TLS xong o 79-121ms). Tu host trong `/vendor` se bo duoc vong do VA ghim
+duoc phien ban (`@2` hien khong ghim = rui ro chuoi cung ung). Nhung no nam tren
+**duong dang nhap cua 77 sale** — sai la khong ai vao duoc. Phai lam rieng + kiem ky.
+
+---
+
 ### 18/08/2026 11:00 — ALLIANZ: 5 O TIEN NEO TRAI + `data-neo="trai"` (chua push)
 
 Chu tool chot: ca 5 o tien cua Allianz neo trai theo nhan.
