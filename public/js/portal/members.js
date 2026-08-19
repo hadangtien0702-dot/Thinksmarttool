@@ -640,15 +640,19 @@
 
     dongHopSua();
     await load();
-    const doiGi = [];
-    if (body.full_name) doiGi.push('họ tên');
-    if (body.email) doiGi.push('email đăng nhập → ' + data.email);
-    if (body.department !== undefined) doiGi.push('phòng ban');
-    if (body.role) doiGi.push('quyền → ' + (ROLE_LABEL[body.role] || body.role));
-    if (body.password) doiGi.push('mật khẩu → ' + pass);
-    await showAppAlert('Đã cập nhật “' + ten + '”.\n\n• ' + doiGi.join('\n• ') +
-      (body.password || body.email ? '\n\nGửi thông tin đăng nhập mới cho họ.' : ''),
-      { title: 'Xong', tone: 'success' });
+    // ☠️ KHÔNG bung hộp thoại "Xong" nữa (chủ tool 18/08: "những thông báo vô tri —
+    // xấu — không có ý nghĩa"). Đổi tên / phòng ban / quyền thì bảng phía sau ĐÃ hiện
+    // giá trị mới ngay trước mắt — bắt bấm OK để đọc lại đúng thứ vừa thấy là thêm một
+    // cú bấm cho không có tin nào. Luật chung: chỉ báo khi THẤT BẠI.
+    // NGOẠI LỆ giữ lại: mật khẩu / email đăng nhập mới — đó là thông tin phải CHÉP
+    // ra gửi cho người ta, đóng hộp là mất, không có chỗ nào xem lại được.
+    if (body.password || body.email) {
+      const tin = [];
+      if (body.email) tin.push('Email đăng nhập:  ' + data.email);
+      if (body.password) tin.push('Mật khẩu mới:  ' + pass);
+      await showAppAlert(tin.join('\n') + '\n\n' + 'Gửi cho “' + ten + '” — đóng cửa sổ này là không xem lại được.',
+        { title: 'Thông tin đăng nhập mới', tone: 'success' });
+    }
   }
 
   // ---- XOÁ: hai mức, cố ý tách rời -------------------------------------------

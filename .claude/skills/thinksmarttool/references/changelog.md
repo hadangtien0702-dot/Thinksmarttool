@@ -5,6 +5,32 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 
 ---
 
+## 2026-08-18 — LỖI UI PHÒNG BAN (2 ô chọn) + BỎ THÔNG BÁO VÔ TRI (v1.49)
+
+Chủ tool: *"những thông báo vô tri - xấu - không có ý nghĩa và kèm theo lỗi UI phòng ban"*.
+
+**① Ô "Phòng ban" trong hộp Sửa tài khoản hiện MỘT LÚC HAI Ô CHỌN.**
+Gốc: CSS của dropdown tự dựng nằm trong `style.css`, mà **`members.html` không nạp
+`style.css`** (nó nạp `portal.css`). Nên trang Thành viên chạy `dropdown.js` nhưng
+không có CSS: nút tự dựng hiện trần, `<select>` gốc lẽ ra bị ẩn thì phơi nguyên bên dưới.
+→ Sửa gốc: **tách ra `public/dropdown.css`**, CẢ HAI trang cùng nạp. Thêm trang nào
+dùng dropdown thì phải nạp **cả `dropdown.css` lẫn `js/dropdown.js`** — thiếu một là vỡ.
+→ Đo đối chứng trên DOM (bàn đo dùng `portal.css` + `dropdown.js` thật):
+
+| | `<select>` gốc | Chiều cao cụm |
+|---|---|---|
+| Thiếu `dropdown.css` (bản cũ) | **hiện** (opacity 1, static) | **65px** = 2 ô |
+| Có `dropdown.css` | ẩn (opacity 0, absolute, pointer-events none) | **38px** = 1 ô |
+
+**② Bỏ hộp thoại "Xong · Đã cập nhật … • phòng ban"** sau khi sửa tài khoản.
+Bảng phía sau ĐÃ hiện giá trị mới ngay trước mắt — bắt bấm OK để đọc lại đúng thứ vừa
+thấy là thêm một cú bấm cho không có tin nào (luật: **chỉ báo khi THẤT BẠI**).
+☠️ **NGOẠI LỆ GIỮ LẠI:** đổi **mật khẩu** hoặc **email đăng nhập** thì vẫn hiện — đó là
+thông tin phải chép ra gửi cho người ta, đóng hộp là mất, không có chỗ xem lại.
+Đừng "dọn nốt" cái này.
+
+---
+
 ## 2026-08-18 — ☠️ SỬA LỖI: LĂN CHUỘT TRONG DROPDOWN LÀ NÓ ĐÓNG SẬP (dropdown.js v1→v2)
 
 Chủ tool: *"lỗi scroll ở tiểu bang nha em"*. Ô Tiểu bang có **50 bang**, phải cuộn mới
@@ -93,9 +119,9 @@ dùng trên máy nên tạm chấp nhận.
 
 ## TRẠNG THÁI HIỆN TẠI — chốt 2026-08-18 14:25 (+0700)
 
-- **Bản live:** `tool.thinksmartinsurance.com` — **v1.48 · 18/08/2026** (3 trang khớp nhau).
+- **Bản live:** `tool.thinksmartinsurance.com` — **v1.49 · 18/08/2026** (3 trang khớp nhau).
 - **Phiên bản file:** `style.css?v=116` · `js/core.js?v=50` · `js/proposal.js?v=47` ·
-  `js/dropdown.js?v=2` · `vendor/supabase-js.min.js?v=2.112.3` · `portal.css?v=87` · `js/portal/members.js?v=63` · `js/tinhtuoi.js?v=13`.
+  `js/dropdown.js?v=2` · `vendor/supabase-js.min.js?v=2.112.3` · `portal.css?v=87` · `dropdown.css?v=1` · `js/portal/members.js?v=64` · `style.css?v=117` · `js/tinhtuoi.js?v=13`.
 - **5 mẫu proposal:** đã là bản mockup — KHÔNG còn dữ liệu khách hàng thật.
   Giá trị giả: `Nguyen Van Mau` · `43` · `California` · `$0` · `TÊN AGENT ASSISTANT` ·
   `(000) 000-0000`.
