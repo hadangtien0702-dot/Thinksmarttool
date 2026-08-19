@@ -1650,7 +1650,7 @@ button:active, .btn:active, .icon-btn:active, .sidebar-nav a:active, .sidebar-fo
    Thay cho 4 thẻ "Hôm nay" (3 dòng chữ, số 30px) + danh sách "Trong khoảng này"
    ở cột phải: hai chỗ cùng tên chỉ số khác khoảng thời gian → đọc dễ nhầm. */
 .usage-stats {
-  display: grid; gap: 10px; grid-template-columns: repeat(5, minmax(0, 1fr));
+  display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-bottom: 12px;
 }
 .ustat {
@@ -2323,4 +2323,43 @@ body.dark-theme .top-tag-nc { color: #E9A23B; }
 @media (max-width: 640px) {
   .top-row { grid-template-columns: 24px minmax(0, 1fr) 30px; }
   .top-barwrap { display: none; }
+}
+
+
+/* ---- TỪNG LƯỢT TÍNH TUỔI (18/08/2026) -------------------------------------
+   Bảng phẳng, mới nhất trên cùng. KHÔNG gộp theo người như bảng Tải về: câu hỏi
+   của chủ tool là "sale nào chạy và chạy CÁI GÌ", gộp lại là phải bấm thêm một
+   lần mới thấy cái gì. Cuộn trong khung để khối không đẩy dài cả trang. */
+/* Nằm trong popup (18/08) — không còn viền trên/khoảng đệm của bản nhúng trong khối. */
+.uct { margin-top: 4px; }
+.uct-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.uct-title { font-size: var(--fs-sm); font-weight: 700; color: var(--text); margin: 0; }
+.uct-dem { font-weight: 500; color: var(--text-3); }
+.uct-tim { margin-left: auto; min-width: 180px; padding: 5px 10px; font-size: var(--fs-sm);
+           border: 1px solid var(--border); border-radius: var(--r-sm);
+           background: var(--surface); color: var(--text); }
+.uct-bang { max-height: 56vh; overflow-y: auto; }
+/* Năm cột cố định px cho phần giá trị (luôn ngắn: "09/02/1990", "36", "3 giờ trước"),
+   chỗ dư dồn hết cho cột tên — cùng luật đã dùng ở bảng "Theo từng người". */
+.uct-row { display: grid; grid-template-columns: minmax(120px, 1fr) 108px 92px 108px 96px;
+           gap: 8px; align-items: center; padding: 6px 8px; border-radius: var(--r-sm);
+           font-size: var(--fs-sm); }
+.uct-row + .uct-row { border-top: 1px solid var(--border); }
+.uct-row.is-head { font-size: var(--fs-xs); color: var(--text-3); font-weight: 600;
+                   position: sticky; top: 0; background: var(--surface); z-index: 1;
+                   border-bottom: 1px solid var(--border); }
+.uct-row:not(.is-head):hover { background: var(--surface-2); }
+.uct-ten { font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.uct-vai { font-size: var(--fs-xs); color: var(--text-3); font-weight: 500; margin-left: 5px; }
+.uct-num { font-variant-numeric: tabular-nums; color: var(--text-2); }
+.uct-bh { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text); }
+/* Sắp nhảy bậc phí trong 30 ngày — sale cần chốt trước mốc đó (cùng luật màu với
+   ô "Ngày tăng tuổi" trong chính công cụ Tính tuổi). */
+.uct-gan { color: #8a5a00; font-weight: 600; }
+.dark-theme .uct-gan { color: #ffce7a; }
+.uct-luc { color: var(--text-3); text-align: right; }
+.uct-trong { font-size: var(--fs-sm); color: var(--text-3); margin: 6px 2px; }
+@media (max-width: 760px) {
+  .uct-row { grid-template-columns: 1fr 96px 72px; }
+  .uct-row > .uct-ngaytang, .uct-row > .uct-luc { display: none; }
 }

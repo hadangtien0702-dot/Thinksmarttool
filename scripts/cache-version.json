@@ -16,8 +16,8 @@
     "bam": "dd97c4adefcd"
   },
   "js/dropdown.js": {
-    "v": "1",
-    "bam": "832743922754"
+    "v": "2",
+    "bam": "b5063e45053b"
   },
   "js/main.js": {
     "v": "22",
@@ -36,8 +36,8 @@
     "bam": "60bca9fe50ff"
   },
   "js/portal/members.js": {
-    "v": "60",
-    "bam": "4d53ffbb1a77"
+    "v": "63",
+    "bam": "05dec6533b6b"
   },
   "js/portal/videos.js": {
     "v": "2",
@@ -56,16 +56,16 @@
     "bam": "964f16e7b120"
   },
   "js/tinhtuoi.js": {
-    "v": "12",
-    "bam": "b27c947365e6"
+    "v": "13",
+    "bam": "e6d5078d41ac"
   },
   "js/ui-dialog.js": {
     "v": "3",
     "bam": "42e3b54ad49d"
   },
   "portal.css": {
-    "v": "84",
-    "bam": "b88ca4ff57a1"
+    "v": "87",
+    "bam": "db729977c2e6"
   },
   "style.css": {
     "v": "116",

@@ -244,7 +244,7 @@ create index if not exists videos_category_sort_idx
 create table if not exists public.usage_events (
   id      bigint generated always as identity primary key,
   user_id uuid not null references public.profiles(id) on delete cascade,
-  kind    text not null check (kind in ('login', 'open_tool', 'download', 'view')),
+  kind    text not null check (kind in ('login', 'open_tool', 'download', 'view', 'calc')),
   label   text,   -- CHI TIẾT: 'download' = tải gì; 'view' = mẫu/brochure nào được mở
   at      timestamptz not null default now()
 );
@@ -256,9 +256,12 @@ create table if not exists public.usage_events (
 -- liên quan (cột `anh`, bucket ảnh…). Soi dòng lạ trước khi chạy lại:
 --    select kind, count(*) from public.usage_events group by kind order by 2 desc;
 -- Rồi hoặc xoá mấy dòng rác đó, hoặc nới danh sách kind cho đúng thực tế.
+-- (18/08/2026) thêm 'calc': MỘT LƯỢT TÍNH của công cụ tra cứu (hiện chỉ Tính tuổi).
+-- Khác 'view' (mở màn hình, throttle 15') — 'calc' ghi TỪNG lần bấm Tính, không gộp,
+-- vì chủ tool cần xem "sale nào chạy và chạy cái gì". detail = ngày sinh + tuổi ra.
 alter table public.usage_events drop constraint if exists usage_events_kind_check;
 alter table public.usage_events add  constraint usage_events_kind_check
-  check (kind in ('login', 'open_tool', 'download', 'view'));
+  check (kind in ('login', 'open_tool', 'download', 'view', 'calc'));
 -- (23/07 - N2) 'view': sale MỞ XEM mẫu Proposal hoặc brochure trong thư viện → tab Đo lường xếp
 -- hạng "mẫu/brochure chạy nhiều nhất". label = tên mẫu ("Max-Funded Allianz") hoặc "Tài liệu: <tên>".
 -- KHÔNG cần cột mới — chỉ nới constraint kind ở trên là đủ.

@@ -392,6 +392,25 @@ function bamTinh() {
     bh: kq.tuoiBaoHiem
   });
   ttGhiLichSu(ds);
+
+  // ĐO LƯỜNG TỪNG LƯỢT TÍNH (18/08/2026 — chủ tool: "anh muốn tracking công cụ tính
+  // tuổi xem sale nào chạy và chạy cái gì"). Ghi kind 'calc', KHÔNG throttle: mỗi lần
+  // bấm Tính là một lần tra cứu thật, gộp lại là mất đúng thứ chủ tool muốn xem.
+  // ⚠️ Ghi chú cũ ở openTinhTuoi ("KHÔNG bao giờ ghi ngày sinh khách") HẾT HIỆU LỰC từ
+  // đây — chủ tool chốt ghi đủ ngày sinh + tuổi ra. Cùng mức nhạy cảm với cột `detail`
+  // của Proposal (tên/tuổi/tiểu bang/số tiền), chỉ Admin+ đọc được qua RLS.
+  if (window.TSTAuth && TSTAuth.logUsage) {
+    TSTAuth.logUsage('calc', 'Age / Tính tuổi', {
+      // Dạng ISO để bảng đo lường tự bày lại theo kiểu nào cũng được, không nhập nhằng
+      ngaysinh: `${ns.nam}-${String(ns.thang).padStart(2, '0')}-${String(ns.ngay).padStart(2, '0')}`,
+      tuoi_that: kq.tuoiThat,
+      tuoi_bh: kq.tuoiBaoHiem,
+      ngay_tang: `${kq.mocTiepTheo.getFullYear()}-${String(kq.mocTiepTheo.getMonth() + 1).padStart(2, '0')}-${String(kq.mocTiepTheo.getDate()).padStart(2, '0')}`,
+      con_ngay: conNgay,
+      kieu_go: ttThuTu()
+    });
+  }
+
   veLichSuTuoi();
   capChieuCaoLichSu();          // khối kết quả vừa hiện ra → cột trái cao lên, đo lại
   updateStatus(`Tuổi bảo hiểm: ${kq.tuoiBaoHiem}`);

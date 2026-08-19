@@ -1032,6 +1032,9 @@
     });
     // Bấm dòng "Tải về" → popup chi tiết tải gì
     $('uk-download-row').addEventListener('click', moChiTietTaiVe);
+    $('uk-calc-row').addEventListener('click', moChiTietTinhTuoi);
+    $('uct-close').addEventListener('click', dongChiTietTinhTuoi);
+    $('uct-backdrop').addEventListener('click', function (e) { if (e.target === $('uct-backdrop')) dongChiTietTinhTuoi(); });
     // ☠️ Bộ nghe cho `#usage-rows` GỠ 10/08/2026 cùng bảng "Theo từng người".
     // Popup chi tiết tải về vẫn mở được qua thẻ tổng `#uk-download-row`.
     // Bấm tên người → bung/gập danh sách lượt tải của người đó; bấm 👁 → bung "đã điền gì"
@@ -1060,6 +1063,7 @@
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
       if ($('dl-backdrop').classList.contains('open')) dongChiTietTaiVe();
+      if ($('uct-backdrop').classList.contains('open')) dongChiTietTinhTuoi();
     });
   }
 
@@ -1353,11 +1357,11 @@
       const k = ngayKey(ts); (theoNgay[k] || (theoNgay[k] = new Set())).add(e.user_id);
     });
 
-    $('uk-login').textContent = login.size;
-    $('uk-tool').textContent = tool.size;
     $('uk-download').textContent = dl;
     $('uk-view').textContent = vw;
-    $('uk-active').textContent = act.size;
+    // Thẻ "Lượt tính tuổi" — đếm TỪNG LẦN BẤM TÍNH (kind 'calc'), không gộp 15 phút.
+    // (Ba thẻ Đăng nhập / Mở công cụ / Người hoạt động gỡ 18/08 theo yêu cầu chủ tool.)
+    $('uk-calc').textContent = trong.filter(function (e) { return e.kind === 'calc'; }).length;
 
     const soNgay = Math.round((batDauNgay(khoangTo).getTime() - batDauNgay(khoangFrom).getTime()) / NGAY_MS) + 1;
     // Bộ chọn ngày nằm trong khối này nhưng lọc CẢ TRANG → phải nói ra, kẻo tưởng
@@ -1449,11 +1453,11 @@
     // người dùng vừa bấm nút xong thì mắt đang ở đó, và một thông điệp chỉ nói MỘT nơi.
     const oNote = $('usage-range-note');
     if (oNote) {
+      // ☠️ BỎ 18/08/2026 (chủ tool: "move mấy cái vô nghĩa này ra đi em"): dòng
+      // "Số liệu từ <ngày>" nói lại đúng thứ trục ngày của biểu đồ đã hiện — cột đầu
+      // tiên MANG SẴN nhãn ngày đó. Giữ lại đúng ca không nhìn ra được: rỗng hoàn toàn.
       if (iDau === -1) {
         oNote.textContent = 'Chưa có số liệu nào trong khoảng này.';
-        oNote.hidden = false;
-      } else if (daCat) {
-        oNote.textContent = 'Số liệu từ ' + fmtNgay(veCols[0].d);
         oNote.hidden = false;
       } else {
         oNote.hidden = true;
@@ -1573,9 +1577,6 @@
       (o.theoNgay[k] || (o.theoNgay[k] = { tinhtuoi: 0, tinhphi: 0 }))[cc.ma]++;
     });
 
-    $('usage-tools-range').textContent =
-      fmtNgay(from) + ' – ' + fmtNgay(homNay) + ' · 1 lượt = 1 lần mở (gộp trong 15 phút)';
-
     oStats.innerHTML = CONG_CU_DO.map(function (c) {
       const o = so[c.ma];
       const nac = (khoaRows[c.ma] && khoaRows[c.ma].hien_cho) || 'all';
@@ -1586,8 +1587,10 @@
                '<div class="ucc-stat-head">' +
                  '<span class="ucc-dot"></span>' +
                  '<span class="ucc-name">' + esc(c.ten) + '</span>' +
-                 '<span class="ucc-nac' + (chuaMo ? ' is-warn' : '') + '">Đang mở cho: ' +
-                   esc(NAC_TEN[nac] || nac) + '</span>' +
+                 // Chỉ hiện khi mục CHƯA mở cho cả đội — lúc đó nó giải thích vì sao
+                 // số sale bằng 0. Mở rồi thì nhãn "cả đội" là chữ thừa (18/08/2026).
+                 (chuaMo ? '<span class="ucc-nac is-warn">Đang mở cho: ' +
+                   esc(NAC_TEN[nac] || nac) + '</span>' : '') +
                '</div>' +
                // Số lượt và số người CÙNG MỘT DÒNG — tách hai dòng chỉ làm thẻ cao thêm.
                '<div class="ucc-big">' + o.luot + '<span class="ucc-unit">lượt</span>' +
@@ -1603,6 +1606,95 @@
 
     veBieuDoCongCu(so, from, khoangCongCu);
   }
+
+  // ---- TỪNG LƯỢT TÍNH TUỔI (18/08/2026) ------------------------------------
+  // Chủ tool: "anh muốn tracking công cụ tính tuổi xem sale nào chạy và chạy cái gì".
+  // Nguồn: usage_events kind='calc' (KHÔNG throttle — mỗi lần bấm Tính là một dòng),
+  // detail = { ngaysinh, tuoi_that, tuoi_bh, ngay_tang, con_ngay, kieu_go }.
+  // ⚠️ Dữ liệu cũ hơn 18/08 KHÔNG có kind này → khối tự ẩn khi rỗng, đó là đúng chứ
+  // không phải hỏng. Đừng "sửa" bằng cách suy ngược từ kind 'view'.
+  // Popup mở từ thẻ "Lượt tính tuổi" — dùng KHOẢNG CHUNG của trang (14/30/60 ngày),
+  // đúng như popup Tải về, để số trong popup luôn khớp số trên thẻ.
+  function moChiTietTinhTuoi() {
+    if (!khoangFrom || !khoangTo) return;
+    veBangTinhTuoi();
+    $('uct-backdrop').classList.add('open');
+    $('uct-backdrop').setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    const oTim = $('usage-calc-tim');
+    if (oTim) { oTim.value = ''; loc(''); oTim.focus(); }
+  }
+  function dongChiTietTinhTuoi() {
+    $('uct-backdrop').classList.remove('open');
+    $('uct-backdrop').setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+  function loc(q) {
+    const rows = document.querySelectorAll('#usage-calc-rows .uct-row[data-tim]');
+    let hien = 0;
+    rows.forEach(function (r) {
+      const khop = !q || r.getAttribute('data-tim').indexOf(q) !== -1;
+      r.hidden = !khop; if (khop) hien++;
+    });
+    const oHit = $('uct-hit');
+    if (oHit) oHit.textContent = q ? hien + '/' + rows.length + ' lượt' : '';
+  }
+
+  function veBangTinhTuoi() {
+    const oBlock = $('usage-calc-block');
+    if (!oBlock) return;
+    const f = batDauNgay(khoangFrom).getTime();
+    const t = batDauNgay(khoangTo).getTime() + NGAY_MS - 1;
+    const vaiTro = {};
+    const pmap = {};
+    (toanBo || []).forEach(function (p) { pmap[p.id] = p; vaiTro[p.id] = p.role || 'user'; });
+
+    const calcRows = usageEvents.filter(function (e) {
+      if (e.kind !== 'calc') return false;
+      const ts = new Date(e.at).getTime();
+      return ts >= f && ts <= t;
+    }).sort(function (a, b) { return new Date(b.at).getTime() - new Date(a.at).getTime(); });
+
+    $('uct-range').textContent = fmtNgay(khoangFrom) + ' – ' + fmtNgay(khoangTo) +
+      ' · ' + calcRows.length + ' lượt';
+    $('usage-calc-empty').style.display = calcRows.length ? 'none' : 'flex';
+
+    const head = '<div class="uct-row is-head">' +
+        '<span>Sale</span><span>Ngày sinh khách</span><span>Tuổi thật / BH</span>' +
+        '<span class="uct-ngaytang">Ngày tăng tuổi</span><span class="uct-luc">Lúc</span>' +
+      '</div>';
+
+    $('usage-calc-rows').innerHTML = calcRows.length ? head + calcRows.map(function (e) {
+      const p = pmap[e.user_id] || {};
+      const ten = p.full_name || p.email || '(không rõ)';
+      const vai = (vaiTro[e.user_id] || 'user');
+      const d = (e.detail && typeof e.detail === 'object' && !Array.isArray(e.detail)) ? e.detail : {};
+      // Ngày lưu dạng ISO (2026-08-18) → bày ra kiểu Mỹ MM/DD/YYYY, đúng kiểu sale gõ
+      // trong tool. Thiếu/hỏng thì để "—", đừng dựng số giả.
+      const bay = function (iso) {
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+        return m ? (m[2] + '/' + m[3] + '/' + m[1]) : '—';
+      };
+      const gan = typeof d.con_ngay === 'number' && d.con_ngay <= 30;
+      return '<div class="uct-row" data-tim="' + esc(khongDau(ten + ' ' + (p.email || ''))) + '">' +
+        '<span class="uct-ten">' + esc(ten) +
+          (vai !== 'user' ? '<span class="uct-vai">' + esc(vai === 'super_admin' ? 'Super' : 'Admin') + '</span>' : '') +
+        '</span>' +
+        '<span class="uct-num">' + bay(d.ngaysinh) + '</span>' +
+        '<span class="uct-num">' + (d.tuoi_that != null ? d.tuoi_that : '—') +
+          ' / <b class="uct-bh">' + (d.tuoi_bh != null ? d.tuoi_bh : '—') + '</b></span>' +
+        '<span class="uct-num uct-ngaytang' + (gan ? ' uct-gan' : '') + '">' + bay(d.ngay_tang) +
+          (gan ? ' · còn ' + d.con_ngay + 'n' : '') + '</span>' +
+        '<span class="uct-luc">' + thoiGianTuong(new Date(e.at).getTime()) + '</span>' +
+      '</div>';
+    }).join('') : '';
+  }
+
+  // Ô tìm lọc ngay trên DOM (danh sách ngắn, không cần vẽ lại).
+  document.addEventListener('input', function (ev) {
+    if (!ev.target || ev.target.id !== 'usage-calc-tim') return;
+    loc(khongDau(ev.target.value.trim()));
+  });
 
   function demSale() {
     return (toanBo || []).filter(function (p) { return (p.role || 'user') === 'user'; }).length;
@@ -1639,7 +1731,6 @@
     const oNote = $('usage-tools-note');
     if (oNote) {
       if (iDau === -1) { oNote.textContent = 'Chưa có lượt dùng nào trong khoảng này.'; oNote.hidden = false; }
-      else if (daCat)  { oNote.textContent = 'Số liệu từ ' + fmtNgay(veCols[0].d); oNote.hidden = false; }
       else oNote.hidden = true;
     }
 

@@ -184,8 +184,16 @@
 
   document.addEventListener('click', function () { dong(); });
   window.addEventListener('resize', dong);
-  // khung ben cuon thi dong lai — panel dat fixed nen se troi ra khoi nut
-  window.addEventListener('scroll', dong, true);
+  // Khung ben cuon thi dong lai — panel dat fixed nen se troi ra khoi nut.
+  // ☠️ PHAI BO QUA SCROLL CUA CHINH PANEL (loi that 18/08/2026, chu tool bao
+  // "loi scroll o tieu bang"): danh sach 50 bang phai cuon trong panel, ma
+  // `capture: true` nghe duoc CA su kien scroll khong bubble cua panel —
+  // lan chuot mot cai la dropdown dong sap, khong cach nao chon bang cuoi.
+  // Do that truoc khi sua: dat panel.scrollTop = 200 -> panel bi go khoi DOM.
+  window.addEventListener('scroll', function (e) {
+    if (MO && MO.panel && (e.target === MO.panel || (e.target && e.target.nodeType === 1 && MO.panel.contains(e.target)))) return;
+    dong();
+  }, true);
 
   window.napDropdown = nap;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { nap(); });

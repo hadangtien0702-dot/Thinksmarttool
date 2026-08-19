@@ -5,11 +5,97 @@ Newest entries on top. Keep it concrete (versions, files, commands).
 
 ---
 
-## TRẠNG THÁI HIỆN TẠI — chốt 2026-08-18 12:50 (+0700)
+## 2026-08-18 — ☠️ SỬA LỖI: LĂN CHUỘT TRONG DROPDOWN LÀ NÓ ĐÓNG SẬP (dropdown.js v1→v2)
 
-- **Bản live:** `tool.thinksmartinsurance.com` — **v1.45 · 18/08/2026** (3 trang khớp nhau).
+Chủ tool: *"lỗi scroll ở tiểu bang nha em"*. Ô Tiểu bang có **50 bang**, phải cuộn mới
+tới được bang cuối — mà lăn chuột một cái là danh sách biến mất.
+
+**Gốc:** `window.addEventListener('scroll', dong, true)` trong `js/dropdown.js`.
+`capture: true` nghe được **cả sự kiện `scroll` KHÔNG bubble của chính panel**, nên panel
+tự cuộn cũng bị coi là "khung bên đang cuộn" → gọi `dong()` → gỡ panel khỏi DOM.
+Ý định ban đầu đúng (panel `position:fixed`, khung ngoài cuộn thì panel trôi khỏi nút),
+chỉ thiếu vế lọc nguồn sự kiện.
+
+**Sửa:** bỏ qua khi `e.target` là panel đang mở hoặc nằm trong nó.
+
+**Đo trước/sau trên bàn đo dùng ĐÚNG `dropdown.js` + `style.css` thật, 50 bang:**
+
+| Ca | Bản cũ | Bản mới |
+|---|---|---|
+| Cuộn trong panel (`scrollTop=200`) | **panel bị gỡ khỏi DOM** | còn mở, scrollTop 200 |
+| Cuộn tới cuối danh sách | — | còn mở, thấy `Wyoming` |
+| Cuộn khung bên ngoài | đóng | đóng (giữ nguyên hành vi đúng) |
+| Chọn `Wyoming` sau khi cuộn | — | `select.value` đúng · bắn `change` · nhãn nút đổi · panel đóng |
+
+⚠️ Lỗi này áp cho **MỌI** `select.select-field`, không riêng Tiểu bang: Tuổi · Giới tính ·
+Sức khoẻ ở Proposal, và 5 dropdown trong `members.html`. Sửa ở gốc nên hết cả loạt.
+
+---
+
+## 2026-08-18 — DỌN CHỮ THỪA Ở TAB ĐO LƯỜNG + TRACKING TỪNG LƯỢT TÍNH TUỔI (v1.48)
+
+Chủ tool: *"move mấy cái vô nghĩa này ra đi em"* rồi *"anh muốn tracking công cụ tính
+tuổi xem sale nào chạy và chạy cái gì"*.
+
+**① Gỡ 4 chỗ chữ thừa** (`js/portal/members.js` v60→61, `members.html`):
+- `Số liệu từ 10/8` và `Số liệu từ 9/8` — nói lại đúng thứ NHÃN CỘT ĐẦU của biểu đồ đã in.
+  Giữ nguyên ca "Chưa có số liệu nào trong khoảng này" (ca đó nhìn không ra được).
+- `20/7 – 18/8 · 1 lượt = 1 lần mở (gộp trong 15 phút)` — bỏ hẳn thẻ `usage-tools-range`.
+- `Đang mở cho: cả đội` — nay CHỈ hiện khi mục chưa mở cho cả đội (lúc đó nó giải thích
+  vì sao "0 lượt của sale"). Mở rồi thì là chữ thừa.
+
+**④ CHỐT CUỐI: bảng thành POPUP, hàng thẻ còn 3** (chủ tool: *"đem gọn gàng lên đây
+cho anh đi"* + *"3 phần này cũng không cần em xóa luôn nhé"*).
+- Thêm thẻ **"Lượt tính tuổi ›"** ở hàng trên cùng, bấm mở popup `#uct-backdrop` — đúng
+  lối thẻ "Tải về" đang chạy. Popup dùng **khoảng chung của trang** (14/30/60) nên số
+  trong popup luôn khớp số trên thẻ; có ô tìm tên sale + đếm `n/N lượt`.
+- ☠️ **GỠ 3 thẻ** `uk-login` · `uk-tool` · `uk-active` (Đăng nhập / Mở công cụ / Người
+  hoạt động) — gỡ CÓ CHỦ ĐÍCH, đừng dựng lại. Biểu đồ ngay dưới đã nói cùng chuyện mà
+  còn theo ngày. `.usage-stats` 5 → **3 cột**.
+- ⚠️ Số trên thẻ đếm **từng lần bấm Tính** (kind `calc`), KHÁC con số "45 lượt" ở khối
+  Công cụ tra cứu (đếm lượt MỞ màn hình, gộp 15 phút). Hai thứ khác nhau — đừng "sửa"
+  cho chúng bằng nhau.
+- Đo lại bằng hàm thật: khoảng 14 ngày → `5/8 – 18/8 · 2 lượt`, lọc đúng dòng ngoài
+  khoảng và dòng khác kind, sort mới→cũ, cảnh báo "còn 18n" đúng ô; rỗng → khối trống
+  hiện `flex`, có dữ liệu → `none`.
+
+**③ Dời bảng vào CỘT PHẢI, dưới biểu đồ** (chủ tool: *"em đem nó lên trên đây cho gọn"*).
+Bản đầu để thành hàng riêng dưới đáy khối → lúc chưa có dữ liệu là một dải trắng vắt ngang
+cả trang. Cột trái chỉ rộng 250–300px nên KHÔNG nhét bảng 5 cột vào đó được — đã đo trước
+khi chọn chỗ. Ô tìm nay tự ẩn khi bảng rỗng. Đo trên DOM thật (bàn đo tạm dùng CSS + hàm
+thật, 25 dòng giả): cột phải 694px · **0/25 hàng tràn ngang** · tên dài cắt ellipsis đúng ·
+body không tràn ngang · bảng cuộn trong 208px (nội dung 918px).
+⚠️ **Chưa kiểm được nhánh <760px** — bàn đo kẹt ở viewport 980px; members là trang quản trị
+dùng trên máy nên tạm chấp nhận.
+
+**② Ghi từng lượt Tính tuổi** — kind mới `calc` trong `usage_events`, KHÔNG throttle:
+- `js/tinhtuoi.js` v12→13: mỗi lần bấm Tính ghi `detail` = `{ngaysinh, tuoi_that,
+  tuoi_bh, ngay_tang, con_ngay, kieu_go}`. ⚠️ Ghi chú cũ trong `openTinhTuoi`
+  ("KHÔNG bao giờ ghi ngày sinh khách") HẾT HIỆU LỰC — chủ tool chốt ghi đủ 18/08.
+- `supabase/schema.sql`: nới `usage_events_kind_check` thêm `'calc'`.
+  ☠️ **CHƯA CHẠY SQL NÀY THÌ MỌI LƯỢT TÍNH BỊ DB TỪ CHỐI VÀ `logUsage` NUỐT LỖI IM** —
+  không có dấu hiệu gì trên giao diện. Chạy trước khi báo cho sale dùng:
+  `alter table public.usage_events drop constraint if exists usage_events_kind_check;`
+  `alter table public.usage_events add constraint usage_events_kind_check check (kind in ('login','open_tool','download','view','calc'));`
+- `members.html` + `portal.css` v84→85: bảng **"Từng lượt Tính tuổi"** dưới khối Công cụ
+  tra cứu — 5 cột (Sale · Ngày sinh khách · Tuổi thật/BH · Ngày tăng tuổi · Lúc), phẳng
+  không gộp theo người (câu hỏi là "chạy CÁI GÌ" — gộp là bắt bấm thêm một lần), có ô tìm.
+  Dòng sắp nhảy bậc phí (≤30 ngày) đổi màu cảnh báo.
+- Tính phí CHƯA ghi từng lượt (chưa được yêu cầu) — đừng dựng cột rỗng cho nó.
+
+**Đo:** chạy đúng hàm thật `veBangTinhTuoi` trích từ `members.js` trên 5 sự kiện giả
+(1 ngoài khoảng · 1 khác kind · 1 `detail` rỗng) → đúng **3 dòng + header**, lọc đúng,
+`detail` rỗng ra "—" chứ không văng, ngày bày `02/09/1990` (MM/DD), cảnh báo "còn 12n".
+`kiem-truoc-push.js` 7/7 xanh · `kiem-cache-version.js` xanh (đã bump `portal.css` ở
+**cả 4 trang** — script bắt được index/login/videos còn ghi v84).
+
+---
+
+## TRẠNG THÁI HIỆN TẠI — chốt 2026-08-18 14:25 (+0700)
+
+- **Bản live:** `tool.thinksmartinsurance.com` — **v1.48 · 18/08/2026** (3 trang khớp nhau).
 - **Phiên bản file:** `style.css?v=116` · `js/core.js?v=50` · `js/proposal.js?v=47` ·
-  `js/dropdown.js?v=1` · `vendor/supabase-js.min.js?v=2.112.3` · `portal.css?v=84`.
+  `js/dropdown.js?v=2` · `vendor/supabase-js.min.js?v=2.112.3` · `portal.css?v=87` · `js/portal/members.js?v=63` · `js/tinhtuoi.js?v=13`.
 - **5 mẫu proposal:** đã là bản mockup — KHÔNG còn dữ liệu khách hàng thật.
   Giá trị giả: `Nguyen Van Mau` · `43` · `California` · `$0` · `TÊN AGENT ASSISTANT` ·
   `(000) 000-0000`.

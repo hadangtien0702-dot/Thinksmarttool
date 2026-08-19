@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400..800;1,400&display=swap" rel="stylesheet">
   <!-- animate.min.css GO 11/08/2026: 70 KB CSS chan viec ve trang tren ca 4 trang,
        ma do ra 0/105 class duoc dung o bat cu dau. Muon dung lai thi them link nay ve. -->
-  <link rel="stylesheet" href="/portal.css?v=84">
+  <link rel="stylesheet" href="/portal.css?v=87">
   <link rel="stylesheet" href="/dialog.css?v=4">
 </head>
 <body>
@@ -263,15 +263,27 @@
           <!-- DẢI SỐ LIỆU — MỘT nguồn duy nhất, đổi theo khoảng đang chọn.
                (Trước 27/07 số hiện 2 nơi: 4 thẻ "Hôm nay" + danh sách "Trong khoảng
                này" ở cột phải → cùng tên chỉ số, khác khoảng, dễ đọc nhầm.) -->
+          <!-- ☠️ GỠ 18/08/2026 — ba thẻ "Đăng nhập" · "Mở công cụ" · "Người hoạt động"
+               (chủ tool: "3 phần này cũng không cần em xóa luôn nhé"). Gỡ CÓ CHỦ ĐÍCH,
+               đừng dựng lại khi thấy `uk-login` / `uk-tool` / `uk-active` không còn.
+               Biểu đồ "Người hoạt động mỗi ngày" ngay bên dưới đã nói cùng một chuyện
+               mà còn nói theo ngày. Giữ 3 thẻ có việc riêng: Tải về · Xem · Lượt tính tuổi. -->
           <div class="usage-stats">
-            <div class="ustat"><span class="ustat-k">Đăng nhập</span><span class="ustat-v" id="uk-login">—</span></div>
-            <div class="ustat"><span class="ustat-k">Mở công cụ</span><span class="ustat-v" id="uk-tool">—</span></div>
+            <!-- TÍNH TUỔI (18/08/2026 — chủ tool: "đem gọn gàng lên đây cho anh đi").
+                 Bản trước để bảng chi tiết nằm trong khối Công cụ tra cứu; nay theo đúng
+                 lối của thẻ "Tải về": THẺ SỐ ở hàng trên, bấm mới mở popup chi tiết.
+                 ⚠️ Số ở đây đếm từng LƯỢT BẤM TÍNH (kind 'calc'), KHÁC con số 45 lượt ở
+                 khối dưới (đếm lượt MỞ màn hình, gộp 15 phút) — hai thứ khác nhau, đừng
+                 "sửa" cho chúng bằng nhau. -->
+            <button type="button" class="ustat ustat-btn" id="uk-calc-row" title="Xem từng lượt tính tuổi: sale nào, ngày sinh khách nào">
+              <span class="ustat-k">Lượt tính tuổi <span class="ms-row-more">›</span></span>
+              <span class="ustat-v" id="uk-calc">—</span>
+            </button>
             <button type="button" class="ustat ustat-btn" id="uk-download-row" title="Xem chi tiết tải gì">
               <span class="ustat-k">Tải về (xuất/tải) <span class="ms-row-more">›</span></span>
               <span class="ustat-v is-ok" id="uk-download">—</span>
             </button>
             <div class="ustat"><span class="ustat-k">Xem Proposal/Brochure</span><span class="ustat-v" id="uk-view">—</span></div>
-            <div class="ustat"><span class="ustat-k">Người hoạt động</span><span class="ustat-v" id="uk-active">—</span></div>
           </div>
 
           <!-- 2 cột ngang hàng: biểu đồ | top mẫu (trước đây xếp dọc, mỗi khối full width) -->
@@ -329,7 +341,6 @@
             <div class="usage-block-head ucc-head">
               <div class="ucc-title">
                 <h2>Công cụ tra cứu — Tính tuổi &amp; Tính phí</h2>
-                <span class="usage-hint" id="usage-tools-range">—</span>
               </div>
               <div class="usage-presets" id="usage-tools-presets" role="group" aria-label="Chọn khoảng thời gian cho khối công cụ tra cứu">
                 <button class="btn btn-secondary btn-sm" type="button" data-tpreset="30">30 ngày</button>
@@ -346,8 +357,10 @@
                 <div class="usage-chart ucc-chart" id="usage-tools-chart" role="img"
                      aria-label="Biểu đồ lượt dùng Tính tuổi và Tính phí theo ngày"></div>
                 <span class="usage-range-note ucc-note" id="usage-tools-note" hidden></span>
+
               </div>
             </div>
+
           </div>
 
           <!-- ☠️ GỠ 10/08/2026 — hai khối "Theo từng người" và "ĐANG ONLINE".
@@ -521,11 +534,41 @@
     </div>
   </div>
 
+  <!-- Chi tiết TỪNG LƯỢT TÍNH TUỔI (18/08/2026) — bấm thẻ "Lượt tính tuổi" ở tab Đo lường.
+       Trả lời "SALE NÀO chạy và chạy CÁI GÌ". Mượn nguyên khung modal + ô tìm của popup
+       Tải về: cùng dáng, không đẻ CSS mới. -->
+  <div class="modal-backdrop" id="uct-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="uct-title">
+      <div class="modal-head">
+        <h2 id="uct-title">Từng lượt Tính tuổi</h2>
+        <button class="icon-btn" id="uct-close" aria-label="Đóng">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="uct-range" style="color:var(--text-2);font-size:var(--fs-sm);margin-bottom:6px"></p>
+        <div class="dl-search">
+          <div class="mem-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="search" id="usage-calc-tim" autocomplete="off"
+                   placeholder="Tìm theo tên sale…" aria-label="Tìm trong danh sách lượt tính tuổi">
+          </div>
+          <span class="dl-hit" id="uct-hit" aria-live="polite"></span>
+        </div>
+        <div class="uct" id="usage-calc-block">
+          <div class="uct-bang" id="usage-calc-rows"></div>
+        </div>
+        <div class="empty-state" id="usage-calc-empty" style="display:none">
+          <b>Chưa có lượt tính nào trong khoảng này.</b>
+          <span>Số liệu bắt đầu ghi từ 18/08/2026, mỗi lần sale bấm nút Tính trong công cụ Age / Tính tuổi.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ☠️ Hộp thoại "Ai đang online" GỠ 10/08/2026 cùng thanh ĐANG ONLINE. -->
       </main>
 
       <footer class="portal-footer">
-        <span class="version-badge">v1.47</span>
+        <span class="version-badge">v1.48</span>
         <span>18/08/2026 · Thinksmart Insurance — lưu hành nội bộ</span>
       </footer>
     </div>
@@ -541,8 +584,8 @@
   <script src="/js/portal/config.js?v=8"></script>
   <script src="/js/portal/auth.js?v=11"></script>
   <script src="/js/ui-dialog.js?v=3"></script>
-  <script src="/js/dropdown.js?v=1"></script>
-  <script src="/js/portal/members.js?v=60"></script>
+  <script src="/js/dropdown.js?v=2"></script>
+  <script src="/js/portal/members.js?v=63"></script>
   <script src="/vendor/gsap.min.js?v=3.15.0"></script>
   <script src="/js/animations.js?v=4"></script>
 </body>
